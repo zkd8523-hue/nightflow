@@ -36,6 +36,8 @@ export type ForeignClubDetail = {
   google_reviews: GoogleReview[] | null;
   /** club_partners에 담당 MD가 있는지 — "Recommend" 정렬용 (표시용 아님, 옵셔널) */
   has_md?: boolean;
+  /** 상위노출 랭크 — 지역 내 "고정 노출 위치"(1-based). Recommend 정렬에서만 적용. (Promoted Listings) */
+  featured_rank?: number | null;
 };
 
 // 레거시 스톱갭 — DB clubs.name_en(Migration 460)이 진짜 소스. 아직 값 안 채운 클럽만 여기로 fallback.

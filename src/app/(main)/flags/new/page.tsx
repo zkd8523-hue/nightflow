@@ -89,6 +89,17 @@ export default async function PuzzleNewPage({
   // 외국인 트랙 홈 (lang에 따라 /en, /ja, /zh)
   const foreignHome = lang === "ko" ? "/en" : `/${lang}`;
 
+  // URL에 lang이 없어 country_code로 추론한 경우, URL 자체도 갱신해줘야 함 — 안 그러면
+  // 루트 레이아웃의 <html lang>(미들웨어가 URL의 ?lang=만 보고 결정, 이 페이지의 추론 로직을 모름)이
+  // 여전히 "ko"로 남아 날짜 입력 같은 브라우저 네이티브 UI가 한국어로 새는 버그가 있었음.
+  if (!raw && inferred && inferred !== "ko") {
+    const params = new URLSearchParams();
+    params.set("lang", inferred);
+    if (area) params.set("area", area);
+    if (club) params.set("club", club);
+    redirect(`/flags/new?${params.toString()}`);
+  }
+
   // 비로그인 → 로그인 후 깃발 등록으로 복귀(redirect 보존). 외국인은 lang(en/ja/zh) + area(강남 등) 유지.
   if (!user) {
     if (isForeigner) {
@@ -114,11 +125,12 @@ export default async function PuzzleNewPage({
     const { data } = await supabase
       .from("clubs")
       .select(
-        "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, partners:club_partners(md_id)"
+        "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, partners:club_partners(md_id)"
       )
       .in("area", ["강남", "홍대", "이태원"])
       .is("deleted_at", null)
       .eq("is_test", false)
+      .eq("hidden_from_guide", false)
       .not("thumbnail_url", "is", null)
       .order("google_review_count", { ascending: false, nullsFirst: false });
     foreignClubs = (data ?? []).map((c) => ({

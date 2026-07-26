@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search, X, Check, MapPin, Users, Calendar, Coins, MessageCircle, Languages } from "lucide-react";
+import { Search, X, Check, MapPin, Users, Calendar, Coins, MessageCircle, Languages, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -11,6 +11,7 @@ import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
 import { krwTo } from "@/lib/utils/currency";
+import { pinFeatured } from "@/lib/clubs/foreignSort";
 
 // 언어별로 가장 익숙할 통화 하나만 보여줌 (4개 다 나열하면 정보 과다)
 const CURRENCY_BY_LANG: Partial<Record<Lang, string>> = {
@@ -22,16 +23,27 @@ const CURRENCY_BY_LANG: Partial<Record<Lang, string>> = {
 // 한국 깃발 폼(PuzzleForm)의 BUDGET_PRESETS_FIXED와 동일 — 총액 기준 +50만/+10만/+5만
 const BUDGET_PRESETS = [500000, 100000, 50000];
 
+// 날짜 input 표시용 로케일 — 네이티브 input의 텍스트 렌더링을 안 쓰고 직접 포맷하므로 여기서만 통제.
+const DATE_LOCALE: Record<Lang, string> = { ko: "ko-KR", en: "en-US", ja: "ja-JP", zh: "zh-CN", "zh-tw": "zh-TW" };
+function formatEventDate(dateStr: string, lang: Lang): string {
+  const d = new Date(dateStr + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString(DATE_LOCALE[lang] ?? "en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
 // 외국인 컨시어지 요청 폼 (역경매 아님).
 // 날짜·인원·예산·지역 + 가고싶은 클럽(최대 3, 옵션) + 연락처 → foreign_requests INSERT → 운영자 수동 연결.
 // 한국인 깃발 폼(PuzzleForm)과 분리 — 오퍼/성별/카톡 로직 없음.
 
 type ClubItem = ForeignClubDetail;
-// 카드 짧게 탭 = 선택, 길게 누르면(꾹) = 상세정보(ForeignClubDetailPanel) — 좁은 캐러셀 카드에
-// 정보 아이콘을 욱여넣지 않고도 상세를 볼 수 있게.
-const LONG_PRESS_MS = 450;
-const BROWSE_AREAS = ["강남", "홍대", "이태원"];
-const MAX_CLUBS = 3;
+// 카드 탭 = 상세정보(ForeignClubDetailPanel) 오픈, 카드 우상단 체크 버튼 탭 = 선택.
+// (예전엔 꾹 누르기로 상세를 열었는데 발견성이 떨어져서, 탭 한 번으로 누구나 바로 상세를 보게 바꿈 —
+//  대신 선택은 카드 위에 얹은 별도 버튼으로 분리해 "빠른 선택"과 "상세 보기"가 서로 안 막히게 함.)
+const BROWSE_AREAS = ["이태원", "강남", "홍대"];
+// 이태원 Recommend 상위 3자리 수동 큐레이션 — 자동 알고리즘(리뷰수 기준)이 구글 장소 오매칭 등으로
+// 신뢰 못 할 값을 낼 때가 있어(예: BAT 리뷰수 급증), 검증된 클럽 3곳을 고정 후보로 두고 노출 순서만 섞음.
+const ITAEWON_RECOMMEND_CURATED = ["Dawn", "BADASS", "Day&night"];
+const MAX_CLUBS = 5;
 const AREAS = ["강남", "홍대", "이태원", "서울 어디든"];
 const CONTACT_TYPES = ["whatsapp", "instagram", "email", "wechat", "line"] as const;
 type ContactType = (typeof CONTACT_TYPES)[number];
@@ -66,6 +78,9 @@ export function ForeignRequestForm({
   const t = makeT(lang);
 
   const [eventDate, setEventDate] = useState("");
+  const [dateFocused, setDateFocused] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+  const detailTouchStartXRef = useRef<number | null>(null);
   const [area, setArea] = useState<string>(presetArea && AREAS.includes(presetArea) ? presetArea : "");
   const [groupSize, setGroupSize] = useState(2);
   const [budget, setBudget] = useState(""); // 표시용, 쉼표 포함 (예: "600,000")
@@ -99,47 +114,94 @@ export function ForeignRequestForm({
   }, []);
 
   const clubById = useMemo(() => Object.fromEntries(clubs.map((c) => [c.id, c])), [clubs]);
+  const venueTypeGroup = FILTER_GROUPS.find((g) => g.group === "venue_type");
+  const genreGroup = FILTER_GROUPS.find((g) => g.group === "genre");
 
-  // 기본(검색 전) 목록: 지역별 추천 상위 4개(강남·홍대·이태원 = 12개)를 한 번 섞어서 노출.
-  // 세로로 8~9개 다 보여주지 않고, "더보기"로 나머지를 점진 로딩.
+  // 정렬: 추천순(담당 MD 우선+리뷰순) / 리뷰 많은순 / 평점순.
+  // 타입·장르 필터는 여기 넣지 않음 — 태그 커버리지가 낮아(83%) 리뷰 많은 주요 클럽 다수가
+  // 태그 미입력 상태라 필터를 켜면 오히려 손해. 세밀한 필터링은 "Browse clubs" 팝업에서.
+  const [clubSortKey, setClubSortKey] = useState<"recommend" | "reviews" | "rating">("recommend");
   const RECOMMEND_QUOTA_PER_AREA = 4;
   const LOAD_MORE_BATCH = 8;
+  const INITIAL_BATCH = 8;
+  // 위쪽 "지역" 탭에서 특정 지역을 고르면 그 지역 클럽만 보여줌 — 미선택/"서울 어디든"이면 3지역 섞어서 노출.
+  const areaScope = useMemo(
+    () => (area && BROWSE_AREAS.includes(area) ? [area] : BROWSE_AREAS),
+    [area]
+  );
+  const areaScopedClubs = useMemo(
+    () => (area && BROWSE_AREAS.includes(area) ? clubs.filter((c) => c.area === area) : clubs),
+    [clubs, area]
+  );
+
+  // 이태원 큐레이션 후보 3곳 — 매 로드마다 서로 순서만 섞음(노출 다양성).
+  // 하이드레이션 안전: 초기값은 미셔플(서버와 동일), 마운트 후 useEffect에서만 섞음.
+  const curatedItaewon = useMemo(
+    () =>
+      ITAEWON_RECOMMEND_CURATED
+        .map((name) => clubs.find((c) => c.area === "이태원" && c.name === name))
+        .filter((c): c is ClubItem => Boolean(c)),
+    [clubs]
+  );
+  const [shuffledCurated, setShuffledCurated] = useState(curatedItaewon);
+  useEffect(() => {
+    const arr = [...curatedItaewon];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    setShuffledCurated(arr);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [curatedItaewon]);
+
+  // 추천순 전용: 지역별 상위 4개(강남·홍대·이태원 = 최대 12개), 담당 MD 우선 → 리뷰순으로 고정.
+  // featured_rank(고정 노출 위치)는 추천순에서만 적용 — 리뷰순/평점순엔 미적용(공평).
+  // 이태원만 위 큐레이션 3곳을 최상단에 두고(순서는 섞임), 나머지 슬롯은 알고리즘 정렬로 채움.
   const recommendPool = useMemo(() => {
-    return BROWSE_AREAS.flatMap((a) => {
+    return areaScope.flatMap((a) => {
+      const curated = a === "이태원" ? shuffledCurated : [];
+      const curatedIds = new Set(curated.map((c) => c.id));
       const sorted = clubs
-        .filter((c) => c.area === a)
+        .filter((c) => c.area === a && !curatedIds.has(c.id))
         .sort((x, y) => {
           const md = (y.has_md ? 1 : 0) - (x.has_md ? 1 : 0);
           if (md !== 0) return md;
           return (y.google_review_count ?? 0) - (x.google_review_count ?? 0);
         });
-      return sorted.slice(0, RECOMMEND_QUOTA_PER_AREA);
+      return [...curated, ...pinFeatured(sorted)].slice(0, RECOMMEND_QUOTA_PER_AREA);
     });
-  }, [clubs]);
-  // 이 컴포넌트는 SSR 후 하이드레이션됨 — Math.random()을 렌더 중(useMemo)에 쓰면
-  // 서버/클라이언트 셔플 결과가 달라 하이드레이션 불일치가 남. 초기값은 미셔플(서버와 동일)로
-  // 두고, 마운트 후 useEffect(클라이언트 전용)에서만 섞는다. 이후엔 recommendPool 참조가
-  // 안 바뀌는 한(검색어 입력 등) 재실행 안 되므로 섞인 순서가 세션 내내 유지됨.
-  const [shuffledPool, setShuffledPool] = useState(recommendPool);
-  useEffect(() => {
-    const arr = [...recommendPool];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    setShuffledPool(arr);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recommendPool]);
+  }, [clubs, areaScope, shuffledCurated]);
+
+  // 리뷰 많은순/평점순 전용: 명시적으로 정렬된 단일 리스트.
+  const explicitSorted = useMemo(() => {
+    const arr = [...areaScopedClubs];
+    arr.sort((a, b) =>
+      clubSortKey === "rating"
+        ? (b.google_rating ?? 0) - (a.google_rating ?? 0)
+        : (b.google_review_count ?? 0) - (a.google_review_count ?? 0)
+    );
+    return arr;
+  }, [areaScopedClubs, clubSortKey]);
+
   const [visibleExtra, setVisibleExtra] = useState(0);
+  // 지역 탭·정렬이 바뀌면 이전 기준으로 쌓인 "더보기" 진행도를 초기화.
+  useEffect(() => {
+    setVisibleExtra(0);
+  }, [area, clubSortKey]);
   const remainingPool = useMemo(() => {
-    const shownIds = new Set(shuffledPool.map((c) => c.id));
-    return clubs.filter((c) => !shownIds.has(c.id));
-  }, [clubs, shuffledPool]);
-  const defaultClubs = useMemo(
-    () => [...shuffledPool, ...remainingPool.slice(0, visibleExtra)],
-    [shuffledPool, remainingPool, visibleExtra]
-  );
-  const hasMoreDefault = visibleExtra < remainingPool.length;
+    const shownIds = new Set(recommendPool.map((c) => c.id));
+    return areaScopedClubs.filter((c) => !shownIds.has(c.id));
+  }, [areaScopedClubs, recommendPool]);
+  const defaultClubs = useMemo(() => {
+    if (clubSortKey === "recommend") {
+      return [...recommendPool, ...remainingPool.slice(0, visibleExtra)];
+    }
+    return explicitSorted.slice(0, INITIAL_BATCH + visibleExtra);
+  }, [clubSortKey, recommendPool, remainingPool, visibleExtra, explicitSorted]);
+  const hasMoreDefault =
+    clubSortKey === "recommend"
+      ? visibleExtra < remainingPool.length
+      : INITIAL_BATCH + visibleExtra < explicitSorted.length;
 
   const filteredClubs = useMemo(() => {
     const q = clubSearch.trim().toLowerCase();
@@ -154,7 +216,7 @@ export function ForeignRequestForm({
     setSelectedClubIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= MAX_CLUBS) {
-        toast(t("최대 3개까지 선택할 수 있어요", "Pick up to 3 clubs", "最大3つまで", "最多选3家"));
+        toast(t("최대 5개까지 선택할 수 있어요", "Pick up to 5 clubs", "最大5つまで", "最多选5家"));
         return prev;
       }
       return [...prev, id];
@@ -169,9 +231,20 @@ export function ForeignRequestForm({
   const [browseSortKey, setBrowseSortKey] = useState<"recommend" | "reviews" | "rating">("recommend");
   const [browseVenueType, setBrowseVenueType] = useState<string | null>(null);
   const [browseGenre, setBrowseGenre] = useState<string | null>(null);
-  const [detailClub, setDetailClub] = useState<ClubItem | null>(null);
-  const venueTypeGroup = FILTER_GROUPS.find((g) => g.group === "venue_type");
-  const genreGroup = FILTER_GROUPS.find((g) => g.group === "genre");
+  // 클럽 상세 시트 — 어느 캐러셀/목록에서 열었는지(detailList)를 같이 기억해서
+  // 상세 안에서 ←/→ 로 같은 목록의 옆 클럽으로 바로 넘어갈 수 있게 함.
+  const [detailList, setDetailList] = useState<ClubItem[]>([]);
+  const [detailIndex, setDetailIndex] = useState(0);
+  const detailClub = detailList[detailIndex] ?? null;
+  const openDetail = (list: ClubItem[], club: ClubItem) => {
+    const idx = list.findIndex((c) => c.id === club.id);
+    setDetailList(list);
+    setDetailIndex(idx >= 0 ? idx : 0);
+  };
+  const closeDetail = () => setDetailList([]);
+  const hasNextDetail = detailIndex < detailList.length - 1;
+  const goPrevDetail = () => setDetailIndex((i) => Math.max(i - 1, 0));
+  const goNextDetail = () => setDetailIndex((i) => Math.min(i + 1, detailList.length - 1));
 
   const browseGroups = useMemo(() => {
     const filtered = clubs.filter((c) => {
@@ -255,13 +328,45 @@ export function ForeignRequestForm({
       {/* 날짜 */}
       <section>
         {label(<Calendar className="w-4 h-4 text-money" />, t("날짜", "Date", "日付", "日期"))}
-        <input
-          type="date"
-          lang={lang}
-          value={eventDate}
-          onChange={(e) => setEventDate(e.target.value)}
-          className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
-        />
+        {/* 네이티브 date input의 플레이스홀더·표시 텍스트는 lang 속성이 아니라 브라우저/OS 로케일을
+            따르는 WebKit 버그가 있음(특히 iOS Safari) — html lang·input lang을 다 맞춰도 한글로 샘.
+            그래서 네이티브 입력은 투명하게 깔아 달력 피커 기능만 쓰고, 보이는 텍스트는 우리가 직접
+            렌더링(placeholder/포맷 둘 다 우리 통제 하에 있어 로케일 새는 문제 자체가 없음).
+            네이티브 입력은 브라우저마다 "달력 아이콘 부분 클릭해야만 피커가 열리고 텍스트 영역
+            클릭은 그냥 포커스만 됨" — 그래서 showPicker()로 박스 어디를 눌러도 피커가 열리게 함. */}
+        <div
+          className="relative cursor-pointer"
+          onClick={() => {
+            const el = dateInputRef.current;
+            if (!el) return;
+            try {
+              el.showPicker?.();
+            } catch {
+              el.focus();
+            }
+          }}
+        >
+          <div
+            className={`w-full h-12 px-4 rounded-xl bg-card border flex items-center justify-between pointer-events-none transition-colors ${
+              dateFocused ? "border-amber-500" : "border-border"
+            }`}
+          >
+            <span className={`text-[15px] ${eventDate ? "text-foreground" : "text-muted-foreground"}`}>
+              {eventDate ? formatEventDate(eventDate, lang) : t("연도. 월. 일.", "Select date", "日付を選択", "选择日期")}
+            </span>
+            <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+          </div>
+          <input
+            ref={dateInputRef}
+            type="date"
+            lang={lang}
+            value={eventDate}
+            onChange={(e) => setEventDate(e.target.value)}
+            onFocus={() => setDateFocused(true)}
+            onBlur={() => setDateFocused(false)}
+            className="absolute inset-0 w-full h-full opacity-0 pointer-events-none"
+          />
+        </div>
       </section>
 
       {/* 지역 */}
@@ -347,7 +452,7 @@ export function ForeignRequestForm({
         <div className="flex items-center justify-between mb-2">
           {label(<Search className="w-4 h-4 text-money" />, t("가고싶은 클럽", "Clubs you want", "行きたいクラブ", "想去的夜店"))}
           <span className="text-[12px] text-muted-foreground font-bold">
-            {t("최대 3개 선택 가능", "up to 3", "最大3つ", "最多3家")}
+            {t("최대 5개 선택 가능", "up to 5", "最大5つ", "最多5家")}
           </span>
         </div>
         {selectedClubIds.length > 0 && (
@@ -366,6 +471,24 @@ export function ForeignRequestForm({
           placeholder={t("클럽 선택 또는 검색…", "Select or search clubs…", "クラブを選択・検索…", "选择或搜索夜店…")}
           className="w-full h-11 px-4 rounded-xl bg-card border border-border text-foreground text-[14px] focus:border-amber-500 outline-none"
         />
+        <div className="flex items-center gap-2 mt-2">
+          {(["recommend", "reviews", "rating"] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setClubSortKey(k)}
+              className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
+                clubSortKey === k ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {k === "recommend"
+                ? t("추천순", "Recommend", "おすすめ順", "推荐")
+                : k === "reviews"
+                ? t("리뷰 많은순", "Most reviewed", "レビュー数順", "评价最多")
+                : t("평점순", "Top rated", "評価順", "评分")}
+            </button>
+          ))}
+        </div>
         {isSearching ? (
           // 검색 중: 이름으로 스캔하기 좋게 세로 리스트
           <div className="mt-2 flex flex-col gap-1.5">
@@ -391,10 +514,17 @@ export function ForeignRequestForm({
               );
             })}
           </div>
+        ) : defaultClubs.length === 0 ? (
+          <p className="mt-2 py-4 text-center text-[12px] text-muted-foreground">
+            {t("조건에 맞는 클럽이 없습니다", "No clubs match your filters.", "条件に合うクラブがありません。", "没有符合条件的夜店。")}
+          </p>
         ) : (
-          // 기본(검색 전): 추천 클럽 가로 스크롤 카드 — 짧게 탭 선택 / 꾹 누르면 상세.
+          // 기본(검색 전): 추천 클럽 가로 스크롤 카드 — 카드 탭하면 상세, ✓ 버튼 탭하면 선택.
           // 스크롤이 끝(-200px 여유)에 닿으면 자동으로 다음 배치 로드 — 버튼 없이 무한스크롤.
+          // key: 정렬/지역 바뀌면 DOM 리마운트 → scrollLeft 리셋. 안 그러면 리스트만 바뀌고
+          // 가로 스크롤 위치는 브라우저가 그대로 들고 있어서 필터 누르면 중간부터 보임.
           <div
+            key={`${clubSortKey}-${area}`}
             className="mt-2 flex gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4"
             onScroll={(e) => {
               if (!hasMoreDefault) return;
@@ -409,8 +539,9 @@ export function ForeignRequestForm({
                 key={c.id}
                 club={c}
                 selected={selectedClubIds.includes(c.id)}
-                onTap={() => toggleClub(c.id)}
-                onLongPress={() => setDetailClub(c)}
+                onSelect={() => toggleClub(c.id)}
+                onOpenDetail={() => openDetail(defaultClubs, c)}
+                lang={lang}
               />
             ))}
           </div>
@@ -502,7 +633,7 @@ export function ForeignRequestForm({
             {/* 지역별 목록 */}
             {browseGroups.length > 0 && (
               <p className="text-[11px] text-muted-foreground">
-                {t("탭하면 선택 · 꾹 누르면 상세정보", "Tap to select · Long-press for details", "タップで選択・長押しで詳細", "轻触选择 · 长按查看详情")}
+                {t("탭하면 상세정보 · ✓ 눌러서 선택", "Tap for details · Tap ✓ to select", "タップで詳細・✓で選択", "轻触查看详情 · 点 ✓ 选择")}
               </p>
             )}
             {browseGroups.length === 0 && (
@@ -528,8 +659,9 @@ export function ForeignRequestForm({
                         key={c.id}
                         club={c}
                         selected={selectedClubIds.includes(c.id)}
-                        onTap={() => toggleClub(c.id)}
-                        onLongPress={() => setDetailClub(c)}
+                        onSelect={() => toggleClub(c.id)}
+                        onOpenDetail={() => openDetail(g.items, c)}
+                        lang={lang}
                       />
                     ))}
                   </div>
@@ -548,9 +680,25 @@ export function ForeignRequestForm({
         </SheetContent>
       </Sheet>
 
-      {/* 클럽 상세 (꾹 눌러서 오픈) — Browse 팝업 위에 겹쳐 뜸 */}
-      <Sheet open={!!detailClub} onOpenChange={(o) => !o && setDetailClub(null)}>
-        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
+      {/* 클럽 상세 (탭해서 오픈) — Browse 팝업 위에 겹쳐 뜸.
+          같은 목록(detailList) 안에서 하단 Next 버튼 또는 좌우 스와이프로 옆 클럽으로 바로 이동 가능. */}
+      <Sheet open={!!detailClub} onOpenChange={(o) => !o && closeDetail()}>
+        <SheetContent
+          side="bottom"
+          className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0"
+          onTouchStart={(e) => {
+            detailTouchStartXRef.current = e.touches[0].clientX;
+          }}
+          onTouchEnd={(e) => {
+            const startX = detailTouchStartXRef.current;
+            detailTouchStartXRef.current = null;
+            if (startX == null) return;
+            const deltaX = e.changedTouches[0].clientX - startX;
+            const SWIPE_THRESHOLD = 60;
+            if (deltaX > SWIPE_THRESHOLD) goPrevDetail();
+            else if (deltaX < -SWIPE_THRESHOLD) goNextDetail();
+          }}
+        >
           {detailClub && (
             <>
               <SheetTitle className="sr-only">{detailClub.name}</SheetTitle>
@@ -558,22 +706,31 @@ export function ForeignRequestForm({
                 club={detailClub}
                 lang={lang}
                 cta={
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toggleClub(detailClub.id);
-                      setDetailClub(null);
-                    }}
-                    className={`flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl font-black text-[15px] transition-colors ${
-                      selectedClubIds.includes(detailClub.id)
-                        ? "bg-muted text-foreground/80 hover:bg-muted"
-                        : "bg-amber-500 text-black hover:bg-amber-400"
-                    }`}
-                  >
-                    {selectedClubIds.includes(detailClub.id)
-                      ? t("선택 해제", "Remove selection", "選択解除", "取消选择")
-                      : t("이 클럽 선택하기", "Select this club", "このクラブを選ぶ", "选择这家夜店")}
-                  </button>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleClub(detailClub.id)}
+                      className={`flex-[7] flex items-center justify-center gap-1.5 py-3.5 rounded-xl font-black text-[15px] transition-colors ${
+                        selectedClubIds.includes(detailClub.id)
+                          ? "bg-muted text-foreground/80 hover:bg-muted"
+                          : "bg-amber-500 text-black hover:bg-amber-400"
+                      }`}
+                    >
+                      {selectedClubIds.includes(detailClub.id)
+                        ? t("선택 해제", "Remove selection", "選択解除", "取消选择")
+                        : t("이 클럽 선택하기", "Select this club", "このクラブを選ぶ", "选择这家夜店")}
+                    </button>
+                    {hasNextDetail && (
+                      <button
+                        type="button"
+                        onClick={goNextDetail}
+                        className="flex-[3] flex items-center justify-center gap-1 py-3.5 rounded-xl font-black text-[15px] bg-card border border-border text-foreground hover:bg-muted transition-colors"
+                      >
+                        {t("다음", "Next", "次へ", "下一个")}
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 }
               />
             </>
@@ -653,66 +810,56 @@ export function ForeignRequestForm({
   );
 }
 
-// 캐러셀 카드 — 짧게 탭하면 onTap(선택), 꾹 누르고 있으면 onLongPress(상세시트).
-// 좁은 카드에 별도 정보 아이콘을 넣지 않고도 상세정보 접근 가능하게 하는 용도.
+// 캐러셀 카드 — 카드(썸네일) 탭하면 onOpenDetail(상세시트), 우상단 체크 버튼 탭하면 onSelect(선택).
+// 꾹 누르기는 발견성이 낮아서(사용자가 존재를 모름) 제거 — 탭 한 번으로 누구나 상세를 볼 수 있게.
 function ClubCard({
   club,
   selected,
-  onTap,
-  onLongPress,
+  onSelect,
+  onOpenDetail,
+  lang,
 }: {
   club: ClubItem;
   selected: boolean;
-  onTap: () => void;
-  onLongPress: () => void;
+  onSelect: () => void;
+  onOpenDetail: () => void;
+  lang: Lang;
 }) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const firedRef = useRef(false);
-
-  const start = () => {
-    firedRef.current = false;
-    timerRef.current = setTimeout(() => {
-      firedRef.current = true;
-      onLongPress();
-    }, LONG_PRESS_MS);
-  };
-  const clear = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
+  const t = makeT(lang);
+  const reviewsLabel = t("리뷰", "reviews", "件のレビュー", "条评价");
+  const selectLabel = t("선택", "Select", "選択", "选择");
+  const removeLabel = t("선택 해제", "Remove", "選択解除", "取消选择");
 
   return (
-    <button
-      type="button"
-      onPointerDown={start}
-      onPointerUp={clear}
-      onPointerLeave={clear}
-      onPointerCancel={clear}
-      onClick={() => {
-        if (!firedRef.current) onTap();
-      }}
-      className="shrink-0 w-[120px] snap-start text-left active:opacity-70 transition-opacity select-none"
-    >
+    <div className="shrink-0 w-[120px] snap-start select-none">
       <div className={`relative w-[120px] h-[120px] rounded-2xl overflow-hidden bg-muted border-2 ${selected ? "border-amber-500" : "border-border"}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {club.thumbnail_url && <img src={club.thumbnail_url} alt={displayClubName(club)} className="w-full h-full object-cover" />}
-        {selected && (
-          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-            <Check className="w-3 h-3 text-black" strokeWidth={3} />
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          aria-label={`${displayClubName(club)} — ${t("상세정보", "details", "詳細", "详情")}`}
+          className="block w-full h-full text-left active:opacity-70 transition-opacity"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {club.thumbnail_url && <img src={club.thumbnail_url} alt={displayClubName(club)} className="w-full h-full object-cover" />}
+        </button>
+        <button
+          type="button"
+          onClick={onSelect}
+          aria-label={selected ? removeLabel : selectLabel}
+          aria-pressed={selected}
+          className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+            selected ? "bg-amber-500" : "bg-black/45 border border-white/50 hover:bg-black/65"
+          }`}
+        >
+          {selected && <Check className="w-3.5 h-3.5 text-black" strokeWidth={3} />}
+        </button>
       </div>
       <p className="text-[13px] font-bold text-foreground mt-2 truncate">{displayClubName(club)}</p>
-      {club.google_rating != null && (
-        <p className="text-[12px] text-brand-amber">
-          ⭐ {club.google_rating.toFixed(1)}
-          {club.google_review_count != null && (
-            <span className="text-muted-foreground"> · {club.google_review_count.toLocaleString()}</span>
-          )}
+      {club.google_review_count != null && (
+        <p className="text-[12px] text-muted-foreground">
+          {club.google_review_count.toLocaleString()} {reviewsLabel}
         </p>
       )}
-    </button>
+    </div>
   );
 }

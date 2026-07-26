@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { ChevronRight } from "lucide-react";
 import { ForeignClubDetailPanel, displayClubName } from "@/components/clubs/ForeignClubDetailPanel";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
@@ -59,23 +60,25 @@ function buildFlagHref(lang: Lang, area?: string) {
 type SortKey = "recommend" | "reviews" | "rating";
 
 export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang }) {
-  const [selectedClub, setSelectedClub] = useState<Club | null>(null);
+  // 클럽 상세 시트 — 어느 지역 캐러셀에서 열었는지(detailList)를 같이 기억해서
+  // 상세 안에서 ←/→ 로 같은 캐러셀의 옆 클럽으로 바로 넘어갈 수 있게 함.
+  const [detailList, setDetailList] = useState<Club[]>([]);
+  const [detailIndex, setDetailIndex] = useState(0);
+  const selectedClub = detailList[detailIndex] ?? null;
+  const openDetail = (list: Club[], club: Club) => {
+    const idx = list.findIndex((c) => c.id === club.id);
+    setDetailList(list);
+    setDetailIndex(idx >= 0 ? idx : 0);
+  };
+  const closeDetail = () => setDetailList([]);
+  const hasNextDetail = detailIndex < detailList.length - 1;
+  const goPrevDetail = () => setDetailIndex((i) => Math.max(i - 1, 0));
+  const goNextDetail = () => setDetailIndex((i) => Math.min(i + 1, detailList.length - 1));
+  const detailTouchStartXRef = useRef<number | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("recommend");
   const [venueType, setVenueType] = useState<string | null>(null);
   const [genre, setGenre] = useState<string | null>(null);
   const t = makeT(lang);
-
-  // 홈(EnHomeClient) 클럽 카드 클릭 시 ?club={id}로 넘어오면 해당 클럽 상세시트 자동 오픈.
-  // (예전엔 #club-{id} 앵커 스크롤을 썼는데, 카드 클릭=Sheet 오픈 방식으로 바뀌며 앵커 대상이
-  //  사라져 그냥 목록만 보이고 끝나던 버그 — useSearchParams 대신 window.location으로 읽어
-  //  Suspense 경계 없이도 동작하게 함(이 컴포넌트의 기존 이벤트 트래킹과 동일 패턴).
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const clubId = new URLSearchParams(window.location.search).get("club");
-    if (!clubId) return;
-    const match = clubs.find((c) => c.id === clubId);
-    if (match) setSelectedClub(match);
-  }, [clubs]);
 
   // 랜딩 노출 이벤트 — 이탈퍼널 1단계 (외국인 트랙 진입 총량)
   useEffect(() => {
@@ -153,6 +156,21 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
     .filter((g) => g.items.length > 0);
   const shownCount = groups.reduce((n, g) => n + g.items.length, 0);
   const totalCount = clubs.length;
+
+  // 홈(EnHomeClient) 클럽 카드 클릭 시 ?club={id}로 넘어오면 해당 클럽 상세시트 자동 오픈.
+  // (예전엔 #club-{id} 앵커 스크롤을 썼는데, 카드 클릭=Sheet 오픈 방식으로 바뀌며 앵커 대상이
+  //  사라져 그냥 목록만 보이고 끝나던 버그 — useSearchParams 대신 window.location으로 읽어
+  //  Suspense 경계 없이도 동작하게 함(이 컴포넌트의 기존 이벤트 트래킹과 동일 패턴).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const clubId = new URLSearchParams(window.location.search).get("club");
+    if (!clubId) return;
+    const match = clubs.find((c) => c.id === clubId);
+    if (!match) return;
+    const ownerGroup = groups.find((g) => g.items.some((c) => c.id === clubId));
+    openDetail(ownerGroup ? ownerGroup.items : [match], match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clubs]);
 
   const homeHref = lang === "ko" ? "/" : `/${lang}`;
   const bottomCtaHref = buildFlagHref(lang);
@@ -333,7 +351,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                 <button
                   key={club.id}
                   onClick={() => {
-                    setSelectedClub(club);
+                    openDetail(g.items, club);
                     if (lang !== "ko") {
                       trackForeignEvent("foreign_club_card_click", {
                         area: club.area,
@@ -418,12 +436,38 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
         </div>
       )}
 
-      {/* 클럽 상세 바텀시트 (카드 클릭 시) — 가격표·영업시간·평점 + 구글 리뷰 + 예약 CTA */}
-      <Sheet open={!!selectedClub} onOpenChange={(o) => !o && setSelectedClub(null)}>
-        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
+      {/* 클럽 상세 바텀시트 (카드 클릭 시) — 가격표·영업시간·평점 + 구글 리뷰 + 예약 CTA.
+          같은 캐러셀(detailList) 안에서 하단 Next 버튼 또는 좌우 스와이프로 옆 클럽으로 바로 이동 가능. */}
+      <Sheet open={!!selectedClub} onOpenChange={(o) => !o && closeDetail()}>
+        <SheetContent
+          side="bottom"
+          className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0"
+          onTouchStart={(e) => {
+            detailTouchStartXRef.current = e.touches[0].clientX;
+          }}
+          onTouchEnd={(e) => {
+            const startX = detailTouchStartXRef.current;
+            detailTouchStartXRef.current = null;
+            if (startX == null) return;
+            const deltaX = e.changedTouches[0].clientX - startX;
+            const SWIPE_THRESHOLD = 60;
+            if (deltaX > SWIPE_THRESHOLD) goPrevDetail();
+            else if (deltaX < -SWIPE_THRESHOLD) goNextDetail();
+          }}
+        >
           {selectedClub && (() => {
             const club = selectedClub;
             const clubFlagHref = buildFlagHref(lang, club.area);
+            const nextButton = hasNextDetail ? (
+              <button
+                type="button"
+                onClick={goNextDetail}
+                className="flex-[3] flex items-center justify-center gap-1 py-3.5 rounded-xl font-black text-[15px] bg-card border border-border text-foreground hover:bg-muted transition-colors"
+              >
+                {t("다음", "Next", "次へ", "下一个")}
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            ) : null;
             return (
               <>
                 <SheetTitle className="sr-only">{displayClubName(club)}</SheetTitle>
@@ -443,52 +487,58 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                             "即将上线 NightFlow",
                           )}
                         </div>
-                        <Link
-                          href={`/en/clubs/hongdae?lang=${lang}`}
-                          onClick={() => setSelectedClub(null)}
-                          className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-amber-500 text-black text-[14px] font-black hover:bg-amber-400 transition-colors"
-                        >
-                          {t(
-                            "→ 홍대·강남 클럽 예약하기",
-                            "→ Book Gangnam or Hongdae instead",
-                            "→ 江南・弘大クラブを予約",
-                            "→ 预订江南或弘大夜店",
-                          )}
-                        </Link>
+                        <div className="flex gap-2">
+                          <Link
+                            href={`/en/clubs/hongdae?lang=${lang}`}
+                            onClick={closeDetail}
+                            className="flex-[7] flex items-center justify-center gap-1.5 py-3 rounded-xl bg-amber-500 text-black text-[14px] font-black hover:bg-amber-400 transition-colors"
+                          >
+                            {t(
+                              "→ 홍대·강남 클럽 예약하기",
+                              "→ Book Gangnam or Hongdae instead",
+                              "→ 江南・弘大クラブを予約",
+                              "→ 预订江南或弘大夜店",
+                            )}
+                          </Link>
+                          {nextButton}
+                        </div>
                       </div>
                     ) : (
-                      <Link
-                        href={clubFlagHref}
-                        onClick={() => {
-                          // 회원가입 완료 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트하기 위해
-                          // sessionStorage에 저장. 24시간 안에 소비 시 유효, PuzzleForm이 읽고 자동 삭제.
-                          if (typeof window !== "undefined") {
-                            try {
-                              sessionStorage.setItem(
-                                "nightflow_book_intent",
-                                JSON.stringify({
-                                  club_id: club.id,
-                                  club_name: club.name,
-                                  area: club.area,
-                                  lang,
-                                  savedAt: Date.now(),
-                                })
-                              );
-                            } catch { /* noop */ }
-                          }
-                          if (lang !== "ko") {
-                            trackForeignEvent("foreign_book_at_club_click", {
-                              area: club.area,
-                              club_id: club.id,
-                              club_name: club.name,
-                            });
-                          }
-                          setSelectedClub(null);
-                        }}
-                        className="flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
-                      >
-                        {bookAtClubLabel(displayClubName(club))}
-                      </Link>
+                      <div className="flex gap-2 mt-2">
+                        <Link
+                          href={clubFlagHref}
+                          onClick={() => {
+                            // 회원가입 완료 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트하기 위해
+                            // sessionStorage에 저장. 24시간 안에 소비 시 유효, PuzzleForm이 읽고 자동 삭제.
+                            if (typeof window !== "undefined") {
+                              try {
+                                sessionStorage.setItem(
+                                  "nightflow_book_intent",
+                                  JSON.stringify({
+                                    club_id: club.id,
+                                    club_name: club.name,
+                                    area: club.area,
+                                    lang,
+                                    savedAt: Date.now(),
+                                  })
+                                );
+                              } catch { /* noop */ }
+                            }
+                            if (lang !== "ko") {
+                              trackForeignEvent("foreign_book_at_club_click", {
+                                area: club.area,
+                                club_id: club.id,
+                                club_name: club.name,
+                              });
+                            }
+                            closeDetail();
+                          }}
+                          className="flex-[7] flex items-center justify-center gap-1.5 py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
+                        >
+                          {bookAtClubLabel(displayClubName(club))}
+                        </Link>
+                        {nextButton}
+                      </div>
                     )
                   }
                 />
