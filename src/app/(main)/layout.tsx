@@ -117,7 +117,7 @@ export default function MainLayout({
         <PriceRangeOnboardingSheet />
         <GuestSignPromoGate />
         <AppFeedbackSheet />
-        {/* AppFeedbackSheet 자체가 인게이지먼트/네이티브 게이팅 → 다른 우선 시트와 시각적으로만 안 겹치게 마지막 마운트 */}
+        {/* AppFeedbackSheet 자체가 인게이지먼트 게이팅 → 다른 우선 시트와 시각적으로만 안 겹치게 마지막 마운트 */}
       </div>
       {/* 전역 카메라 레이어 — 모든 Sheet/Dialog 바깥. Radix 조상 불투명 레이어 영향 없음 */}
       <CameraLayer />
