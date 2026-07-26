@@ -332,6 +332,15 @@ export default async function AdminDashboardPage() {
       href: "/admin/marketing",
     },
     {
+      label: "앱 피드백",
+      value: "보기",
+      icon: Star,
+      color: "text-brand-amber",
+      bgColor: "bg-amber-500/10",
+      badge: null,
+      href: "/admin/feedback",
+    },
+    {
       label: "이탈·전환 인사이트",
       value: "퍼널 분석",
       icon: BarChart3,

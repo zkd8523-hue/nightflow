@@ -130,6 +130,8 @@ export interface User {
   chat_update_v1_seen: boolean;
   /** 제안가 ±20% 범위 설정 안내(PriceRangeOnboardingSheet) 노출 완료 여부 (계정당 1회). Migration 483 */
   price_range_onboarding_v1_seen: boolean;
+  /** 앱 피드백 프롬프트 노출 완료 여부 (계정당 1회, 제출/최종 skip 시 TRUE). Migration 486 */
+  app_feedback_prompt_seen: boolean;
   md_rejection_reason: string | null;
   md_unique_slug: string | null;
   bank_account: string | null;

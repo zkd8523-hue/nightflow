@@ -291,6 +291,20 @@ export function HomeContent({
     trackEvent("home_view");
   }, []);
 
+  // 앱 피드백 인게이지먼트: 홈 피드를 일정 깊이 스크롤 = +1 (세션 1회)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onScroll = () => {
+      if (window.scrollY < 600) return;
+      window.removeEventListener("scroll", onScroll);
+      import("@/lib/utils/appFeedbackEngagement").then((m) =>
+        m.bumpFeedbackEngagement(1, "home-scroll")
+      );
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   // 브라우저 종류 감지 — 인스타/페북/라인 인앱 유입 전환율 분석용.
   // 세션당 1회만 발동 (sessionStorage로 중복 방지). 유저 UX 영향 없음.
   useEffect(() => {
