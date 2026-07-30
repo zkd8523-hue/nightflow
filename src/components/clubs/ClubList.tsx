@@ -35,6 +35,7 @@ interface ClubListItem {
   operating_hours?: string | null;
   entry_fee_detail?: string | null;
   aliases?: string[];
+  hasPartner?: boolean;
 }
 
 /** 검색용 정규화 — 소문자 + 양끝 공백 제거 + 연속 공백 1개 */
@@ -208,8 +209,9 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
 
   // 정렬 (각 area 내):
   // 1) 오늘 혜택(hotdealMap or benefitTagsMap) 있는 클럽 최상위
-  // 2) 그 안에서 active 깃발 많은 순
-  // 3) 혜택 없는 클럽은 일별 시드 기반 셔플(매일 노출 순서 변경, 같은 날에는 안정)
+  // 2) 파트너(MD) 지정된 클럽 차상위
+  // 3) 그 안에서 active 깃발 많은 순
+  // 4) 나머지는 일별 시드 기반 셔플(매일 노출 순서 변경, 같은 날에는 안정)
   const hasBenefit = (id: string) =>
     !!hotdealMap[id] || (benefitTagsMap[id]?.length ?? 0) > 0;
   // KST 기준 YYYYMMDD 시드 (자정에 순서 변경)
@@ -235,7 +237,10 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
       const ab = hasBenefit(a.id) ? 1 : 0;
       const bb = hasBenefit(b.id) ? 1 : 0;
       if (ab !== bb) return bb - ab;
-      // 혜택 그룹 안에서는 active 깃발 많은 순 우선, 동률이면 일별 셔플
+      const ap = a.hasPartner ? 1 : 0;
+      const bp = b.hasPartner ? 1 : 0;
+      if (ap !== bp) return bp - ap;
+      // 혜택/파트너 그룹 안에서는 active 깃발 많은 순 우선, 동률이면 일별 셔플
       const aa = activeCountMap[a.id] || 0;
       const bbn = activeCountMap[b.id] || 0;
       if (aa !== bbn) return bbn - aa;

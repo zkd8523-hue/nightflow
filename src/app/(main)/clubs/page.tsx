@@ -43,7 +43,7 @@ export default async function ClubsIndexPage() {
     await hideTestData(
       supabase
         .from("clubs")
-        .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases, seed_favorite_count")
+        .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases, seed_favorite_count, club_partners(md_id)")
         .is("deleted_at", null)
         .eq("status", "approved")
         // 반얀트리 풀파티 등 비-클럽 venue는 가이드/지도에서 제외 (조각/깃발은 정상)
@@ -213,6 +213,7 @@ export default async function ClubsIndexPage() {
           operating_hours: (c.operating_hours as string | null | undefined) ?? null,
           entry_fee_detail: (c.entry_fee_detail as string | null | undefined) ?? null,
           aliases: (c.aliases as string[] | undefined) ?? [],
+          hasPartner: ((c.club_partners as { md_id: string }[] | undefined)?.length ?? 0) > 0,
         }))}
         activeCountMap={activeCountMap}
         hotdealMap={hotdealMap}

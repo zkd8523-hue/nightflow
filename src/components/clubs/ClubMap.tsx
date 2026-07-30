@@ -17,6 +17,7 @@ interface ClubMapItem {
   drink_menu_url?: string | null;
   operating_hours?: string | null;
   entry_fee_detail?: string | null;
+  hasPartner?: boolean;
 }
 
 interface Props {
@@ -250,7 +251,7 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
   }, [status, handleLocate, lockCenter]);
 
   // ClubList에서 검색·필터가 적용된 clubs를 받음
-  // 좌표 있는 클럽만 → 혜택(게스트 간판/핫딜) 있는 클럽을 상위 노출
+  // 좌표 있는 클럽만 → 혜택(게스트 간판/핫딜) 있는 클럽 → 파트너(MD) 지정된 클럽 순으로 상위 노출
   const filtered = useMemo(
     () =>
       clubs
@@ -258,7 +259,10 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
         .sort((a, b) => {
           const aHot = hotdealMap[a.id] ? 1 : 0;
           const bHot = hotdealMap[b.id] ? 1 : 0;
-          return bHot - aHot; // 혜택 있는 클럽 우선 (안정 정렬로 기존 순서 유지)
+          if (aHot !== bHot) return bHot - aHot; // 혜택 있는 클럽 우선 (안정 정렬로 기존 순서 유지)
+          const aPartner = a.hasPartner ? 1 : 0;
+          const bPartner = b.hasPartner ? 1 : 0;
+          return bPartner - aPartner; // 그다음 파트너 지정 클럽 우선
         }),
     [clubs, hotdealMap]
   );

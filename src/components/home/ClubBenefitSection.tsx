@@ -161,15 +161,17 @@ export function ClubBenefitSection() {
       const prioritySet = new Set(priorityGroup.map((c) => c.id));
       const rest = remaining.filter((c) => !prioritySet.has(c.id));
 
-      // 나머지: 혜택 있는 클럽 최우선 → 혜택 없는 클럽.
+      // 나머지: 혜택 있는 클럽 최우선 → 파트너(MD) 지정된 클럽 → 그 외.
       // 혜택 클럽은 "가장 가까운 혜택 요일(dowIdx)" 오름차순(=날짜순) 정렬.
-      // 같은 요일끼리는 셔플로 공정 노출 (shuffle 후 stable sort).
+      // 같은 요일끼리, 그리고 파트너/그외 그룹 내부는 셔플로 공정 노출 (shuffle 후 stable sort).
       const withBenefit = shuffle(rest.filter((c) => slotMap.has(c.id)));
       withBenefit.sort(
         (a, b) => (slotMap.get(a.id)?.dowIdx ?? 99) - (slotMap.get(b.id)?.dowIdx ?? 99)
       );
-      const withoutBenefit = shuffle(rest.filter((c) => !slotMap.has(c.id)));
-      let ordered = [...priorityGroup, ...withBenefit, ...withoutBenefit];
+      const noBenefit = rest.filter((c) => !slotMap.has(c.id));
+      const withPartner = shuffle(noBenefit.filter((c) => (c.club_partners?.length ?? 0) > 0));
+      const withoutPartner = shuffle(noBenefit.filter((c) => (c.club_partners?.length ?? 0) === 0));
+      let ordered = [...priorityGroup, ...withBenefit, ...withPartner, ...withoutPartner];
 
       // 비프로덕션: 테스트 클럽(운영자/...)을 최상위로 끌어올림 (Hot Deal Now와 동일 패턴)
       if (SHOW_TEST_CLUBS) {
