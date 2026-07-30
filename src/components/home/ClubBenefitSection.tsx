@@ -6,7 +6,18 @@ import Image from "next/image";
 import { ChevronRight, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { pickUpcomingBenefit, benefitLabel, getActiveWeekStartISO } from "@/lib/utils/hotdeal";
+import { SEOUL_AREAS } from "@/lib/clubs/tags";
 import type { HotdealBenefitsByDow } from "@/types/database";
+
+const isSeoulArea = (area: string | null) =>
+  SEOUL_AREAS.includes(area as (typeof SEOUL_AREAS)[number]);
+
+/** 배열 순서(셔플 등)는 유지한 채 서울(강남/홍대/이태원) 클럽을 앞으로 */
+function seoulFirst<T extends { area: string | null }>(arr: T[]): T[] {
+  const seoul = arr.filter((c) => isSeoulArea(c.area));
+  const rest = arr.filter((c) => !isSeoulArea(c.area));
+  return [...seoul, ...rest];
+}
 
 interface ClubBenefitItem {
   club_id: string;
@@ -162,15 +173,23 @@ export function ClubBenefitSection() {
       const rest = remaining.filter((c) => !prioritySet.has(c.id));
 
       // 나머지: 혜택 있는 클럽 최우선 → 파트너(MD) 지정된 클럽 → 그 외.
-      // 혜택 클럽은 "가장 가까운 혜택 요일(dowIdx)" 오름차순(=날짜순) 정렬.
-      // 같은 요일끼리, 그리고 파트너/그외 그룹 내부는 셔플로 공정 노출 (shuffle 후 stable sort).
+      // 각 그룹 안에서는 서울(강남/홍대/이태원) 클럽을 지방 클럽보다 먼저 노출.
+      // 혜택 클럽은 서울 여부 다음으로 "가장 가까운 혜택 요일(dowIdx)" 오름차순(=날짜순) 정렬.
+      // 같은 요일끼리, 그리고 파트너/그외 그룹 내부(서울·지방 각각)는 셔플로 공정 노출.
       const withBenefit = shuffle(rest.filter((c) => slotMap.has(c.id)));
-      withBenefit.sort(
-        (a, b) => (slotMap.get(a.id)?.dowIdx ?? 99) - (slotMap.get(b.id)?.dowIdx ?? 99)
-      );
+      withBenefit.sort((a, b) => {
+        const aSeoul = isSeoulArea(a.area) ? 0 : 1;
+        const bSeoul = isSeoulArea(b.area) ? 0 : 1;
+        if (aSeoul !== bSeoul) return aSeoul - bSeoul;
+        return (slotMap.get(a.id)?.dowIdx ?? 99) - (slotMap.get(b.id)?.dowIdx ?? 99);
+      });
       const noBenefit = rest.filter((c) => !slotMap.has(c.id));
-      const withPartner = shuffle(noBenefit.filter((c) => (c.club_partners?.length ?? 0) > 0));
-      const withoutPartner = shuffle(noBenefit.filter((c) => (c.club_partners?.length ?? 0) === 0));
+      const withPartner = seoulFirst(
+        shuffle(noBenefit.filter((c) => (c.club_partners?.length ?? 0) > 0))
+      );
+      const withoutPartner = seoulFirst(
+        shuffle(noBenefit.filter((c) => (c.club_partners?.length ?? 0) === 0))
+      );
       let ordered = [...priorityGroup, ...withBenefit, ...withPartner, ...withoutPartner];
 
       // 비프로덕션: 테스트 클럽(운영자/...)을 최상위로 끌어올림 (Hot Deal Now와 동일 패턴)

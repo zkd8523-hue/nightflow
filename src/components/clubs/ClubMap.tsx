@@ -5,6 +5,10 @@ import { toast } from "sonner";
 import { MapPin, LocateFixed, Loader2 } from "lucide-react";
 import { ClubMapSheet, type ClubMapSheetHandle } from "./ClubMapSheet";
 import { ClubDetailSheet } from "./ClubDetailSheet";
+import { SEOUL_AREAS } from "@/lib/clubs/tags";
+
+const isSeoulArea = (area: string | null) =>
+  SEOUL_AREAS.includes(area as (typeof SEOUL_AREAS)[number]);
 
 interface ClubMapItem {
   id: string;
@@ -251,7 +255,8 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
   }, [status, handleLocate, lockCenter]);
 
   // ClubList에서 검색·필터가 적용된 clubs를 받음
-  // 좌표 있는 클럽만 → 혜택(게스트 간판/핫딜) 있는 클럽 → 파트너(MD) 지정된 클럽 순으로 상위 노출
+  // 좌표 있는 클럽만 → 혜택(게스트 간판/핫딜) 있는 클럽 → 파트너(MD) 지정된 클럽 순으로 상위 노출.
+  // 각 단계 안에서는 서울(강남/홍대/이태원) 클럽을 지방 클럽보다 먼저 노출.
   const filtered = useMemo(
     () =>
       clubs
@@ -262,7 +267,10 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
           if (aHot !== bHot) return bHot - aHot; // 혜택 있는 클럽 우선 (안정 정렬로 기존 순서 유지)
           const aPartner = a.hasPartner ? 1 : 0;
           const bPartner = b.hasPartner ? 1 : 0;
-          return bPartner - aPartner; // 그다음 파트너 지정 클럽 우선
+          if (aPartner !== bPartner) return bPartner - aPartner; // 그다음 파트너 지정 클럽 우선
+          const aSeoul = isSeoulArea(a.area) ? 1 : 0;
+          const bSeoul = isSeoulArea(b.area) ? 1 : 0;
+          return bSeoul - aSeoul; // 그다음 서울 클럽 우선
         }),
     [clubs, hotdealMap]
   );
