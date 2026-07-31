@@ -2041,19 +2041,21 @@ export function PuzzleDetailClient({
                     className="flex items-center justify-between bg-card rounded-xl border border-border px-4 py-3"
                   >
                     <div className="flex items-center gap-3">
-                      {member.user?.profile_image ? (
-                        <img
-                          src={member.user.profile_image}
-                          alt={member.user.display_name || member.user.name || "파티원"}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-9 h-9 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-[14px] font-bold text-foreground">
-                          {member.user?.name?.[0] || "?"}
-                        </div>
-                      )}
+                      <div className="relative shrink-0 w-9 h-9 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                        <span className="absolute inset-0 flex items-center justify-center text-[14px] font-bold text-foreground">
+                          {(member.user?.display_name || member.user?.name || "?").substring(0, 1)}
+                        </span>
+                        {member.user?.profile_image && (
+                          <img
+                            src={normalizeProfileImage(member.user.profile_image)!}
+                            alt={member.user.display_name || member.user.name || "파티원"}
+                            loading="lazy"
+                            decoding="async"
+                            className="relative w-full h-full object-cover"
+                            onError={(e) => { e.currentTarget.style.display = "none"; }}
+                          />
+                        )}
+                      </div>
                       <div>
                         <p className="text-[14px] font-bold text-foreground flex items-center gap-1.5">
                           {isAdmin ? (
