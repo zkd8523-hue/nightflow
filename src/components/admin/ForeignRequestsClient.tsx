@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Copy, Calendar, Users, Coins, MapPin } from "lucide-react";
+import { Copy, Calendar, Users, Coins, MapPin, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export type ForeignReq = {
@@ -49,6 +49,17 @@ export function ForeignRequestsClient({ initial }: { initial: ForeignReq[] }) {
     if (error) return toast.error(`실패: ${error.message}`);
     setReqs((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     toast.success(STATUS_META[status]?.label ?? status);
+  };
+
+  const deleteReq = async (id: string) => {
+    if (!window.confirm("이 요청을 영구 삭제할까요? 되돌릴 수 없어요.")) return;
+    setBusy(id);
+    const supabase = createClient();
+    const { error } = await supabase.from("foreign_requests").delete().eq("id", id);
+    setBusy(null);
+    if (error) return toast.error(`삭제 실패: ${error.message}`);
+    setReqs((prev) => prev.filter((r) => r.id !== id));
+    toast.success("삭제됨");
   };
 
   const copy = (text: string) => {
@@ -116,6 +127,9 @@ export function ForeignRequestsClient({ initial }: { initial: ForeignReq[] }) {
               )}
               {r.status !== "cancelled" && (
                 <button disabled={busy === r.id} onClick={() => updateStatus(r.id, "cancelled")} className="px-3 h-9 rounded-lg bg-muted text-muted-foreground text-[13px] font-bold disabled:opacity-50">취소</button>
+              )}
+              {r.status === "cancelled" && (
+                <button disabled={busy === r.id} onClick={() => deleteReq(r.id)} className="px-3 h-9 rounded-lg bg-red-500/15 text-red-400 text-[13px] font-bold border border-red-500/30 disabled:opacity-50 flex items-center gap-1"><Trash2 className="w-3.5 h-3.5" />삭제</button>
               )}
             </div>
           </div>
