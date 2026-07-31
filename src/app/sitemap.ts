@@ -143,7 +143,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .limit(1000),
       supabase
         .from("clubs")
+        // status='approved'만 — 클럽 상세페이지(generateMetadata)가 approved만 렌더하고
+        // 나머지는 404를 내므로, 미승인/병합 클럽이 sitemap에 들어가면 soft 404 색인 오염.
         .select("id")
+        .eq("status", "approved")
         .is("deleted_at", null)
         .eq("is_test", false)
         .limit(200),
