@@ -45,7 +45,7 @@ const BROWSE_AREAS = ["이태원", "강남", "홍대"];
 // 신뢰 못 할 값을 낼 때가 있어(예: BAT 리뷰수 급증), 검증된 클럽 3곳을 고정 후보로 두고 노출 순서만 섞음.
 const ITAEWON_RECOMMEND_CURATED = ["Dawn", "BADASS", "Day&night"];
 const MAX_CLUBS = 5;
-const AREAS = ["강남", "홍대", "이태원", "서울 어디든"];
+const AREAS = ["이태원", "강남", "홍대", "서울 어디든"];
 const CONTACT_TYPES = ["whatsapp", "instagram", "email", "wechat", "line"] as const;
 type ContactType = (typeof CONTACT_TYPES)[number];
 const CONTACT_LABEL: Record<ContactType, string> = {
@@ -88,7 +88,7 @@ export function ForeignRequestForm({
   const [dateFocused, setDateFocused] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const detailTouchStartXRef = useRef<number | null>(null);
-  const [area, setArea] = useState<string>(presetArea && AREAS.includes(presetArea) ? presetArea : "");
+  const [area, setArea] = useState<string>(presetArea && AREAS.includes(presetArea) ? presetArea : "이태원");
   const [groupSize, setGroupSize] = useState(2);
   const [budget, setBudget] = useState(""); // 표시용, 쉼표 포함 (예: "600,000")
   const budgetAmount = () => Number(budget.replace(/[^0-9]/g, "")) || 0;
