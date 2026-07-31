@@ -61,6 +61,14 @@ export function hideTestData<T>(query: T, embedRef: string): T {
  */
 export function hideForeignerFlags<T>(query: T, leaderRef: string): T {
   if (SHOW_TEST_DATA) return query;
-  const column = leaderRef ? `${leaderRef}.country_code` : "country_code";
-  return (query as { is: (col: string, val: null) => T }).is(column, null);
+  // 외국인 = country_code 가 채워졌고 'KR'이 아닌 유저.
+  // country_code IS NULL(내국인 기본) 또는 'KR'(/en 트랙 등으로 국가코드가 채워진 내국인)은 노출.
+  // ⚠️ 예전엔 country_code IS NULL 만 노출 → 네이버 블로그를 영어(/en)로 보고 가입한 한국인은
+  //    country_code="KR"이 채워져서, 내국인인데도 깃발이 한국 홈에서 통째로 사라지는 버그가 있었음.
+  const orFilter = "country_code.is.null,country_code.eq.KR";
+  if (leaderRef) {
+    return (query as { or: (f: string, o: { referencedTable: string }) => T })
+      .or(orFilter, { referencedTable: leaderRef });
+  }
+  return (query as { or: (f: string) => T }).or(orFilter);
 }
