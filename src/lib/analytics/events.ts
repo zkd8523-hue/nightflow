@@ -184,7 +184,9 @@ export const trackForeignEvent = (
     | 'foreign_book_at_club_click'
     | 'foreign_plant_flag_click'
     | 'foreign_login_view'
-    | 'foreign_login_success',
+    | 'foreign_login_success'
+    | 'foreign_request_form_view'
+    | 'foreign_request_submitted',
   params: {
     area?: string | null;
     club_id?: string;

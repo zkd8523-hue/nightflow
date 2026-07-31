@@ -12,6 +12,7 @@ import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
 import { krwTo } from "@/lib/utils/currency";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
+import { trackForeignEvent } from "@/lib/analytics/events";
 
 // 언어별로 가장 익숙할 통화 하나만 보여줌 (4개 다 나열하면 정보 과다)
 const CURRENCY_BY_LANG: Partial<Record<Lang, string>> = {
@@ -68,7 +69,7 @@ export function ForeignRequestForm({
   presetArea,
   presetClubId,
 }: {
-  userId: string;
+  userId: string | null; // 비로그인 익명 신청 허용 (Mig 489)
   lang: Lang;
   clubs: ClubItem[];
   presetArea?: string;
@@ -76,6 +77,12 @@ export function ForeignRequestForm({
 }) {
   const router = useRouter();
   const t = makeT(lang);
+
+  // 외국인 컨시어지 폼 노출 — 전환 퍼널 측정 (SOP 5단계 대체 지표)
+  useEffect(() => {
+    trackForeignEvent("foreign_request_form_view", { lang, anonymous: !userId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [eventDate, setEventDate] = useState("");
   const [dateFocused, setDateFocused] = useState(false);
@@ -305,12 +312,30 @@ export function ForeignRequestForm({
       if (error) throw error;
 
       // 운영자 푸시는 foreign_requests INSERT 트리거(Mig 455)가 자동 발송
+      // 전환 완료 측정 (SOP 6단계 대체 지표 — puzzle_created는 외국인 미발동)
+      trackForeignEvent("foreign_request_submitted", {
+        lang: preferredLang,
+        area: area || "club_only",
+        club_count: selectedClubIds.length,
+        has_budget: budgetAmount() > 0,
+        anonymous: !userId,
+      });
 
       toast.success(t("요청 완료! 곧 연락드릴게요", "Request sent! We'll reach out soon", "リクエスト送信！すぐ連絡します", "已提交！我们会尽快联系你"));
       router.replace(`/${lang === "ko" ? "en" : lang}`);
     } catch (e) {
       const msg = (e as { message?: string })?.message || "";
-      toast.error(t("제출 중 오류가 발생했어요", "Something went wrong", "エラーが発生しました", "提交出错") + (msg ? ` (${msg})` : ""));
+      // 24h rate limit(Mig 489) — 친절한 안내로 전환
+      if (msg.includes("duplicate_foreign_request_within_24h")) {
+        toast.error(t(
+          "이미 접수됐어요. 같은 연락처는 24시간에 1건만 가능해요.",
+          "Already received — one request per contact every 24h.",
+          "すでに受付済みです。同じ連絡先は24時間に1件までです。",
+          "已收到 — 同一联系方式24小时内仅限1次。"
+        ));
+      } else {
+        toast.error(t("제출 중 오류가 발생했어요", "Something went wrong", "エラーが発生しました", "提交出错") + (msg ? ` (${msg})` : ""));
+      }
     } finally {
       setLoading(false);
     }
