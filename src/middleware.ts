@@ -48,6 +48,12 @@ function pickForeignRoute(acceptLanguage: string | null): string | null {
 // 링크 미리보기 스크래퍼(kakaotalk-scrap 등)도 포함 — 프리뷰가 잘못된 언어로 뜨는 것 방지.
 const BOT_UA_REGEX = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex|sogou|exabot|facebot|ia_archiver|naverbot|yeti|twitterbot|facebookexternalhit|whatsapp|telegrambot|linkedinbot|discordbot|slackbot|kakaotalk-scrap|kakao|naver\(inapp/i;
 
+// 한국 채널(네이버·다음·카카오·티스토리·밴드)에서 온 유입은 한국인으로 간주 → /en 자동 리디렉트 스킵.
+// 배경: 폰 브라우저 언어를 영어로 쓰는 한국인이 네이버 블로그/검색으로 들어오면
+//       Accept-Language(en 우선) 때문에 /en으로 튕겨 외국인 트랙에 가입되던 문제.
+//       referrer 도메인이 한국 서비스면 Accept-Language보다 우선해 canonical(한국어) 유지.
+const KOREAN_REFERRER_REGEX = /(naver\.com|daum\.net|kakao\.com|tistory\.com|band\.us)/i;
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
@@ -63,8 +69,11 @@ export async function middleware(request: NextRequest) {
       || request.nextUrl.searchParams.has("utm_medium")
       || request.nextUrl.searchParams.has("utm_campaign");
     const alreadyRedirected = request.cookies.get("nf_lang_redirected")?.value === "1";
+    // 한국 채널(네이버·다음·카카오 등) referrer면 한국인 유입으로 보고 리디렉트 스킵.
+    // (utm은 URL 파라미터만 검사 → referrer 파생 'blog' 유입은 못 걸러서 이 가드가 필요.)
+    const fromKoreanReferrer = KOREAN_REFERRER_REGEX.test(request.headers.get("referer") || "");
     const acceptLang = request.headers.get("accept-language");
-    const target = !isBot && !hasUtm && !alreadyRedirected ? pickForeignRoute(acceptLang) : null;
+    const target = !isBot && !hasUtm && !alreadyRedirected && !fromKoreanReferrer ? pickForeignRoute(acceptLang) : null;
 
     if (target) {
       const url = request.nextUrl.clone();
