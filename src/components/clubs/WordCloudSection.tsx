@@ -53,6 +53,7 @@ export function WordCloudSection({ clubId }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const full = myWords.length >= MAX_WORDS;
+  const isAdmin = user?.role === "admin";
 
   // ── 데이터 로드 ──
   const fetchData = useCallback(async () => {
@@ -286,6 +287,26 @@ export function WordCloudSection({ clubId }: Props) {
     } finally {
       setLikeSaving(false);
     }
+  }
+
+  // ── 관리자: 부적절한 단어 제거 (authorId=null 이면 클럽 전체) ──
+  async function adminDeleteWord(word: string, authorId: string | null) {
+    const supabase = createClient();
+    const { error } = await supabase.rpc("admin_delete_club_word", {
+      p_club_id: clubId,
+      p_word: word,
+      p_author_id: authorId,
+    });
+    if (error) {
+      console.error("[WordCloudSection] admin delete error", error);
+      if (error.code === "42501") toast.error("관리자만 삭제할 수 있어요");
+      else if (error.code === "42883")
+        toast.error("아직 준비 중인 기능이에요 (DB 미적용)");
+      else toast.error("삭제에 실패했어요");
+      throw error;
+    }
+    toast.success("리뷰를 삭제했어요");
+    await fetchData();
   }
 
   // 신규/수정/삭제 모두 upsert 또는 delete로 처리
@@ -547,6 +568,11 @@ export function WordCloudSection({ clubId }: Props) {
         onToggleLike={() =>
           selectedEntry && toggleLike(selectedEntry.normalized)
         }
+        isAdmin={isAdmin}
+        onAdminDelete={async (authorId) => {
+          if (!selectedEntry) return;
+          await adminDeleteWord(selectedEntry.normalized, authorId);
+        }}
       />
     </section>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Heart } from "lucide-react";
+import { ChevronRight, Heart, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   Sheet,
@@ -34,6 +34,10 @@ interface Props {
   likeSaving?: boolean;
   /** 좋아요 토글 (비로그인이면 상위에서 로그인 유도) */
   onToggleLike?: () => void;
+  /** 관리자 여부 (단어 삭제 UI 노출) */
+  isAdmin?: boolean;
+  /** 관리자 삭제. authorId=null 이면 클럽 전체에서 이 단어 제거 */
+  onAdminDelete?: (authorId: string | null) => Promise<void>;
 }
 
 /**
@@ -50,10 +54,13 @@ export function WordVotersSheet({
   liked = false,
   likeSaving = false,
   onToggleLike,
+  isAdmin = false,
+  onAdminDelete,
 }: Props) {
   const router = useRouter();
   const [voters, setVoters] = useState<Voter[]>([]);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!open || authorIds.length === 0) {
@@ -95,6 +102,26 @@ export function WordVotersSheet({
   function goProfile(id: string) {
     onOpenChange(false);
     router.push(`/u/${id}`);
+  }
+
+  // 관리자 삭제 — authorId=null 이면 클럽 전체에서 이 단어 제거
+  async function handleAdminDelete(authorId: string | null, who?: string) {
+    if (!onAdminDelete || deleting) return;
+    const msg =
+      authorId === null
+        ? `"${label}" 단어를 이 클럽에서 완전히 삭제할까요?\n(${authorIds.length}명의 리뷰 + 좋아요에서 제거)`
+        : `${who ?? "이 유저"}의 "${label}" 리뷰를 삭제할까요?`;
+    if (!confirm(msg)) return;
+    setDeleting(true);
+    try {
+      await onAdminDelete(authorId);
+      if (authorId === null || voters.length <= 1) onOpenChange(false);
+      else setVoters((prev) => prev.filter((v) => v.id !== authorId));
+    } catch {
+      // 에러 토스트는 상위(onAdminDelete)에서 처리
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -149,10 +176,10 @@ export function WordVotersSheet({
                 const isMe = v.id === myId;
                 const name = v.display_name?.trim() || "익명";
                 return (
-                  <li key={v.id}>
+                  <li key={v.id} className="flex items-center gap-1">
                     <button
                       onClick={() => goProfile(v.id)}
-                      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition-colors hover:bg-muted/70 active:bg-muted"
+                      className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition-colors hover:bg-muted/70 active:bg-muted"
                     >
                       {v.profile_image ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -178,10 +205,31 @@ export function WordVotersSheet({
                       </span>
                       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     </button>
+                    {isAdmin && onAdminDelete && (
+                      <button
+                        onClick={() => handleAdminDelete(v.id, name)}
+                        disabled={deleting}
+                        aria-label={`${name}의 리뷰 삭제`}
+                        title="이 유저의 리뷰만 삭제 (admin)"
+                        className="shrink-0 rounded-full p-2 text-red-400/70 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </li>
                 );
               })}
             </ul>
+          )}
+
+          {isAdmin && onAdminDelete && authorIds.length > 0 && (
+            <button
+              onClick={() => handleAdminDelete(null)}
+              disabled={deleting}
+              className="mt-3 w-full rounded-2xl border border-red-500/30 bg-red-500/10 py-3 text-[14px] font-bold text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-40"
+            >
+              {deleting ? "삭제 중..." : "🗑 이 단어 전체 삭제 (admin)"}
+            </button>
           )}
         </div>
       </SheetContent>
