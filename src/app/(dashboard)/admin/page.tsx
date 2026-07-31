@@ -57,6 +57,7 @@ export default async function AdminDashboardPage() {
     { count: marketingConsented },
     { count: foreignNew },
     { count: pendingBankCredits },
+    { count: pendingWordReports },
   ] = await Promise.all([
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "user"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "md"),
@@ -88,6 +89,8 @@ export default async function AdminDashboardPage() {
     supabase.from("foreign_requests").select("*", { count: "exact", head: true }).eq("status", "new"),
     // 계좌이체 크레딧 입금확인 대기
     supabase.from("credit_payments").select("*", { count: "exact", head: true }).eq("method", "bank_transfer").eq("status", "pending"),
+    // 5자 리뷰 단어 신고 미처리
+    supabase.from("club_word_cloud_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
   ]);
 
   // 시간 기반 필터: 종료 시간이 아직 안 지난 경매만 카운트
@@ -416,11 +419,11 @@ export default async function AdminDashboardPage() {
     },
     {
       label: "5자리뷰 현황",
-      value: "보기",
+      value: pendingWordReports ? `신고 ${pendingWordReports}건` : "보기",
       icon: Star,
-      color: "text-brand-amber",
-      bgColor: "bg-amber-500/10",
-      badge: null,
+      color: pendingWordReports ? "text-red-400" : "text-brand-amber",
+      bgColor: pendingWordReports ? "bg-red-500/10" : "bg-amber-500/10",
+      badge: pendingWordReports ? `${pendingWordReports}건 대기` : null,
       href: "/admin/reviews",
     },
     {

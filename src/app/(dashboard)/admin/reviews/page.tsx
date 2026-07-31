@@ -2,8 +2,9 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, MessageSquare, TrendingUp, Users, Hash } from "lucide-react";
+import { ChevronLeft, MessageSquare, TrendingUp, Users, Hash, Flag } from "lucide-react";
 import Link from "next/link";
+import { WordReportsList, type WordReportRow } from "@/components/admin/WordReportsList";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -37,6 +38,66 @@ export default async function AdminReviewsPage() {
     `)
     .order("created_at", { ascending: false })
     .limit(500);
+
+  // 신고된 단어 (488) — pending 먼저, 최신순
+  const { data: reportRows } = await supabase
+    .from("club_word_cloud_reports")
+    .select(`
+      id, club_id, normalized_word, word_label, reason, memo,
+      status, action_taken, admin_note, created_at, reviewed_at,
+      reporter_id,
+      club:clubs(id, name)
+    `)
+    .order("status", { ascending: true })
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  const reporterIds = [
+    ...new Set((reportRows ?? []).map((r) => r.reporter_id).filter((x): x is string => !!x)),
+  ];
+  const { data: reporters } = reporterIds.length
+    ? await supabase
+        .from("users")
+        .select("id, display_name, name, role")
+        .in("id", reporterIds)
+    : { data: [] };
+  const reporterMap = new Map(
+    (reporters ?? []).map((u) => [u.id, u as { display_name: string | null; name: string | null; role: string }])
+  );
+
+  // 같은 클럽·단어에 쌓인 미처리 신고 수
+  const pendingByWord = new Map<string, number>();
+  for (const r of reportRows ?? []) {
+    if (r.status !== "pending") continue;
+    const key = `${r.club_id}::${r.normalized_word}`;
+    pendingByWord.set(key, (pendingByWord.get(key) ?? 0) + 1);
+  }
+
+  const reports: WordReportRow[] = (reportRows ?? []).map((r) => {
+    const reporter = r.reporter_id ? reporterMap.get(r.reporter_id) : null;
+    const club = r.club as unknown as { id: string; name: string } | null;
+    return {
+      id: r.id as string,
+      club_id: r.club_id as string,
+      club_name: club?.name ?? null,
+      normalized_word: r.normalized_word as string,
+      word_label: (r.word_label as string | null) ?? null,
+      reason: r.reason as string,
+      memo: (r.memo as string | null) ?? null,
+      status: r.status as WordReportRow["status"],
+      action_taken: (r.action_taken as string | null) ?? null,
+      admin_note: (r.admin_note as string | null) ?? null,
+      created_at: r.created_at as string,
+      reviewed_at: (r.reviewed_at as string | null) ?? null,
+      reporter_name: reporter
+        ? reporter.display_name ?? reporter.name ?? "—"
+        : "(익명/탈퇴)",
+      reporter_role: reporter?.role ?? null,
+      same_word_count: pendingByWord.get(`${r.club_id}::${r.normalized_word}`) ?? 0,
+    };
+  });
+
+  const pendingReports = reports.filter((r) => r.status === "pending").length;
 
   const allRows = rows || [];
 
@@ -100,6 +161,25 @@ export default async function AdminReviewsPage() {
             <p className="text-muted-foreground font-medium mt-1">클럽 상세 페이지의 워드클라우드 리뷰 현황</p>
           </div>
         </header>
+
+        {/* 신고된 단어 */}
+        <Card className="bg-card border-border p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <Flag className="w-4 h-4 text-red-400" />
+              <h2 className="text-lg font-black">신고된 리뷰</h2>
+              {pendingReports > 0 && (
+                <span className="text-[12px] font-black px-2 py-0.5 rounded-full bg-red-500/20 text-red-300">
+                  {pendingReports} pending
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              삭제 시 해당 클럽에서 단어가 사라집니다
+            </span>
+          </div>
+          <WordReportsList rows={reports} />
+        </Card>
 
         {/* 요약 통계 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -27,6 +27,7 @@ import {
   type WordCloudEntry,
 } from "@/lib/clubs/wordCloud";
 import { WordVotersSheet } from "./WordVotersSheet";
+import { WordReportSheet } from "./WordReportSheet";
 
 interface Props {
   clubId: string;
@@ -136,6 +137,9 @@ export function WordCloudSection({ clubId }: Props) {
   const selectedAuthorIds = selectedEntry
     ? (authorsByWord.get(selectedEntry.normalized) ?? [])
     : [];
+
+  // ── 신고 시트 ──
+  const [reportEntry, setReportEntry] = useState<WordCloudEntry | null>(null);
 
   // ── 셔플 (마운트 후 + 10초마다, 하이드레이션 안전) ──
   const [mounted, setMounted] = useState(false);
@@ -573,6 +577,34 @@ export function WordCloudSection({ clubId }: Props) {
           if (!selectedEntry) return;
           await adminDeleteWord(selectedEntry.normalized, authorId);
         }}
+        isMine={
+          selectedEntry
+            ? myWords.some(
+                (w) => normalizeWord(w) === selectedEntry.normalized
+              )
+            : false
+        }
+        onReport={() => {
+          if (!user) {
+            router.push(`/login?redirect=/clubs/${clubId}`);
+            return;
+          }
+          const entry = selectedEntry;
+          setSelectedEntry(null);
+          setReportEntry(entry);
+        }}
+      />
+
+      {/* 단어 신고 (로그인 유저·MD 모두 가능, 접수 시 admin 푸시) */}
+      <WordReportSheet
+        open={reportEntry !== null}
+        onOpenChange={(o) => {
+          if (!o) setReportEntry(null);
+        }}
+        clubId={clubId}
+        label={reportEntry?.label ?? null}
+        normalized={reportEntry?.normalized ?? null}
+        reporterId={user?.id ?? null}
       />
     </section>
   );

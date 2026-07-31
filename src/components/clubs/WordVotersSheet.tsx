@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Heart, Trash2 } from "lucide-react";
+import { ChevronRight, Flag, Heart, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   Sheet,
@@ -38,6 +38,10 @@ interface Props {
   isAdmin?: boolean;
   /** 관리자 삭제. authorId=null 이면 클럽 전체에서 이 단어 제거 */
   onAdminDelete?: (authorId: string | null) => Promise<void>;
+  /** 신고 (비로그인이면 상위에서 로그인 유도) */
+  onReport?: () => void;
+  /** 내가 남긴 단어인지 — 본인 단어는 신고 버튼 숨김 */
+  isMine?: boolean;
 }
 
 /**
@@ -56,6 +60,8 @@ export function WordVotersSheet({
   onToggleLike,
   isAdmin = false,
   onAdminDelete,
+  onReport,
+  isMine = false,
 }: Props) {
   const router = useRouter();
   const [voters, setVoters] = useState<Voter[]>([]);
@@ -139,8 +145,9 @@ export function WordVotersSheet({
           <p className="text-[13px] text-muted-foreground text-center">
             {authorIds.length}명이 이 단어를 남겼어요
           </p>
-          {onToggleLike && (
-            <div className="mt-3 flex justify-center">
+          {(onToggleLike || (onReport && !isMine)) && (
+            <div className="mt-3 flex items-center justify-center gap-2">
+              {onToggleLike && (
               <button
                 onClick={onToggleLike}
                 disabled={likeSaving}
@@ -157,6 +164,16 @@ export function WordVotersSheet({
                 />
                 좋아요{likeCount > 0 ? ` ${likeCount}` : ""}
               </button>
+              )}
+              {onReport && !isMine && (
+                <button
+                  onClick={onReport}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-muted px-4 py-2 text-[14px] font-bold text-muted-foreground transition-colors hover:text-foreground active:scale-95"
+                >
+                  <Flag className="h-4 w-4" strokeWidth={2.5} />
+                  신고
+                </button>
+              )}
             </div>
           )}
         </SheetHeader>
