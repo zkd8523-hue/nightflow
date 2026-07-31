@@ -55,6 +55,17 @@ const CONTACT_LABEL: Record<ContactType, string> = {
   wechat: "WeChat",
   line: "LINE",
 };
+// 흔한 이메일 도메인 오타 → 정타. 강제 교정이 아니라 제출 직전 "혹시 이거 아닌가요?"로만 확인.
+// 로그인 없앤 뒤 연락처가 유일한 회신 수단이라, 오타 하나에 리드 전체가 증발함.
+const COMMON_DOMAIN_TYPOS: Record<string, string> = {
+  "gmail.con": "gmail.com", "gmail.co": "gmail.com", "gmail.cm": "gmail.com",
+  "gmial.com": "gmail.com", "gmai.com": "gmail.com", "gmail.comm": "gmail.com",
+  "naver.con": "naver.com", "naver.co": "naver.com",
+  "hotmail.con": "hotmail.com", "hotmial.com": "hotmail.com",
+  "outlook.con": "outlook.com", "yahoo.con": "yahoo.com",
+  "icloud.con": "icloud.com", "iclould.com": "icloud.com",
+  "qq.con": "qq.com", "163.con": "163.com",
+};
 const LANGS: { code: Lang; label: string }[] = [
   { code: "en", label: "English" },
   { code: "zh", label: "中文" },
@@ -101,6 +112,7 @@ export function ForeignRequestForm({
   const [contactValue, setContactValue] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // 클럽상세 CTA(ClubsClient)가 sessionStorage "nightflow_book_intent"에 club_id/area를 저장 →
   // 그 클럽을 자동 프리셀렉트 (Gemini의 기존 배관 재사용). 소비 후 삭제.
@@ -287,13 +299,50 @@ export function ForeignRequestForm({
     line: t("공개 LINE ID 필요", "Needs a public LINE ID", "公開LINE IDが必要", "需公开的 LINE ID"),
   };
 
-  const handleSubmit = async () => {
+  // 연락처 소프트 검증 — 명백히 깨진 값만 차단, 규칙이 제각각인 건(위챗/라인) 통과.
+  // 반환값이 있으면 에러 메시지(차단), null이면 통과.
+  const validateContact = (type: ContactType, raw: string): string | null => {
+    const v = raw.trim();
+    if (type === "email") {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v))
+        return t("이메일 형식을 확인해주세요 (예: you@example.com)", "Check your email (e.g. you@example.com)", "メール形式を確認してください（例: you@example.com）", "请检查邮箱格式（如 you@example.com）");
+    } else if (type === "whatsapp") {
+      if (v.replace(/\D/g, "").length < 7)
+        return t("국가번호 포함 전화번호를 확인해주세요", "Check your number (include country code)", "国番号を含む番号を確認してください", "请检查号码（含国家代码）");
+    } else if (type === "instagram") {
+      const h = v.replace(/^@/, "");
+      if (h.length < 2 || /\s/.test(h))
+        return t("인스타 아이디를 확인해주세요", "Check your Instagram handle", "Instagram IDを確認してください", "请检查 Instagram 账号");
+    }
+    return null;
+  };
+
+  // 흔한 이메일 도메인 오타 감지 (gmail.con → gmail.com). 확인 시트에서 "고치기"로 제안.
+  const emailTypoFix = (() => {
+    if (contactType !== "email") return null;
+    const [local, domain] = contactValue.trim().split("@");
+    const fixed = domain ? COMMON_DOMAIN_TYPOS[domain.toLowerCase()] : undefined;
+    return local && fixed ? `${local}@${fixed}` : null;
+  })();
+
+  // 버튼 클릭 → 형식 검증만 하고 확인 시트를 연다. 실제 전송은 doSubmit.
+  const handleSubmit = () => {
     if (!eventDate) return toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期"));
     if (!area && selectedClubIds.length === 0)
       return toast.error(t("지역이나 클럽을 골라주세요", "Pick an area or a club", "エリアかクラブを選択", "请选择区域或夜店"));
     if (!contactValue.trim())
       return toast.error(t("연락처를 입력해주세요", "Enter your contact", "連絡先を入力", "请填写联系方式"));
 
+    // 형식 오타 차단 (소프트: 명백히 깨진 것만)
+    const contactErr = validateContact(contactType, contactValue);
+    if (contactErr) return toast.error(contactErr);
+
+    // 연락처를 눈으로 다시 확인 — 로그인 없앤 뒤 오타 하나에 리드 전체가 증발하므로.
+    setShowConfirm(true);
+  };
+
+  // 확인 시트의 "보내기" → 실제 INSERT
+  const doSubmit = async () => {
     setLoading(true);
     try {
       const supabase = createClient();
@@ -321,6 +370,7 @@ export function ForeignRequestForm({
         anonymous: !userId,
       });
 
+      setShowConfirm(false);
       toast.success(t("요청 완료! 곧 연락드릴게요", "Request sent! We'll reach out soon", "リクエスト送信！すぐ連絡します", "已提交！我们会尽快联系你"));
       router.replace(`/${lang === "ko" ? "en" : lang}`);
     } catch (e) {
@@ -831,6 +881,88 @@ export function ForeignRequestForm({
       <p className="text-center text-[12px] text-muted-foreground -mt-3">
         {t("한국어·인맥 없어도 OK. 우리가 클럽에 연결해드려요.", "No Korean, no connections needed. We connect you.", "韓国語・人脈不要。私たちがつなぎます。", "无需韩语·人脉。我们帮你搞定。")}
       </p>
+
+      {/* 전송 전 최종 확인 — 연락처 오타 자가 검수(로그인 없앤 뒤 유일한 회신선) */}
+      <Sheet open={showConfirm} onOpenChange={(o) => { if (!loading) setShowConfirm(o); }}>
+        <SheetContent side="bottom" className="rounded-t-3xl bg-card border-border max-w-lg mx-auto p-5 pb-8">
+          <SheetTitle className="text-2xl font-black text-foreground tracking-tight">
+            {t("연락처가 맞나요?", "Confirm your contact", "連絡先を確認", "确认联系方式")}
+          </SheetTitle>
+
+          {/* 연락처 — 오타 확인 핵심 */}
+          <div className="relative mt-5 rounded-2xl bg-muted/60 border border-border p-4 pt-5">
+            <span className="absolute -top-3 left-4 text-[11px] font-black text-amber-500 bg-amber-500/15 border border-amber-500/40 px-3 py-1 rounded-full">
+              {CONTACT_LABEL[contactType]}
+            </span>
+            <p className="text-[20px] font-black text-foreground break-all leading-tight">
+              {contactValue.trim()}
+            </p>
+            <p className="text-[12px] text-amber-500 font-semibold mt-1 break-keep">
+              {t("↑ 한 번만 확인!", "↑ double-check!", "↑ ご確認を！", "↑ 请核对!")}
+            </p>
+            {emailTypoFix && (
+              <button
+                type="button"
+                onClick={() => setContactValue(emailTypoFix)}
+                className="mt-2 w-full text-left px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-[13px] text-amber-500 font-bold break-all"
+              >
+                {t(`혹시 ${emailTypoFix} 아닌가요? 탭하면 고쳐요`, `Did you mean ${emailTypoFix}? Tap to fix`, `もしかして ${emailTypoFix}？タップで修正`, `是想输入 ${emailTypoFix} 吗?点击修正`)}
+              </button>
+            )}
+          </div>
+
+          {/* 요약 */}
+          <div className="mt-3 space-y-1.5 text-[13px]">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{t("날짜", "Date", "日付", "日期")}</span>
+              <span className="text-foreground font-semibold">{eventDate}</span>
+            </div>
+            {area && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t("지역", "Area", "エリア", "区域")}</span>
+                <span className="text-foreground font-semibold">{areaLabel(area, lang)}</span>
+              </div>
+            )}
+            {selectedClubIds.length > 0 && (
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground shrink-0">{t("선택 클럽", "Clubs", "クラブ", "夜店")}</span>
+                <span className="text-foreground font-semibold text-right break-keep">
+                  {selectedClubIds
+                    .map((id) => {
+                      const c = clubs.find((cl) => cl.id === id);
+                      return c ? displayClubName(c) : null;
+                    })
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{t("인원", "People", "人数", "人数")}</span>
+              <span className="text-foreground font-semibold">{groupSize}</span>
+            </div>
+          </div>
+
+          <div className="mt-5 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              disabled={loading}
+              className="flex-1 py-3.5 rounded-full bg-muted text-foreground font-bold disabled:opacity-50"
+            >
+              {t("수정할게요", "Edit", "修正", "修改")}
+            </button>
+            <button
+              type="button"
+              onClick={doSubmit}
+              disabled={loading}
+              className="flex-[1.5] py-3.5 rounded-full bg-amber-500 text-black font-black hover:bg-amber-400 disabled:opacity-50"
+            >
+              {loading ? t("전송 중…", "Sending…", "送信中…", "提交中…") : t("네, 보낼게요", "Yes, send", "はい、送信", "确认发送")}
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
