@@ -3,7 +3,8 @@ import type { MetadataRoute } from "next";
 // 공통 disallow 경로 — 개인화/관리 페이지는 봇 일괄 차단.
 const DISALLOW = [
   "/admin/",
-  "/md/",
+  // /md/[slug] MD 공개 프로필은 색인 허용(검색 유입). 신청 폼만 차단.
+  "/md/apply",
   "/api/",
   "/auth/",
   "/settings/",

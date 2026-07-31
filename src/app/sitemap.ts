@@ -131,7 +131,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const nowIso = new Date().toISOString();
     // 테스트/운영자 데이터는 sitemap에서 제외 — 검색엔진 색인 오염 방지.
     // 클럽: is_test=false / 깃발: leader(users).is_test=false (club_id 없으므로 leader 기준)
-    const [auctionsRes, clubsRes, puzzlesRes, hotdealsRes] = await Promise.all([
+    const [auctionsRes, clubsRes, puzzlesRes, hotdealsRes, mdsRes] = await Promise.all([
       supabase
         .from("auctions")
         .select("id, updated_at, status, club:clubs!inner(is_test)")
@@ -161,6 +161,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq("clubs.is_test", false)
         .gt("ends_at", nowIso)
         .order("updated_at", { ascending: false })
+        .limit(500),
+      // 승인 MD 공개 프로필 — 검색 유입용. 테스트 계정 제외.
+      supabase
+        .from("users")
+        .select("md_unique_slug, updated_at")
+        .eq("md_status", "approved")
+        .not("md_unique_slug", "is", null)
+        .eq("is_test", false)
+        .is("deleted_at", null)
         .limit(500),
     ]);
 
@@ -197,12 +206,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
+    const mdRoutes: MetadataRoute.Sitemap = (mdsRes.data ?? [])
+      .filter((m) => m.md_unique_slug)
+      .map((m) => ({
+        url: `${BASE_URL}/md/${m.md_unique_slug}`,
+        lastModified: m.updated_at ? new Date(m.updated_at) : now,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      }));
+
     return [
       ...staticRoutes,
       ...auctionRoutes,
       ...clubRoutes,
       ...puzzleRoutes,
       ...hotdealRoutes,
+      ...mdRoutes,
     ];
   } catch {
     return staticRoutes;

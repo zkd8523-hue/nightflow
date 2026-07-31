@@ -1,7 +1,43 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+
+// MD 공개 프로필 SEO. 개인정보(phone·kakao)는 노출 금지 — 닉네임·지역만.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data: md } = await supabase
+    .from("users")
+    .select("display_name, name, area")
+    .eq("md_unique_slug", slug)
+    .single();
+
+  if (!md) return { title: "MD 프로필" };
+
+  const displayName = md.display_name || md.name || "MD";
+  const areaPrefix = md.area ? `${md.area} ` : "";
+  const title = `${displayName} - ${areaPrefix}클럽 MD·테이블 예약`;
+  const description = `${displayName} 나플 파트너 MD 프로필. ${areaPrefix}클럽 테이블 예약·무료입장 게스트, 깃발 꽂고 조건 제안 받기.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `https://nightflow.kr/md/${slug}` },
+    openGraph: {
+      title,
+      description,
+      url: `https://nightflow.kr/md/${slug}`,
+      type: "profile",
+      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    },
+  };
+}
 import { AuctionCard } from "@/components/auctions/AuctionCard";
 import { Badge } from "@/components/ui/badge";
 import { User, Star, ShieldCheck, Instagram, Building2 } from "lucide-react";
