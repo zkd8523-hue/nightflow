@@ -584,7 +584,6 @@ export function EnHomeClient({
 
 function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubItem[] }) {
   const [tab, setTab] = useState<Tab>("flags");
-  const { user, isLoading } = useCurrentUser();
   const { lang, tr } = useTr();
 
   const tabs: { code: Tab; label: string; icon: React.ReactNode }[] = [
@@ -612,23 +611,13 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
             <span className="text-[15px] font-black">NightFlow</span>
           </button>
         )}
-        {isLoading ? (
-          <div className="w-[88px] h-9 rounded-full bg-muted animate-pulse" />
-        ) : user ? (
-          <Link
-            href={`/flags/new?lang=${lang}`}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-amber-500 text-black font-black text-[13px] hover:bg-amber-400 transition-colors"
-          >
-            {tr("Book now")}
-          </Link>
-        ) : (
-          <Link
-            href={`/login?lang=${lang}`}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-inverse text-inverse-foreground font-black text-[13px] hover:opacity-90 transition-colors"
-          >
-            {tr("Log in")}
-          </Link>
-        )}
+        {/* 컨시어지는 로그인 불필요 — 상단 CTA는 항상 예약(Book now)으로 통일(로그인 버튼 제거) */}
+        <Link
+          href={`/flags/new?lang=${lang}`}
+          className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-inverse text-inverse-foreground font-black text-[13px] hover:opacity-90 transition-colors"
+        >
+          {tr("Book K-Club")}
+        </Link>
       </header>
 
       {/* 콘텐츠 */}

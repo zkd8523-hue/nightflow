@@ -12,7 +12,7 @@ import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
 import { krwTo } from "@/lib/utils/currency";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
-import { trackForeignEvent } from "@/lib/analytics/events";
+import { trackForeignEvent, trackEvent } from "@/lib/analytics/events";
 
 // 언어별로 가장 익숙할 통화 하나만 보여줌 (4개 다 나열하면 정보 과다)
 const CURRENCY_BY_LANG: Partial<Record<Lang, string>> = {
@@ -113,6 +113,11 @@ export function ForeignRequestForm({
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  // 여행 확정 게이트 — 계획중(막연) 유저는 깃발 마켓 오염·MD 오퍼 낭비라 걸러 홈으로 회유.
+  // 클럽 상세에서 특정 클럽 의도를 갖고 온 경우(presetClubId)는 이미 확정에 가까워 스킵.
+  const [tripStatus, setTripStatus] = useState<null | "qualified" | "planning">(
+    presetClubId ? "qualified" : null
+  );
 
   // 클럽상세 CTA(ClubsClient)가 sessionStorage "nightflow_book_intent"에 club_id/area를 저장 →
   // 그 클럽을 자동 프리셀렉트 (Gemini의 기존 배관 재사용). 소비 후 삭제.
@@ -398,6 +403,86 @@ export function ForeignRequestForm({
     </div>
   );
 
+  // 게이트 노출 계측 (계획중 이탈 vs 폼 이탈 구분용) — puzzle_form_view/created 사이 최대 이탈 구간.
+  useEffect(() => {
+    if (tripStatus === null) trackEvent("foreign_trip_gate_view", { lang: preferredLang });
+  }, [tripStatus, preferredLang]);
+
+  // ── 여행 확정 게이트 ────────────────────────────────────────────────
+  // 계획중(막연)인 사람은 실제 방문 불확실 → MD 오퍼 낭비·마켓 오염. 확정된 유저만 폼 노출.
+  if (tripStatus === null) {
+    return (
+      <div className="space-y-6 pb-12">
+        <div className="bg-card rounded-3xl border border-border p-6 space-y-5">
+          <div className="space-y-1.5">
+            <h2 className="text-[20px] font-black text-foreground leading-snug tracking-tight">
+              {t(
+                "한국 여행 일정이 확정됐나요? 또는 이미 한국인가요?",
+                "Is your Korea trip confirmed, or are you already in Korea?",
+                "韓国旅行の予定は確定していますか？または、もう韓国にいますか？",
+                "你的韩国行程确定了吗?或者你已经在韩国了?"
+              )}
+            </h2>
+            <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
+              {t(
+                "서울 클럽은 확정된 방문자에게만 실제 오퍼를 보내요.",
+                "Seoul clubs send real offers — only for confirmed visitors.",
+                "ソウルのクラブは、確定した訪問者にのみ実際のオファーを送ります。",
+                "首尔夜店只向确定到访的客人发送真实报价。"
+              )}
+            </p>
+          </div>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => { trackEvent("foreign_trip_gate_qualified", { lang: preferredLang }); setTripStatus("qualified"); }}
+              className="w-full h-14 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all break-keep"
+            >
+              {t("✅ 네 — 예약했거나 이미 한국이에요", "✅ Yes — booked or already in Korea", "✅ はい — 予約済み、または既に韓国", "✅ 是 — 已订票或已在韩国")}
+            </button>
+            <button
+              type="button"
+              onClick={() => { trackEvent("foreign_trip_gate_planning", { lang: preferredLang }); setTripStatus("planning"); }}
+              className="w-full h-14 rounded-2xl bg-muted border border-border text-foreground/80 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-muted/60 active:scale-[0.99] transition-all break-keep"
+            >
+              {t("🗓️ 아직 계획 중이에요", "🗓️ Not yet, just planning", "🗓️ まだ計画中です", "🗓️ 还在计划中")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tripStatus === "planning") {
+    return (
+      <div className="space-y-6 pb-12">
+        <div className="bg-card rounded-3xl border border-border p-7 space-y-5 text-center">
+          <div className="text-[40px]">🗓️</div>
+          <div className="space-y-2">
+            <h2 className="text-[20px] font-black text-foreground tracking-tight break-keep">
+              {t("일정이 아직 확정 안 됐나요?", "Trip not locked in yet?", "予定はまだ確定していませんか？", "行程还没定下来?")}
+            </h2>
+            <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">
+              {t(
+                "서두르지 마세요 — 서울 클럽은 당일에도 빠르게 오퍼를 보내요. 일정이 확정되면 그때 다시 오셔도 늦지 않아요. 🎉",
+                "No rush — Seoul clubs send offers fast, even same-day. Come back the moment your trip is confirmed and you'll still be right on time. 🎉",
+                "焦らないで — ソウルのクラブは当日でも素早くオファーを送ります。予定が確定したら戻ってきても十分間に合います。🎉",
+                "别急 — 首尔夜店发报价很快,当天也行。行程一确定再回来也完全来得及。🎉"
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push(`/${lang === "ko" ? "en" : lang}`)}
+            className="w-full py-3.5 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px] hover:opacity-90 active:scale-[0.99] transition-all"
+          >
+            {t("홈으로", "Back to home", "ホームへ", "返回首页")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-7">
       {/* 날짜 */}
@@ -540,13 +625,8 @@ export function ForeignRequestForm({
             ))}
           </div>
         )}
-        <input
-          value={clubSearch}
-          onChange={(e) => setClubSearch(e.target.value)}
-          placeholder={t("클럽 선택 또는 검색…", "Select or search clubs…", "クラブを選択・検索…", "选择或搜索夜店…")}
-          className="w-full h-11 px-4 rounded-xl bg-card border border-border text-foreground text-[14px] focus:border-amber-500 outline-none"
-        />
-        <div className="flex items-center gap-2 mt-2">
+        {/* 정렬 탭 */}
+        <div className="flex items-center gap-2">
           {(["recommend", "reviews", "rating"] as const).map((k) => (
             <button
               key={k}
@@ -564,8 +644,55 @@ export function ForeignRequestForm({
             </button>
           ))}
         </div>
-        {isSearching ? (
-          // 검색 중: 이름으로 스캔하기 좋게 세로 리스트
+        {/* 기본: 추천 클럽 가로 스크롤 카드 (검색 중이 아닐 때). 브라우징 우선 노출. */}
+        {!isSearching && (
+          defaultClubs.length === 0 ? (
+            <p className="mt-2 py-4 text-center text-[12px] text-muted-foreground">
+              {t("조건에 맞는 클럽이 없습니다", "No clubs match your filters.", "条件に合うクラブがありません。", "没有符合条件的夜店。")}
+            </p>
+          ) : (
+            // 카드 탭하면 상세, ✓ 버튼 탭하면 선택. 스크롤 끝(-200px)에 닿으면 다음 배치 자동 로드.
+            // key: 정렬/지역 바뀌면 DOM 리마운트 → scrollLeft 리셋.
+            <div
+              key={`${clubSortKey}-${area}`}
+              className="mt-2 flex gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4"
+              onScroll={(e) => {
+                if (!hasMoreDefault) return;
+                const el = e.currentTarget;
+                if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 200) {
+                  setVisibleExtra((n) => n + LOAD_MORE_BATCH);
+                }
+              }}
+            >
+              {defaultClubs.map((c) => (
+                <ClubCard
+                  key={c.id}
+                  club={c}
+                  selected={selectedClubIds.includes(c.id)}
+                  onSelect={() => toggleClub(c.id)}
+                  onOpenDetail={() => openDetail(defaultClubs, c)}
+                  lang={lang}
+                />
+              ))}
+            </div>
+          )
+        )}
+        <button
+          type="button"
+          onClick={() => setBrowseOpen(true)}
+          className="inline-block mt-2 text-[12px] text-money underline underline-offset-2"
+        >
+          🗺️ {t("모르겠어요? 클럽 둘러보기", "Not sure? Browse clubs", "分からない？クラブを見る", "不确定？浏览夜店")}
+        </button>
+
+        {/* 검색 (하단 보조) — 직접 이름으로 찾을 때만. 검색 시 결과는 바로 아래 세로 리스트. */}
+        <input
+          value={clubSearch}
+          onChange={(e) => setClubSearch(e.target.value)}
+          placeholder={t("클럽 선택 또는 검색…", "Select or search clubs…", "クラブを選択・検索…", "选择或搜索夜店…")}
+          className="w-full h-11 px-4 mt-3 rounded-xl bg-card border border-border text-foreground text-[14px] focus:border-amber-500 outline-none"
+        />
+        {isSearching && (
           <div className="mt-2 flex flex-col gap-1.5">
             {filteredClubs.map((c) => {
               const on = selectedClubIds.includes(c.id);
@@ -589,45 +716,7 @@ export function ForeignRequestForm({
               );
             })}
           </div>
-        ) : defaultClubs.length === 0 ? (
-          <p className="mt-2 py-4 text-center text-[12px] text-muted-foreground">
-            {t("조건에 맞는 클럽이 없습니다", "No clubs match your filters.", "条件に合うクラブがありません。", "没有符合条件的夜店。")}
-          </p>
-        ) : (
-          // 기본(검색 전): 추천 클럽 가로 스크롤 카드 — 카드 탭하면 상세, ✓ 버튼 탭하면 선택.
-          // 스크롤이 끝(-200px 여유)에 닿으면 자동으로 다음 배치 로드 — 버튼 없이 무한스크롤.
-          // key: 정렬/지역 바뀌면 DOM 리마운트 → scrollLeft 리셋. 안 그러면 리스트만 바뀌고
-          // 가로 스크롤 위치는 브라우저가 그대로 들고 있어서 필터 누르면 중간부터 보임.
-          <div
-            key={`${clubSortKey}-${area}`}
-            className="mt-2 flex gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4"
-            onScroll={(e) => {
-              if (!hasMoreDefault) return;
-              const el = e.currentTarget;
-              if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 200) {
-                setVisibleExtra((n) => n + LOAD_MORE_BATCH);
-              }
-            }}
-          >
-            {defaultClubs.map((c) => (
-              <ClubCard
-                key={c.id}
-                club={c}
-                selected={selectedClubIds.includes(c.id)}
-                onSelect={() => toggleClub(c.id)}
-                onOpenDetail={() => openDetail(defaultClubs, c)}
-                lang={lang}
-              />
-            ))}
-          </div>
         )}
-        <button
-          type="button"
-          onClick={() => setBrowseOpen(true)}
-          className="inline-block mt-2 text-[12px] text-money underline underline-offset-2"
-        >
-          🗺️ {t("모르겠어요? 클럽 둘러보기", "Not sure? Browse clubs", "分からない？クラブを見る", "不确定？浏览夜店")}
-        </button>
       </section>
 
       {/* 클럽 둘러보기 팝업 — /clubs 수준 정렬+필터, 카드 클릭은 선택(toggleClub)으로 */}
