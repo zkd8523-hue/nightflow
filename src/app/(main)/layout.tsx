@@ -9,6 +9,7 @@ import { SelectingFlagAlertSheet } from "@/components/puzzles/SelectingFlagAlert
 import { NewOffersAlertSheet } from "@/components/puzzles/NewOffersAlertSheet";
 import { FlagCreatedInstallSheet } from "@/components/puzzles/FlagCreatedInstallSheet";
 import { ChatUpdateSheet } from "@/components/common/ChatUpdateSheet";
+import { InAppBrowserBanner } from "@/components/common/InAppBrowserBanner";
 import { PriceRangeOnboardingSheet } from "@/components/md/PriceRangeOnboardingSheet";
 import { GuestSignPromoGate } from "@/components/md/GuestSignPromoGate";
 import { CancellationSurveySheet } from "@/components/puzzles/CancellationSurveySheet";
@@ -112,6 +113,8 @@ export default function MainLayout({
   return (
     <PullToRefresh onRefresh={handleRefresh} disabled={isChatPage}>
       <div className="bg-background flex flex-col">
+        {/* 인앱 브라우저(인스타/페북/라인) 넛지 — 착지 즉시 크롬/사파리 유도. 광고 유입 OAuth 차단 대응 */}
+        <InAppBrowserBanner />
         {/* 와글은 헤더 바 제거 — 채팅 영역 확보 (LIVE 행/탭은 페이지 내부에서 노출) */}
         {!isChromeless && !isChatPage && <Header />}
         <main className={isChromeless ? "" : isChatPage ? "" : "pb-16"}>{children}</main>

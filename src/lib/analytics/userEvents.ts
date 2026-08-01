@@ -39,11 +39,30 @@ function uuidv4(): string {
   });
 }
 
+// 인앱 브라우저(인스타 등)에서 외부 브라우저(크롬/사파리)로 넘어올 때, 인앱이 넘겨준 anon_id를
+// URL(?nf_anon=)로 받아 채택하기 위한 UUID 검증. 임의 값 주입/오염 방지.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function getOrCreateAnonId(): string {
   try {
     let id = localStorage.getItem(ANON_ID_KEY);
     if (!id) {
-      id = uuidv4();
+      // 인앱→외부 브라우저 스티칭: 신규 브라우저(anon_id 없음)일 때만 넘겨받은 anon_id를 채택.
+      // 이미 anon_id가 있는 브라우저는 절대 덮어쓰지 않음(기존 유저 정체성 보존).
+      let adopted: string | null = null;
+      if (typeof window !== "undefined") {
+        const passed = new URLSearchParams(window.location.search).get("nf_anon");
+        if (passed && UUID_RE.test(passed)) {
+          adopted = passed;
+          // 채택 후 URL에서 nf_anon 제거 — 공유 링크로 남의 anon_id가 전파돼 정체성이 섞이는 것 방지.
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("nf_anon");
+            window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+          } catch {}
+        }
+      }
+      id = adopted ?? uuidv4();
       localStorage.setItem(ANON_ID_KEY, id);
     }
     return id;
