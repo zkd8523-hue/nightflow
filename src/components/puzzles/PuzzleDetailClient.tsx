@@ -1621,7 +1621,9 @@ export function PuzzleDetailClient({
                 // 실제 offer_deadline 값을 그대로 표시(조각/깃발/레거시 무관).
                 // 단 "3시"는 오후 3시로 오해되므로 새벽/오전/오후를 붙여 뽑는다.
                 const koLabel = puzzle.offer_deadline ? formatKstHourLabelKo(puzzle.offer_deadline) : getOfferDeadlineLabel(isRecruitingParty);
-                const timeF = puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h A") : (isRecruitingParty ? "3 AM" : "8 PM");
+                const timeF = puzzle.offer_deadline
+                  ? dayjs(puzzle.offer_deadline).format(dayjs(puzzle.offer_deadline).minute() ? "h:mm A" : "h A")
+                  : (isRecruitingParty ? "3 AM" : "9:30 PM");
                 return (
                   <span className="text-[12px] text-muted-foreground whitespace-nowrap">
                     {t(
@@ -2345,7 +2347,7 @@ export function PuzzleDetailClient({
               {isForeigner
                 ? (isRecruitingParty
                   ? "Offers close at 3am. You have 60 more minutes to review."
-                  : "Offers close at 8pm today. You have 60 more minutes to review.")
+                  : "Offers close at 9:30pm today. You have 60 more minutes to review.")
                 : `오퍼는 ${getOfferDeadlineLabel(isRecruitingParty)} 마감되고, 60분간 더 검토할 수 있어요.`}
             </p>
             {reviewClub && !isForeigner ? (

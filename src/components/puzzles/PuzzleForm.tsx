@@ -1743,7 +1743,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
           ? t("변경된 내용으로 갱신됩니다.", "Your request will be updated.")
           : t(
               `오퍼는 ${getOfferDeadlineLabel(isRecruitingParty)} 마감. 60분간 더 검토할 수 있어요.`,
-              isRecruitingParty ? "Offers close at 3am. You have 60 min to review." : "Offers close at 8pm today. You have 60 min to review."
+              isRecruitingParty ? "Offers close at 3am. You have 60 min to review." : "Offers close at 9:30pm today. You have 60 min to review."
             )}
         confirmText={isEditMode ? t("수정 완료", "Save") : (shareMode ? t("등록 완료", "Post share") : (isRecruitingParty ? t("파티원 모집 시작", "Start recruiting") : t("계속", "Continue")))}
         cancelText={t("다시 확인", "Go back")}
@@ -1776,7 +1776,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
               <SheetTitle className="text-foreground font-black text-xl tracking-tight">
                 {t(
                   `오늘 ${isRecruitingParty ? "조각" : "깃발"} 등록은 ${getRegistrationDeadlineLabel(isRecruitingParty)}까지였어요`,
-                  isRecruitingParty ? "Today's share signup closed at 11pm" : "Today's request deadline was 8pm"
+                  isRecruitingParty ? "Today's share signup closed at 11pm" : "Today's request deadline was 9:30pm"
                 )}
               </SheetTitle>
             </div>
