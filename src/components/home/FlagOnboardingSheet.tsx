@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ArrowDown, Info } from "lucide-react";
 import { trackEvent } from "@/lib/analytics/events";
+import { isInAppBrowser } from "@/lib/utils/browser";
 
 // 인라인 가이드(showTopGuide/showGuide)와 동일 키 — 한쪽에서 닫으면 양쪽 다 안 뜸
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
@@ -32,6 +33,10 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
       const isForeignLang = !!langParam && langParam !== "ko";
       if (isForeignPath || isForeignLang) return;
     }
+    // 인앱 브라우저(인스타/페북/라인)에서는 스킵 — 로그인 자체가 막혀 CTA가 막다른 길이고,
+    // 착지 즉시 InAppBrowserBanner("크롬/사파리로 열기")와 메시지가 겹침. 넛지 하나로 단일화.
+    // (광고 유입 99.7%가 인앱 → 팝업 노출 8000건 대비 CTA 0.36%로 사실상 낭비였음)
+    if (isInAppBrowser()) return;
     try {
       if (localStorage.getItem(FLAG_CTA_SHOWN_KEY) === "1") return;
     } catch {
