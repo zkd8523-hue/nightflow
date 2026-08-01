@@ -54,7 +54,11 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
 
   const handleOpenChange = (v: boolean) => {
     setOpen(v);
-    if (!v) markSeen();
+    if (!v) {
+      // CTA 클릭은 setOpen(false)를 직접 호출 → 이 경로는 X/배경 탭으로 '닫고 나감'만 잡힘.
+      trackEvent("flag_onboarding_popup_dismiss");
+      markSeen();
+    }
   };
 
   return (
