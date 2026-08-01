@@ -31,7 +31,7 @@ import { useTranslatedText } from "@/hooks/useTranslatedComment";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
 import { formatRelativeTime, getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
-import { getOfferDeadlineLabel, formatKstHourLabelKo } from "@/lib/utils/puzzleDeadline";
+import { getOfferDeadlineLabel } from "@/lib/utils/puzzleDeadline";
 import { useCountdown } from "@/hooks/useCountdown";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -1617,30 +1617,12 @@ export function PuzzleDetailClient({
                   )}
                 </h2>
               </div>
-              {puzzle.status === "open" ? (() => {
-                // 실제 offer_deadline 값을 그대로 표시(조각/깃발/레거시 무관).
-                // 단 "3시"는 오후 3시로 오해되므로 새벽/오전/오후를 붙여 뽑는다.
-                const koLabel = puzzle.offer_deadline ? formatKstHourLabelKo(puzzle.offer_deadline) : getOfferDeadlineLabel(isRecruitingParty);
-                const timeF = puzzle.offer_deadline
-                  ? dayjs(puzzle.offer_deadline).format(dayjs(puzzle.offer_deadline).minute() ? "h:mm A" : "h A")
-                  : (isRecruitingParty ? "3 AM" : "9:30 PM");
-                return (
-                  <span className="text-[12px] text-muted-foreground whitespace-nowrap">
-                    {t(
-                      `⏰ ${koLabel} 마감`,
-                      `⏰ Offers close ${timeF}`,
-                      `⏰ ${timeF} オファー締切`,
-                      `⏰ ${timeF} 报价截止`,
-                    )}
-                  </span>
-                );
-              })() : (
+              {puzzle.status !== "open" &&
                 (isAccepted || (!offersLoading && pendingOffers.length === 0)) && (
                   <span className="text-[11px] text-muted-foreground">
                     {isAccepted ? t("제안 마감", "Offers closed") : t("아직 제안 없음", "No offers yet")}
                   </span>
-                )
-              )}
+                )}
             </div>
 
             {/* 오퍼 첫 로드 동안 빈 화면 대신 골격 표시 (loadOffers 완료 시 사라짐) */}

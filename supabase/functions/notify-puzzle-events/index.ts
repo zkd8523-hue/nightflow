@@ -302,23 +302,30 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
 
   for (const puzzle of puzzles as Array<{ id: string; leader_id: string; area: string; event_date: string; status: string; expires_at: string; is_recruiting_party: boolean }>) {
    try {
-    // 1) 상태 전환: open → selecting (race 방지: status='open' 조건 재확인)
-    //    이미 'selecting'인 깃발은 전환을 건너뛰고 알림 단계로 진행한다.
-    //    (이전 실행에서 전환만 되고 알림톡이 실패했을 수 있으므로 — alreadySent로 중복은 차단)
-    if (puzzle.status === "open") {
-      const { data: updated, error: updateErr } = await supabase
+    // 0) pending 오퍼 수 먼저 집계 — 전환 방향(검토 vs 즉시 마감)을 여기서 결정한다.
+    const { count: offerCount } = await supabase
+      .from("puzzle_offers")
+      .select("id", { count: "exact", head: true })
+      .eq("puzzle_id", puzzle.id)
+      .eq("status", "pending");
+    const hasOffers = (offerCount ?? 0) > 0;
+
+    // 1) 상태 전환 (race 방지: 현재 open/selecting에서만 전환)
+    //    · 오퍼 있음 → selecting (60분 검토 창)
+    //    · 오퍼 없음 → expired  (검토 없이 바로 마감 — 고를 게 없으므로)
+    //    이미 목표 상태면 건너뛰고 알림 단계로 진행 (이전 실행에서 알림이 실패했을 수 있음).
+    const nextStatus = hasOffers ? "selecting" : "expired";
+    if (puzzle.status !== nextStatus) {
+      const { error: updateErr } = await supabase
         .from("puzzles")
-        .update({ status: "selecting" })
+        .update({ status: nextStatus })
         .eq("id", puzzle.id)
-        .eq("status", "open")
-        .select("id")
-        .maybeSingle();
+        .in("status", ["open", "selecting"]);
 
       if (updateErr) {
-        console.log(`[offerDeadline] 전환 실패 ${puzzle.id} (updateErr=${updateErr.message})`);
+        console.log(`[offerDeadline] 전환 실패 ${puzzle.id} → ${nextStatus} (updateErr=${updateErr.message})`);
         continue;
       }
-      // updated가 null이면 동시에 다른 실행이 selecting으로 바꾼 것 — 정상, 알림 단계로 계속 진행
     }
 
     // 2) 중복 발송 가드 — in-app/푸시/알림톡 전체를 1회로 묶는다.
