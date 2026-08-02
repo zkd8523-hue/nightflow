@@ -62,12 +62,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
       data: { user: authUser },
     },
     { data: partnerships },
+    { data: receivedReviews },
   ] = await Promise.all([
     // 프로필 조회 (공개 필드만)
     supabase
       .from("users")
       .select(
-        "id, display_name, profile_image, bio, created_at, role, md_unique_slug, md_status, instagram, preferred_music_genres, preferred_areas, kakao_open_chat_url, contact_public"
+        "id, display_name, profile_image, bio, created_at, role, md_unique_slug, md_status, instagram, preferred_music_genres, preferred_areas, kakao_open_chat_url, contact_public, md_avg_rating, md_review_count"
       )
       .eq("id", userId)
       .maybeSingle(),
@@ -84,6 +85,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
       .from("club_partners")
       .select("club:clubs(id, name, area, thumbnail_url)")
       .eq("md_id", userId),
+    // 파트너가 받은 리뷰 (approved만) — /md 통합. get_md_reviews가 승인 리뷰만 반환.
+    supabase.rpc("get_md_reviews", { p_md_id: userId, p_limit: 20, p_offset: 0 }),
   ]);
 
   if (error || !profile) {
@@ -109,6 +112,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
       reviewCount={reviewCount ?? 0}
       pinnedClubs={(pinnedClubs ?? []) as never}
       partnerClubs={partnerClubs}
+      partnerReviews={(receivedReviews ?? []) as never}
       isMe={isMe}
     />
   );

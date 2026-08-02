@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, ChevronRight, Instagram, MessageCircle } from "lucide-react";
+import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, ChevronRight, Instagram, MessageCircle, Star } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { MUSIC_GENRE_MAP } from "@/lib/users/musicGenres";
@@ -29,6 +29,21 @@ interface ProfileData {
   preferred_areas: string[] | null;
   kakao_open_chat_url: string | null;
   contact_public?: boolean | null;
+  md_avg_rating?: number | null;
+  md_review_count?: number | null;
+}
+
+interface PartnerReview {
+  id: string;
+  rating: number;
+  comment: string | null;
+  tags: string[];
+  created_at: string;
+  club_name: string | null;
+  reviewer_id: string | null;
+  reviewer_display_name: string | null;
+  reviewer_profile_image: string | null;
+  delete_requested_at?: string | null;
 }
 
 interface PinnedClub {
@@ -55,6 +70,8 @@ interface Props {
   reviewCount: number;
   pinnedClubs: PinnedClub[];
   partnerClubs: PartnerClub[];
+  /** 파트너가 받은 리뷰 (승인된 것만) — /md 통합으로 여기에 표시 */
+  partnerReviews?: PartnerReview[];
   isMe: boolean;
   /** MY 탭 안에 끼워 넣을 때 — 뒤로가기·페이지 높이 제거 (내용은 동일) */
   embedded?: boolean;
@@ -65,6 +82,7 @@ export function PublicProfileView({
   reviewCount,
   pinnedClubs,
   partnerClubs,
+  partnerReviews = [],
   isMe,
   embedded = false,
 }: Props) {
@@ -84,6 +102,23 @@ export function PublicProfileView({
     null
   );
   const [openingDm, setOpeningDm] = useState(false);
+  // 삭제 요청한 리뷰 id (요청 직후 UI에 "검토 중" 즉시 반영)
+  const [deleteRequestedIds, setDeleteRequestedIds] = useState<Set<string>>(new Set());
+
+  const handleRequestReviewDeletion = async (reviewId: string) => {
+    const reason = window.prompt("이 리뷰를 삭제 요청하는 이유를 적어주세요 (관리자 검토용)");
+    if (reason === null) return; // 취소
+    const { data, error } = await createClient().rpc("request_review_deletion", {
+      p_review_id: reviewId,
+      p_reason: reason,
+    });
+    if (error || !(data as { success?: boolean })?.success) {
+      toast.error(error?.message || (data as { error?: string })?.error || "요청 실패");
+      return;
+    }
+    setDeleteRequestedIds((prev) => new Set(prev).add(reviewId));
+    toast.success("삭제 요청됨 · 관리자 검토 후 처리돼요");
+  };
 
   /** 수락 게이트 없이 바로 1:1 채팅방으로 (Migration 470) */
   async function handleOpenDm() {
@@ -292,12 +327,15 @@ export function PublicProfileView({
                     aria-label="NightFlow 공식 파트너 인증 정보 보기"
                     aria-expanded={verifyOpen}
                   >
-                    <BadgeCheck className="w-5 h-5 text-brand-amber" />
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-blue-500 text-white text-[11px] font-black leading-none">
+                      <BadgeCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      파트너
+                    </span>
                   </button>
                   {verifyOpen && (
                     <div
                       role="tooltip"
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-card border border-border shadow-lg whitespace-nowrap text-[12px] font-bold text-brand-amber z-50"
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-card border border-border shadow-lg whitespace-nowrap text-[12px] font-bold text-blue-400 z-50"
                     >
                       <span className="flex items-center gap-1">
                         <BadgeCheck className="w-3.5 h-3.5" />
@@ -516,6 +554,76 @@ export function PublicProfileView({
 
       {/* 구분선 */}
       <div className="mt-8 border-t border-border" />
+
+      {/* 파트너 리뷰 (승인된 것만) — /md 프로필 통합 */}
+      {profile.md_status === "approved" && (
+        <div className="px-4 mt-6">
+          <div className="flex items-center gap-1.5 mb-3">
+            <Star className="w-4 h-4 text-brand-amber fill-amber-400" />
+            <h2 className="text-[15px] font-black text-foreground">리뷰</h2>
+            {(profile.md_review_count ?? 0) > 0 && (
+              <span className="text-[13px] font-bold text-muted-foreground">
+                {(profile.md_avg_rating ?? 0).toFixed(1)} · {profile.md_review_count}개
+              </span>
+            )}
+          </div>
+          {partnerReviews.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-card py-8 text-center">
+              <p className="text-[13px] text-muted-foreground font-medium">아직 리뷰가 없어요</p>
+              <p className="text-[11px] text-muted-foreground mt-1">방문 확인 후 리뷰가 쌓이면 표시돼요</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {partnerReviews.map((r) => (
+                <div key={r.id} className="rounded-2xl border border-border bg-card p-4 space-y-2">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        className={`w-3.5 h-3.5 ${n <= r.rating ? "fill-amber-400 text-brand-amber" : "fill-transparent text-muted-foreground"}`}
+                        strokeWidth={1.5}
+                      />
+                    ))}
+                  </div>
+                  {r.tags?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {r.tags.map((t) => (
+                        <span key={t} className="text-[11px] font-bold px-2 py-1 rounded-full bg-amber-500/12 text-brand-amber border border-amber-500/25">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {r.comment && <p className="text-[13px] text-foreground/80 break-keep">&ldquo;{r.comment}&rdquo;</p>}
+                  <div className="flex items-center justify-between gap-2">
+                    {r.reviewer_id ? (
+                      <Link href={`/u/${r.reviewer_id}`} className="inline-block text-[11px] text-muted-foreground hover:text-foreground font-medium hover:underline">
+                        {r.reviewer_display_name || "익명"}
+                      </Link>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">{r.reviewer_display_name || "익명"}</p>
+                    )}
+                    {/* 본인(파트너)만: 부당 리뷰 삭제 요청 → 어드민 검토 */}
+                    {isMe && (
+                      r.delete_requested_at || deleteRequestedIds.has(r.id) ? (
+                        <span className="text-[11px] text-muted-foreground font-medium shrink-0">삭제 요청됨 · 검토 중</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRequestReviewDeletion(r.id)}
+                          className="text-[11px] text-muted-foreground hover:text-red-400 font-medium shrink-0 transition-colors"
+                        >
+                          삭제 요청
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 남의 프로필 → 채팅하기 / 차단 (채팅 프로필 팝업과 동일한 액션) */}
       {!isMe && (

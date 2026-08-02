@@ -177,6 +177,21 @@ export default async function AdminDashboardPage() {
     .eq("visit_result", "noshow")
     .is("strike_applied_at", null);
 
+  // 방문 리뷰 검토 대기 수 — 신규 pending(491) + 삭제 요청(492) 합산
+  const [{ count: pendingNewReviewCount }, { count: reviewDeletionCount }] = await Promise.all([
+    supabase
+      .from("puzzle_reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .eq("source", "visit"),
+    supabase
+      .from("puzzle_reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "approved")
+      .not("delete_requested_at", "is", null),
+  ]);
+  const pendingVisitReviewCount = (pendingNewReviewCount ?? 0) + (reviewDeletionCount ?? 0);
+
   // 설문 응답 수 — 트리거별 분리 (직접 취소 vs 노매치=선택 만료), 최근 7일 배지용
   const survey7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const [
@@ -342,6 +357,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-amber-500/10",
       badge: null,
       href: "/admin/feedback",
+    },
+    {
+      label: "방문 리뷰 검토",
+      value: `${pendingVisitReviewCount || 0}건`,
+      icon: Star,
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10",
+      badge: pendingVisitReviewCount ? `${pendingVisitReviewCount}건 대기` : null,
+      href: "/admin/visit-reviews",
     },
     {
       label: "이탈·전환 인사이트",
