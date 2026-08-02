@@ -254,6 +254,31 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         ? { disambiguatingDescription: String(club.operating_hours) }
         : {}),
     ...(phoneClean ? { telephone: phoneClean } : {}),
+    // 좌표 — 구글 지도/로컬 결과 연동
+    ...(club.latitude != null && club.longitude != null
+      ? {
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: club.latitude,
+            longitude: club.longitude,
+          },
+        }
+      : {}),
+    // 구글 별점 — 검색결과 ★ 리치 스니펫(CTR 상승 핵심). 리뷰 수 있을 때만.
+    ...(typeof club.google_rating === "number" &&
+    club.google_rating > 0 &&
+    typeof club.google_review_count === "number" &&
+    club.google_review_count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: club.google_rating,
+            reviewCount: club.google_review_count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
     ...(sameAsList.length > 0 ? { sameAs: sameAsList } : {}),
   };
 
