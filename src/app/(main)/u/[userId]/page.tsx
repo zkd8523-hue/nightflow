@@ -63,6 +63,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
     },
     { data: partnerships },
     { data: receivedReviews },
+    { data: partyReputation },
   ] = await Promise.all([
     // 프로필 조회 (공개 필드만)
     supabase
@@ -87,6 +88,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
       .eq("md_id", userId),
     // 파트너가 받은 리뷰 (approved만) — /md 통합. get_md_reviews가 승인 리뷰만 반환.
     supabase.rpc("get_md_reviews", { p_md_id: userId, p_limit: 20, p_offset: 0 }),
+    // 파티 평판 (받은 👍 + 태그 집계) — 조각 참가자 상호리뷰
+    supabase.rpc("get_party_reputation", { p_user_id: userId }),
   ]);
 
   if (error || !profile) {
@@ -113,6 +116,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
       pinnedClubs={(pinnedClubs ?? []) as never}
       partnerClubs={partnerClubs}
       partnerReviews={(receivedReviews ?? []) as never}
+      partyReputation={(partyReputation ?? []) as never}
       isMe={isMe}
     />
   );

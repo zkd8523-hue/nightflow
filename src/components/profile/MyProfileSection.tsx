@@ -28,6 +28,7 @@ export function MyProfileSection({ userId }: Props) {
     pinnedClubs: Parameters<typeof PublicProfileView>[0]["pinnedClubs"];
     partnerClubs: ClubLite[];
     partnerReviews: NonNullable<Parameters<typeof PublicProfileView>[0]["partnerReviews"]>;
+    partyReputation: NonNullable<Parameters<typeof PublicProfileView>[0]["partyReputation"]>;
   } | null>(null);
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export function MyProfileSection({ userId }: Props) {
         { data: pinnedRows },
         { data: partnerships },
         { data: receivedReviews },
+        { data: partyReputation },
       ] = await Promise.all([
         supabase
           .from("users")
@@ -63,6 +65,7 @@ export function MyProfileSection({ userId }: Props) {
           .select("club:clubs(id, name, area, thumbnail_url)")
           .eq("md_id", userId),
         supabase.rpc("get_md_reviews", { p_md_id: userId, p_limit: 20, p_offset: 0 }),
+        supabase.rpc("get_party_reputation", { p_user_id: userId }),
       ]);
 
       if (cancelled || !profile) return;
@@ -101,6 +104,7 @@ export function MyProfileSection({ userId }: Props) {
         pinnedClubs: pinnedClubs as never,
         partnerClubs,
         partnerReviews: (receivedReviews ?? []) as never,
+        partyReputation: (partyReputation ?? []) as never,
       });
     })();
     return () => {
@@ -120,6 +124,7 @@ export function MyProfileSection({ userId }: Props) {
       pinnedClubs={state.pinnedClubs}
       partnerClubs={state.partnerClubs}
       partnerReviews={state.partnerReviews}
+      partyReputation={state.partyReputation}
       isMe
       embedded
     />

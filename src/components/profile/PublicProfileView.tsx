@@ -65,6 +65,12 @@ interface PartnerClub {
   thumbnail_url: string | null;
 }
 
+interface PartyReputationRow {
+  like_count: number;
+  tag: string | null;
+  tag_count: number;
+}
+
 interface Props {
   profile: ProfileData;
   reviewCount: number;
@@ -72,6 +78,8 @@ interface Props {
   partnerClubs: PartnerClub[];
   /** 파트너가 받은 리뷰 (승인된 것만) — /md 통합으로 여기에 표시 */
   partnerReviews?: PartnerReview[];
+  /** 파티 평판 (받은 👍 수 + 태그 집계) — 조각 참가자 상호리뷰 */
+  partyReputation?: PartyReputationRow[];
   isMe: boolean;
   /** MY 탭 안에 끼워 넣을 때 — 뒤로가기·페이지 높이 제거 (내용은 동일) */
   embedded?: boolean;
@@ -83,6 +91,7 @@ export function PublicProfileView({
   pinnedClubs,
   partnerClubs,
   partnerReviews = [],
+  partyReputation = [],
   isMe,
   embedded = false,
 }: Props) {
@@ -554,6 +563,32 @@ export function PublicProfileView({
 
       {/* 구분선 */}
       <div className="mt-8 border-t border-border" />
+
+      {/* 파티 평판 (받은 👍 + 태그) — 조각 참가자 상호리뷰. 👍 1개 이상일 때만 */}
+      {(partyReputation[0]?.like_count ?? 0) > 0 && (
+        <div className="px-4 mt-6">
+          <div className="flex items-center gap-1.5 mb-3">
+            <h2 className="text-[15px] font-black text-foreground">파티 평판</h2>
+            <span className="text-[13px] font-bold text-muted-foreground">
+              👍 {partyReputation[0].like_count}
+            </span>
+          </div>
+          {partyReputation.some((r) => r.tag) && (
+            <div className="flex flex-wrap gap-1.5">
+              {partyReputation
+                .filter((r) => r.tag)
+                .map((r) => (
+                  <span
+                    key={r.tag}
+                    className="inline-flex items-center gap-1 text-[12px] font-bold px-2.5 py-1.5 rounded-full bg-amber-500/12 text-brand-amber border border-amber-500/25"
+                  >
+                    {r.tag} <span className="text-muted-foreground tabular-nums">{r.tag_count}</span>
+                  </span>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 파트너 리뷰 (승인된 것만) — /md 프로필 통합 */}
       {profile.md_status === "approved" && (

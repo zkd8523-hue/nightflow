@@ -368,6 +368,15 @@ export default async function AdminDashboardPage() {
       href: "/admin/visit-reviews",
     },
     {
+      label: "파티 리뷰 집계",
+      value: "보기",
+      icon: Star,
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10",
+      badge: null,
+      href: "/admin/party-reviews",
+    },
+    {
       label: "이탈·전환 인사이트",
       value: "퍼널 분석",
       icon: BarChart3,
