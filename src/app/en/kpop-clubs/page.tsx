@@ -169,6 +169,7 @@ export default function EnKpopClubsPage() {
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">Related Guides</h2>
           <ul className="space-y-1 text-[13px] text-muted-foreground">
+            <li><Link className="hover:text-foreground" href="/en/hiphop-clubs">Hip-Hop Clubs in Seoul →</Link></li>
             <li><Link className="hover:text-foreground" href="/en/clubs/hongdae">Hongdae Clubs — Full guide →</Link></li>
             <li><Link className="hover:text-foreground" href="/en/clubs/gangnam">Gangnam Clubs — Full guide →</Link></li>
             <li><Link className="hover:text-foreground" href="/en/vip-tables">Seoul VIP Table Booking →</Link></li>

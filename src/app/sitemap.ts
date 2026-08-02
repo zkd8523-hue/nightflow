@@ -76,6 +76,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/en/vip-tables`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE_URL}/en/guests`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/en/kpop-clubs`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
+    { url: `${BASE_URL}/en/hiphop-clubs`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     // /zh — 중국어 트랙 (중국·대만·홍콩 관광객 SEO 타겟)
     { url: `${BASE_URL}/zh`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE_URL}/zh/clubs`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
