@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PullToRefresh } from "@/components/auctions/PullToRefresh";
 import { SelectingFlagAlertSheet } from "@/components/puzzles/SelectingFlagAlertSheet";
+import { VisitConfirmTrigger } from "@/components/puzzles/VisitConfirmTrigger";
 import { NewOffersAlertSheet } from "@/components/puzzles/NewOffersAlertSheet";
 import { FlagCreatedInstallSheet } from "@/components/puzzles/FlagCreatedInstallSheet";
 import { ChatUpdateSheet } from "@/components/common/ChatUpdateSheet";
@@ -123,6 +124,7 @@ export default function MainLayout({
         <SelectingFlagAlertSheet />
         <NewOffersAlertSheet />
         <CancellationSurveySheet isOtherSheetOpen={false} />
+        <VisitConfirmTrigger />
         <FlagCreatedInstallSheet />
         <ChatUpdateSheet />
         <PriceRangeOnboardingSheet />

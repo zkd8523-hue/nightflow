@@ -25,6 +25,13 @@ const RATING_LABELS: Record<number, string> = {
   5: "최고예요",
 };
 
+// "안 갔어요" 사유
+const NOT_VISITED_REASONS = [
+  "일정이 바뀌었어요",
+  "마음에 드는 오퍼가 없었어요",
+  "다른 곳으로 갔어요",
+];
+
 export interface VisitPartnerOption {
   md_id: string;
   display_name: string | null;
@@ -45,10 +52,11 @@ interface VisitConfirmSheetProps {
     rating: number;
     tags: string[];
     comment: string;
+    notVisitedReason?: string | null;
   }) => Promise<void> | void;
 }
 
-type Step = "visit" | "partner" | "review" | "done";
+type Step = "visit" | "not_visited" | "partner" | "review" | "done";
 
 export function VisitConfirmSheet({
   open,
@@ -86,8 +94,8 @@ export function VisitConfirmSheet({
   const toggleTag = (tag: string) =>
     setTags((prev) => (prev.includes(tag) ? prev.filter((x) => x !== tag) : [...prev, tag]));
 
-  const handleNotVisited = async () => {
-    await onSubmit?.({ didVisit: false, matchedMdId: null, rating: 0, tags: [], comment: "" });
+  const handleNotVisitedReason = async (reason: string) => {
+    await onSubmit?.({ didVisit: false, matchedMdId: null, rating: 0, tags: [], comment: "", notVisitedReason: reason });
     close();
   };
 
@@ -128,10 +136,43 @@ export function VisitConfirmSheet({
               </button>
               <button
                 type="button"
-                onClick={handleNotVisited}
+                onClick={() => setStep("not_visited")}
                 className="w-full h-12 rounded-2xl bg-muted/60 border border-border text-muted-foreground font-bold text-[14px] hover:bg-muted active:scale-[0.99] transition-all"
               >
                 아니요, 안 갔어요
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─────────── "안 갔어요" 사유 ─────────── */}
+        {step === "not_visited" && (
+          <div className="px-5 pt-6 pb-10 space-y-5">
+            <div className="space-y-1.5">
+              <h2 className="text-[20px] font-black text-foreground leading-snug break-keep">
+                왜 안 가게 되셨어요?
+              </h2>
+              <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
+                더 좋은 밤을 만들기 위한 참고용이에요.
+              </p>
+            </div>
+            <div className="space-y-2">
+              {NOT_VISITED_REASONS.map((reason) => (
+                <button
+                  key={reason}
+                  type="button"
+                  onClick={() => handleNotVisitedReason(reason)}
+                  className="w-full h-12 rounded-2xl bg-[#18181B] border border-border text-foreground font-bold text-[14px] hover:bg-[#202024] active:scale-[0.99] transition-all"
+                >
+                  {reason}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => handleNotVisitedReason("")}
+                className="w-full h-11 text-[13px] font-bold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                넘어가기
               </button>
             </div>
           </div>
