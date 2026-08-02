@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ArrowDown, Info } from "lucide-react";
 import { trackEvent } from "@/lib/analytics/events";
@@ -145,19 +144,18 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
           </div>
         </div>
 
-        {/* CTA */}
-        <Link
-          href="/login?redirect=/flags/new"
+        {/* CTA — 온보딩 설명이므로 강한 예약 유도 대신 '확인'으로 닫기만 */}
+        <button
+          type="button"
           onClick={() => {
             trackEvent("flag_onboarding_popup_cta");
             markSeen();
             setOpen(false);
           }}
-          className="flex flex-col items-center justify-center w-full h-14 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black rounded-2xl shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all leading-tight mt-3.5"
+          className="flex items-center justify-center w-full h-14 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black rounded-2xl shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all mt-3.5"
         >
-          <span className="font-black text-[15px]">예약 바로가기</span>
-          <span className="text-[10px] font-bold text-black/55 mt-0.5">모든 서비스 무료</span>
-        </Link>
+          <span className="font-black text-[15px]">좋아요! 둘러볼게요</span>
+        </button>
       </SheetContent>
     </Sheet>
 
