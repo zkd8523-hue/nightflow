@@ -61,8 +61,10 @@ export async function generateMetadata({
   if (!isSupportedArea(area)) {
     notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
-  const title = `${area} 핫플 지도 - ${area} 클럽 위치·정보 한눈에`;
-  const description = `${area} 핫플(핫플레이스) 클럽 지도. ${area} 인기 클럽의 위치, 영업시간, 게스트·무료입장, 테이블 가격 정보를 한곳에서 비교하세요. 강남·홍대 등 ${area} 클럽 추천은 나플에서.`;
+  // 제목은 클릭 유도형(총정리 + 구체 이득)으로. "지도"는 CTR을 못 만들어 노출 최다인데 CTR 1.7%였음.
+  // 핫플/핫플레이스/지도 키워드는 description·keywords에 유지해 검색 노출은 그대로 확보.
+  const title = `${area} 클럽 총정리 - 위치·주대·무료입장 게스트까지 (2026)`;
+  const description = `${area} 클럽 총정리·핫플 지도. ${area} 인기 클럽의 위치, 영업시간, 게스트·무료입장, 테이블 주대(가격)를 한곳에서 비교하세요. 강남·홍대·이태원 ${area} 클럽 추천은 나플에서.`;
   const canonical = `https://nightflow.kr/hotplace/${encodeURIComponent(area)}`;
   return {
     title,
