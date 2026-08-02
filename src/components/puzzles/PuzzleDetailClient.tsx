@@ -489,6 +489,13 @@ export function PuzzleDetailClient({
     loadOffers();
   }, [loadOffers]);
 
+  // 앱 피드백 인게이지먼트: 깃발/조각 상세 열람 = +1 (상세별 세션 1회만 가산)
+  useEffect(() => {
+    import("@/lib/utils/appFeedbackEngagement").then((m) =>
+      m.bumpFeedbackEngagement(1, `flag:${puzzle.id}`)
+    );
+  }, [puzzle.id]);
+
   // admin 전용: 일반 조각의 상담(파티챗) 상태 — 초대 MD·오퍼·과금·채팅 활성 (Migration 444)
   useEffect(() => {
     if (!isAdmin || !isRecruitingParty || puzzle.host_is_md) return;
