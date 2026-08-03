@@ -3,7 +3,8 @@
 // 크론: 매 5분 (*/5 * * * *)
 //
 // 트리거:
-//   #1 첫 오퍼 도착     → 방장에게 1회
+//   #1 첫 오퍼 도착      → 방장에게 1회
+//   #1-b 오퍼 3개 누적   → 방장에게 1회 ("골라보세요" 리마인드)
 //   #2 방장 위임        → 새 방장에게 1회
 //   #3 매칭 성사        → 조각원 전원에게
 //   #4 MD 낙찰          → 낙찰 MD에게
@@ -41,7 +42,13 @@ const TPL = {
   PUZZLE_OFFER_WON:         Deno.env.get("ALIMTALK_TPL_PUZZLE_OFFER_WON") || "",
   PUZZLE_OFFER_REMINDER:    Deno.env.get("ALIMTALK_TPL_PUZZLE_OFFER_REMINDER") || "",
   PUZZLE_OFFER_DEADLINE:    Deno.env.get("ALIMTALK_TPL_PUZZLE_OFFER_DEADLINE") || "",
+  // 오퍼 3개 누적 리마인드. 전용 템플릿 미등록 시 첫오퍼 템플릿으로 폴백(변수 동일: puzzleUrl).
+  PUZZLE_OFFERS_MULTI:      Deno.env.get("ALIMTALK_TPL_PUZZLE_OFFERS_MULTI")
+                            || Deno.env.get("ALIMTALK_TPL_PUZZLE_FIRST_OFFER") || "",
 };
+
+// 리마인드가 뜨는 오퍼 누적 임계값
+const OFFERS_MULTI_THRESHOLD = 3;
 
 // KST(YYYY-MM-DD) → "M/D" 포맷 (Deno native)
 function formatEventDate(eventDate: string): string {
@@ -275,6 +282,72 @@ async function handleFirstOffer(supabase: ReturnType<typeof createClient>) {
   }
 }
 
+// ============================================================
+// #1-b 오퍼 3개 누적 리마인드 — 방장에게 1회 ("오퍼 모였어요, 골라보세요")
+// 첫오퍼 알림톡(#1)과 별개. 도배 방지 위해 puzzle_offers_3 로그로 깃발당 1회만.
+// ============================================================
+async function handleOffersThreshold(supabase: ReturnType<typeof createClient>) {
+  const { data: offers } = await supabase
+    .from("puzzle_offers")
+    .select("puzzle_id")
+    .eq("status", "pending");
+
+  if (!offers || offers.length === 0) return;
+
+  // puzzle_id 별 pending 오퍼 수
+  const count: Record<string, number> = {};
+  for (const o of offers) count[o.puzzle_id] = (count[o.puzzle_id] || 0) + 1;
+  const qualified = Object.keys(count).filter(id => count[id] >= OFFERS_MULTI_THRESHOLD);
+  if (qualified.length === 0) return;
+
+  const { data: openPuzzles } = await supabase
+    .from("puzzles")
+    .select("id, leader_id, status, event_date, area, total_budget, budget_per_person, target_count")
+    .in("id", qualified)
+    .eq("status", "open");
+
+  if (!openPuzzles || openPuzzles.length === 0) return;
+
+  type OpenPuzzle = {
+    id: string; leader_id: string; status: string;
+    event_date: string; area: string;
+    total_budget: number | null; budget_per_person: number; target_count: number;
+  };
+
+  for (const puzzle of openPuzzles as OpenPuzzle[]) {
+    if (await alreadySent(supabase, "puzzle_offers_3", puzzle.id)) continue;
+
+    const { data: leader } = await supabase
+      .from("users")
+      .select("id, phone, email, email_bounced, country_code, lang")
+      .eq("id", puzzle.leader_id)
+      .single();
+    if (!leader) continue;
+
+    if (useEmailChannel(leader as LeaderRow)) {
+      await sendEmailAndLog(
+        supabase,
+        "puzzle_offers_3",
+        puzzle.id,
+        leader as LeaderRow,
+        emailFirstOffer({
+          lang: mailLang(leader as LeaderRow),
+          eventDate: puzzle.event_date,
+          area: puzzle.area,
+          budget: budgetText(puzzle),
+          headcount: puzzle.target_count,
+          offerCount: count[puzzle.id],
+          url: puzzleUrl(puzzle.id),
+        }),
+      );
+    } else {
+      await sendAndLog(supabase, "puzzle_offers_3", puzzle.id, leader, TPL.PUZZLE_OFFERS_MULTI, {
+        puzzleUrl: puzzleUrl(puzzle.id),
+      });
+    }
+  }
+}
+
 // handleDeadlineReminder 제거됨 (D-2 리마인더 handleOfferReminder로 대체)
 
 // ============================================================
@@ -332,13 +405,6 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
     //    조회에 'selecting'을 포함시켰으므로(재시도 목적) 이 가드가 없으면
     //    매 cron마다 in-app 알림이 중복 INSERT된다.
     if (await alreadySent(supabase, "puzzle_offer_deadline", puzzle.id)) continue;
-
-    // 3) pending 오퍼 수 집계
-    const { count: offerCount } = await supabase
-      .from("puzzle_offers")
-      .select("id", { count: "exact", head: true })
-      .eq("puzzle_id", puzzle.id)
-      .eq("status", "pending");
 
     // 4) 방장 정보 로드
     const { data: leader } = await supabase
@@ -769,6 +835,7 @@ serve(async (req: Request) => {
 
     const handlers: Array<[string, Promise<unknown>]> = [
       ["firstOffer", handleFirstOffer(supabase)],
+      ["offersThreshold", handleOffersThreshold(supabase)],
       ["offerDeadline", handleOfferDeadline(supabase)],
       ["leaderChanged", handleLeaderChanged(supabase)],
       ["matched", handleMatched(supabase)],
