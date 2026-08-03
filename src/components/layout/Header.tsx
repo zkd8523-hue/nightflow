@@ -42,6 +42,7 @@ import {
   HelpCircle,
   Headset,
   Globe,
+  Lightbulb,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
@@ -167,6 +168,7 @@ export function Header({
     };
   }, [pathname]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [guestMenuOpen, setGuestMenuOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [pendingMDCount, setPendingMDCount] = useState(0);
@@ -536,7 +538,9 @@ export function Header({
                         onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                       >
-                        <LayoutDashboard className="w-5 h-5 text-muted-foreground" />
+                        <span className="w-9 h-9 rounded-xl bg-indigo-500/15 flex items-center justify-center shrink-0">
+                          <LayoutDashboard className="w-[18px] h-[18px] text-indigo-400" />
+                        </span>
                         <span className="text-[15px] font-bold">파트너 대시보드</span>
                       </Link>
                     )}
@@ -546,7 +550,9 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <Heart className="w-5 h-5 text-muted-foreground" />
+                      <span className="w-9 h-9 rounded-xl bg-rose-500/15 flex items-center justify-center shrink-0">
+                        <Heart className="w-[18px] h-[18px] text-rose-400" />
+                      </span>
                       <span className="text-[15px] font-bold">찜 목록</span>
                     </Link>
 
@@ -555,7 +561,9 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <HelpCircle className="w-5 h-5 text-muted-foreground" />
+                      <span className="w-9 h-9 rounded-xl bg-sky-500/15 flex items-center justify-center shrink-0">
+                        <HelpCircle className="w-[18px] h-[18px] text-sky-400" />
+                      </span>
                       <span className="text-[15px] font-bold">자주 묻는 질문</span>
                     </Link>
 
@@ -564,7 +572,9 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <Headset className="w-5 h-5 text-muted-foreground" />
+                      <span className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                        <Headset className="w-[18px] h-[18px] text-emerald-400" />
+                      </span>
                       <span className="text-[15px] font-bold">고객 문의</span>
                       {supportUnread && (
                         <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
@@ -576,8 +586,21 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <Settings className="w-5 h-5 text-muted-foreground" />
+                      <span className="w-9 h-9 rounded-xl bg-foreground/5 flex items-center justify-center shrink-0">
+                        <Settings className="w-[18px] h-[18px] text-muted-foreground" />
+                      </span>
                       <span className="text-[15px] font-bold">설정</span>
+                    </Link>
+
+                    <Link
+                      href="/suggestions"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                    >
+                      <span className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
+                        <Lightbulb className="w-[18px] h-[18px] text-brand-amber" />
+                      </span>
+                      <span className="text-[15px] font-bold">건의 게시판</span>
                     </Link>
 
                     <div className="h-px bg-muted/50 my-2" />
@@ -609,11 +632,68 @@ export function Header({
             </Sheet>
           </>
         ) : (
-          <Link href="/login" className="relative z-[60]">
-            <Button size="sm" className="h-9 rounded-lg bg-inverse text-inverse-foreground font-bold hover:opacity-90">
-              로그인
-            </Button>
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link href="/login" className="relative z-[60]">
+              <Button size="sm" className="h-9 rounded-lg bg-inverse text-inverse-foreground font-bold hover:opacity-90">
+                로그인
+              </Button>
+            </Link>
+            <button
+              onClick={() => setGuestMenuOpen(true)}
+              className="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
+              aria-label="메뉴 열기"
+            >
+              <Menu className="w-5 h-5 text-foreground/80" />
+            </button>
+
+            <Sheet open={guestMenuOpen} onOpenChange={setGuestMenuOpen}>
+              <SheetContent
+                side="right"
+                data-no-pull-refresh="strict"
+                className="w-[280px] bg-background border-border p-0 flex flex-col h-full"
+                style={{ paddingTop: 'env(safe-area-inset-top)' }}
+              >
+                <SheetHeader className="p-6 pb-2 border-b border-border/50 shrink-0">
+                  <SheetTitle className="text-foreground font-black text-left">메뉴</SheetTitle>
+                </SheetHeader>
+
+                <nav className="flex flex-col p-4 gap-1">
+                  <Link
+                    href="/faq"
+                    onClick={() => setGuestMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                  >
+                    <span className="w-9 h-9 rounded-xl bg-sky-500/15 flex items-center justify-center shrink-0">
+                      <HelpCircle className="w-[18px] h-[18px] text-sky-400" />
+                    </span>
+                    <span className="text-[15px] font-bold">자주 묻는 질문</span>
+                  </Link>
+
+                  <Link
+                    href="/contact"
+                    onClick={() => setGuestMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                  >
+                    <span className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                      <Headset className="w-[18px] h-[18px] text-emerald-400" />
+                    </span>
+                    <span className="text-[15px] font-bold">고객 문의</span>
+                  </Link>
+
+                  <Link
+                    href="/suggestions"
+                    onClick={() => setGuestMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                  >
+                    <span className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
+                      <Lightbulb className="w-[18px] h-[18px] text-brand-amber" />
+                    </span>
+                    <span className="text-[15px] font-bold">건의 게시판</span>
+                  </Link>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
         )}
       </div>
     </header>

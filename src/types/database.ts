@@ -1503,4 +1503,45 @@ export interface ChatShotComment {
   author?: { id: string; display_name: string | null; profile_image: string | null };
 }
 
+/** 건의 게시판 작성자 요약 (public_user_profiles 임베드) */
+export interface SuggestionAuthor {
+  id: string;
+  display_name: string | null;
+  profile_image: string | null;
+  /** 'admin' 이면 댓글에 관리자 배지 노출 */
+  role?: string | null;
+}
+
+/** Migration 495 — 건의 게시판 */
+export interface Suggestion {
+  id: string;
+  author_id: string;
+  title: string;
+  content: string;
+  /** 관리자만 보기 — 작성자 + admin 외 열람 불가 (RLS로 차단) */
+  is_private: boolean;
+  like_count: number;
+  comment_count: number;
+  is_deleted: boolean;
+  is_test: boolean;
+  created_at: string;
+  updated_at: string;
+  author?: SuggestionAuthor;
+  /** 클라이언트에서 suggestion_likes 조회 후 채움 */
+  liked_by_me?: boolean;
+  /** true면 비공개글이라 title/content 가 마스킹됨 (suggestions_public 뷰, Migration 496) */
+  is_masked?: boolean;
+}
+
+/** Migration 495 — 건의 댓글 (관리자 답변도 동일 테이블, role로만 구분) */
+export interface SuggestionComment {
+  id: string;
+  suggestion_id: string;
+  author_id: string;
+  content: string;
+  is_deleted: boolean;
+  created_at: string;
+  author?: SuggestionAuthor;
+}
+
 
