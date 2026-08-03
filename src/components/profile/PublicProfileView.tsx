@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { MUSIC_GENRE_MAP } from "@/lib/users/musicGenres";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/utils/upload";
+import { formatNumber } from "@/lib/utils/format";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ProfileEditSheet, type ProfileEditSection } from "./ProfileEditSheet";
 import { BlockUserButton } from "@/components/users/BlockUserButton";
@@ -44,6 +45,8 @@ interface PartnerReview {
   reviewer_display_name: string | null;
   reviewer_profile_image: string | null;
   delete_requested_at?: string | null;
+  /** puzzle_offers.proposed_price 조인(Migration 498). 오퍼 삭제/미존재면 null */
+  amount?: number | null;
 }
 
 interface PinnedClub {
@@ -257,7 +260,8 @@ export function PublicProfileView({
       <div className="px-4 mt-2">
         <div className="bg-card border border-border rounded-3xl p-4">
         <div className="flex items-start gap-4 pt-1">
-          {/* 원형 프로필 (본인이면 클릭해서 사진 변경) */}
+          {/* 원형 프로필 + 파트너 배지 (사진 아래로) */}
+          <div className="flex flex-col items-center gap-1.5 shrink-0">
           {isMe ? (
             <div className="relative w-24 h-24 shrink-0 active:scale-95 transition-transform">
               {/* 원형 이미지 영역 (여기에만 overflow-hidden) */}
@@ -315,49 +319,47 @@ export function PublicProfileView({
               )}
             </div>
           )}
-
-          {/* 이름 + 배지 + 핸들 */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-2xl font-black leading-tight truncate tracking-tight">
-                {displayName}
-              </h1>
-              {profile.md_status === "approved" && (
+          {profile.md_status === "approved" && (
+            <div ref={verifyRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setVerifyOpen((v) => !v)}
+                onMouseEnter={() => setVerifyOpen(true)}
+                onMouseLeave={() => setVerifyOpen(false)}
+                className="block active:scale-95 transition-transform"
+                aria-label="NightFlow 공식 파트너 인증 정보 보기"
+                aria-expanded={verifyOpen}
+              >
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-blue-500 text-white text-[11px] font-black leading-none">
+                  <BadgeCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
+                  파트너
+                </span>
+              </button>
+              {verifyOpen && (
                 <div
-                  ref={verifyRef}
-                  className="relative shrink-0"
+                  role="tooltip"
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-card border border-border shadow-lg whitespace-nowrap text-[12px] font-bold text-blue-400 z-50"
                 >
-                  <button
-                    type="button"
-                    onClick={() => setVerifyOpen((v) => !v)}
-                    onMouseEnter={() => setVerifyOpen(true)}
-                    onMouseLeave={() => setVerifyOpen(false)}
-                    className="block active:scale-95 transition-transform"
-                    aria-label="NightFlow 공식 파트너 인증 정보 보기"
-                    aria-expanded={verifyOpen}
-                  >
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-blue-500 text-white text-[11px] font-black leading-none">
-                      <BadgeCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
-                      파트너
-                    </span>
-                  </button>
-                  {verifyOpen && (
-                    <div
-                      role="tooltip"
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-card border border-border shadow-lg whitespace-nowrap text-[12px] font-bold text-blue-400 z-50"
-                    >
-                      <span className="flex items-center gap-1">
-                        <BadgeCheck className="w-3.5 h-3.5" />
-                        NightFlow 공식 파트너
-                      </span>
-                      <span
-                        aria-hidden
-                        className="absolute top-full left-1/2 -translate-x-1/2 -mt-px w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-neutral-900"
-                      />
-                    </div>
-                  )}
+                  <span className="flex items-center gap-1">
+                    <BadgeCheck className="w-3.5 h-3.5" />
+                    NightFlow 공식 파트너
+                  </span>
+                  <span
+                    aria-hidden
+                    className="absolute top-full left-1/2 -translate-x-1/2 -mt-px w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-neutral-900"
+                  />
                 </div>
               )}
+            </div>
+          )}
+          </div>
+
+          {/* 이름 + 핸들 */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h1 className="min-w-0 text-xl font-black leading-tight break-words tracking-tight">
+                {displayName}
+              </h1>
             </div>
             {/* MD 소속 클럽 한 줄 라벨 */}
             {profile.md_status === "approved" && partnerClubs.length > 0 && (
@@ -391,22 +393,22 @@ export function PublicProfileView({
                 )}
               </div>
             )}
-
-            {/* 자기소개 (사진 옆 영역, 3행 제한) */}
-            {bio ? (
-              <p className="mt-1.5 text-[13px] font-semibold leading-[1.45] whitespace-pre-wrap break-words line-clamp-3 text-foreground">
-                {bio}
-              </p>
-            ) : isMe ? (
-              <button
-                onClick={() => setEditSection("bio")}
-                className="mt-1.5 text-[12px] text-muted-foreground hover:text-foreground/80"
-              >
-                자기소개를 추가해보세요
-              </button>
-            ) : null}
           </div>
         </div>
+
+        {/* 자기소개 — 사진 옆 좁은 영역 대신 카드 전체 폭을 쓰는 별도 줄 (3행 제한) */}
+        {bio ? (
+          <p className="mt-3 text-[13px] font-semibold leading-[1.45] whitespace-pre-wrap break-words line-clamp-3 text-foreground">
+            {bio}
+          </p>
+        ) : isMe ? (
+          <button
+            onClick={() => setEditSection("bio")}
+            className="mt-3 text-[12px] text-muted-foreground hover:text-foreground/80"
+          >
+            자기소개를 추가해보세요
+          </button>
+        ) : null}
 
         {/* 음악 + 지역 (인스타 통계 자리 — 가로 2열, 값 없어도 뼈대는 항상 노출) */}
         <div className="mt-5 grid grid-cols-2 gap-4">
@@ -611,14 +613,26 @@ export function PublicProfileView({
             <div className="space-y-2.5">
               {partnerReviews.map((r) => (
                 <div key={r.id} className="rounded-2xl border border-border bg-card p-4 space-y-2">
-                  <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <Star
-                        key={n}
-                        className={`w-3.5 h-3.5 ${n <= r.rating ? "fill-amber-400 text-brand-amber" : "fill-transparent text-muted-foreground"}`}
-                        strokeWidth={1.5}
-                      />
-                    ))}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-end gap-1.5">
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            className={`w-3.5 h-3.5 ${n <= r.rating ? "fill-amber-400 text-brand-amber" : "fill-transparent text-muted-foreground"}`}
+                            strokeWidth={1.5}
+                          />
+                        ))}
+                      </div>
+                      {!!r.amount && (
+                        <span className="text-[11px] font-bold text-muted-foreground leading-none">
+                          ₩{formatNumber(r.amount)}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10.5px] text-muted-foreground font-medium">
+                      {new Date(r.created_at).toLocaleDateString("ko-KR", { year: "2-digit", month: "numeric", day: "numeric" })}
+                    </span>
                   </div>
                   {r.tags?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
@@ -632,11 +646,11 @@ export function PublicProfileView({
                   {r.comment && <p className="text-[13px] text-foreground/80 break-keep">&ldquo;{r.comment}&rdquo;</p>}
                   <div className="flex items-center justify-between gap-2">
                     {r.reviewer_id ? (
-                      <Link href={`/u/${r.reviewer_id}`} className="inline-block text-[11px] text-muted-foreground hover:text-foreground font-medium hover:underline">
+                      <Link href={`/u/${r.reviewer_id}`} className="inline-block min-w-0 text-[11px] text-muted-foreground hover:text-foreground font-medium hover:underline truncate">
                         {r.reviewer_display_name || "익명"}
                       </Link>
                     ) : (
-                      <p className="text-[11px] text-muted-foreground">{r.reviewer_display_name || "익명"}</p>
+                      <p className="min-w-0 text-[11px] text-muted-foreground truncate">{r.reviewer_display_name || "익명"}</p>
                     )}
                     {/* 본인(파트너)만: 부당 리뷰 삭제 요청 → 어드민 검토 */}
                     {isMe && (

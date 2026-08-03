@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Heart, Lock, MessageCircle } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils/format";
+import { suggestionCategoryLabel } from "@/lib/suggestions/categories";
 import type { Suggestion } from "@/types/database";
 
 interface Props {
@@ -46,6 +47,12 @@ export function SuggestionCard({
 
       {isMasked ? (
         <>
+          {/* 카테고리는 비공개글이어도 공개 (제목/내용만 마스킹) */}
+          {suggestionCategoryLabel(s.category) && (
+            <span className="inline-block mb-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/12 text-brand-amber border border-amber-500/25">
+              {suggestionCategoryLabel(s.category)}
+            </span>
+          )}
           <h2 className="flex items-center gap-1.5 text-[15px] font-black text-foreground leading-snug">
             <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
             비밀글이에요
@@ -57,6 +64,11 @@ export function SuggestionCard({
       ) : (
         <>
           {/* is_private=false 인 공개글만 이 분기를 탄다 (isMasked = s.is_private) */}
+          {suggestionCategoryLabel(s.category) && (
+            <span className="inline-block mb-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/12 text-brand-amber border border-amber-500/25">
+              {suggestionCategoryLabel(s.category)}
+            </span>
+          )}
           <h2 className="text-[15px] font-black text-foreground leading-snug line-clamp-2">
             {s.title}
           </h2>

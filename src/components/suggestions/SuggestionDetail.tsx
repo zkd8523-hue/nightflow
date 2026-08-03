@@ -3,13 +3,15 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Heart, Lock, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Heart, Lock, Pencil, Trash2, Siren } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useSuggestion } from "@/hooks/useSuggestions";
 import { SuggestionComments } from "@/components/suggestions/SuggestionComments";
+import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
 import { formatRelativeTime } from "@/lib/utils/format";
+import { suggestionCategoryLabel } from "@/lib/suggestions/categories";
 
 export function SuggestionDetail({ id }: { id: string }) {
   const router = useRouter();
@@ -21,6 +23,21 @@ export function SuggestionDetail({ id }: { id: string }) {
 
   function goLogin() {
     router.push(`/login?redirect=${encodeURIComponent(`/suggestions/${id}`)}`);
+  }
+
+  async function handleReport() {
+    if (!user) return goLogin();
+    const reason = window.prompt("신고 사유를 적어주세요 (관리자 검토용)");
+    if (reason === null) return;
+    const { data, error } = await createClient().rpc("report_suggestion", {
+      p_suggestion_id: id,
+      p_reason: reason,
+    });
+    if (error || !(data as { success?: boolean })?.success) {
+      toast.error(error?.message || (data as { error?: string })?.error || "신고 실패");
+      return;
+    }
+    toast.success("신고 접수됐어요. 관리자가 검토합니다");
   }
 
   async function handleDelete() {
@@ -104,6 +121,15 @@ export function SuggestionDetail({ id }: { id: string }) {
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
+            {!isMine && (
+              <button
+                onClick={handleReport}
+                className="w-10 h-10 flex items-center justify-center rounded-xl text-muted-foreground hover:text-red-400 hover:bg-muted transition-colors"
+                aria-label="신고"
+              >
+                <Siren className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -116,6 +142,11 @@ export function SuggestionDetail({ id }: { id: string }) {
             </div>
           )}
 
+          {suggestionCategoryLabel(suggestion.category) && (
+            <span className="inline-block mb-2 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/12 text-brand-amber border border-amber-500/25">
+              {suggestionCategoryLabel(suggestion.category)}
+            </span>
+          )}
           <h2 className="text-[17px] font-black text-foreground leading-snug break-words">
             {suggestion.title}
           </h2>
@@ -153,6 +184,8 @@ export function SuggestionDetail({ id }: { id: string }) {
           <p className="mt-4 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap break-words">
             {suggestion.content}
           </p>
+
+          {suggestion.media.length > 0 && <ChatMediaGrid items={suggestion.media} />}
 
           {/* 공감 */}
           <div className="mt-5 pt-4 border-t border-border flex items-center justify-center">

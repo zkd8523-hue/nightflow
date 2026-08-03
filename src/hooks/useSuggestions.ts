@@ -7,7 +7,7 @@ import type { Suggestion, SuggestionAuthor } from "@/types/database";
 
 // 상세(단건) 조회용 — base table 직접 조회, RLS가 비공개글 접근을 막아준다.
 const SELECT = `
-  id, author_id, title, content, is_private,
+  id, author_id, category, title, content, is_private, media,
   like_count, comment_count, is_deleted, is_test, created_at, updated_at,
   author:public_user_profiles!author_id(id, display_name, profile_image, role)
 `;
@@ -15,7 +15,7 @@ const SELECT = `
 // 목록 조회용 — suggestions_public 뷰(Migration 496). 비공개글도 행은 내려오되
 // title/content 가 NULL로 마스킹되어 온다. author 는 뷰 안에서 이미 flat 컬럼으로 join됨.
 const SELECT_PUBLIC = `
-  id, author_id, title, content, is_private,
+  id, author_id, category, title, content, is_private,
   like_count, comment_count, is_test, created_at, updated_at,
   author_display_name, author_profile_image, author_role
 `;
@@ -34,6 +34,7 @@ function parseRow(row: Record<string, unknown>): Suggestion {
 interface SuggestionPublicRow {
   id: string;
   author_id: string;
+  category?: string | null;
   title: string | null;
   content: string | null;
   is_private: boolean;
@@ -53,6 +54,7 @@ function parsePublicRow(row: SuggestionPublicRow): Suggestion {
   return {
     id: row.id,
     author_id: row.author_id,
+    category: row.category ?? "nightflow",
     title: row.title ?? "",
     content: row.content ?? "",
     is_private: row.is_private,
@@ -63,6 +65,9 @@ function parsePublicRow(row: SuggestionPublicRow): Suggestion {
     created_at: row.created_at,
     updated_at: row.updated_at,
     is_masked: masked,
+    // 목록(suggestions_public 뷰)엔 media를 안 실었다 — 존재는 카드에서 안 보여주고
+    // 상세 진입 시에만 노출하는 원칙과 동일. SuggestionCard도 미디어 미리보기 없음.
+    media: [],
     author: {
       id: row.author_id,
       display_name: row.author_display_name,
@@ -114,7 +119,7 @@ export async function toggleSuggestionLike(
  *   타인의 비공개글 INSERT/UPDATE는 이 이벤트로 전달되지 않는다 — 새로고침 시 반영.
  * - 카운트 UPDATE는 이미 목록에 있는 행만 패치
  */
-export function useSuggestions(currentUserId?: string) {
+export function useSuggestions(currentUserId?: string, category?: string) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -123,6 +128,7 @@ export function useSuggestions(currentUserId?: string) {
     const supabase = createClient();
     let query = supabase.from("suggestions_public").select(SELECT_PUBLIC);
     query = hideTestData(query, "");
+    if (category) query = query.eq("category", category);
     query = query.order("created_at", { ascending: false });
 
     const { data, error } = await query.limit(PAGE_SIZE);
@@ -146,7 +152,7 @@ export function useSuggestions(currentUserId?: string) {
 
     setSuggestions(rows);
     setLoading(false);
-  }, [currentUserId]);
+  }, [currentUserId, category]);
 
   useEffect(() => {
     load();

@@ -257,8 +257,6 @@ export function PuzzleDetailClient({
   const [invitedOfferId, setInvitedOfferId] = useState<string | null>(null);
   const [acceptingMd, setAcceptingMd] = useState<NonNullable<PuzzleOffer["md"]> | null>(null);
   const [showLeaderInfo, setShowLeaderInfo] = useState(false);
-  // 방장 상담 횟수 — 리더 정보 시트 열 때만 지연 조회 (서버 크리티컬 패스에서 제외됨)
-  const [leaderConsultCount, setLeaderConsultCount] = useState<number | null>(null);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
   const [showMatchedShowcase, setShowMatchedShowcase] = useState(false);
   // 조각 카톡 공유 시트 (?created=share 자동 오픈 / 공유 버튼 수동 오픈)
@@ -510,22 +508,6 @@ export function PuzzleDetailClient({
       }
     })();
   }, [isAdmin, isRecruitingParty, puzzle.host_is_md, puzzle.id, supabase]);
-
-  // 방장 상담 횟수 — 리더 정보 시트를 열 때 1회만 조회 (서버 SSR 크리티컬 패스에서 이관).
-  // 서버가 쓰던 쿼리를 그대로 사용 (뷰어 권한 동일 → 결과값 불변).
-  useEffect(() => {
-    if (!showLeaderInfo || leaderConsultCount !== null || !puzzle.leader_id) return;
-    let cancelled = false;
-    (async () => {
-      const { count } = await supabase
-        .from("puzzle_offers")
-        .select("id, puzzle:puzzles!inner(leader_id)", { count: "exact", head: true })
-        .eq("puzzle.leader_id", puzzle.leader_id)
-        .not("leader_chat_started_at", "is", null);
-      if (!cancelled) setLeaderConsultCount(count ?? 0);
-    })();
-    return () => { cancelled = true; };
-  }, [showLeaderInfo, leaderConsultCount, puzzle.leader_id, supabase]);
 
   // 같은 클럽 오퍼끼리 묶어서 노출 (역경매라 가격 정렬 없음 — 등장 순서 유지하며 클럽만 클러스터링).
   // 버뮤다/오션/버뮤다/DM/버뮤다 → 버뮤다/버뮤다/버뮤다/오션/DM
@@ -2239,7 +2221,7 @@ export function PuzzleDetailClient({
       <LeaderInfoSheet
         open={showLeaderInfo}
         onOpenChange={setShowLeaderInfo}
-        leader={puzzle.leader ? { ...puzzle.leader, consultation_count: leaderConsultCount } : null}
+        leader={puzzle.leader ?? null}
       />
 
       {compareGroupKey && compareGroups.length > 0 && (

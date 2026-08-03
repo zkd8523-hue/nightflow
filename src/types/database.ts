@@ -1531,6 +1531,10 @@ export interface Suggestion {
   liked_by_me?: boolean;
   /** true면 비공개글이라 title/content 가 마스킹됨 (suggestions_public 뷰, Migration 496) */
   is_masked?: boolean;
+  /** 첨부 사진/동영상 (최대 4개). ChatMediaItem과 동일 shape 재사용(Migration 499) */
+  media: ChatMediaItem[];
+  /** 카테고리 nightflow/culture/club_issue (Migration 501) */
+  category?: string;
 }
 
 /** Migration 495 — 건의 댓글 (관리자 답변도 동일 테이블, role로만 구분) */

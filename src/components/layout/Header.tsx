@@ -582,17 +582,6 @@ export function Header({
                     </Link>
 
                     <Link
-                      href="/settings"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
-                    >
-                      <span className="w-9 h-9 rounded-xl bg-foreground/5 flex items-center justify-center shrink-0">
-                        <Settings className="w-[18px] h-[18px] text-muted-foreground" />
-                      </span>
-                      <span className="text-[15px] font-bold">설정</span>
-                    </Link>
-
-                    <Link
                       href="/suggestions"
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
@@ -604,6 +593,17 @@ export function Header({
                     </Link>
 
                     <div className="h-px bg-muted/50 my-2" />
+
+                    <Link
+                      href="/settings"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                    >
+                      <span className="w-9 h-9 rounded-xl bg-foreground/5 flex items-center justify-center shrink-0">
+                        <Settings className="w-[18px] h-[18px] text-muted-foreground" />
+                      </span>
+                      <span className="text-[15px] font-bold">설정</span>
+                    </Link>
 
                     <button
                       onClick={handleLogout}

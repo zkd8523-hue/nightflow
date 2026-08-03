@@ -13,7 +13,6 @@ interface Props {
     leader: {
         deal_count_total?: number | null;
         deal_amount_total?: number | null;
-        consultation_count?: number | null;
         created_at?: string | null;
         display_name?: string | null;
         name?: string | null;
@@ -48,7 +47,6 @@ export function LeaderInfoSheet({ open, onOpenChange, leader, title = "유저 �
     const dealAmount = leader.deal_amount_total ?? 0;
     const tier = getDealTier(dealAmount);
     const dealCount = leader.deal_count_total ?? 0;
-    const consultationCount = leader.consultation_count ?? 0;
     const leaderIsNew = isNewUser(leader.created_at);
 
     const signedUpShort = leader.created_at
@@ -173,19 +171,19 @@ export function LeaderInfoSheet({ open, onOpenChange, leader, title = "유저 �
                         </div>
                     </div>
 
-                    {/* 상담 횟수 */}
+                    {/* 거래 횟수 */}
                     <div className="bg-card/50 border border-border/40 rounded-2xl px-4 py-4">
                         <div className="flex items-center justify-between">
                             <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider">
-                                상담 횟수
+                                거래 횟수
                             </span>
                             <span className="text-2xl font-black text-foreground">
-                                {consultationCount}
+                                {dealCount}
                                 <span className="text-sm text-muted-foreground font-bold ml-0.5">회</span>
                             </span>
                         </div>
                         <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-                            MD와 실제로 메시지를 주고받은 오퍼 수
+                            승인된 리뷰 기준으로 실제 성사된 거래 수
                         </p>
                     </div>
 

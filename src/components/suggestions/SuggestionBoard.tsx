@@ -1,26 +1,35 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Lightbulb, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { SuggestionCard } from "@/components/suggestions/SuggestionCard";
+import { SUGGESTION_CATEGORIES, type SuggestionCategory } from "@/lib/suggestions/categories";
 
 export function SuggestionBoard() {
   const router = useRouter();
   const { user } = useCurrentUser();
-  const { suggestions, loading, toggleLike } = useSuggestions(user?.id);
+  const [filter, setFilter] = useState<SuggestionCategory | "all">("all");
+  const { suggestions, loading, toggleLike } = useSuggestions(
+    user?.id,
+    filter === "all" ? undefined : filter
+  );
 
   function goLogin(next: string) {
     router.push(`/login?redirect=${encodeURIComponent(next)}`);
   }
 
   function handleWrite() {
+    // 지금 보고 있는 카테고리 필터를 새 글 폼에 그대로 이어준다
+    const q = filter === "all" ? "" : `?category=${filter}`;
+    const next = `/suggestions/new${q}`;
     if (!user) {
-      goLogin("/suggestions/new");
+      goLogin(next);
       return;
     }
-    router.push("/suggestions/new");
+    router.push(next);
   }
 
   return (
@@ -35,11 +44,21 @@ export function SuggestionBoard() {
           >
             <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
-          <h1 className="text-xl font-black text-foreground">건의 게시판</h1>
+          <h1 className="text-xl font-black text-foreground">이야기 게시판</h1>
         </div>
-        <p className="text-[12px] text-muted-foreground mb-5 pl-12">
-          나플에 바라는 점을 남겨주세요.
-        </p>
+
+        {/* 카테고리 필터 */}
+        <div className="flex gap-2 mt-3 mb-5 overflow-x-auto scrollbar-hide -mx-4 px-4">
+          <FilterChip label="전체" active={filter === "all"} onClick={() => setFilter("all")} />
+          {SUGGESTION_CATEGORIES.map((c) => (
+            <FilterChip
+              key={c.value}
+              label={`${c.emoji} ${c.label}`}
+              active={filter === c.value}
+              onClick={() => setFilter(c.value)}
+            />
+          ))}
+        </div>
 
         {/* 목록 (항상 최신순) */}
         {loading ? (
@@ -48,16 +67,22 @@ export function SuggestionBoard() {
           </div>
         ) : suggestions.length === 0 ? (
           <div className="py-16 text-center">
-            <Lightbulb className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-[14px] font-bold text-foreground">아직 건의가 없어요</p>
+            <div className="text-[32px] leading-none mb-3">
+              {filter === "all"
+                ? "💬"
+                : SUGGESTION_CATEGORIES.find((c) => c.value === filter)?.emoji}
+            </div>
+            <p className="text-[14px] font-bold text-foreground">아직 글이 없어요</p>
             <p className="text-[12px] text-muted-foreground mt-1">
-              첫 건의를 남겨보세요
+              {filter === "all"
+                ? "첫 이야기를 남겨보세요"
+                : `${SUGGESTION_CATEGORIES.find((c) => c.value === filter)?.label}에 첫 글을 남겨보세요`}
             </p>
             <button
               onClick={handleWrite}
               className="mt-5 px-5 py-2.5 rounded-full text-[14px] font-black bg-inverse text-inverse-foreground"
             >
-              건의 남기기
+              글 남기기
             </button>
           </div>
         ) : (
@@ -85,5 +110,21 @@ export function SuggestionBoard() {
         <Pencil className="w-5 h-5" />
       </button>
     </div>
+  );
+}
+
+function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 h-8 px-3 rounded-full text-[12.5px] font-bold whitespace-nowrap transition-colors active:scale-95 ${
+        active
+          ? "bg-amber-500 text-black"
+          : "bg-card text-muted-foreground border border-border hover:bg-muted"
+      }`}
+    >
+      {label}
+    </button>
   );
 }

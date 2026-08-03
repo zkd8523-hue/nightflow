@@ -25,7 +25,6 @@ import {
   Check,
   Pencil,
   Globe,
-  BadgeCheck,
   type LucideIcon,
 } from "lucide-react";
 import { uploadImage } from "@/lib/utils/upload";
@@ -485,7 +484,10 @@ export function ClubDetailContent({
                     initialSlots={guestSignSlot.today_slots ?? []}
                   />
                 )}
-                <div className="flex items-center gap-2.5">
+                <Link
+                  href={`/u/${guestSignSlot.md.id}`}
+                  className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+                >
                   <div className="relative w-11 h-11 rounded-md overflow-hidden bg-muted shrink-0 ring-1 ring-amber-500/40">
                     {guestSignSlot.md.profile_image ? (
                       <Image
@@ -501,16 +503,12 @@ export function ClubDetailContent({
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                  <div className="flex-1 min-w-0">
                     <p className="text-foreground font-black text-[15px] truncate leading-tight">
                       {guestSignSlot.md.display_name ?? "담당 파트너"}
                     </p>
-                    <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-black leading-none">
-                      <BadgeCheck className="w-3 h-3" strokeWidth={2.5} />
-                      파트너
-                    </span>
                   </div>
-                </div>
+                </Link>
                 <div className={`grid gap-2 ${guestSignSlot.md.kakao_open_chat_url ? "grid-cols-2" : "grid-cols-1"}`}>
                   {guestSignSlot.md.instagram && (
                     <a

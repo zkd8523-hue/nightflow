@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Lock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
+import { ArrowLeft, ImagePlus, Lock, Play, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import type { Suggestion } from "@/types/database";
+import {
+  uploadSuggestionMedia,
+  SUGGESTION_MEDIA_MAX_COUNT,
+} from "@/lib/utils/uploadSuggestionMedia";
+import { SUGGESTION_CATEGORIES, type SuggestionCategory } from "@/lib/suggestions/categories";
+import type { ChatMediaItem, Suggestion } from "@/types/database";
 
 const TITLE_MAX = 60;
 const CONTENT_MAX = 2000;
@@ -18,12 +24,25 @@ interface Props {
 
 export function SuggestionForm({ suggestion }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading } = useCurrentUser();
   const isEdit = !!suggestion;
 
+  // 등록 모드: board 필터에서 넘어온 ?category= 를 초기 선택값으로 (유효값만)
+  const queryCategory = searchParams.get("category");
+  const initialCategory: SuggestionCategory =
+    (suggestion?.category as SuggestionCategory) ??
+    (SUGGESTION_CATEGORIES.some((c) => c.value === queryCategory)
+      ? (queryCategory as SuggestionCategory)
+      : "nightflow");
+
   const [title, setTitle] = useState(suggestion?.title ?? "");
   const [content, setContent] = useState(suggestion?.content ?? "");
+  const [category, setCategory] = useState<SuggestionCategory>(initialCategory);
   const [isPrivate, setIsPrivate] = useState(suggestion?.is_private ?? false);
+  const [media, setMedia] = useState<ChatMediaItem[]>(suggestion?.media ?? []);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   // 성공 후 폼을 잠가 중복 제출을 막는다 (조각 등록 중복 제출 이슈와 동일 대응)
   const [submitted, setSubmitted] = useState(false);
@@ -39,7 +58,33 @@ export function SuggestionForm({ suggestion }: Props) {
     title.trim().length >= 2 &&
     content.trim().length >= 5 &&
     !submitting &&
-    !submitted;
+    !submitted &&
+    !uploading;
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0 || !user) return;
+    const slotsLeft = SUGGESTION_MEDIA_MAX_COUNT - media.length;
+    if (slotsLeft <= 0) {
+      toast.error(`사진/동영상은 최대 ${SUGGESTION_MEDIA_MAX_COUNT}개까지 첨부할 수 있어요`);
+      return;
+    }
+    const toUpload = Array.from(files).slice(0, slotsLeft);
+    if (files.length > toUpload.length) {
+      toast.error(`최대 ${SUGGESTION_MEDIA_MAX_COUNT}개까지만 첨부돼요`);
+    }
+
+    setUploading(true);
+    const uploaded = await Promise.all(
+      toUpload.map((f) => uploadSuggestionMedia(f, user.id))
+    );
+    const ok = uploaded.filter((m): m is ChatMediaItem => m !== null);
+    setMedia((prev) => [...prev, ...ok].slice(0, SUGGESTION_MEDIA_MAX_COUNT));
+    setUploading(false);
+  }
+
+  function removeMedia(index: number) {
+    setMedia((prev) => prev.filter((_, i) => i !== index));
+  }
 
   async function handleSubmit() {
     if (!user || !canSubmit) return;
@@ -49,7 +94,10 @@ export function SuggestionForm({ suggestion }: Props) {
     const payload = {
       title: title.trim(),
       content: content.trim(),
-      is_private: isPrivate,
+      category,
+      // 관리자만 보기는 나플 건의에만 — 클럽 문화·문제 제보는 항상 공개
+      is_private: category === "nightflow" ? isPrivate : false,
+      media,
     };
 
     const { data, error } = isEdit
@@ -98,13 +146,39 @@ export function SuggestionForm({ suggestion }: Props) {
           </h1>
         </div>
 
+        {/* 카테고리 */}
+        <label className="block text-[13px] font-bold text-foreground mb-2">카테고리</label>
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {SUGGESTION_CATEGORIES.map((c) => {
+            const active = category === c.value;
+            return (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setCategory(c.value)}
+                disabled={submitted}
+                className={`flex flex-col items-center gap-0.5 py-2.5 rounded-xl border text-center transition-all active:scale-[0.98] disabled:opacity-60 ${
+                  active
+                    ? "bg-amber-500/15 border-amber-500/50 ring-1 ring-amber-500/30"
+                    : "bg-card border-border hover:bg-muted"
+                }`}
+              >
+                <span className="text-[18px] leading-none">{c.emoji}</span>
+                <span className={`text-[11.5px] font-bold ${active ? "text-brand-amber" : "text-foreground/80"}`}>
+                  {c.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* 제목 */}
         <label className="block text-[13px] font-bold text-foreground mb-2">제목</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           maxLength={TITLE_MAX}
-          placeholder="한 줄로 요약해주세요"
+          placeholder=""
           disabled={submitted}
           className="w-full bg-card border border-border rounded-xl px-4 h-12 text-foreground text-[15px] placeholder:text-muted-foreground focus:outline-none focus:border-border disabled:opacity-60"
         />
@@ -119,7 +193,10 @@ export function SuggestionForm({ suggestion }: Props) {
           onChange={(e) => setContent(e.target.value)}
           maxLength={CONTENT_MAX}
           rows={8}
-          placeholder="어떤 점이 불편했는지, 어떻게 바뀌면 좋을지 적어주세요"
+          placeholder={
+            SUGGESTION_CATEGORIES.find((c) => c.value === category)?.contentPlaceholder ??
+            "자유롭게 적어주세요"
+          }
           disabled={submitted}
           className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground text-[15px] placeholder:text-muted-foreground focus:outline-none focus:border-border resize-none disabled:opacity-60"
         />
@@ -127,7 +204,59 @@ export function SuggestionForm({ suggestion }: Props) {
           {content.length}/{CONTENT_MAX}
         </div>
 
-        {/* 관리자만 보기 */}
+        {/* 사진/동영상 첨부 */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            handleFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        <div className="mt-3 flex flex-wrap gap-2">
+          {media.map((m, i) => (
+            <div
+              key={`${m.url}-${i}`}
+              className="relative w-16 h-16 rounded-xl overflow-hidden bg-card border border-border shrink-0"
+            >
+              {m.type === "video" ? (
+                <div className="w-full h-full flex items-center justify-center bg-muted">
+                  <Play className="w-5 h-5 text-muted-foreground" />
+                </div>
+              ) : (
+                <Image src={m.url} alt="" fill sizes="64px" className="object-cover" />
+              )}
+              <button
+                type="button"
+                onClick={() => removeMedia(i)}
+                disabled={submitted}
+                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white"
+                aria-label="첨부 삭제"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          {media.length < SUGGESTION_MEDIA_MAX_COUNT && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={submitted || uploading}
+              className="w-16 h-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-0.5 text-muted-foreground disabled:opacity-60 shrink-0"
+            >
+              <ImagePlus className="w-5 h-5" />
+              <span className="text-[10px] font-bold">
+                {uploading ? "업로드중" : `${media.length}/${SUGGESTION_MEDIA_MAX_COUNT}`}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* 관리자만 보기 — 나플 건의에만 (클럽 문화·문제는 공개 토론이 목적) */}
+        {category === "nightflow" && (
         <div className="mt-5 bg-card border border-border rounded-xl p-4">
           <div className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2 text-[14px] font-bold text-foreground">
@@ -158,6 +287,7 @@ export function SuggestionForm({ suggestion }: Props) {
               : "다른 회원도 볼 수 있고, 공감과 댓글을 남길 수 있습니다."}
           </p>
         </div>
+        )}
 
         {/* 제출 */}
         <button
