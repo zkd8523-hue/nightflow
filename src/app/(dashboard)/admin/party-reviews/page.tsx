@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ThumbsUp, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 interface Stats {
@@ -12,6 +12,17 @@ interface Stats {
   reviews_total: number;
   likes_total: number;
   top_tags: { tag: string; count: number }[];
+}
+
+interface ReviewRow {
+  id: string;
+  area: string | null;
+  event_date: string | null;
+  reviewer_name: string | null;
+  reviewee_name: string | null;
+  liked: boolean;
+  tags: string[];
+  created_at: string;
 }
 
 export default async function AdminPartyReviewsPage() {
@@ -25,8 +36,12 @@ export default async function AdminPartyReviewsPage() {
     if (ud?.role !== "admin") redirect("/");
   }
 
-  const { data } = await supabase.rpc("admin_party_review_stats");
+  const [{ data }, { data: listData }] = await Promise.all([
+    supabase.rpc("admin_party_review_stats"),
+    supabase.rpc("admin_list_party_reviews", { p_limit: 100 }),
+  ]);
   const s = (data ?? {}) as Partial<Stats>;
+  const rows = (listData ?? []) as ReviewRow[];
   const visitRate = s.answered_total ? Math.round(((s.visited_yes ?? 0) / s.answered_total) * 100) : 0;
 
   return (
@@ -83,6 +98,39 @@ export default async function AdminPartyReviewsPage() {
                 <span key={t.tag} className="inline-flex items-center gap-1 text-[12px] font-bold px-2.5 py-1.5 rounded-full bg-amber-500/12 text-brand-amber border border-amber-500/25">
                   {t.tag} <span className="text-muted-foreground tabular-nums">{t.count}</span>
                 </span>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* 개별 리뷰 — 누가 누구에게 */}
+        <section className="space-y-2">
+          <h2 className="text-[13px] font-black text-foreground/80">개별 리뷰 (누가 → 누구에게)</h2>
+          {rows.length === 0 ? (
+            <p className="text-[13px] text-muted-foreground py-6 text-center">아직 리뷰가 없어요</p>
+          ) : (
+            <div className="space-y-2">
+              {rows.map((r) => (
+                <div key={r.id} className="rounded-xl bg-card border border-border p-3 space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[13px] font-bold">
+                    <span className="text-foreground">{r.reviewer_name ?? "익명"}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-brand-amber">{r.reviewee_name ?? "익명"}</span>
+                    {r.liked && <ThumbsUp className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />}
+                  </div>
+                  {r.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {r.tags.map((t) => (
+                        <span key={t} className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/12 text-brand-amber border border-amber-500/25">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-[10.5px] text-muted-foreground">
+                    {r.area ?? ""} {r.event_date ?? ""}
+                  </p>
+                </div>
               ))}
             </div>
           )}
