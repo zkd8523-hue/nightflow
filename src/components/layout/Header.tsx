@@ -42,7 +42,7 @@ import {
   HelpCircle,
   Headset,
   Globe,
-  Lightbulb,
+  Megaphone,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
@@ -587,9 +587,9 @@ export function Header({
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
                       <span className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
-                        <Lightbulb className="w-[18px] h-[18px] text-brand-amber" />
+                        <Megaphone className="w-[18px] h-[18px] text-brand-amber" />
                       </span>
-                      <span className="text-[15px] font-bold">건의 게시판</span>
+                      <span className="text-[15px] font-bold">자유게시판</span>
                     </Link>
 
                     <div className="h-px bg-muted/50 my-2" />
@@ -686,9 +686,9 @@ export function Header({
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                   >
                     <span className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
-                      <Lightbulb className="w-[18px] h-[18px] text-brand-amber" />
+                      <Megaphone className="w-[18px] h-[18px] text-brand-amber" />
                     </span>
-                    <span className="text-[15px] font-bold">건의 게시판</span>
+                    <span className="text-[15px] font-bold">자유게시판</span>
                   </Link>
                 </nav>
               </SheetContent>

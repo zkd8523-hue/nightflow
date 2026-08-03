@@ -43,12 +43,10 @@ export function SuggestionDetail({ id }: { id: string }) {
   async function handleDelete() {
     if (!confirm("이 건의를 삭제할까요?")) return;
     const supabase = createClient();
-    const { error } = await supabase
-      .from("suggestions")
-      .update({ is_deleted: true })
-      .eq("id", id);
-    if (error) {
-      toast.error("삭제 실패");
+    // admin의 남의 글 삭제가 UPDATE 정책 WITH CHECK에 걸리므로 SECURITY DEFINER RPC 사용 (502)
+    const { data, error } = await supabase.rpc("soft_delete_suggestion", { p_id: id });
+    if (error || !(data as { success?: boolean })?.success) {
+      toast.error(error?.message || (data as { error?: string })?.error || "삭제 실패");
       return;
     }
     toast.success("삭제되었습니다");

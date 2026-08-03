@@ -1,5 +1,5 @@
-// 건의 게시판 카테고리 (Migration 501)
-export type SuggestionCategory = "nightflow" | "culture" | "club_issue";
+// 건의 게시판 카테고리 (Migration 501, 503)
+export type SuggestionCategory = "nightflow" | "club_issue" | "free";
 
 export const SUGGESTION_CATEGORIES: {
   value: SuggestionCategory;
@@ -10,18 +10,18 @@ export const SUGGESTION_CATEGORIES: {
   contentPlaceholder: string;
 }[] = [
   {
+    value: "free",
+    label: "자유",
+    emoji: "💬",
+    hint: "아무 이야기나",
+    contentPlaceholder: "아무 이야기나 자유롭게 남겨주세요",
+  },
+  {
     value: "nightflow",
     label: "나플에 바라는 점",
     emoji: "💡",
     hint: "앱 개선·건의",
     contentPlaceholder: "어떤 점이 불편했는지, 어떻게 바뀌면 좋을지 적어주세요",
-  },
-  {
-    value: "culture",
-    label: "클럽 문화 이야기",
-    emoji: "🎧",
-    hint: "씬·매너·팁 토론",
-    contentPlaceholder: "클럽 문화·매너·꿀팁, 자유롭게 이야기해요",
   },
   {
     value: "club_issue",

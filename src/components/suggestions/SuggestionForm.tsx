@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, ImagePlus, Lock, Play, X } from "lucide-react";
+import { ArrowLeft, ImagePlus, Loader2, Lock, Play, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -34,7 +34,7 @@ export function SuggestionForm({ suggestion }: Props) {
     (suggestion?.category as SuggestionCategory) ??
     (SUGGESTION_CATEGORIES.some((c) => c.value === queryCategory)
       ? (queryCategory as SuggestionCategory)
-      : "nightflow");
+      : "free");
 
   const [title, setTitle] = useState(suggestion?.title ?? "");
   const [content, setContent] = useState(suggestion?.content ?? "");
@@ -223,8 +223,18 @@ export function SuggestionForm({ suggestion }: Props) {
               className="relative w-16 h-16 rounded-xl overflow-hidden bg-card border border-border shrink-0"
             >
               {m.type === "video" ? (
-                <div className="w-full h-full flex items-center justify-center bg-muted">
-                  <Play className="w-5 h-5 text-muted-foreground" />
+                <div className="relative w-full h-full bg-black">
+                  {/* 첫 프레임을 썸네일로 (#t=0.1로 프레임 강제 로드) */}
+                  <video
+                    src={`${m.url}#t=0.1`}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <Play className="w-5 h-5 text-white drop-shadow" fill="currentColor" />
+                  </span>
                 </div>
               ) : (
                 <Image src={m.url} alt="" fill sizes="64px" className="object-cover" />
@@ -240,20 +250,30 @@ export function SuggestionForm({ suggestion }: Props) {
               </button>
             </div>
           ))}
-          {media.length < SUGGESTION_MEDIA_MAX_COUNT && (
+          {/* 업로드 중 스켈레톤 타일 — 정적 대신 스피너+펄스로 진행 중임을 명확히 */}
+          {uploading && (
+            <div className="w-16 h-16 rounded-xl border border-border bg-muted flex flex-col items-center justify-center gap-1 shrink-0 animate-pulse">
+              <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+              <span className="text-[9px] font-bold text-muted-foreground">업로드중</span>
+            </div>
+          )}
+          {media.length < SUGGESTION_MEDIA_MAX_COUNT && !uploading && (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={submitted || uploading}
+              disabled={submitted}
               className="w-16 h-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-0.5 text-muted-foreground disabled:opacity-60 shrink-0"
             >
               <ImagePlus className="w-5 h-5" />
-              <span className="text-[10px] font-bold">
-                {uploading ? "업로드중" : `${media.length}/${SUGGESTION_MEDIA_MAX_COUNT}`}
-              </span>
+              <span className="text-[10px] font-bold">{media.length}/{SUGGESTION_MEDIA_MAX_COUNT}</span>
             </button>
           )}
         </div>
+        {uploading && (
+          <p className="mt-2 text-[11.5px] text-muted-foreground">
+            업로드 중이에요. 동영상은 크기에 따라 시간이 걸릴 수 있어요.
+          </p>
+        )}
 
         {/* 관리자만 보기 — 나플 건의에만 (클럽 문화·문제는 공개 토론이 목적) */}
         {category === "nightflow" && (

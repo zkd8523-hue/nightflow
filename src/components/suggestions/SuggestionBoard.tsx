@@ -44,7 +44,7 @@ export function SuggestionBoard() {
           >
             <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
-          <h1 className="text-xl font-black text-foreground">이야기 게시판</h1>
+          <h1 className="text-xl font-black text-foreground">자유게시판</h1>
         </div>
 
         {/* 카테고리 필터 */}
@@ -69,7 +69,7 @@ export function SuggestionBoard() {
           <div className="py-16 text-center">
             <div className="text-[32px] leading-none mb-3">
               {filter === "all"
-                ? "💬"
+                ? "📝"
                 : SUGGESTION_CATEGORIES.find((c) => c.value === filter)?.emoji}
             </div>
             <p className="text-[14px] font-bold text-foreground">아직 글이 없어요</p>
@@ -82,7 +82,7 @@ export function SuggestionBoard() {
               onClick={handleWrite}
               className="mt-5 px-5 py-2.5 rounded-full text-[14px] font-black bg-inverse text-inverse-foreground"
             >
-              글 남기기
+              글쓰기
             </button>
           </div>
         ) : (

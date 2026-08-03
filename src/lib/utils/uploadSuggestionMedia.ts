@@ -2,7 +2,7 @@
  * 건의 게시판 미디어 업로드 (이미지/동영상 통합)
  * - uploadChatMedia.ts(287) 와 동일 로직, 버킷만 suggestion-media(499)
  * - 이미지: 5MB 제한, 1920px로 압축
- * - 동영상: 100MB / 60초 제한, 압축 없음 (트랜스코딩 무거움)
+ * - 동영상: 50MB / 30초 제한, 압축 없음 (트랜스코딩 무거움). 메타 못 읽어도 업로드는 진행
  * - 경로: {auth.uid()}/{timestamp}-{rand}.{ext}
  */
 
@@ -11,8 +11,8 @@ import { toast } from "sonner";
 import type { ChatMediaItem, ChatMediaType } from "@/types/database";
 
 export const SUGGESTION_IMAGE_MAX_MB = 5;
-export const SUGGESTION_VIDEO_MAX_MB = 100;
-export const SUGGESTION_VIDEO_MAX_SECONDS = 60;
+export const SUGGESTION_VIDEO_MAX_MB = 50;
+export const SUGGESTION_VIDEO_MAX_SECONDS = 30;
 export const SUGGESTION_MEDIA_MAX_COUNT = 4;
 
 function isImage(file: File) {
@@ -148,18 +148,19 @@ export async function uploadSuggestionMedia(
         toast.error(`동영상은 ${SUGGESTION_VIDEO_MAX_MB}MB 이하만 가능합니다`);
         return null;
       }
+      // 메타(길이/해상도)는 있으면 좋고 없어도 업로드는 진행한다.
+      // 아이폰 HEVC 등 일부 코덱은 브라우저가 메타를 못 읽어(onerror) — 예전엔 여기서
+      // 무조건 차단해 "동영상이 아예 안 올라가는" 버그였음. 길이 제한은 메타 읽힐 때만 적용.
       try {
         const meta = await getVideoMeta(file);
-        if (meta.duration > SUGGESTION_VIDEO_MAX_SECONDS) {
-          toast.error(
-            `동영상 길이는 ${SUGGESTION_VIDEO_MAX_SECONDS}초 이하만 가능합니다`
-          );
+        if (meta.duration && meta.duration > SUGGESTION_VIDEO_MAX_SECONDS) {
+          toast.error(`동영상 길이는 ${SUGGESTION_VIDEO_MAX_SECONDS}초 이하만 가능합니다`);
           return null;
         }
         extra = meta;
       } catch {
-        toast.error("동영상 정보를 읽을 수 없습니다");
-        return null;
+        console.warn("[uploadSuggestionMedia] 동영상 메타 읽기 실패 — 메타 없이 업로드 진행");
+        /* 메타 실패해도 업로드는 진행 (크기 제한으로 이미 보호됨) */
       }
     } else {
       toast.error("지원하지 않는 파일 형식입니다");
@@ -176,7 +177,15 @@ export async function uploadSuggestionMedia(
 
     if (error) {
       console.error("[uploadSuggestionMedia] storage error", error);
-      toast.error("업로드에 실패했습니다");
+      // 실제 사유 노출 (형식 미허용·용량 초과 등 원인 파악)
+      const msg = error.message || "";
+      if (/mime|content type|not allowed/i.test(msg)) {
+        toast.error("지원하지 않는 동영상 형식이에요 (mp4·mov·webm만)");
+      } else if (/exceeded|too large|size/i.test(msg)) {
+        toast.error(`파일이 너무 커요 (동영상 ${SUGGESTION_VIDEO_MAX_MB}MB 이하)`);
+      } else {
+        toast.error(`업로드 실패: ${msg || "알 수 없는 오류"}`);
+      }
       return null;
     }
 
