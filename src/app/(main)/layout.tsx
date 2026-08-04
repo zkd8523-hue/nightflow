@@ -13,6 +13,7 @@ import { FlagCreatedInstallSheet } from "@/components/puzzles/FlagCreatedInstall
 import { ChatUpdateSheet } from "@/components/common/ChatUpdateSheet";
 import { InAppBrowserBanner } from "@/components/common/InAppBrowserBanner";
 import { PriceRangeOnboardingSheet } from "@/components/md/PriceRangeOnboardingSheet";
+import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
 import { GuestSignPromoGate } from "@/components/md/GuestSignPromoGate";
 import { AppFeedbackSheet } from "@/components/feedback/AppFeedbackSheet";
 import { CameraLayer } from "@/components/chat/CameraLayer";
@@ -131,6 +132,8 @@ export default function MainLayout({
         <FlagCreatedInstallSheet />
         <ChatUpdateSheet />
         <PriceRangeOnboardingSheet />
+        {/* 조각 가이드 — 홈에서는 "지금 잡을 수 있는 자리가 있을 때"만 (계정당 1회) */}
+        <ShareOnboardingSheet onlyWhenSlotOpen />
         <GuestSignPromoGate />
         <AppFeedbackSheet />
         {/* AppFeedbackSheet 자체가 인게이지먼트 게이팅 → 다른 우선 시트와 시각적으로만 안 겹치게 마지막 마운트 */}

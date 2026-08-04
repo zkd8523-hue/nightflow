@@ -13,19 +13,49 @@ import { BadgeCheck } from "lucide-react";
  * 대시보드만 봐서는 그 흐름이 안 보인다(요일 토글이 무슨 의미인지 알 수 없음).
  * 자리 잡기 → 세팅 켜기 → 유저 홈 노출 → 채팅까지 한 화면에 보여준다.
  *
- * 노출 여부는 계정 단위(users.share_guide_seen, Migration 523)로 저장한다.
+ * 흐름은 2단계다. 큰 가이드를 갑자기 띄우면 읽을 마음이 없는 파트너에겐 방해일 뿐이라,
+ * 먼저 한 줄짜리 안내로 물어본다.
+ *   나중에         → 이번만 닫음(다음 방문에 다시)
+ *   더보기         → 전체 가이드 → 닫으면 share_guide_seen = true (끝)
+ *   한 달간 보지 않기 → share_guide_snoozed_until = now + 30일 (Migration 525)
+ *
+ * onlyWhenSlotOpen: 홈처럼 조각과 직접 상관없는 화면에서는 "지금 잡을 수 있는 자리가
+ * 있을 때"만 띄운다. 내 클럽이 전부 남에게 잡혀 있으면 읽어도 할 수 있는 게 없다.
  */
-export function ShareOnboardingSheet() {
+export function ShareOnboardingSheet({ onlyWhenSlotOpen = false }: { onlyWhenSlotOpen?: boolean } = {}) {
   const { user, isLoading, refetch } = useCurrentUser();
+  const [teaserOpen, setTeaserOpen] = useState(false);
   const [open, setOpen] = useState(false);
 
   const isMd = user?.role === "md" || user?.role === "admin";
 
   useEffect(() => {
+    // 로컬 확인용: ?shareGuide=1 이면 조건 무시하고 바로 띄운다(프로덕션 제외)
+    if (
+      process.env.NEXT_PUBLIC_VERCEL_ENV !== "production" &&
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("shareGuide") === "1"
+    ) {
+      setTeaserOpen(true);
+      return;
+    }
     if (isLoading || !user || !isMd) return;
     if (user.share_guide_seen) return;
-    setOpen(true);
-  }, [user, isLoading, isMd]);
+    if (user.share_guide_snoozed_until && new Date(user.share_guide_snoozed_until) > new Date()) return;
+    if (!onlyWhenSlotOpen) {
+      setTeaserOpen(true);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await createClient().rpc("get_my_share_slot_status");
+      if (cancelled || !data?.success) return;
+      // 비어 있는 자리가 하나라도 있어야 안내가 행동으로 이어진다
+      const hasOpenSlot = (data.clubs as { holder_id: string | null }[]).some((c) => !c.holder_id);
+      if (hasOpenSlot) setTeaserOpen(true);
+    })();
+    return () => { cancelled = true; };
+  }, [user, isLoading, isMd, onlyWhenSlotOpen]);
 
   // best-effort: DB 쓰기가 실패해도 사용자를 시트에 가두지 않는다.
   const dismiss = async () => {
@@ -36,7 +66,56 @@ export function ShareOnboardingSheet() {
     refetch();
   };
 
+  /** 한 달 뒤에 다시 — 봤다고 표시하지 않는다(아직 안 읽었으므로) */
+  const snoozeMonth = async () => {
+    setTeaserOpen(false);
+    if (!user) return;
+    const until = new Date(Date.now() + 30 * 86400000).toISOString();
+    const supabase = createClient();
+    await supabase.from("users").update({ share_guide_snoozed_until: until }).eq("id", user.id);
+    refetch();
+  };
+
   return (
+    <>
+    {/* 1단계 — 한 줄 안내 */}
+    <Sheet open={teaserOpen} onOpenChange={(v) => { if (!v) setTeaserOpen(false); }}>
+      <SheetContent
+        side="bottom"
+        className="bg-background border-border rounded-t-3xl px-5 pt-6 pb-7"
+      >
+        <SheetHeader className="text-left p-0 gap-0 mb-5">
+          <SheetTitle className="text-foreground text-[19px] font-black tracking-tight leading-tight">
+            <span className="text-brand-amber text-[23px]">조각</span>이 바뀌었어요! 🧩
+          </SheetTitle>
+        </SheetHeader>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setTeaserOpen(false)}
+            className="flex-1 h-12 rounded-xl bg-muted text-muted-foreground font-black text-[14px] active:scale-95 transition-transform"
+          >
+            나중에
+          </button>
+          <button
+            type="button"
+            onClick={() => { setTeaserOpen(false); setOpen(true); }}
+            className="flex-1 h-12 rounded-xl bg-amber-500 text-black font-black text-[14px] active:scale-95 transition-transform"
+          >
+            더보기
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={snoozeMonth}
+          className="w-full mt-3 text-center text-[11.5px] font-bold text-muted-foreground underline underline-offset-2"
+        >
+          한 달간 보지 않기
+        </button>
+      </SheetContent>
+    </Sheet>
+
+    {/* 2단계 — 전체 가이드 */}
     <Sheet open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
       <SheetContent
         side="bottom"
@@ -52,7 +131,7 @@ export function ShareOnboardingSheet() {
 
         {/* 1. 자리 잡기 */}
         <p className="text-[12.5px] font-black text-foreground mb-1.5">1. 이번 주 자리 잡기</p>
-        <div className="bg-card border border-border rounded-2xl p-3">
+        <div className="bg-card border border-border rounded-2xl p-3 shrink-0">
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <p className="text-[13.5px] font-black text-foreground">클럽 아레나</p>
@@ -70,8 +149,10 @@ export function ShareOnboardingSheet() {
 
         {/* 2. 세팅 — 실제 ShareLiveToggleList 행과 같은 형태 */}
         <p className="text-[12.5px] font-black text-foreground mb-1.5">2. 나만의 조각 세팅</p>
-        <div className="border border-border rounded-2xl overflow-hidden">
-          <div className="bg-card px-3.5 py-3 space-y-2">
+        {/* overflow-hidden 금지 — SheetContent가 flex 컨테이너라, overflow가 visible이 아니면
+            자동 최소 크기가 0이 되어 내용이 넘칠 때 이 블록만 0높이로 찌그러진다. */}
+        <div className="bg-card border border-border rounded-2xl shrink-0">
+          <div className="px-3.5 py-3 space-y-2">
             <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
@@ -111,9 +192,20 @@ export function ShareOnboardingSheet() {
 
         {/* 3. 유저 홈 노출 — 실제 ClubDirectCard 형태 */}
         <p className="text-[12.5px] font-black text-foreground mb-1.5">3. 이렇게 홈에서 노출돼요</p>
-        <div className="bg-card border border-border rounded-2xl p-3">
+        <div className="flex items-center gap-2 mb-2 shrink-0">
+          <span className="bg-amber-500 text-black text-[12px] font-black rounded-[10px] px-2.5 py-1.5 leading-none shrink-0">
+            🧩 조각
+          </span>
+          <span className="text-[15px] font-black text-foreground">8월 5일 (수)</span>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-3 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-[62px] h-[62px] rounded-xl bg-muted shrink-0" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/guide-club-sample.jpg"
+              alt=""
+              className="w-[62px] h-[62px] rounded-xl object-cover shrink-0"
+            />
             <div className="flex-1 min-w-0 flex flex-col gap-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-[15px] font-black text-foreground truncate">클럽 아레나</span>
@@ -122,6 +214,7 @@ export function ShareOnboardingSheet() {
               <span className="self-start inline-flex items-center gap-1 text-[10px] font-black bg-blue-500/15 text-blue-400 rounded-md px-1.5 py-[3px] leading-none">
                 <BadgeCheck className="w-3 h-3" />클럽 다이렉트
               </span>
+              <span className="text-[12px] text-muted-foreground font-bold">4~6인</span>
               <span className="text-[14px] font-black">
                 <span className="text-[11px] text-muted-foreground font-bold">인당 </span>
                 <span className="text-money">150,000원</span>
@@ -130,12 +223,23 @@ export function ShareOnboardingSheet() {
             </div>
           </div>
           <div className="mt-2.5 pt-2 border-t border-border/60">
-            <div className="flex items-center gap-2 py-1 text-[12px] font-bold">
-              <span className="text-foreground">가성비</span>
-              <span className="ml-auto text-money font-black tabular-nums">15만</span>
-              <span className="w-[42px] text-right text-muted-foreground tabular-nums">6인</span>
-            </div>
-            <p className="text-[11.5px] text-muted-foreground font-bold pt-1">＋ 2개 더</p>
+            {[
+              { name: "가성비", seats: "6인", price: "15만" },
+              { name: "초메인", seats: "5인", price: "20만" },
+            ].map((x) => (
+              <div key={x.name} className="flex items-center gap-2 py-1.5 text-[12px] font-bold">
+                <span className="text-foreground">
+                  {x.name} <span className="text-muted-foreground">{x.seats}</span>
+                </span>
+                <span className="ml-auto text-money font-black tabular-nums">{x.price}</span>
+              </div>
+            ))}
+            <p className="text-[11.5px] text-muted-foreground font-bold pt-1.5">＋ 2개 더</p>
+          </div>
+          <div className="mt-2 flex justify-end">
+            <span className="h-8 px-3.5 rounded-full bg-green-500 text-black font-black text-[12px] flex items-center">
+              더보기
+            </span>
           </div>
         </div>
         <p className="text-[11px] text-muted-foreground font-semibold mt-1.5">
@@ -146,7 +250,7 @@ export function ShareOnboardingSheet() {
 
         {/* 4. 채팅 */}
         <p className="text-[12.5px] font-black text-foreground mb-1.5">4. 유저가 채팅으로 참가해요</p>
-        <div className="bg-card border border-border rounded-2xl p-3 flex flex-col gap-2">
+        <div className="bg-card border border-border rounded-2xl p-3 flex flex-col gap-2 shrink-0">
           <span className="self-start bg-muted text-foreground text-[11.5px] font-bold px-3 py-1.5 rounded-xl">
             4명인데 자리 되나요?
           </span>
@@ -162,14 +266,8 @@ export function ShareOnboardingSheet() {
         >
           좋아요! 시작할게요
         </button>
-        <button
-          type="button"
-          onClick={dismiss}
-          className="w-full mt-2.5 text-center text-[11.5px] font-bold text-muted-foreground underline underline-offset-2"
-        >
-          다시 보지 않기
-        </button>
       </SheetContent>
     </Sheet>
+    </>
   );
 }

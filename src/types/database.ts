@@ -134,6 +134,8 @@ export interface User {
   app_feedback_prompt_seen: boolean;
   /** 파트너 조각 가이드(ShareOnboardingSheet) 노출 완료 여부 (계정당 1회). Migration 523 */
   share_guide_seen: boolean;
+  /** 조각 가이드 "한 달간 보지 않기" 만료 시각. NULL이면 제한 없음. Migration 525 */
+  share_guide_snoozed_until: string | null;
   /** 파트너 크레딧 가이드(OfferCreditGuideSheet) 노출 완료 여부 (깃발 상세 첫 진입 1회). Migration 523 */
   offer_credit_guide_seen: boolean;
   /** 유저 조각 결제 안내(ShareJoinGuideSheet) 노출 완료 여부 (조각 상세 첫 진입 1회). Migration 523 */
