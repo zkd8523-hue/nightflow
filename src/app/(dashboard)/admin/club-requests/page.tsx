@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { ChevronLeft, Sparkles, TrendingUp } from "lucide-react";
+import { ChevronLeft, Sparkles, TrendingUp, Star } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 
@@ -64,6 +64,16 @@ export default async function AdminClubRequestsPage() {
   }
   const ranked = [...freq.values()].sort((a, b) => b.count - a.count || (b.latest > a.latest ? 1 : -1));
 
+  // 등록 클럽 수요 (Migration 504) — "오늘 가고싶은 클럽"으로 지정된 깃발이 쌓인 등록 클럽.
+  // has_md=false인데 demand_count 높은 클럽 = "원하는데 파트너 MD가 없는 클럽" → 영업 최우선 타겟.
+  const { data: demandRows } = await supabase
+    .from("club_demand_counts")
+    .select("id, name, area, demand_count, has_md")
+    .gt("demand_count", 0)
+    .order("demand_count", { ascending: false })
+    .limit(10);
+  const demand = demandRows ?? [];
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto max-w-2xl px-4 py-6">
@@ -116,6 +126,47 @@ export default async function AdminClubRequestsPage() {
                 ))}
               </div>
             )}
+          </Card>
+        )}
+
+        {/* 등록 클럽 수요 — 깃발이 지정한 "오늘 가고싶은 클럽" 집계 (Migration 504) */}
+        {demand.length > 0 && (
+          <Card className="bg-card border-border/50 p-4 mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <Star className="w-4 h-4 text-brand-amber" />
+              <h2 className="text-[13px] font-black text-foreground">등록 클럽 수요 TOP</h2>
+            </div>
+            <p className="text-[11px] text-muted-foreground mb-3">
+              깃발에서 &ldquo;오늘 가고싶은 클럽&rdquo;으로 지정된 횟수 · 파트너 MD 없는 곳은 영업 타겟
+            </p>
+            <div className="space-y-2">
+              {demand.map((r, i) => (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between gap-3 py-2 border-b border-border last:border-0"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-[11px] font-black text-muted-foreground w-5 tabular-nums">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-bold text-foreground truncate">{r.name}</p>
+                      {r.area && <p className="text-[11px] text-muted-foreground truncate">{r.area}</p>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {!r.has_md && (
+                      <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[11px] font-black whitespace-nowrap">
+                        영업 타겟
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-brand-amber text-[11px] font-black">
+                      {r.demand_count}건
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </Card>
         )}
 

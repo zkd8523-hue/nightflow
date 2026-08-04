@@ -22,6 +22,7 @@ import {
   matchesDate as matchesDatePuzzle,
 } from "@/lib/utils/puzzleFilters";
 import { getPuzzleGroupDeadline, getDDayLabel } from "@/lib/utils/format";
+import { usePreferredClubMeta } from "@/hooks/usePreferredClubMeta";
 
 const NBI_CHIPS: { value: NbiFilter; label: string }[] = [
   { value: "all", label: "전체" },
@@ -166,6 +167,9 @@ export function PuzzleList({
       if (offers) setMyOfferedPuzzleIds(new Set(offers.map(d => d.puzzle_id)));
     })();
   }, []);
+
+  // 제안받고 싶은 클럽(Migration 504) 칩/배지 메타 — HomePuzzleCarousel과 공용 훅
+  const { preferredClubNames, myClubIds } = usePreferredClubMeta(puzzles, userRole);
 
   // Phase 1: 3종 필터 (엔비/자리/날짜) + 파티원 모집만 토글. 지역은 부모(AuctionList).
   // partyOnly=false(기본): 혼합. partyOnly=true: 파티원 모집중 퍼즐만.
@@ -402,6 +406,8 @@ export function PuzzleList({
                   hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
                   onJoin={(p) => setJoinTarget(p)}
                   onUnlock={(p) => setUnlockTarget(p)}
+                  preferredClubNames={preferredClubNames}
+                  myClubIds={myClubIds}
                 />
               </Link>
             ))}
@@ -500,7 +506,8 @@ export function PuzzleList({
                       <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); }}>
                         <PuzzleCard puzzle={puzzle} userRole={userRole} offerCount={offerCounts[puzzle.id] || 0}
                           isMember={myPuzzleIds.has(puzzle.id)} hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
-                          onJoin={(p) => setJoinTarget(p)} onUnlock={(p) => setUnlockTarget(p)} />
+                          onJoin={(p) => setJoinTarget(p)} onUnlock={(p) => setUnlockTarget(p)}
+                          preferredClubNames={preferredClubNames} myClubIds={myClubIds} />
                       </Link>
                     ))}
                   </div>
@@ -659,6 +666,8 @@ export function PuzzleList({
                           onUnlock={(p) => {
                             setUnlockTarget(p);
                           }}
+                          preferredClubNames={preferredClubNames}
+                          myClubIds={myClubIds}
                         />
                       </Link>
                     ))}

@@ -6,7 +6,7 @@ import { getLang, makeT, areaLabel } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, isFlagAreaOpen } from "@/lib/constants/areas";
 import { toast } from "sonner";
-import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X, ChevronLeft } from "lucide-react";
+import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X, ChevronLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
@@ -16,7 +16,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/ko";
 import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle as PuzzleType, PreferredClubItem } from "@/types/database";
 import { PreferredClubsPicker } from "@/components/clubs/PreferredClubsPicker";
-import { loadPreferredClubs, savePreferredClubs } from "@/lib/clubs/preferredClubs";
+import { saveClubWishes } from "@/lib/clubs/preferredClubs";
 import { trackEvent } from "@/lib/analytics/events";
 import {
   getOfferDeadline as getOfferDeadlineAt,
@@ -328,7 +328,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
   const [tripStatus, setTripStatus] = useState<null | "qualified" | "planning">(null);
   const [submitting, setSubmitting] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
-  const [showClubsSheet, setShowClubsSheet] = useState(false);
+  // 지역 변경이 기존 "제안받고 싶은 클럽" 선택과 충돌할 때 확인 대기 중인 새 지역
+  const [pendingAreaChange, setPendingAreaChange] = useState<string | null>(null);
   // 당일 18시 이후 등록 시도 시 안내 다이얼로그
   const [showLateTodayDialog, setShowLateTodayDialog] = useState(false);
   // 첫 매치 성사 전 깃발 총 예산 상한(300만원) 안내 다이얼로그
@@ -357,22 +358,12 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
   const [notes, setNotes] = useState(initialNotes);
   const [leaderComment, setLeaderComment] = useState(puzzle?.leader_comment ?? "");
 
-  // 선호 클럽 (신규 등록 시에만). 이미 취향을 등록한 유저면 다시 안 물어봄(한 번만).
+  // 가고싶은 클럽 — "오늘/이 깃발에서" 가고싶은 클럽(그날 한정). 지역 섹션 바로 아래 인라인 메인
+  // 스텝으로 노출(Migration 504, puzzles.preferred_club_ids). 프로필의 "자주가는 클럽"(user_pinned_clubs,
+  // 영구 취향)과는 다른 개념이라 서로 프리필/저장하지 않음 — 매 깃발마다 빈 상태로 새로 시작.
   const [preferredClubs, setPreferredClubs] = useState<PreferredClubItem[]>([]);
-  const [alreadyHasTaste, setAlreadyHasTaste] = useState(false);
-  useEffect(() => {
-    if (isEditMode) return;
-    let alive = true;
-    loadPreferredClubs(userId).then((items) => {
-      if (!alive) return;
-      setPreferredClubs(items);
-      setAlreadyHasTaste(items.length > 0);
-    });
-    return () => {
-      alive = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  // "특정 클럽 없어요 · 추천받을래요" — 선택 사항이라 명시적으로 끌 수 있게. 누르면 선택 비우고 섹션 접음.
+  const [noClubPreference, setNoClubPreference] = useState(false);
   // 퍼즐 소개: 비어 있으면 자동 채움. 사용자가 수동 입력 시 자동 채움 중단.
   // draft에는 저장하지 않으므로 신규 진입 시에는 항상 false에서 시작.
   const [notesEverEdited, setNotesEverEdited] = useState(!!puzzle?.notes);
@@ -530,8 +521,37 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventDate, area, isRecruitingParty, targetCount, totalPeople, budgetAmount, notesEverEdited, isForeigner]);
 
+  // 지역 스코프 규칙 — PreferredClubsPicker의 areaScoped와 동일(특정 지역이면 그 지역만,
+  // 미선택/서울 어디든이면 서울 3권역). "지역=수원인데 선택 클럽=이태원" 같은 모순 판정에 재사용.
+  const areaScopeFor = (a: string): string[] =>
+    (MAIN_AREAS as readonly string[]).includes(a) ? [a] : ["강남", "홍대", "이태원"];
+
   const handleAreaChange = (newArea: string) => {
+    const scope = areaScopeFor(newArea);
+    const wouldDrop = preferredClubs.some((item) => {
+      const itemArea = item.kind === "club" ? item.club.area : item.area;
+      return !!itemArea && !scope.includes(itemArea);
+    });
+    if (wouldDrop) {
+      // 바로 바꾸지 않고 먼저 확인 — 선택한 클럽이 해제된다는 걸 사용자가 알고 결정하게.
+      setPendingAreaChange(newArea);
+      return;
+    }
     setArea(newArea);
+  };
+
+  const confirmAreaChange = () => {
+    if (!pendingAreaChange) return;
+    const newArea = pendingAreaChange;
+    const scope = areaScopeFor(newArea);
+    setArea(newArea);
+    setPreferredClubs((prev) =>
+      prev.filter((item) => {
+        const itemArea = item.kind === "club" ? item.club.area : item.area;
+        return !itemArea || scope.includes(itemArea);
+      }),
+    );
+    setPendingAreaChange(null);
   };
 
   const fail = (error_type: string, error_message: string) => {
@@ -813,6 +833,12 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
           leader_comment: leaderComment.trim() || null,
           offer_deadline: getOfferDeadline(eventDate),
           expires_at: getExpiresAt(eventDate),
+          // 가고싶은 클럽(Migration 504) — 순수 깃발에서만 의미 있는 매칭 신호. 조각/파티모집·MD직통에는 미노출 섹션이라 항상 빈 배열.
+          preferred_club_ids: (!shareMode && !effectiveIsRecruiting)
+            ? preferredClubs
+                .filter((i): i is Extract<PreferredClubItem, { kind: "club" }> => i.kind === "club")
+                .map((i) => i.club.id)
+            : [],
         })
         .select("id")
         .single();
@@ -836,10 +862,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
           if (memberError) console.error("puzzle_members insert error:", memberError);
         });
 
-      // 선호 클럽 저장 (fire-and-forget) — 실제 클럽은 프로필, 미등록은 영업 리드로
+      // 위시(미등록 클럽)만 영업 리드로 저장 (fire-and-forget). 실제 클럽은 이미 puzzles.preferred_club_ids에
+      // 들어감 — 프로필의 "자주가는 클럽"(user_pinned_clubs)은 여기서 절대 건드리지 않음(별개 개념, 위 참고).
       if (preferredClubs.length > 0) {
-        savePreferredClubs(userId, preferredClubs).then(({ error }) => {
-          if (error) console.error("preferred clubs save error:", error);
+        saveClubWishes(userId, preferredClubs).then(({ error }) => {
+          if (error) console.error("club wishes save error:", error);
         });
       }
 
@@ -850,7 +877,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
         target_count: effectiveTargetCount,
       });
 
-      // 최애 클럽(실제 클럽) 지정자 = 상세에서 5자 리뷰 유도 모달로 안내 → 토스트 생략(중복 방지).
+      // 이 깃발에서 클럽을 지정한 경우 = 상세에서 5자 리뷰 유도 모달로 안내 → 토스트 생략(중복 방지).
       // 그 외 깃발은 기존처럼 토스트로 확인.
       const topClub = preferredClubs.find(
         (i): i is Extract<PreferredClubItem, { kind: "club" }> => i.kind === "club",
@@ -1144,6 +1171,46 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
           </div>
         </div>
       </section>
+
+      {/* 가고싶은 클럽 (선택, 최대 3) — 지역 바로 다음. 지정하면 그 클럽 파트너 MD에게 직접 매칭 푸시(Migration 504).
+          조각/파티원 모집·MD 직통 조각에는 미노출 — 깃발(인원 확정)에서만 의미 있는 매칭 신호. */}
+      {!isEditMode && !shareMode && !isRecruitingParty && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 text-foreground font-bold">
+            <Search className="w-4 h-4 text-money" />
+            <span>{t("제안받고 싶은 클럽 고르기", "Choose clubs you want offers from")}</span>
+            <span className="text-[11px] font-bold text-muted-foreground">{t("(선택)", "(optional)")}</span>
+          </div>
+          <PreferredClubsPicker
+            value={preferredClubs}
+            onChange={(items) => {
+              setPreferredClubs(items);
+              if (items.length > 0) setNoClubPreference(false);
+            }}
+            max={3}
+            area={area}
+            footerAction={
+              <button
+                type="button"
+                onClick={() => {
+                  setPreferredClubs([]);
+                  setNoClubPreference((v) => !v);
+                }}
+                className={`shrink-0 px-4 h-11 rounded-xl border font-bold text-[13px] transition-colors whitespace-nowrap flex items-center justify-center gap-1.5 ${
+                  noClubPreference
+                    ? "bg-inverse border-transparent text-inverse-foreground"
+                    : "bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {noClubPreference && <Check className="w-3.5 h-3.5" />}
+                {noClubPreference
+                  ? t("최대한 다양한 오퍼를 받아요", "Getting the widest variety of offers")
+                  : t("넘어가기", "Skip")}
+              </button>
+            }
+          />
+        </section>
+      )}
 
       {/* 인원 설정 */}
       <section className="space-y-4">
@@ -1645,13 +1712,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
               setShowLateTodayDialog(true);
               return;
             }
-            // 신규 등록: 취향 미등록 유저에게만 선호 클럽 시트(한 번만). 이미 등록했으면 바로 등록.
+            // 신규 등록: 가고싶은 클럽은 이제 지역 아래 인라인 스텝에서 이미 편집됨 → 바로 등록.
             if (!isEditMode) {
-              if (alreadyHasTaste) {
-                handleSubmit();
-              } else {
-                setShowClubsSheet(true);
-              }
+              handleSubmit();
               return;
             }
             setShowSubmitConfirm(true);
@@ -1675,54 +1738,6 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
           </p>
         )}
       </div>
-
-      {/* 선호 클럽 (옵트인) — 제출 시 별도 시트, 넘어가기 가능 */}
-      <Sheet open={showClubsSheet} onOpenChange={setShowClubsSheet}>
-        <SheetContent
-          side="bottom"
-          className="h-auto max-h-[85vh] max-w-lg mx-auto gap-2 overflow-y-auto bg-card border-border rounded-t-[32px] p-6 pb-10 outline-none"
-        >
-          <SheetHeader className="text-left space-y-1.5 p-0">
-            <SheetTitle className="text-foreground font-black text-[21px] leading-snug tracking-tight flex items-baseline gap-1.5">
-              <span aria-hidden className="text-lg">🕺</span>
-              <span>{t("당신의 취향을 알려주세요!", "Tell us your taste!")}</span>
-              <span className="text-[11px] font-bold text-muted-foreground tracking-normal">{t("최대 3개", "up to 3")}</span>
-            </SheetTitle>
-            <SheetDescription className="text-[12.5px] text-muted-foreground font-medium leading-relaxed">
-              {t("프로필에 표시되고, 오퍼에 반영될 수 있어요.",
-                 "Shown on your profile and factored into offers.")}
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="mt-1">
-            <PreferredClubsPicker value={preferredClubs} onChange={setPreferredClubs} max={3} />
-          </div>
-
-          <div className="flex flex-col gap-2 mt-8">
-            <Button
-              onClick={() => {
-                setShowClubsSheet(false);
-                handleSubmit();
-              }}
-              disabled={preferredClubs.length === 0}
-              className="h-14 rounded-2xl font-black text-lg shadow-lg flex items-center justify-center bg-inverse hover:opacity-90 text-inverse-foreground disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none disabled:cursor-not-allowed disabled:opacity-100"
-            >
-              {t("선택 완료", "Done")}
-            </Button>
-            <button
-              onClick={() => {
-                setPreferredClubs([]);
-                setShowClubsSheet(false);
-                handleSubmit();
-              }}
-              className="mx-auto px-5 h-9 rounded-full border border-border text-foreground text-[13px] font-bold hover:bg-muted transition-colors flex items-center gap-1.5"
-            >
-              {t("넘어가기", "Skip")}
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
 
       <ConfirmDialog
         isOpen={showSubmitConfirm}
@@ -1748,6 +1763,16 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
         confirmText={isEditMode ? t("수정 완료", "Save") : (shareMode ? t("등록 완료", "Post share") : (isRecruitingParty ? t("파티원 모집 시작", "Start recruiting") : t("계속", "Continue")))}
         cancelText={t("다시 확인", "Go back")}
         variant={!isEditMode && !isRecruitingParty ? "celebrate" : "default"}
+      />
+
+      <ConfirmDialog
+        isOpen={!!pendingAreaChange}
+        onOpenChange={(o) => { if (!o) setPendingAreaChange(null); }}
+        onConfirm={confirmAreaChange}
+        onCancel={() => setPendingAreaChange(null)}
+        title={t("지역을 바꾸면 선택한 클럽이 해제돼요", "Changing area will clear your club picks")}
+        confirmText={t("지역 변경", "Change area")}
+        cancelText={t("돌아가기", "Go back")}
       />
 
       <ConfirmDialog

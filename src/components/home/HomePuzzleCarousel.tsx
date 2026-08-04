@@ -8,6 +8,7 @@ import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
 import { OfferSheet } from "@/components/puzzles/OfferSheet";
 import { PuzzleJoinSheet } from "@/components/puzzles/PuzzleJoinSheet";
 import { createClient } from "@/lib/supabase/client";
+import { usePreferredClubMeta } from "@/hooks/usePreferredClubMeta";
 import type { Puzzle } from "@/types/database";
 
 function formatEventDateLabel(eventDate: string): string {
@@ -56,6 +57,9 @@ export function HomePuzzleCarousel({
   onActiveDateChange,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 제안받고 싶은 클럽(Migration 504) 칩/배지 메타 — PuzzleList와 공용 훅
+  const { preferredClubNames, myClubIds } = usePreferredClubMeta(puzzles, userRole);
 
   // 지역 필터를 바꾸면(목록 구성이 달라지면) 캐러셀을 맨 앞으로 되감는다.
   // 중간에 스크롤된 상태로 다른 지역 목록이 들어오면 첫 카드가 가려져 보이는 문제 방지.
@@ -190,6 +194,8 @@ export function HomePuzzleCarousel({
                 hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
                 onUnlock={(p) => setUnlockTarget(p)}
                 onJoin={(p) => setJoinTarget(p)}
+                preferredClubNames={preferredClubNames}
+                myClubIds={myClubIds}
               />
             </div>
           );

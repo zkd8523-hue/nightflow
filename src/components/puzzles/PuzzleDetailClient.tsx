@@ -31,6 +31,7 @@ import { useTranslatedText } from "@/hooks/useTranslatedComment";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
 import { formatRelativeTime, getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
+import { usePreferredClubMeta } from "@/hooks/usePreferredClubMeta";
 import { getOfferDeadlineLabel } from "@/lib/utils/puzzleDeadline";
 import { useCountdown } from "@/hooks/useCountdown";
 import dayjs from "dayjs";
@@ -381,6 +382,14 @@ export function PuzzleDetailClient({
     ? Math.floor(puzzle.total_budget / puzzle.target_count)
     : puzzle.budget_per_person;
   const fillRate = Math.round((puzzle.current_count / puzzle.target_count) * 100);
+
+  // 선호 클럽(Migration 504) — 카드와 동일한 공용 훅으로 id→이름 조회.
+  // 배열은 메모이즈: 상세는 realtime으로 자주 리렌더돼서 매번 새 배열을 넘기면 훅 effect가 계속 돈다.
+  const puzzleForClubMeta = useMemo(() => [puzzle], [puzzle]);
+  const { preferredClubNames } = usePreferredClubMeta(puzzleForClubMeta);
+  const preferredClubChips = (puzzle.preferred_club_ids ?? [])
+    .map((id) => preferredClubNames[id])
+    .filter((n): n is string => Boolean(n));
 
   const genderTag = GENDER_LABEL[puzzle.gender_pref];
   // Migration 171: age_pref가 배열. 'any' 포함 시 null, 외엔 라벨 조합 ("20초·20후")
@@ -1099,6 +1108,25 @@ export function PuzzleDetailClient({
                     <p className="text-[13px] leading-relaxed text-foreground/80 border-l border-border pl-3 pt-1.5 break-words [overflow-wrap:anywhere]">
                       &ldquo;{puzzle.leader_comment}&rdquo;
                     </p>
+                  )}
+
+                  {/* 선호 클럽(Migration 504) — 카드와 동일 표기·순서(덧붙이는 말 아래).
+                      계단식 들여쓰기: 예산(0) → 덧붙이는 말(pl-3) → 선호 클럽(pl-6) */}
+                  {preferredClubChips.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap pl-6">
+                      <span aria-hidden className="text-[11px] text-muted-foreground/60 shrink-0">ㄴ</span>
+                      {preferredClubChips.map((name) => (
+                        <span
+                          key={name}
+                          className="px-2 py-0.5 rounded-md bg-inverse text-inverse-foreground text-[11px] font-bold whitespace-nowrap"
+                        >
+                          {name}
+                        </span>
+                      ))}
+                      <span className="text-[11px] text-muted-foreground font-medium shrink-0">
+                        {t("선호 클럽", "Preferred clubs")}
+                      </span>
+                    </div>
                   )}
                 </>
               )}

@@ -830,6 +830,8 @@ export interface Puzzle {
   /** Migration 170: 15분 임박 알림 발송 시각 (중복 방지) */
   review_ending_notified_at: string | null;
   accepted_offer_id: string | null;
+  /** Migration 504: 가고싶은 클럽(최대 3, 우선순위 순). 비어있으면 특정 클럽 없음 */
+  preferred_club_ids: string[];
   created_at: string;
   updated_at: string;
 }

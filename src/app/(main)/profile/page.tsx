@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
+import { usePreferredClubMeta } from "@/hooks/usePreferredClubMeta";
 import { MyProfileSection } from "@/components/profile/MyProfileSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -142,6 +143,8 @@ export default function ProfilePage() {
   // 깃발(인원 확정) / 조각(파티원 모집) 분리
   const flagsOnly = myFlags.filter((f) => !f.is_recruiting_party);
   const sharesOnly = myFlags.filter((f) => f.is_recruiting_party);
+  // 제안받고 싶은 클럽(Migration 504) 칩 — PuzzleList/HomePuzzleCarousel과 공용 훅
+  const { preferredClubNames } = usePreferredClubMeta(myFlags, "user");
   // 진행중(open/selecting) 판별 — 카드에 오퍼 현황/상태 뱃지 분기용
   const isActiveStatus = (s: string) => s === "open" || s === "selecting";
   // 취소/만료된 항목만 정리 대상 (매칭완료는 기록 보존을 위해 제외)
@@ -292,6 +295,7 @@ export default function ProfilePage() {
                       isLeader
                       offerCount={offers}
                       hideNewBadge
+                      preferredClubNames={preferredClubNames}
                       myFlagStatus={active ? undefined : st}
                       onEdit={active ? () => router.push(`/flags/${flag.id}/edit`) : undefined}
                       onHide={() => handleHideFlag(flag.id)}

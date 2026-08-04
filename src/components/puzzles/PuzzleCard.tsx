@@ -31,6 +31,10 @@ interface PuzzleCardProps {
   onEdit?: () => void;
   onJoin?: (puzzle: Puzzle) => void;
   onUnlock?: (puzzle: Puzzle) => void;
+  /** 가고싶은 클럽 id→이름 맵 (Migration 504, preferred_club_ids 칩 표시용) */
+  preferredClubNames?: Record<string, string>;
+  /** 뷰어가 MD일 때 본인이 파트너인 클럽 id 목록 — 교집합 있으면 "내 클럽을 원해요" 강조 배지 */
+  myClubIds?: string[];
 }
 
 const GENDER_LABEL: Record<GenderPref, string | null> = {
@@ -165,6 +169,8 @@ export const PuzzleCard = memo(function PuzzleCard({
   onEdit,
   onJoin,
   onUnlock,
+  preferredClubNames,
+  myClubIds,
 }: PuzzleCardProps) {
   const router = useRouter();
   // 방장 ⋯ 메뉴(수정/삭제) 열림 상태
@@ -244,6 +250,12 @@ export const PuzzleCard = memo(function PuzzleCard({
   const cardComment = puzzle.host_is_md ? puzzle.md_comment : puzzle.leader_comment;
 
   const isMd = userRole === "md" || userRole === "admin";
+  // 가고싶은 클럽(Migration 504) — 이름 칩 + MD 본인 클럽 매칭 시 강조 배지
+  const preferredClubIds = puzzle.preferred_club_ids ?? [];
+  const preferredClubChips = preferredClubNames
+    ? preferredClubIds.map((id) => preferredClubNames[id]).filter((n): n is string => Boolean(n))
+    : [];
+  const wantsMyClub = isMd && !!myClubIds?.length && preferredClubIds.some((id) => myClubIds.includes(id));
   const isRecruitingParty = puzzle.is_recruiting_party;
   const isFull = puzzle.current_count >= puzzle.target_count;
   const isSmall = puzzle.target_count > 8;
@@ -322,8 +334,13 @@ export const PuzzleCard = memo(function PuzzleCard({
           <div className="text-[16px] font-bold leading-snug break-keep tracking-tight line-clamp-2 text-foreground">
             {displayNotes || `${puzzle.area}에서 모여요`}
           </div>
-          {(puzzle.leader?.display_name || tags.length > 0) && (
+          {(puzzle.leader?.display_name || tags.length > 0 || wantsMyClub) && (
             <div className="flex items-center gap-1.5 flex-wrap">
+              {wantsMyClub && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-brand-amber text-[11px] font-black whitespace-nowrap [text-shadow:0_0_6px_rgba(245,158,11,0.35)]">
+                  ⭐ 내 클럽을 원해요
+                </span>
+              )}
               {puzzle.leader?.display_name && (
                 <p className="text-[12px] text-muted-foreground font-medium">
                   by {puzzle.leader.display_name}
@@ -472,6 +489,23 @@ export const PuzzleCard = memo(function PuzzleCard({
         <p className="text-[13px] leading-relaxed text-foreground/80 border-l border-border pl-2.5 line-clamp-2 break-words [overflow-wrap:anywhere]">
           &ldquo;{cardComment}&rdquo;
         </p>
+      )}
+
+      {/* 선호 클럽(Migration 504) — 지정한 경우만, 덧붙이는 말 아래.
+          계단식 들여쓰기: 제목/예산(0) → 덧붙이는 말(pl-2.5) → 선호 클럽(pl-5) */}
+      {preferredClubChips.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap pl-5">
+          <span aria-hidden className="text-[11px] text-muted-foreground/60 shrink-0">ㄴ</span>
+          {preferredClubChips.map((name) => (
+            <span
+              key={name}
+              className="px-2 py-0.5 rounded-md bg-inverse text-inverse-foreground text-[11px] font-bold whitespace-nowrap"
+            >
+              {name}
+            </span>
+          ))}
+          <span className="text-[11px] text-muted-foreground font-medium shrink-0">선호 클럽</span>
+        </div>
       )}
 
       {/* 조각 오퍼 현황은 하단 CTA 행에 자세히와 같은 행으로 통합됨 (깃발과 동일) */}
