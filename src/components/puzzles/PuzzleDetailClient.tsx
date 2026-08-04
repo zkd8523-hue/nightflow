@@ -48,6 +48,9 @@ import { shareViaNative } from "@/lib/native/nativeShare";
 
 // 모달 시트는 열릴 때만 로드 — 초기 JS 번들·하이드레이션에서 제외 (동작 동일).
 const PuzzleJoinSheet = dynamic(() => import("./PuzzleJoinSheet").then((m) => ({ default: m.PuzzleJoinSheet })), { ssr: false });
+// 첫 진입 1회 안내(Migration 523) — 각 시트가 계정 플래그를 보고 스스로 열지 말지 정한다.
+const OfferCreditGuideSheet = dynamic(() => import("@/components/md/OfferCreditGuideSheet").then((m) => ({ default: m.OfferCreditGuideSheet })), { ssr: false });
+const ShareJoinGuideSheet = dynamic(() => import("./ShareJoinGuideSheet").then((m) => ({ default: m.ShareJoinGuideSheet })), { ssr: false });
 const OfferSheet = dynamic(() => import("./OfferSheet").then((m) => ({ default: m.OfferSheet })), { ssr: false });
 const OfferAcceptSheet = dynamic(() => import("./OfferAcceptSheet").then((m) => ({ default: m.OfferAcceptSheet })), { ssr: false });
 const PuzzleCancelConfirmSheet = dynamic(() => import("./PuzzleCancelConfirmSheet").then((m) => ({ default: m.PuzzleCancelConfirmSheet })), { ssr: false });
@@ -881,6 +884,11 @@ export function PuzzleDetailClient({
 
   return (
     <div className="min-h-screen bg-background">
+      {/* 첫 진입 안내 — 깃발은 파트너에게 크레딧 구조를, 파트너 조각은 유저에게 "앱에서 결제 없음"을.
+          방장 본인에게는 띄우지 않는다(자기 글에서 볼 안내가 아니다). */}
+      {!isRecruitingParty && (isMd || isAdmin) && !isLeader && <OfferCreditGuideSheet />}
+      {isRecruitingParty && puzzle.host_is_md && !isMd && !isAdmin && !isLeader && <ShareJoinGuideSheet />}
+
       {/* 관리자 전용: 일반 유저 화면 미리보기 토글 — 관리자 전용 UI(식별정보/강제철회 등)를 숨기고 유저가 보는 그대로 확인 */}
       {isRealAdmin && (
         <div className="sticky top-0 z-50 bg-blue-600 text-white text-[12px] font-bold px-4 py-2 flex items-center justify-between">

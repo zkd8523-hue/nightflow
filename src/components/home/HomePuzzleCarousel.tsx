@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
+import { ClubDirectCard, groupPuzzlesByClub } from "@/components/puzzles/ClubDirectCard";
 import { OfferSheet } from "@/components/puzzles/OfferSheet";
 import { PuzzleJoinSheet } from "@/components/puzzles/PuzzleJoinSheet";
 import { createClient } from "@/lib/supabase/client";
@@ -68,14 +69,37 @@ export function HomePuzzleCarousel({
     scrollRef.current?.scrollTo({ left: 0, behavior: "auto" });
   }, [listSignature]);
 
+  // 조각 모드: 파트너 직통은 클럽 묶음 카드 1장으로 맨 앞에, 그 뒤로 유저 조각.
+  // 클럽당 최대 6등급 × D-7이면 조각 1건=카드 1장 구조로는 캐러셀이 감당이 안 된다(Migration 505).
+  // 캐러셀은 카드 위에 날짜 헤더가 붙으므로 클럽×날짜로 묶는다 — 클럽 단위로 묶으면
+  // "8월 5일" 밑에 그 주 전체가 들어가 개수가 어긋난다.
+  const partnerGroups = useMemo(
+    () =>
+      shareMode
+        ? groupPuzzlesByClub(puzzles.filter((p) => p.host_is_md), { byDate: true }).sort(
+            (a, b) => (a.eventDate ?? "").localeCompare(b.eventDate ?? "")
+          )
+        : [],
+    [puzzles, shareMode]
+  );
+  const userPuzzles = useMemo(
+    () => (shareMode ? puzzles.filter((p) => !p.host_is_md) : puzzles),
+    [puzzles, shareMode]
+  );
+  const leadGroup = partnerGroups[0] ?? null;
+  const visible = userPuzzles.slice(0, leadGroup ? MAX_CARDS - 1 : MAX_CARDS);
+
   // 현재 화면 맨 앞 카드의 날짜를 섹션 헤더로 올린다(스크롤 시 함께 변경).
-  const headPuzzles = puzzles.slice(0, MAX_CARDS);
-  const headDateSignature = headPuzzles.map((p) => p.event_date).join(",");
+  const headDates: string[] = [
+    ...(leadGroup ? [leadGroup.eventDate ?? leadGroup.puzzles[0].event_date] : []),
+    ...visible.map((p) => p.event_date),
+  ];
+  const headDateSignature = headDates.join(",");
   useEffect(() => {
     if (!onActiveDateChange) return;
     const el = scrollRef.current;
     const labelAt = (idx: number) =>
-      headPuzzles[idx] ? formatEventDateLabel(headPuzzles[idx].event_date) : null;
+      headDates[idx] ? formatEventDateLabel(headDates[idx]) : null;
     onActiveDateChange(labelAt(0));
     if (!el) return;
     let raf = 0;
@@ -86,7 +110,7 @@ export function HomePuzzleCarousel({
         const first = el.firstElementChild as HTMLElement | null;
         if (!first) return;
         const step = first.offsetWidth + 12; // 카드 너비 + gap(12px)
-        const idx = Math.min(headPuzzles.length - 1, Math.round(el.scrollLeft / step));
+        const idx = Math.min(headDates.length - 1, Math.round(el.scrollLeft / step));
         onActiveDateChange(labelAt(Math.max(0, idx)));
       });
     };
@@ -165,7 +189,6 @@ export function HomePuzzleCarousel({
     );
   }
 
-  const visible = puzzles.slice(0, MAX_CARDS);
   // MD/Admin은 깃발을 "꽂는" 주체가 아니라 오퍼를 넣는 쪽 → 깃발꽂기 CTA 숨기고
   // 끝 슬라이드를 "더보기 >" 카드로 대체 (유저/비로그인은 기존 CTA 유지).
   const isMd = userRole === "md" || userRole === "admin";
@@ -178,6 +201,11 @@ export function HomePuzzleCarousel({
         className="flex items-start gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x touch-pan-y -mt-3 pt-3 pb-1 -mx-2 px-2"
         style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
       >
+        {leadGroup && (
+          <div className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always">
+            <ClubDirectCard group={leadGroup} />
+          </div>
+        )}
         {visible.map((puzzle) => {
           // 날짜는 섹션 헤더가 스크롤에 맞춰 표시 → 카드 위 날짜 헤더는 제거.
           return (

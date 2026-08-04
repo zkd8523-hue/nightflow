@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { Plus, SlidersHorizontal, ChevronDown, ChevronUp, BadgeCheck } from "lucide-react";
 import { PuzzleCard } from "./PuzzleCard";
+import { ClubDirectCard, ClubDirectHeader, groupPuzzlesByClub } from "./ClubDirectCard";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
 import { DateFilterCalendar } from "@/components/auctions/filters/DateFilterCalendar";
@@ -202,6 +203,11 @@ export function PuzzleList({
     () => (shareMode ? filteredPuzzles.filter((p) => !p.host_is_md) : filteredPuzzles),
     [filteredPuzzles, shareMode]
   );
+  // 클럽 단위 묶음 — 클럽이 지정되지 않은 파트너 조각은 묶을 대상이 없어 제외된다.
+  const partnerClubGroups = useMemo(
+    () => groupPuzzlesByClub(pinnedPartnerPuzzles),
+    [pinnedPartnerPuzzles]
+  );
 
   const eventDates = useMemo(() => {
     return Array.from(new Set(puzzles.map((p) => p.event_date)));
@@ -380,36 +386,13 @@ export function PuzzleList({
         </SheetContent>
       </Sheet>
 
-      {/* ── 파트너 직통 고정 섹션 — 조각 더보기 목록 맨 위. 그 아래는 날짜순 목록 ── */}
-      {shareMode && pinnedPartnerPuzzles.length > 0 && (
-        <div className="space-y-3 mb-8">
-          <div className="flex items-center gap-2 px-1 pt-1">
-            <BadgeCheck className="w-4 h-4 text-blue-400 flex-shrink-0" />
-            <h3 className="text-[16px] font-black text-foreground tracking-tight whitespace-nowrap">파트너 직통</h3>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
-              {pinnedPartnerPuzzles.length}
-            </span>
-          </div>
-          <div className="flex flex-col gap-6">
-            {pinnedPartnerPuzzles.map((puzzle) => (
-              <Link
-                key={puzzle.id}
-                href={`/flags/${puzzle.id}`}
-                className="block"
-                onClick={(e) => { e.stopPropagation(); trackEvent('puzzle_card_click', { puzzle_id: puzzle.id, area: puzzle.area, is_recruiting: puzzle.is_recruiting_party, source: 'partner_pinned' }); }}
-              >
-                <PuzzleCard
-                  puzzle={puzzle}
-                  userRole={userRole}
-                  offerCount={offerCounts[puzzle.id] || 0}
-                  isMember={myPuzzleIds.has(puzzle.id)}
-                  hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
-                  onJoin={(p) => setJoinTarget(p)}
-                  onUnlock={(p) => setUnlockTarget(p)}
-                  preferredClubNames={preferredClubNames}
-                  myClubIds={myClubIds}
-                />
-              </Link>
+      {/* ── 파트너 직통 고정 섹션 — 클럽 단위로 묶어 카드 수를 클럽 수로 억제(Migration 505) ── */}
+      {shareMode && partnerClubGroups.length > 0 && (
+        <div className="space-y-2 mb-8">
+          <ClubDirectHeader />
+          <div className="flex flex-col gap-5">
+            {partnerClubGroups.map((group) => (
+              <ClubDirectCard key={group.clubId} group={group} showBadge={false} />
             ))}
           </div>
           {listPuzzles.length > 0 && <div className="border-t border-border mt-2" />}

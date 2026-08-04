@@ -27,7 +27,6 @@ import { HotdealHomeSection } from "@/components/home/HotdealHomeSection";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 import { HotdealMdCta } from "@/components/home/HotdealMdCta";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
-import { ShareManageMdCta } from "@/components/home/ShareManageMdCta";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
@@ -573,10 +572,23 @@ export function HomeContent({
   // 깃발(인원 확정) vs 조각(파티원 모집) 분리 — 각각 별도 캐러셀로 노출.
   const flagPuzzles = useMemo(() => areaFilteredPuzzles.filter((p) => !p.is_recruiting_party), [areaFilteredPuzzles]);
   const sharePuzzles = useMemo(() => {
-    const shares = areaFilteredPuzzles.filter((p) => p.is_recruiting_party);
+    let shares = areaFilteredPuzzles.filter((p) => p.is_recruiting_party);
+    // 홈(캐러셀)은 임박한 것만 — D-7 주간 배치(Migration 505)로 상시 조각이 최대 7일치
+    // 미리 발행되므로, 그대로 두면 "지금 갈 수 있는 곳"과 다음 주 자리가 뒤섞인다.
+    // 단 컷 대상은 자동 발행분(source_template_id)뿐 — 수동 등록분은 원래 21일 앞까지
+    // 홈에 보이던 것이라 건드리지 않는다. 더보기(detail=1)는 전체 기간 그대로.
+    if (!isDetailMode) {
+      const cap = new Date(Date.now() + 9 * 60 * 60 * 1000 + 2 * 86400000).toISOString().slice(0, 10);
+      shares = shares.filter((p) => !p.source_template_id || p.event_date <= cap);
+    }
+    // 자동 발행분은 NEW 판정을 등록 시각이 아니라 방문일 임박도로 본다.
+    // 월요일에 발행된 금요일 자리가 월요일 자정에 NEW가 꺼지고 정작 금요일엔 강조가 없어지는 문제.
+    // 수동 등록분(파트너·유저 공통)은 기존대로 등록 6시간 이내.
     const isNew = (p: Puzzle) =>
-      Date.now() - new Date(p.created_at).getTime() < 6 * 60 * 60 * 1000;
-    // 1순위: NEW(등록 6시간 이내) — NEW끼리는 최근 등록순(최신이 왼쪽)
+      p.source_template_id
+        ? new Date(p.event_date).getTime() - Date.now() < 2 * 86400000
+        : Date.now() - new Date(p.created_at).getTime() < 6 * 60 * 60 * 1000;
+    // 1순위: NEW(등록 6시간 이내 / 파트너 직통은 D-1 이내) — NEW끼리는 최근 등록순(최신이 왼쪽)
     // 2순위: 이벤트 날짜 빠른 순
     return [...shares].sort((a, b) => {
       const aNew = isNew(a);
@@ -585,7 +597,7 @@ export function HomeContent({
       if (aNew && bNew) return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
     });
-  }, [areaFilteredPuzzles]);
+  }, [areaFilteredPuzzles, isDetailMode]);
   const areaFilteredShares = useMemo(
     () => visibleAuctions.filter((a) => a.listing_type === "share"),
     [visibleAuctions]
@@ -1234,12 +1246,6 @@ export function HomeContent({
                   onActiveDateChange={setShareHeaderDate}
                 />
               </div>
-              {/* MD 전용 조각 관리 CTA — 조각 캐러셀 바로 아래, 게스트 간판과 동일 톤 */}
-              {isMdOrAdmin && (
-                <div className="mb-2">
-                  <ShareManageMdCta />
-                </div>
-              )}
             </>
           )}
           </div>

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ClubDetailContent } from "@/components/clubs/ClubDetailContent";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
+import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { normalizeDowSlots, summarizeSlots, pickUpcomingBenefit, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 import type { Metadata } from "next";
@@ -18,13 +19,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: club } = await supabase
+  // 승인 전(pending) 클럽은 프로덕션에서만 404. 로컬·프리뷰에서는 열어서 확인할 수 있게 한다
+  // (테스트 클럽이 대부분 pending이라 개발 중 상세를 못 보는 문제).
+  const metaQuery = supabase
     .from("clubs")
     .select("name, area")
     .eq("id", id)
-    .is("deleted_at", null)
-    .eq("status", "approved")
-    .single();
+    .is("deleted_at", null);
+  if (!SHOW_TEST_DATA) metaQuery.eq("status", "approved");
+  const { data: club } = await metaQuery.single();
 
   if (!club) {
     notFound(); // HTTP 404 응답 (Soft 404 방지)
@@ -87,19 +90,22 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
   // 월요일 18시 오픈 갭 보정 포함 (지난 주 슬롯 노출)
   const thisWeekISO = getActiveWeekStartISO();
 
-  // 서로 독립적인 3개 쿼리를 병렬 실행 — 직렬(3 RTT) → 1 RTT. (mdRow만 slotRow 의존이라 이후 순차)
+  // Migration 505: 파트너 직통 조각(host_is_md) — 오늘 이후, 진행 중인 것만.
+  // "KST 오늘"은 순수 계산이라 쿼리 전에 미리 구해둔다.
+  const todayKstISO = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  // 서로 독립적인 4개 쿼리를 병렬 실행 — 직렬(4 RTT) → 1 RTT. (mdRow만 slotRow 의존이라 이후 순차)
   const [
     { data: club },
     { data: activeAuctions },
     { data: slotRow },
+    { data: sharePuzzles },
   ] = await Promise.all([
-    supabase
-      .from("clubs")
-      .select("*")
-      .eq("id", id)
-      .is("deleted_at", null)
-      .eq("status", "approved")
-      .single(),
+    (() => {
+      const q = supabase.from("clubs").select("*").eq("id", id).is("deleted_at", null);
+      if (!SHOW_TEST_DATA) q.eq("status", "approved");
+      return q.single();
+    })(),
     supabase
       .from("auctions")
       .select(`
@@ -118,6 +124,16 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
       .eq("week_start", thisWeekISO)
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("puzzles")
+      .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender, country_code)")
+      .eq("club_id", id)
+      .eq("host_is_md", true)
+      .eq("is_recruiting_party", true)
+      .in("status", ["open", "selecting"])
+      .gte("event_date", todayKstISO)
+      .order("event_date", { ascending: true })
+      .limit(50),
   ]);
 
   if (!club) {
@@ -446,6 +462,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         activeAuctions={activeAuctions || []}
         guestSignSlot={guestSignSlot}
         hideShareList={fromHotdeal}
+        sharePuzzles={sharePuzzles || []}
       />
     </>
   );

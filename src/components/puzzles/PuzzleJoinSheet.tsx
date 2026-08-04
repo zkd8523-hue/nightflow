@@ -172,8 +172,12 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
             {formatDate(puzzle.event_date)} · {puzzle.area} · {perPerson.toLocaleString()}원/인
           </p>
           <p className="text-[13px] text-muted-foreground text-left">
+            {/* 파트너 조각은 채워진 인원을 노출하지 않는다 — "0/6명"이 텅 비어 보여 참가를 막는다.
+                유저끼리 모으는 조각은 몇 명 모였는지가 참가 판단의 핵심이라 그대로 둔다. */}
             {genderNeutral
-              ? `👥 ${puzzle.current_count}/${puzzle.target_count}명`
+              ? puzzle.host_is_md
+                ? `👥 ${puzzle.target_count}인`
+                : `👥 ${puzzle.current_count}/${puzzle.target_count}명`
               : `🧑 남 ${puzzle.current_male ?? 0}/${puzzle.target_male ?? 0} · 👩 여 ${puzzle.current_female ?? 0}/${puzzle.target_female ?? 0}`}
           </p>
         </SheetHeader>

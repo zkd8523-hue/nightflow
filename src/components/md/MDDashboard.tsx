@@ -29,6 +29,7 @@ import type { Auction, User, Club, PuzzleOffer, DailyHotdeal, HotdealBenefitsByD
 import { ShareOptionManager } from "@/components/md/ShareOptionManager";
 import { ShareWeekdayPlanBoard } from "@/components/md/ShareWeekdayPlanBoard";
 import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
+import { ShareLiveToggleList } from "@/components/md/ShareLiveToggleList";
 import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle, Pencil } from "lucide-react";
 import { FeatureGate } from "@/components/common/FeatureGate";
 import { toast } from "sonner";
@@ -212,22 +213,63 @@ export function MDDashboard({
     const [localShareSlots, setLocalShareSlots] = useState(shareSlots);
     const [planBoardResetKey, setPlanBoardResetKey] = useState(0);
     // "all" = 아무 탭도 선택 안 한 기본 상태(깃발+조각 전체). 같은 탭을 다시 누르면 "all"로 돌아감.
-    const [activePuzzleTab, setActivePuzzleTab] = useState<"flag" | "share" | "all">("all");
-    // MD 직통 조각(내 조각) — host_is_md 퍼즐. 조각 인라인 "내 조각" 목록용
-    const [myShares, setMyShares] = useState<Array<{ id: string; notes: string | null; area: string; event_date: string; current_count: number; target_count: number; status: string }>>([]);
+    // ?tab=share/flag 로 들어오면 그 탭이 켜진 채 시작 (조각 상세 → "대시보드로 이동" 등)
+    const initialPuzzleTab = ((): "flag" | "share" | "all" => {
+        if (typeof window === "undefined") return "all";
+        const t = new URLSearchParams(window.location.search).get("tab");
+        return t === "share" || t === "flag" ? t : "all";
+    })();
+    const [activePuzzleTab, setActivePuzzleTab] = useState<"flag" | "share" | "all">(initialPuzzleTab);
+    // MD 직통 조각(내 조각) — host_is_md 퍼즐. 조각 인라인 "내 조각" 목록용.
+    // Migration 505: D-7 자동 발행이 붙으면서 세팅당 하루 1건씩 쌓이므로
+    // event_date >= 오늘로 잘라 "진행 중"만 남긴다(과거는 별도 지난 조각으로).
+    const [myShares, setMyShares] = useState<Array<{ id: string; notes: string | null; area: string; event_date: string; current_count: number; target_count: number; status: string; source_template_id: string | null }>>([]);
+    const todayKstStr = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
     useEffect(() => {
         (async () => {
             const { data } = await supabase
                 .from("puzzles")
-                .select("id, notes, area, event_date, current_count, target_count, status")
+                .select("id, notes, area, event_date, current_count, target_count, status, source_template_id")
                 .eq("leader_id", user.id)
                 .eq("host_is_md", true)
                 .neq("status", "cancelled")
                 .eq("hidden_by_host", false)
-                .order("event_date", { ascending: false });
+                .gte("event_date", todayKstStr)
+                .order("event_date", { ascending: true });
             if (data) setMyShares(data);
         })();
     }, [user.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 날짜별 그룹핑 — 오늘/내일은 기본 펼침, 나머지는 접힘(자동 발행분 폭증 대비)
+    const myShareGroups = useMemo(() => {
+        const map = new Map<string, typeof myShares>();
+        myShares.forEach((s) => {
+            const arr = map.get(s.event_date) ?? [];
+            arr.push(s);
+            map.set(s.event_date, arr);
+        });
+        return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+    }, [myShares]);
+    const tomorrowKstStr = new Date(Date.now() + 9 * 60 * 60 * 1000 + 86400000).toISOString().slice(0, 10);
+    const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
+    const isCollapsed = (date: string) =>
+        collapsedDates.has(date) || (date !== todayKstStr && date !== tomorrowKstStr && !collapsedDates.has(`open:${date}`));
+    const toggleDateCollapse = (date: string, currentlyCollapsed: boolean) => {
+        setCollapsedDates((prev) => {
+            const next = new Set(prev);
+            if (currentlyCollapsed) { next.delete(date); next.add(`open:${date}`); }
+            else { next.add(date); next.delete(`open:${date}`); }
+            return next;
+        });
+    };
+    const shareDateLabel = (date: string) => {
+        const d = new Date(date + "T00:00:00+09:00");
+        const days = ["일", "월", "화", "수", "목", "금", "토"];
+        const base = `${d.getMonth() + 1}/${d.getDate()} (${days[d.getDay()]})`;
+        if (date === todayKstStr) return `오늘 ${base}`;
+        if (date === tomorrowKstStr) return `내일 ${base}`;
+        return base;
+    };
     // 내 조각 인원 수정(외부 인원 +/-) — 누적 후 "적용"으로 반영
     const [shareCounts, setShareCounts] = useState<Record<string, number>>({});
     const [shareDeltas, setShareDeltas] = useState<Record<string, number>>({});
@@ -568,6 +610,8 @@ export function MDDashboard({
                     >
                         <span className="text-[20px] leading-none">🧩</span>
                         <span className="text-[12px] font-black text-foreground">조각</span>
+                        {/* 조각 운영권도 게스트 간판과 같은 주 단위 선점(Migration 514) */}
+                        <span className="text-[10.5px] font-bold text-muted-foreground leading-none">(매주 월 18시 오픈)</span>
                     </button>
                     <button
                         type="button"
@@ -623,69 +667,13 @@ export function MDDashboard({
                 </div>
             )}
 
-            {/* 조각 인라인 영역 — 새 조각 등록 + 내 조각 목록 (핫딜과 동일 패턴) */}
+            {/* 조각 인라인 영역 — 상시 조각(요일 On/Off) + 1회성 등록 + 내 조각 목록 */}
             {shareInlineOpen && (
                 <div className="px-4 mt-3">
                     <div className="bg-card border border-green-500/30 rounded-2xl p-4 space-y-4">
-                        {/* 새 조각 등록 */}
-                        <Link
-                            href="/md/auctions/new"
-                            className="w-full h-12 flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl active:scale-[0.98] transition-transform"
-                        >
-                            <span className="text-[18px] leading-none">+</span> 새 조각 등록
-                        </Link>
+                        {/* Migration 505: 템플릿 요일별 On/Off */}
+                        <ShareLiveToggleList mdId={user.id} clubs={clubs} />
 
-                        {/* 내 조각 */}
-                        <div className="space-y-2">
-                            <p className="text-[13px] font-black text-foreground px-1">내 조각</p>
-                            {myShares.length === 0 ? (
-                                <p className="text-center text-muted-foreground text-[13px] py-6">등록한 조각이 없어요</p>
-                            ) : (
-                                myShares.map((s) => {
-                                    const committed = shareCounts[s.id] ?? s.current_count;
-                                    const delta = shareDeltas[s.id] ?? 0;
-                                    const cnt = Math.max(1, Math.min(s.target_count, committed + delta));
-                                    return (
-                                        <div key={s.id} className="bg-card rounded-xl border border-border px-4 py-3 space-y-2">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <Link href={`/flags/${s.id}`} className="flex-1 min-w-0">
-                                                    <p className="text-[14px] font-bold text-foreground truncate">{s.notes || `${s.area} 조각`}</p>
-                                                </Link>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <Link
-                                                        href={`/md/auctions/${s.id}/edit`}
-                                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                                                        aria-label="수정"
-                                                    >
-                                                        <Pencil className="w-3.5 h-3.5" />
-                                                    </Link>
-                                                    <button
-                                                        type="button"
-                                                        disabled={shareDeleting === s.id}
-                                                        onClick={() => deleteShare(s.id, s.status)}
-                                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-muted transition-colors disabled:opacity-40"
-                                                        aria-label="삭제"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            {/* 인원 수정 (외부 인원 +/-, 누적 후 적용) — 오른쪽에 현재/목표 인원 */}
-                                            <div className="flex items-center gap-2 pt-2 border-t border-border/60">
-                                                <span className="text-[11px] text-muted-foreground font-bold">인원 수정</span>
-                                                <button type="button" disabled={shareSaving === s.id || cnt <= 1} onClick={() => setShareDeltas((m) => ({ ...m, [s.id]: (m[s.id] ?? 0) - 1 }))} className="w-6 h-6 rounded-full bg-muted hover:bg-muted flex items-center justify-center disabled:opacity-30 transition-colors"><Minus className="w-3 h-3 text-foreground" /></button>
-                                                <span className="text-[13px] font-black text-foreground tabular-nums w-5 text-center">{cnt}</span>
-                                                <button type="button" disabled={shareSaving === s.id || cnt >= s.target_count} onClick={() => setShareDeltas((m) => ({ ...m, [s.id]: (m[s.id] ?? 0) + 1 }))} className="w-6 h-6 rounded-full bg-muted hover:bg-muted flex items-center justify-center disabled:opacity-30 transition-colors"><Plus className="w-3 h-3 text-foreground" /></button>
-                                                {delta !== 0 && (
-                                                    <button type="button" disabled={shareSaving === s.id} onClick={() => applyShare(s.id)} className="px-3 h-6 rounded-full bg-inverse text-inverse-foreground text-[11px] font-black active:scale-95 transition disabled:opacity-50">{shareSaving === s.id ? "저장중" : "적용"}</button>
-                                                )}
-                                                <span className="ml-auto text-[12px] text-muted-foreground font-bold tabular-nums">{cnt}/{s.target_count}명</span>
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
                     </div>
                 </div>
             )}

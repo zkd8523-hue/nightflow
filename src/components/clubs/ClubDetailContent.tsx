@@ -38,12 +38,13 @@ import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
 import { WordCloudSection } from "./WordCloudSection";
 import { ClubShotSection } from "./ClubShotSection";
 import { FlagExplainerSheet } from "./FlagExplainerSheet";
+import { ClubSharePuzzles } from "./ClubSharePuzzles";
 import { trackEvent } from "@/lib/analytics/events";
 import { useIsClubPartner } from "@/hooks/useIsClubPartner";
 import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
-import type { Club, Auction, HotdealDow, HotdealTimeSlot } from "@/types/database";
+import type { Club, Auction, HotdealDow, HotdealTimeSlot, Puzzle } from "@/types/database";
 import { GUEST_SIGN_BENEFIT_PRESETS, benefitLabel } from "@/lib/utils/hotdeal";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 
@@ -81,6 +82,8 @@ interface ClubDetailContentProps {
   guestSignSlot?: GuestSignSlotInfo | null;
   /** 핫딜 상세에서 진입 시 조각/깃발 동선을 숨겨 이탈 방지 */
   hideShareList?: boolean;
+  /** Migration 505: 이 클럽의 파트너 직통 조각(host_is_md, 오늘 이후). 클럽당 파트너 1명 전제 */
+  sharePuzzles?: Puzzle[];
 }
 
 export function ClubDetailContent({
@@ -88,6 +91,7 @@ export function ClubDetailContent({
   activeAuctions: rawActiveAuctions,
   guestSignSlot = null,
   hideShareList = false,
+  sharePuzzles = [],
 }: ClubDetailContentProps) {
   const activeAuctions = useMemo(() => {
     return rawActiveAuctions.map(adjustMockAuctionDates);
@@ -679,6 +683,11 @@ export function ClubDetailContent({
           open={reportSheetOpen}
           onOpenChange={setReportSheetOpen}
         />
+      )}
+
+      {/* 파트너 직통 조각 — 정보 수정 요청과 리뷰 사이. Migration 505 */}
+      {!hideShareList && sharePuzzles.length > 0 && (
+        <ClubSharePuzzles puzzles={sharePuzzles} />
       )}
 
       {/* 5자 리뷰 워드클라우드 */}

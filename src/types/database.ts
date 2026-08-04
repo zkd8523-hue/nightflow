@@ -132,6 +132,12 @@ export interface User {
   price_range_onboarding_v1_seen: boolean;
   /** 앱 피드백 프롬프트 노출 완료 여부 (계정당 1회, 제출/최종 skip 시 TRUE). Migration 486 */
   app_feedback_prompt_seen: boolean;
+  /** 파트너 조각 가이드(ShareOnboardingSheet) 노출 완료 여부 (계정당 1회). Migration 523 */
+  share_guide_seen: boolean;
+  /** 파트너 크레딧 가이드(OfferCreditGuideSheet) 노출 완료 여부 (깃발 상세 첫 진입 1회). Migration 523 */
+  offer_credit_guide_seen: boolean;
+  /** 유저 조각 결제 안내(ShareJoinGuideSheet) 노출 완료 여부 (조각 상세 첫 진입 1회). Migration 523 */
+  share_join_guide_seen: boolean;
   md_rejection_reason: string | null;
   md_unique_slug: string | null;
   bank_account: string | null;
@@ -816,6 +822,8 @@ export interface Puzzle {
   md_comment?: string | null;
   /** MD 직통: 클럽 조인 (host_is_md 카드/상세/공유용) */
   club?: { id: string; name: string; area: string | null; thumbnail_url: string | null; floor_plan_url?: string | null; latitude?: number | null; longitude?: number | null } | null;
+  /** Migration 505: 상시 조각 자동 발행분이면 그 원본 템플릿. 수동 등록이면 NULL */
+  source_template_id?: string | null;
   status: PuzzleStatus;
   /** Migration 167: 취소 사유 (admin이 입력 시) */
   cancelled_reason: string | null;
@@ -1091,6 +1099,33 @@ export interface AuctionTemplate {
   created_at: string;
   updated_at: string;
   club?: Club;
+  /** Migration 505: 상시 조각 On/Off 스위치 */
+  is_live: boolean;
+  /** Migration 505: 운영 요일 — mon/tue/wed/thu/fri/sat/sun */
+  live_dows: string[];
+  /** Migration 505: 상시 운영 종료일. is_live=true면 NULL 불가(DB CHECK) */
+  live_until: string | null;
+  /** Migration 505: "그날 하루만 쉼" */
+  paused_dates: string[];
+  /** Migration 505: 이미 발행한 날짜 누적(멱등 가드) */
+  published_dates: string[];
+  /** Migration 505: 연속 참여 0 발행 횟수. 3 도달 시 자동 OFF */
+  empty_streak: number;
+  /** Migration 515: 목록 표시 순서(오름차순). 기본 등록순, 드래그로 변경 */
+  sort_order: number;
+  /** Migration 519: 분류(폴더). 보통 "평일"/"주말". NULL=미분류 */
+  category: string | null;
+}
+
+/** Migration 505: 클럽 조각 운영권 (클럽당 released_at IS NULL 행 1개 = 현재 운영 MD) */
+export interface ClubShareSlot {
+  id: string;
+  club_id: string;
+  md_id: string;
+  started_at: string;
+  expires_at: string;
+  released_at: string | null;
+  created_at: string;
 }
 
 // 주류 정보 카드 (Migration 446) — 깃발 오퍼 주류 배지 탭 시 이미지/설명/가격대 표시

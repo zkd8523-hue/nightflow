@@ -220,6 +220,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     );
     const [showTemplateSavePrompt, setShowTemplateSavePrompt] = useState(false);
     const [templateSaving, setTemplateSaving] = useState(false);
+    // Migration 505: 저장과 동시에 상시 조각으로 켤지 — 기본은 이 등록의 요일을 그대로 반영
+    const [turnLiveOnSave, setTurnLiveOnSave] = useState(false);
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
     // 얼리버드 기본 event_date: 오늘 + 2일 (→ 마감 옵션 최소 1개 보장, -1일 버퍼 기준)
@@ -603,7 +605,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         target_male: 0,
                         target_female: 0,
                         target_count: seats,
-                        current_count: 1 + externalTotal,
+                        // 파트너 직통은 MD가 자리를 파는 쪽이라 본인은 좌석을 차지하지 않는다.
+                        // (유저 조각은 방장이 실제 참석자라 1부터 — Migration 508)
+                        current_count: externalTotal,
                         budget_per_person: perSeat,
                         total_budget: perSeat * seats,
                         includes: values.includes || [],
@@ -1862,6 +1866,17 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             className="bg-card border-border h-11 text-brand-amber font-bold text-sm focus:ring-amber-500"
                         />
                     </div>
+                    <label className="flex items-center gap-2 mb-4 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={turnLiveOnSave}
+                            onChange={(e) => setTurnLiveOnSave(e.target.checked)}
+                            className="w-4 h-4 rounded accent-amber-500"
+                        />
+                        <span className="text-[13px] font-bold text-foreground">
+                            저장하고 바로 켜기 <span className="text-muted-foreground font-medium">— 오늘 요일로 4주간 자동 발행</span>
+                        </span>
+                    </label>
                     <div className="flex gap-3">
                         <Button
                             variant="outline"
@@ -1884,6 +1899,15 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 setTemplateSaving(true);
                                 try {
                                     const templateName = templateNameDraft.trim() || `${Math.round((v.price_per_seat || 0) / 10000)}만원/${v.main_alcohol || "주류"}/조각${v.total_seats}`;
+                                    // 저장과 동시에 켤 때: 이번 등록의 요일을 기본 선택값으로, 종료일은 4주 후.
+                                    const liveFields = turnLiveOnSave
+                                        ? (() => {
+                                            const dowKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+                                            const eventDow = dowKeys[new Date(`${v.event_date}T00:00:00+09:00`).getDay()];
+                                            const untilDate = new Date(Date.now() + 28 * 86400000).toISOString().slice(0, 10);
+                                            return { is_live: true, live_dows: [eventDow], live_until: untilDate };
+                                        })()
+                                        : {};
                                     await supabase.from("auction_templates").insert({
                                         md_id: mdId,
                                         name: templateName,
@@ -1894,14 +1918,16 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                         main_alcohol: v.main_alcohol,
                                         includes: v.includes || [],
                                         md_comment: v.md_comment || null,
+                                        ...liveFields,
                                     });
-                                    toast.success("템플릿이 저장되었습니다!");
+                                    toast.success(turnLiveOnSave ? "템플릿을 저장하고 켰어요!" : "템플릿이 저장되었습니다!");
                                 } catch {
                                     toast.error("템플릿 저장에 실패했습니다.");
                                 } finally {
                                     setTemplateSaving(false);
                                     setShowTemplateSavePrompt(false);
                                     setPendingShareSubmitValues(null);
+                                    setTurnLiveOnSave(false);
                                     performSubmit(v);
                                 }
                             }}
