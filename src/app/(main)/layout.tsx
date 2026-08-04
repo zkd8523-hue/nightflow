@@ -14,7 +14,6 @@ import { ChatUpdateSheet } from "@/components/common/ChatUpdateSheet";
 import { InAppBrowserBanner } from "@/components/common/InAppBrowserBanner";
 import { PriceRangeOnboardingSheet } from "@/components/md/PriceRangeOnboardingSheet";
 import { GuestSignPromoGate } from "@/components/md/GuestSignPromoGate";
-import { CancellationSurveySheet } from "@/components/puzzles/CancellationSurveySheet";
 import { AppFeedbackSheet } from "@/components/feedback/AppFeedbackSheet";
 import { CameraLayer } from "@/components/chat/CameraLayer";
 import { useRouter, usePathname } from "next/navigation";
@@ -124,7 +123,9 @@ export default function MainLayout({
         {!hideBottomNav && <BottomNav />}
         <SelectingFlagAlertSheet />
         <NewOffersAlertSheet />
-        <CancellationSurveySheet isOtherSheetOpen={false} />
+        {/* 옛 취소/미선택 설문(CancellationSurveySheet)은 제거됨 — 부정 설문 대신 방문 확인 + 긍정 리뷰로 전환.
+            만료 깃발은 Migration 493에서 이미 빠졌고, 직접 취소 경로도 여기서 노출 중단.
+            과거 수집분(puzzle_cancellation_surveys)은 /admin/puzzles?tab=surveys 에서 계속 조회 가능. */}
         <VisitConfirmTrigger />
         <PartyReviewTrigger />
         <FlagCreatedInstallSheet />

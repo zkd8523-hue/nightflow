@@ -11,7 +11,7 @@ const RATING_LABEL = ["", "별로예요", "아쉬워요", "괜찮아요", "좋�
 
 /**
  * 네이티브 앱 유저 대상 인앱 피드백 시트. 진입 즉시 팝업이 아니라
- * 일정 인게이지먼트 이후 노출(게이팅은 useAppFeedbackPrompt). CancellationSurveySheet UI 차용.
+ * 일정 인게이지먼트 이후 노출(게이팅은 useAppFeedbackPrompt).
  */
 export function AppFeedbackSheet({ isOtherSheetOpen = false }: { isOtherSheetOpen?: boolean }) {
   const { shouldShow, close } = useAppFeedbackPrompt();
