@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Link2, X } from "lucide-react";
+import { Link2, Share2, X } from "lucide-react";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { shareViaNative } from "@/lib/native/nativeShare";
 import { trackEvent } from "@/lib/analytics/events";
@@ -146,6 +146,44 @@ export function ShareCreatedSheet({
     }
   }
 
+  async function handleMoreShare() {
+    trackEvent("puzzle_share_more_click", {
+      puzzle_id: puzzleId,
+      mode,
+      host_is_md: hostIsMd,
+      area,
+    });
+    const title = `${areaLabel}${useClub ? ` ${clubName}` : " 테이블"} 같이 갈래?`;
+    const text = `1인 ${perPerson.toLocaleString()}₩ · 파티원 찾는 중 🔥`;
+
+    // 카페 앱 등 공유 대상이 전달받은 title/text/url을 글쓰기창에 자동으로 채워줄지는
+    // 앱마다 달라 우리가 통제할 수 없음 → 공유시트 열기와 동시에 클립보드에도 링크를 심어둬서
+    // "안 채워지면 그냥 붙여넣기" 안전장치를 항상 확보(무음 처리, 별도 토스트 없음).
+    try {
+      await navigator.clipboard?.writeText(shareUrl);
+    } catch {}
+
+    // 앱(Capacitor 네이티브): navigator.share가 WebView에서 먹통일 수 있어 네이티브 브릿지 우선 시도
+    const native = await shareViaNative({ title, text, url: shareUrl });
+    if (native.handled) {
+      toast.success("공유 링크도 복사해뒀어요. 안 채워지면 붙여넣기 하세요!");
+      return;
+    }
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title, text, url: shareUrl });
+        toast.success("공유 링크도 복사해뒀어요. 안 채워지면 붙여넣기 하세요!");
+      } catch (e) {
+        // 사용자가 취소한 경우(AbortError)는 조용히 종료
+        if (e instanceof Error && e.name === "AbortError") return;
+      }
+      return;
+    }
+    // OS 공유시트 미지원 환경(PC 등) → 이미 복사된 링크 안내만
+    toast.success("링크가 복사됐어요. 붙여넣어 공유하세요!");
+  }
+
   async function copyLink() {
     trackEvent("puzzle_share_copy_click", {
       puzzle_id: puzzleId,
@@ -211,6 +249,15 @@ export function ShareCreatedSheet({
         >
           <span className="text-[18px]">💬</span>
           카카오톡으로 공유하기
+        </button>
+
+        {/* 카톡 외 다른 앱(네이버카페 등)으로 공유 — OS 공유시트 노출. PC 등 미지원 환경은 링크 복사로 폴백 */}
+        <button
+          onClick={handleMoreShare}
+          className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl border border-border text-foreground font-bold text-[14px]"
+        >
+          <Share2 className="w-4 h-4" />
+          카페에 공유하기
         </button>
 
         <div className="flex gap-2">
