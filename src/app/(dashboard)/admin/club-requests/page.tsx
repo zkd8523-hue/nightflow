@@ -64,15 +64,66 @@ export default async function AdminClubRequestsPage() {
   }
   const ranked = [...freq.values()].sort((a, b) => b.count - a.count || (b.latest > a.latest ? 1 : -1));
 
-  // 등록 클럽 수요 (Migration 504) — "오늘 가고싶은 클럽"으로 지정된 깃발이 쌓인 등록 클럽.
-  // has_md=false인데 demand_count 높은 클럽 = "원하는데 파트너 MD가 없는 클럽" → 영업 최우선 타겟.
-  const { data: demandRows } = await supabase
-    .from("club_demand_counts")
-    .select("id, name, area, demand_count, has_md")
-    .gt("demand_count", 0)
-    .order("demand_count", { ascending: false })
-    .limit(10);
-  const demand = demandRows ?? [];
+  // 등록 클럽 수요 (Migration 504) — 클럽별로 "그 클럽을 선호 클럽으로 지정한 깃발"을 묶어서 보여준다.
+  // 집계 숫자만으론 영업할 때 쓸 게 없어서(언제·얼마짜리 수요인지 모름) 깃발 날짜/예산까지 함께 노출.
+  // has_md=false인데 지정이 쌓인 클럽 = "원하는데 파트너 MD가 없는 클럽" → 영업 최우선 타겟.
+  const { data: demandPuzzles } = await supabase
+    .from("puzzles")
+    .select("id, event_date, total_budget, budget_per_person, target_count, area, preferred_club_ids, status")
+    .neq("preferred_club_ids", "{}")
+    .order("event_date", { ascending: false })
+    .limit(300);
+
+  const demandClubIds = [
+    ...new Set((demandPuzzles ?? []).flatMap((p) => p.preferred_club_ids ?? [])),
+  ];
+  const { data: demandClubRows } = demandClubIds.length
+    ? await supabase
+        .from("clubs")
+        .select("id, name, area, club_partners(md_id)")
+        .in("id", demandClubIds)
+    : { data: [] };
+
+  type DemandFlag = { id: string; event_date: string; budget: number; target_count: number; area: string | null };
+  const demandByClub = new Map<
+    string,
+    { id: string; name: string; area: string | null; has_md: boolean; flags: DemandFlag[] }
+  >();
+  for (const c of (demandClubRows ?? []) as unknown as {
+    id: string; name: string; area: string | null; club_partners: { md_id: string }[] | null;
+  }[]) {
+    demandByClub.set(c.id, {
+      id: c.id,
+      name: c.name,
+      area: c.area,
+      has_md: (c.club_partners?.length ?? 0) > 0,
+      flags: [],
+    });
+  }
+  for (const p of demandPuzzles ?? []) {
+    const budget = p.total_budget ?? (p.budget_per_person ?? 0) * (p.target_count ?? 1);
+    for (const cid of p.preferred_club_ids ?? []) {
+      demandByClub.get(cid)?.flags.push({
+        id: p.id,
+        event_date: p.event_date,
+        budget,
+        target_count: p.target_count,
+        area: p.area,
+      });
+    }
+  }
+  // 지정 많은 클럽 우선, 같으면 파트너 없는 곳(영업 타겟) 먼저
+  const demand = [...demandByClub.values()]
+    .filter((c) => c.flags.length > 0)
+    .sort((a, b) => b.flags.length - a.flags.length || Number(a.has_md) - Number(b.has_md));
+
+  // "500000" → "50만원" (딱 떨어지면 만 단위, 아니면 원 단위 그대로)
+  const fmtBudget = (n: number) =>
+    n > 0 && n % 10000 === 0 ? `${(n / 10000).toLocaleString()}만원` : `${n.toLocaleString()}원`;
+  const fmtDate = (d: string) => {
+    const dt = new Date(d + "T00:00:00");
+    return Number.isNaN(dt.getTime()) ? d : `${dt.getMonth() + 1}/${dt.getDate()}`;
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -137,32 +188,44 @@ export default async function AdminClubRequestsPage() {
               <h2 className="text-[13px] font-black text-foreground">등록 클럽 수요 TOP</h2>
             </div>
             <p className="text-[11px] text-muted-foreground mb-3">
-              깃발에서 &ldquo;오늘 가고싶은 클럽&rdquo;으로 지정된 횟수 · 파트너 MD 없는 곳은 영업 타겟
+              깃발이 &ldquo;선호 클럽&rdquo;으로 지정한 수요 · 파트너 MD 없는 곳은 영업 타겟
             </p>
-            <div className="space-y-2">
-              {demand.map((r, i) => (
-                <div
-                  key={r.id}
-                  className="flex items-center justify-between gap-3 py-2 border-b border-border last:border-0"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-[11px] font-black text-muted-foreground w-5 tabular-nums">
-                      {i + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[14px] font-bold text-foreground truncate">{r.name}</p>
-                      {r.area && <p className="text-[11px] text-muted-foreground truncate">{r.area}</p>}
+            <div className="space-y-4">
+              {demand.map((c) => (
+                <div key={c.id}>
+                  {/* 클럽 헤더 */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex items-baseline gap-2">
+                      <p className="text-[15px] font-black text-foreground truncate">{c.name}</p>
+                      {c.area && <span className="text-[11px] text-muted-foreground shrink-0">{c.area}</span>}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {!c.has_md && (
+                        <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[11px] font-black whitespace-nowrap">
+                          영업 타겟
+                        </span>
+                      )}
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-brand-amber text-[11px] font-black">
+                        {c.flags.length}건
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {!r.has_md && (
-                      <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[11px] font-black whitespace-nowrap">
-                        영업 타겟
-                      </span>
-                    )}
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-brand-amber text-[11px] font-black">
-                      {r.demand_count}건
-                    </span>
+                  {/* 그 클럽을 지정한 깃발들 — 날짜 · 예산 · 인원 */}
+                  <div className="mt-1.5 pl-3 border-l border-border space-y-1">
+                    {c.flags.map((f) => (
+                      <Link
+                        key={`${c.id}-${f.id}`}
+                        href={`/flags/${f.id}`}
+                        className="flex items-center gap-2 text-[12.5px] hover:bg-muted/50 rounded px-1 -mx-1 py-0.5 transition-colors"
+                      >
+                        <span className="font-bold text-foreground tabular-nums shrink-0">
+                          {fmtDate(f.event_date)}
+                        </span>
+                        <span className="font-bold text-money tabular-nums">{fmtBudget(f.budget)}</span>
+                        <span className="text-muted-foreground shrink-0">{f.target_count}명</span>
+                        {f.area && <span className="text-muted-foreground truncate">{f.area}</span>}
+                      </Link>
+                    ))}
                   </div>
                 </div>
               ))}

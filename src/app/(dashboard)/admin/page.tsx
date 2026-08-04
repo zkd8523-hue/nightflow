@@ -213,13 +213,31 @@ export default async function AdminDashboardPage() {
   // 클럽 요청 (영업 리드) — 최근 7일
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const [{ count: totalClubRequests }, { count: recentClubRequests }] = await Promise.all([
+  // 미등록 클럽 위시(club_requests) + 등록 클럽 선호 지정(puzzles.preferred_club_ids, Mig 504)을 합산.
+  // 위시만 세면 선호 클럽 수요가 쌓여도 카드가 "0건"으로 보여서 영업 리드가 있는 줄 모름.
+  const [
+    { count: totalClubRequests },
+    { count: recentClubRequests },
+    { count: totalPreferredFlags },
+    { count: recentPreferredFlags },
+  ] = await Promise.all([
     supabase.from("club_requests").select("id", { count: "exact", head: true }),
     supabase
       .from("club_requests")
       .select("id", { count: "exact", head: true })
       .gte("created_at", sevenDaysAgo),
+    supabase
+      .from("puzzles")
+      .select("id", { count: "exact", head: true })
+      .neq("preferred_club_ids", "{}"),
+    supabase
+      .from("puzzles")
+      .select("id", { count: "exact", head: true })
+      .neq("preferred_club_ids", "{}")
+      .gte("created_at", sevenDaysAgo),
   ]);
+  const clubLeadTotal = (totalClubRequests || 0) + (totalPreferredFlags || 0);
+  const clubLeadRecent = (recentClubRequests || 0) + (recentPreferredFlags || 0);
 
   // 사용자 차단 통계 (Apple Guideline 1.2 대응)
   const [
@@ -443,11 +461,11 @@ export default async function AdminDashboardPage() {
     },
     {
       label: "클럽 요청 (영업 리드)",
-      value: `${totalClubRequests || 0}건`,
+      value: `${clubLeadTotal}건`,
       icon: Sparkles,
       color: "text-brand-amber",
       bgColor: "bg-amber-500/10",
-      badge: recentClubRequests ? `최근 7일 ${recentClubRequests}건` : null,
+      badge: clubLeadRecent ? `최근 7일 ${clubLeadRecent}건` : null,
       href: "/admin/club-requests",
     },
     {
