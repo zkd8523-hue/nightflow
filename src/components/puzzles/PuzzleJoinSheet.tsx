@@ -33,13 +33,20 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
 
   const isDirty = hasGuest || guestCount > 1;
 
-  // 본인 성별 로드 (시트 열릴 때 1회)
+  // 본인 성별 로드 (시트 열릴 때 1회).
+  // 비로그인이면 시트가 열려도 제출이 조용히 막히므로(아래 auth 가드) 여기서 로그인으로 보낸다 —
+  // 카드 "참가하기"처럼 로그인 확인 없이 시트를 여는 진입점이 있어서 시트 쪽에서 처리.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
       const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) return;
+      if (!auth.user) {
+        if (cancelled) return;
+        onClose();
+        router.push(`/login?redirect=${encodeURIComponent(`/flags/${puzzle.id}`)}`);
+        return;
+      }
       const { data } = await supabase
         .from("users")
         .select("gender")
@@ -50,7 +57,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
       setGenderLoaded(true);
     })();
     return () => { cancelled = true; };
-  }, [open, supabase]);
+  }, [open, supabase, onClose, router, puzzle.id]);
 
   const handleSaveMyGender = async (g: "male" | "female") => {
     const { data: auth } = await supabase.auth.getUser();

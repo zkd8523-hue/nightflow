@@ -603,15 +603,21 @@ export const PuzzleCard = memo(function PuzzleCard({
           </Button>
         </div>
       ) : (
+        // 조각 + 일반유저/비로그인 + 자리 남음 → 실제 행동(참가)을 CTA로.
+        // onJoin이 오면 합류 시트를 바로 띄우고, 안 넘어온 화면(프로필 등)에선 상세로 폴백해 먹통 방지.
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">{userOfferBadge}</div>
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="text-[13px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.97] transition-all shrink-0"
+          <Button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onJoin) onJoin(puzzle);
+              else router.push(`/flags/${puzzle.id}`);
+            }}
+            className="h-8 px-3.5 rounded-full font-black text-[12px] bg-green-500 hover:bg-green-400 text-black active:scale-[0.97] transition-all shrink-0"
           >
-            자세히
-          </button>
+            참가하기
+          </Button>
         </div>
       )}
       </div>
