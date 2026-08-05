@@ -46,7 +46,7 @@ export default function MarketingConsentPage() {
           <section className="space-y-3">
             <h2 className="text-lg font-black text-foreground">2. 발송 내용</h2>
             <ul className="list-disc list-inside space-y-1 text-foreground/80">
-              <li>신규 경매·깃발·조각 등 서비스 내 거래 기회 안내</li>
+              <li>신규 경매·깃발·파티 등 서비스 내 거래 기회 안내</li>
               <li>관심 지역·요일의 신규 등록 알림</li>
               <li>이벤트, 프로모션, 혜택 안내</li>
               <li>제휴 클럽 및 파트너 소식</li>

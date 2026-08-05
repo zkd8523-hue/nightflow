@@ -306,7 +306,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/puzzles?kind=flag",
     },
     {
-      label: "조각 현황",
+      label: "파티 현황",
       value: `${shareTotal || 0}건`,
       icon: LayoutGrid,
       color: "text-money",

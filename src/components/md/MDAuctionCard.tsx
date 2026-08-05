@@ -167,7 +167,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     return (
         <Card className="overflow-hidden bg-card border-border/50 hover:border-border transition-all p-3 cursor-pointer active:scale-[0.98]" onClick={handleCardClick}>
             <div className="flex gap-3">
-                {/* 조각은 날짜별 그룹 헤더 아래에 묶여 표시되므로 카드 안 썸네일/날짜는 생략(중복).
+                {/* 파티는 날짜별 그룹 헤더 아래에 묶여 표시되므로 카드 안 썸네일/날짜는 생략(중복).
                     일반 경매·핫딜만 클럽 썸네일 노출. */}
                 {!isShare && (
                     <Link href={`/auctions/${auction.id}`} className="w-16 h-16 rounded-lg bg-card overflow-hidden flex-shrink-0 relative border border-border">
@@ -214,7 +214,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                             )}
                             <Link href={`/auctions/${auction.id}`} className="block">
                                 <h3 className="font-black text-[18px] text-foreground truncate leading-tight">
-                                    {isShare ? (auction.table_info || "조각") : club?.name}
+                                    {isShare ? (auction.table_info || "파티") : club?.name}
                                 </h3>
                             </Link>
                         </div>

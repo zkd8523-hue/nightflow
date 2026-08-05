@@ -76,7 +76,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
   // 제안받는중(open) 하위 대화 필터: 'waiting'(파트너 답장 대기) | 'active'(대화중)
   const chatFilter = chatParam === "waiting" ? "waiting" : chatParam === "active" ? "active" : null;
   const sortKey: SortKey = sortParam === "created" ? "created" : sortParam === "cancelled" ? "cancelled" : "event";
-  const kindLabel = kindFilter === "share" ? "조각" : kindFilter === "flag" ? "깃발" : "게시물";
+  const kindLabel = kindFilter === "share" ? "파티" : kindFilter === "flag" ? "깃발" : "게시물";
 
   // 미들웨어가 auth + role 체크를 완료하고 헤더로 전달
   const headersList = await headers();
@@ -310,7 +310,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <Flag className="w-5 h-5 text-purple-400" />
-          <h1 className="text-[20px] font-black text-foreground">깃발·조각 관리</h1>
+          <h1 className="text-[20px] font-black text-foreground">깃발·파티 관리</h1>
         </div>
 
         {/* 탭 */}
@@ -380,7 +380,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
           };
           return (
           <div className="space-y-4">
-            {/* 깃발/조각 토글 (kind 변경 시 지역·상태 필터 초기화) */}
+            {/* 깃발/파티 토글 (kind 변경 시 지역·상태 필터 초기화) */}
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] text-muted-foreground font-bold mr-1">종류:</span>
               <Link href={buildHref({ kind: null, area: null, status: null })}>
@@ -395,7 +395,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
               </Link>
               <Link href={buildHref({ kind: "share", area: null, status: null })}>
                 <button className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${kindFilter === "share" ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground border border-border"}`}>
-                  🧩 조각 {shareCountAll}
+                  🎉 파티 {shareCountAll}
                 </button>
               </Link>
             </div>
@@ -596,7 +596,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                             <div className="flex flex-col items-end gap-1 shrink-0">
                               {!kindFilter && (
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${puzzle.is_recruiting_party ? "bg-green-500/15 text-money" : "bg-muted text-foreground/80"}`}>
-                                  {puzzle.is_recruiting_party ? "🧩 조각" : "🚩 깃발"}
+                                  {puzzle.is_recruiting_party ? "🎉 파티" : "🚩 깃발"}
                                 </span>
                               )}
                               <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[puzzle.status] || "bg-muted text-muted-foreground"}`}>
@@ -730,7 +730,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
         {/* 최신 제안 탭 */}
         {tab === "offers" && (
           <div className="space-y-3">
-            {/* 깃발/조각 토글 (전체 목록 탭과 동일 기준) */}
+            {/* 깃발/파티 토글 (전체 목록 탭과 동일 기준) */}
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] text-muted-foreground font-bold mr-1">종류:</span>
               <Link href="?tab=offers">
@@ -745,7 +745,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
               </Link>
               <Link href="?tab=offers&kind=share">
                 <button className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${kindFilter === "share" ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground border border-border"}`}>
-                  🧩 조각 {offerShareCount}
+                  🎉 파티 {offerShareCount}
                 </button>
               </Link>
             </div>
@@ -770,7 +770,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                               ? "bg-purple-500/20 text-purple-300"
                               : "bg-blue-500/20 text-blue-300"
                           }`}>
-                            {offer.kind === "share" ? "🧩 조각" : "🚩 깃발"}
+                            {offer.kind === "share" ? "🎉 파티" : "🚩 깃발"}
                           </span>
                           <p className="text-[13px] font-black text-foreground truncate">
                             {puzzle?.notes || `${puzzle?.area} ${puzzle?.event_date ? formatDate(puzzle.event_date) : ""}`}

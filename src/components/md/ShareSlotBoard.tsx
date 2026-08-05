@@ -156,8 +156,8 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
 
   const handleClaim = async (clubId: string, clubName: string) => {
     const ok = window.confirm(
-      `${clubName}의 이번 주 조각 자리를 선점할까요?\n\n` +
-        `· 이 자리를 가진 파트너만 이 클럽 조각을 올릴 수 있어요 (선착순 1파트너 1클럽)\n` +
+      `${clubName}의 이번 주 파티 자리를 선점할까요?\n\n` +
+        `· 이 자리를 가진 파트너만 이 클럽 파티를 올릴 수 있어요 (선착순 1파트너 1클럽)\n` +
         `· 매주 월요일 오후 6시에 초기화돼요`
     );
     if (!ok) return;
@@ -188,7 +188,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
         ]);
         onClaim?.(newSlot);
       }
-      toast.success("조각 자리 선점 완료! 이제 조각을 등록할 수 있어요");
+      toast.success("파티 자리 선점 완료! 이제 파티를 등록할 수 있어요");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -199,7 +199,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
   };
 
   const handleRelease = async (slotId: string) => {
-    if (!window.confirm("이 조각 자리를 해제할까요?")) return;
+    if (!window.confirm("이 파티 자리를 해제할까요?")) return;
     setBusy(true);
     try {
       const { data, error } = await supabase.rpc("release_share_slot", {
@@ -226,7 +226,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
           .in("status", ["active", "scheduled"]);
         onRelease?.(released.club_id);
       }
-      toast.success("조각 자리 해제됨");
+      toast.success("파티 자리 해제됨");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -320,7 +320,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
           {embedded ? (
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <p className="text-[17px] text-brand-amber font-black leading-tight">
-                이번주 조각 일정
+                이번주 파티 일정
               </p>
               <button
                 type="button"
@@ -333,8 +333,8 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
             </div>
           ) : (
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[20px] leading-none">🧩</span>
-              <h1 className="text-2xl font-black text-foreground tracking-tight">나플 조각</h1>
+              <span className="text-[20px] leading-none">🎉</span>
+              <h1 className="text-2xl font-black text-foreground tracking-tight">나플 파티</h1>
             </div>
           )}
           <p className="text-[11px] text-brand-amber font-bold text-right leading-tight shrink-0">
@@ -364,22 +364,22 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
               <div className="flex items-start gap-2.5">
                 <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
                 <div className="flex-1">
-                  <p className="text-[12.5px] text-foreground font-bold leading-snug">자리를 가진 파트너만 조각 등록</p>
-                  <p className="text-[11px] text-muted-foreground leading-snug">이번 주 자리를 차지해야 그 클럽 조각을 올릴 수 있어요</p>
+                  <p className="text-[12.5px] text-foreground font-bold leading-snug">자리를 가진 파트너만 파티 등록</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">이번 주 자리를 차지해야 그 클럽 파티를 올릴 수 있어요</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
                 <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</div>
                 <div className="flex-1">
                   <p className="text-[12.5px] text-foreground font-bold leading-snug">1클럽, 1파트너</p>
-                  <p className="text-[11px] text-muted-foreground leading-snug">선착순 한 명이 그 주 조각 등록권을 가져가요</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">선착순 한 명이 그 주 파티 등록권을 가져가요</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
                 <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">3</div>
                 <div className="flex-1">
                   <p className="text-[12.5px] text-foreground font-bold leading-snug">한 번 세팅으로 1주일치 자동 등록</p>
-                  <p className="text-[11px] text-muted-foreground leading-snug">요일표에 옵션을 배치하면 그 주 조각이 매일 자동으로 올라가요</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">요일표에 옵션을 배치하면 그 주 파티가 매일 자동으로 올라가요</p>
                 </div>
               </div>
             </div>
@@ -428,7 +428,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
                     <div>
                       <p className="text-foreground text-[15px] font-black">{club.name}</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        내 조각 · {formatWeekRange(thisWeekISO)}
+                        내 파티 · {formatWeekRange(thisWeekISO)}
                       </p>
                       <p className="text-[11px] text-muted-foreground mt-1">
                         최대 6개까지 세팅 가능
@@ -550,7 +550,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
 
       </div>
 
-      {/* 조각 실제 노출 미리보기 (이용방법의 '미리보기'에서 염) */}
+      {/* 파티 실제 노출 미리보기 (이용방법의 '미리보기'에서 염) */}
       <SharePreviewSheet open={previewOpen} onOpenChange={setPreviewOpen} />
     </div>
   );

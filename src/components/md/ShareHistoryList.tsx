@@ -43,7 +43,7 @@ export function ShareHistoryList({ mdId }: ShareHistoryListProps) {
     <div className="space-y-2">
       <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-1.5">
         <Users className="w-4 h-4" />
-        조각 운영 이력
+        파티 운영 이력
       </h3>
       <div className="space-y-1.5">
         {auctions.map((auction) => {

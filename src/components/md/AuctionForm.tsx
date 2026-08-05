@@ -494,7 +494,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         // 조각 신규 등록: 실제 생성 전에 "템플릿으로 저장할까요?" 먼저 확인
         if (values.listing_type === "share" && !initialData) {
             setPendingShareSubmitValues(values);
-            setTemplateNameDraft(`${Math.round((values.price_per_seat || 0) / 10000)}만원/${values.main_alcohol || "주류"}/조각${values.total_seats}`);
+            setTemplateNameDraft(`${Math.round((values.price_per_seat || 0) / 10000)}만원/${values.main_alcohol || "주류"}/파티${values.total_seats}`);
             setShowTemplateSavePrompt(true);
             return; // 프롬프트에서 예/아니오 선택 후 performSubmit 진행
         }
@@ -583,7 +583,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         .eq("leader_id", mdId);
                     if (upErr) throw new Error(upErr.message || "수정에 실패했습니다.");
                     setSubmitted(true);
-                    toast.success("조각이 수정되었어요");
+                    toast.success("파티가 수정되었어요");
                     setTimeout(() => router.replace(`/flags/${initialData.id}`), 200);
                     return;
                 }
@@ -843,7 +843,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
 
 
-            {/* 조각 모드: 템플릿에서 생성 버튼 */}
+            {/* 파티 모드: 템플릿에서 생성 버튼 */}
             {isShareMode && !initialData && (
               <div className="flex justify-end">
                 <Button
@@ -1125,7 +1125,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             {/* Smart Pricing 추천 — 숨김 처리 */}
 
-            {/* ── 조각(share) 전용 섹션 (PuzzleForm 파티원 모집과 통일) ── */}
+            {/* ── 파티(share) 전용 섹션 (PuzzleForm 파티원 모집과 통일) ── */}
             {isShareMode && (
               <>
                 {/* 1. 방문일시 */}
@@ -1150,7 +1150,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 <section ref={priceSectionRef} className="space-y-4 scroll-mt-24">
                   <div className="flex items-center gap-2 text-foreground font-bold mb-2">
                     <Coins className="w-4 h-4 text-brand-amber" />
-                    <span>조각 설정</span>
+                    <span>파티 설정</span>
                   </div>
                   <div className="bg-card border border-border rounded-2xl p-5 space-y-5">
 
@@ -1328,7 +1328,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         )}
                       </div>
 
-                      {/* 성비 설정 토글 제거 — 조각은 성별무관(초록 슬롯) 통일 (target_male/female=0) */}
+                      {/* 성비 설정 토글 제거 — 파티는 성별무관(초록 슬롯) 통일 (target_male/female=0) */}
                       {/* 성비 슬롯 picker — 항상 합계 = targetCount */}
                       {useGenderSlot && (
                         <div className="grid grid-cols-2 gap-2">
@@ -1389,10 +1389,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                       const sm = targetMale - (hasExternal ? externalMale : 0);
                                       const sf = targetFemale - (hasExternal ? externalFemale : 0);
                                       const parts = [...(sm > 0 ? [`남자${sm}`] : []), ...(sf > 0 ? [`여자${sf}`] : [])];
-                                      return `🧩 ${parts.join("/")}명의 조각을 구해요`;
+                                      return `🎉 ${parts.join("/")}명의 파티를 구해요`;
                                     })()
-                                  : `🧩 총 ${seeking}명의 조각을 구해요`
-                                : "🧩 정원이 꽉 찼어요"}
+                                  : `🎉 총 ${seeking}명의 파티를 구해요`
+                                : "🎉 정원이 꽉 찼어요"}
                             </p>
                             {perPerson !== null ? (
                               <div className="flex items-center gap-2">
@@ -1457,7 +1457,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                   </div>
                 </section>
 
-                {/* 4. 주류 & 테이블 구성 — 조각(share) 모드: 주류 선택 */}
+                {/* 4. 주류 & 테이블 구성 — 파티(share) 모드: 주류 선택 */}
                 <LiquorSelector
                   optional
                   selected={selectedIncludes.filter((item: string) =>
@@ -1514,7 +1514,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                   </div>
                 </section>
 
-                {/* 조각 정보 섹션 제거 — md_message는 여전히 자동 생성되어 notes(카드 제목)로 저장됨 */}
+                {/* 파티 정보 섹션 제거 — md_message는 여전히 자동 생성되어 notes(카드 제목)로 저장됨 */}
 
                 {/* 6. MD 한마디 (직접 입력) */}
                 <section className="space-y-4">
@@ -1540,7 +1540,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                   </div>
                 </section>
 
-                {/* 카톡 오픈채팅 섹션 제거 — MD 직통 조각은 인앱 단체채팅 사용 */}
+                {/* 카톡 오픈채팅 섹션 제거 — MD 직통 파티는 인앱 단체채팅 사용 */}
               </>
             )}
 
@@ -1737,7 +1737,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             <div className="mt-12 px-1">
                 <div className="max-w-lg mx-auto">
                     <Button disabled={isSubmitting || submitted} className="w-full h-14 rounded-2xl bg-inverse text-inverse-foreground font-black text-lg hover:opacity-90 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60">
-                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : submitted ? "등록 완료" : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "조각 정보 수정하기") : (isInstantMode ? "오늘특가 등록하기" : "조각 등록하기"))}
+                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : submitted ? "등록 완료" : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "파티 정보 수정하기") : (isInstantMode ? "오늘특가 등록하기" : "파티 등록하기"))}
                         <ArrowRight className="w-5 h-5" />
                     </Button>
                 </div>
@@ -1835,7 +1835,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             />
         )}
 
-        {/* 조각 신규 등록 전 템플릿 저장 확인 — "완료" 클릭 시 실제 생성 전에 먼저 뜸 */}
+        {/* 파티 신규 등록 전 템플릿 저장 확인 — "완료" 클릭 시 실제 생성 전에 먼저 뜸 */}
         {pendingShareSubmitValues && (
             <Sheet
                 open={showTemplateSavePrompt}
@@ -1898,7 +1898,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 const v = pendingShareSubmitValues;
                                 setTemplateSaving(true);
                                 try {
-                                    const templateName = templateNameDraft.trim() || `${Math.round((v.price_per_seat || 0) / 10000)}만원/${v.main_alcohol || "주류"}/조각${v.total_seats}`;
+                                    const templateName = templateNameDraft.trim() || `${Math.round((v.price_per_seat || 0) / 10000)}만원/${v.main_alcohol || "주류"}/파티${v.total_seats}`;
                                     // 저장과 동시에 켤 때: 이번 등록의 요일을 기본 선택값으로, 종료일은 4주 후.
                                     const liveFields = turnLiveOnSave
                                         ? (() => {

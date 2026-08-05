@@ -49,23 +49,23 @@ export async function generateMetadata({
   if (!isSupportedArea(area)) {
     notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
-  const title = `${area} 조각 - ${area} 클럽 조각·합석 일행 모집`;
-  const description = `${area} 클럽 조각 매물 모음. ${area} 클럽 인당 가격으로 같이 갈 일행을 모집·합류하세요. ${area} 인기 클럽 정보와 진행 중인 조각·합석 매물을 한곳에. 나플에서 확인.`;
+  const title = `${area} 파티 - ${area} 클럽 파티·합석 일행 모집`;
+  const description = `${area} 클럽 파티 매물 모음. ${area} 클럽 인당 가격으로 같이 갈 일행을 모집·합류하세요. ${area} 인기 클럽 정보와 진행 중인 파티·합석 매물을 한곳에. 나플에서 확인.`;
   const canonical = `https://nightflow.kr/share/${encodeURIComponent(area)}`;
   return {
     title,
     description,
     alternates: { canonical },
     keywords: [
-      `${area} 조각`,
-      `${area} 클럽 조각`,
+      `${area} 파티`,
+      `${area} 클럽 파티`,
       `${area} 클럽 합석`,
       `${area} 합석`,
       `${area} 클럽 일행`,
       `${area} 일행`,
-      `${area} 조각모임`,
+      `${area} 파티모임`,
       `${area} 클럽`,
-      "클럽 조각",
+      "클럽 파티",
       "클럽 합석",
       "클럽 일행",
       "나플",
@@ -181,7 +181,7 @@ export default async function ShareAreaPage({ params }: PageProps) {
       {
         "@type": "ListItem",
         position: 2,
-        name: `${area} 조각`,
+        name: `${area} 파티`,
         item: `https://nightflow.kr/share/${encodeURIComponent(area)}`,
       },
     ],
@@ -196,34 +196,34 @@ export default async function ShareAreaPage({ params }: PageProps) {
       {/* SEO H1 — 시각엔 작게 표시되지만 검색엔진엔 강한 신호 */}
       <header className="mb-6 space-y-2">
         <h1 className="text-2xl font-black text-foreground tracking-tight">
-          {area} 조각
+          {area} 파티
         </h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          {area} 클럽 조각·합석 일행 모집 매물 모음
+          {area} 클럽 파티·합석 일행 모집 매물 모음
         </p>
       </header>
 
       {/* SEO sr-only — 본문 텍스트 보강 */}
       <div className="sr-only">
-        <h2>{area} 조각이란?</h2>
+        <h2>{area} 파티가란?</h2>
         <p>
-          {area} 조각은 {area} 클럽에 같이 갈 일행을 모집하거나 합류하는
-          방식입니다. {area} 클럽 파트너가 인당 가격으로 조각 매물을 올리면 회원이
-          한 자리씩 합류해서 같이 입장합니다. 클럽 조각·합석으로 부르기도
+          {area} 파티는 {area} 클럽에 같이 갈 일행을 모집하거나 합류하는
+          방식입니다. {area} 클럽 파트너가 인당 가격으로 파티 매물을 올리면 회원이
+          한 자리씩 합류해서 같이 입장합니다. 클럽 파티·합석으로 부르기도
           합니다.
         </p>
-        <h2>나플 {area} 조각</h2>
+        <h2>나플 {area} 파티</h2>
         <p>
-          나플에서 {area} 조각 매물 {shareItems.length}건이 진행
-          중입니다. {area} 인기 클럽 {areaClubs.length}곳에서 조각·합석·일행
+          나플에서 {area} 파티 매물 {shareItems.length}건이 진행
+          중입니다. {area} 인기 클럽 {areaClubs.length}곳에서 파티·합석·일행
           모집이 가능합니다.
         </p>
       </div>
 
-      {/* 진행 중인 조각 매물 */}
+      {/* 진행 중인 파티 매물 */}
       <section className="space-y-3 mb-8">
         <h2 className="text-base font-bold text-foreground">
-          모집 중인 {area} 조각
+          모집 중인 {area} 파티
           {shareItems.length > 0 && (
             <span className="text-muted-foreground text-sm font-normal ml-2">
               ({shareItems.length}건)
@@ -233,7 +233,7 @@ export default async function ShareAreaPage({ params }: PageProps) {
         {shareItems.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-6 text-center">
             <p className="text-muted-foreground text-sm mb-2 leading-relaxed">
-              현재 진행 중인 {area} 조각 매물이 없어요
+              현재 진행 중인 {area} 파티 매물이 없어요
             </p>
             <p className="text-muted-foreground text-xs mb-5 leading-relaxed">
               {area} 무료입장·특가 등 실시간 정보를 확인해보실래요?
@@ -359,7 +359,7 @@ export default async function ShareAreaPage({ params }: PageProps) {
             variant="ghost"
             className="w-full bg-card text-foreground font-bold rounded-2xl border border-border h-12 hover:bg-muted"
           >
-            전체 조각 보기
+            전체 파티 보기
             <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
         </Link>

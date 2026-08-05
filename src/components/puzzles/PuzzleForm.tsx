@@ -885,11 +885,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       const showReviewModal = !shareMode && !effectiveIsRecruiting && !isForeigner && !!topClub;
 
       if (shareMode) {
-        toast.success(t("조각이 올라갔어요! 파티원과 파트너 제안을 받아보세요 🧩", "Your share is up! Get party members and club offers 🧩"));
+        toast.success(t("파티가 올라갔어요! 파티원과 파트너 제안을 받아보세요 🎉", "Your share is up! Get party members and club offers 🎉"));
       } else if (effectiveIsRecruiting) {
         toast.success(t(
-          `퍼즐이 올라갔어요! ${getOfferDeadlineLabel(true)}까지 파티원·파트너 모집, 이후 60분간 검토할 수 있어요 🧩`,
-          "Posted! Offers close at 3am. You have 60 min to review 🧩"
+          `퍼즐이 올라갔어요! ${getOfferDeadlineLabel(true)}까지 파티원·파트너 모집, 이후 60분간 검토할 수 있어요 🎉`,
+          "Posted! Offers close at 3am. You have 60 min to review 🎉"
         ));
       } else if (!showReviewModal) {
         toast.success(t("깃발이 올라갔어요! 🚩", "Done! Top clubs will send you offers 🎉"));
@@ -960,7 +960,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
     // 방금 누른 "깃발 꽂기"(앰버·하단) 자리에 "네, 확정됐어요"(앰버·하단)가 이어져 버튼이 안 튐.
     return (
       <div className="pb-12">
-        {/* 뒤로 + 헤더 + 여백: start/page(깃발·조각 선택)와 픽셀 단위로 동일 */}
+        {/* 뒤로 + 헤더 + 여백: start/page(깃발·파티 선택)와 픽셀 단위로 동일 */}
         <button
           type="button"
           onClick={() => router.push("/start")}
@@ -1173,7 +1173,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       </section>
 
       {/* 가고싶은 클럽 (선택, 최대 3) — 지역 바로 다음. 지정하면 그 클럽 파트너 MD에게 직접 매칭 푸시(Migration 504).
-          조각/파티원 모집·MD 직통 조각에는 미노출 — 깃발(인원 확정)에서만 의미 있는 매칭 신호. */}
+          파티/파티원 모집·MD 직통 파티에는 미노출 — 깃발(인원 확정)에서만 의미 있는 매칭 신호. */}
       {!isEditMode && !shareMode && !isRecruitingParty && (
         <section className="space-y-3">
           <div className="flex items-center gap-2 text-foreground font-bold">
@@ -1351,7 +1351,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
                   숨기면 정작 헷갈리는 케이스(총원=일행)에 확인 문구가 사라진다. */}
               {effectiveTargetCount - effectiveCurrentCount > 0 ? (
                 <p className="text-[12px] text-money font-bold">
-                  🧩 {t(`총 ${effectiveTargetCount - effectiveCurrentCount}명을 구해요`, `Looking for ${effectiveTargetCount - effectiveCurrentCount} more`)}
+                  🎉 {t(`총 ${effectiveTargetCount - effectiveCurrentCount}명을 구해요`, `Looking for ${effectiveTargetCount - effectiveCurrentCount} more`)}
                 </p>
               ) : (
                 <p className="text-[12px] text-muted-foreground font-bold">
@@ -1456,11 +1456,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
           </p>
         </div>
 
-        {/* 50만원 장벽 회유 — "예산이 50 언더라면?" 클릭 시 조각으로 유도. 외국인 제외(조각 미제공) */}
+        {/* 50만원 장벽 회유 — "예산이 50 언더라면?" 클릭 시 파티로 유도. 외국인 제외(파티 미제공) */}
         {!shareMode && !isForeigner && showShareCta && (
           <div className="bg-green-500/10 border border-green-500/25 rounded-2xl p-4">
             <p className="text-[13.5px] font-black text-foreground break-keep">
-              조각을 이용하면 파티원을 모아 예약할 수 있어요
+              파티를 이용하면 파티원을 모아 예약할 수 있어요
             </p>
             <p className="text-[12.5px] text-foreground/80 mt-1 leading-relaxed break-keep">
               인당 7만원부터 시작되며, 깃발과 똑같은 오퍼를 받아요.
@@ -1470,13 +1470,13 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
               onClick={() => router.push("/shares/new")}
               className="mt-3 w-full h-11 rounded-xl bg-green-500 hover:bg-green-400 text-black font-black text-[14px] active:scale-[0.99] transition-all"
             >
-              🧩 조각 바로가기
+              🎉 파티 바로가기
             </button>
           </div>
         )}
       </section>
 
-      {/* 취향 태그 — 파티원 모집 중일 때만. MD 직통 조각(host_is_md)은 취향 선호가 무의미하므로 숨김 */}
+      {/* 취향 태그 — 파티원 모집 중일 때만. MD 직통 파티(host_is_md)은 취향 선호가 무의미하므로 숨김 */}
       {isRecruitingParty && !puzzle?.host_is_md && <section className="space-y-4">
         <div className="flex items-center gap-2 text-foreground font-bold mb-2">
           <Sparkles className="w-4 h-4 text-money" />
@@ -1484,7 +1484,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
         </div>
 
         <div className="space-y-2.5">
-          {/* 성별 선호 — 조각은 성별 '슬롯'(정원 배분)은 안 쓰지만 선호는 받는다 */}
+          {/* 성별 선호 — 파티는 성별 '슬롯'(정원 배분)은 안 쓰지만 선호는 받는다 */}
           <div className="flex items-center gap-3">
             <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("성별", "Gender")}</p>
             <div className="flex gap-1.5 flex-wrap">
@@ -1575,7 +1575,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       <section className="space-y-4">
         <div className="flex items-baseline gap-2 text-foreground font-bold mb-2">
           <MessageCircle className="w-4 h-4 text-money self-center" />
-          <span>{isRecruitingParty ? (shareMode ? t("조각 소개", "About your group") : t("퍼즐 소개", "About your group")) : t("깃발 제목", "Flag title")}</span>
+          <span>{isRecruitingParty ? (shareMode ? t("파티 소개", "About your group") : t("퍼즐 소개", "About your group")) : t("깃발 제목", "Flag title")}</span>
           {isRecruitingParty && (
             <span className="text-[11px] text-muted-foreground font-normal">
               {t("참여자와 파트너가 가장 먼저 읽어요", "First thing clubs see")}
@@ -1626,7 +1626,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
         </div>
       </section>
 
-      {/* 카톡 오픈채팅 — 파티원 모집 중일 때만. 조각(shareMode)은 인앱 채팅 사용으로 숨김 */}
+      {/* 카톡 오픈채팅 — 파티원 모집 중일 때만. 파티(shareMode)은 인앱 채팅 사용으로 숨김 */}
       {isRecruitingParty && !shareMode && (
         <section className="space-y-4">
           <div className="flex items-baseline gap-2 text-foreground font-bold mb-2">
@@ -1750,7 +1750,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
         title={isEditMode
           ? t("수정할까요?", "Save changes?")
           : (shareMode
-            ? t("조각을 올리면 파티원·파트너 제안이 바로 시작돼요", "Post your share — party members and club offers start right away")
+            ? t("파티를 올리면 파티원·파트너 제안이 바로 시작돼요", "Post your share — party members and club offers start right away")
             : (isRecruitingParty
               ? t("퍼즐이 완성되면 파트너가 오퍼를 보내와요", "Clubs will send offers once your group is complete")
               : t("마음에 드는 오퍼만 고르면 끝!", "Just pick the offer you like!")))}
@@ -1800,7 +1800,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
               </div>
               <SheetTitle className="text-foreground font-black text-xl tracking-tight">
                 {t(
-                  `오늘 ${isRecruitingParty ? "조각" : "깃발"} 등록은 ${getRegistrationDeadlineLabel(isRecruitingParty)}까지였어요`,
+                  `오늘 ${isRecruitingParty ? "파티" : "깃발"} 등록은 ${getRegistrationDeadlineLabel(isRecruitingParty)}까지였어요`,
                   isRecruitingParty ? "Today's share signup closed at 11pm" : "Today's request deadline was 9:30pm"
                 )}
               </SheetTitle>

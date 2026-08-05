@@ -136,7 +136,7 @@ export function MDSanctionPanel({
           <div>
             <p className="text-sm font-bold text-red-500">활동 정지 중</p>
             <p className="text-xs text-red-500/70">
-              조각 등록이 제한됩니다.
+              파티 등록이 제한됩니다.
               {mdSuspendedUntil && (
                 <> 해제 예정: <span className="font-semibold">
                   {dayjs(mdSuspendedUntil).format("YYYY-MM-DD HH:mm")}

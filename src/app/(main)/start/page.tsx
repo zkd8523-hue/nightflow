@@ -38,18 +38,18 @@ export default function StartPage() {
             </span>
           </Link>
 
-          {/* 조각 */}
+          {/* 파티 */}
           <Link
             href="/shares/new"
             className="flex flex-col rounded-3xl border border-green-500/30 bg-green-500/[0.06] p-5 active:scale-[0.98] transition-transform"
           >
-            <span className="text-[34px] leading-none">🧩</span>
-            <p className="text-[18px] font-black text-foreground mt-3">조각</p>
+            <span className="text-[34px] leading-none">🎉</span>
+            <p className="text-[18px] font-black text-foreground mt-3">파티</p>
             <p className="text-[12.5px] text-muted-foreground mt-1.5 leading-relaxed break-keep flex-1">
               인당 7만원부터 · 파티원 모아서 예약하기<br />깃발과 똑같은 오퍼를 받아요.
             </p>
             <span className="mt-4 inline-flex items-center justify-center h-10 rounded-xl bg-green-500 text-black text-[13px] font-black">
-              조각 모으기
+              파티 모으기
             </span>
           </Link>
         </div>

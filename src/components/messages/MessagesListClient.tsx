@@ -157,7 +157,7 @@ export function MessagesListClient() {
   // 깃발 / 조각 섹션 분리 (is_recruiting_party 기준)
   const sections = useMemo(() => [
     { key: "flag", label: "🚩 깃발", items: groups.filter((g) => !g[0].is_recruiting_party) },
-    { key: "share", label: "🧩 조각", items: groups.filter((g) => g[0].is_recruiting_party) },
+    { key: "share", label: "🎉 파티", items: groups.filter((g) => g[0].is_recruiting_party) },
   ], [groups]);
 
   // 탭 순서·기본값: 메시지(1) → 조각(2) → 깃발(3), 진입 시 항상 메시지
@@ -232,7 +232,7 @@ export function MessagesListClient() {
         </header>
         {user && (
           <div className="grid grid-cols-3 gap-1 p-1 mx-4 mb-2 bg-card rounded-full">
-            {/* 1번 메시지(DM) — 항상 노출 (메시지/조각/깃발 3채널 구조) */}
+            {/* 1번 메시지(DM) — 항상 노출 (메시지/파티/깃발 3채널 구조) */}
             <button
               onClick={() => { didAutoSelect.current = true; setTab("dm"); }}
               className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "dm" ? "bg-white/10 text-foreground" : "text-muted-foreground"}`}
@@ -247,14 +247,14 @@ export function MessagesListClient() {
                   안읽음은 Migration 484부터 개수로 표시. */}
               <UnreadBadge count={dmUnread} />
             </button>
-            {/* 2번 조각 → 3번 깃발 (sections는 flag,share 순이라 역순 렌더) */}
+            {/* 2번 파티 → 3번 깃발 (sections는 flag,share 순이라 역순 렌더) */}
             {[...sections].reverse().map((s) => {
               const isShare = s.key === "share";
               // 조각 탭 = 파티 단체방만(1:1 제거), 깃발 탭 = 1:1 오퍼 채팅
               const count = isShare ? partyRooms.length : s.items.length;
               const unreadTotal = isShare ? shareUnread : flagUnread;
               const active = tab === s.key;
-              const name = s.key === "flag" ? "🚩 깃발" : "🧩 조각";
+              const name = s.key === "flag" ? "🚩 깃발" : "🎉 파티";
               return (
                 <button
                   key={s.key}
@@ -331,17 +331,17 @@ export function MessagesListClient() {
           </div>
         )
       ) : tab === "share" && partyRooms.length === 0 ? (
-        <p className="text-center text-[13px] text-muted-foreground mt-16">조각 대화가 없어요</p>
+        <p className="text-center text-[13px] text-muted-foreground mt-16">파티 대화가 없어요</p>
       ) : tab === "flag" && activeSection.items.length === 0 ? (
         <p className="text-center text-[13px] text-muted-foreground mt-16">깃발 대화가 없어요</p>
       ) : (
         <div>
-          {/* 조각 탭: 단체채팅방(파티) — 깃발과 동일한 헤더+행 구조 */}
+          {/* 파티 탭: 단체채팅방(파티) — 깃발과 동일한 헤더+행 구조 */}
           {tab === "share" && partyRooms.map((room) => {
             const budgetText = room.budget ? ` · ${Math.round(room.budget / 10000)}만원` : "";
             return (
               <div key={room.puzzle_id} className="mb-1">
-                {/* 조각 헤더 — 깃발 헤더와 동일한 톤 */}
+                {/* 파티 헤더 — 깃발 헤더와 동일한 톤 */}
                 <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-card/40">
                   <p className="text-[13px] font-bold text-foreground/80 truncate">
                     {formatDate(room.event_date)}
@@ -390,7 +390,7 @@ export function MessagesListClient() {
               </div>
             );
           })}
-          {/* 깃발 탭만 1:1 오퍼 채팅 그룹 노출 (조각은 단체방으로 통합) — 진행 중만 */}
+          {/* 깃발 탭만 1:1 오퍼 채팅 그룹 노출 (파티는 단체방으로 통합) — 진행 중만 */}
           {tab === "flag" && flagOpenGroups.map((group) => {
             const head = group[0];
             const budgetText = head.budget ? ` · ${Math.round(head.budget / 10000)}만원` : "";
@@ -556,8 +556,8 @@ export function MessagesListClient() {
                 <br />
                 {leaveTarget.kind === "party"
                   ? leaveTarget.isLeader
-                    ? "남은 멤버가 있으면 방장이 넘어가고, 없으면 조각이 마감돼요."
-                    : "단체채팅에서 나가고 조각 인원에서 빠져요."
+                    ? "남은 멤버가 있으면 방장이 넘어가고, 없으면 파티가 마감돼요."
+                    : "단체채팅에서 나가고 파티 인원에서 빠져요."
                   : "나가면 이 상담이 종료돼요(상대도 종료)."}
               </p>
             </div>

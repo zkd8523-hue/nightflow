@@ -300,9 +300,9 @@ export function AdminShareSlotManager({ clubs, slotByClub, selectedWeek, weekOpt
 
       <p className="text-muted-foreground text-[12px] leading-relaxed">
         · 빈 자리에만 배정할 수 있어요. 이미 차지된 자리는 먼저 <b>해제</b>한 뒤 다시 배정하세요.<br />
-        · 배정된 파트너는 그 주에 다른 클럽 조각 자리를 가질 수 없어요 (주당 1자리).<br />
+        · 배정된 파트너는 그 주에 다른 클럽 파티 자리를 가질 수 없어요 (주당 1자리).<br />
         · 빈 자리를 그대로 두면 월요일 오후 6시 오픈 후 파트너가 선착순으로 차지할 수 있어요.<br />
-        · 조각 자리는 게스트 간판과 별개예요 — 한 클럽에서 게스트 간판 파트너와 조각 파트너가 서로 달라도 돼요.
+        · 파티 자리는 게스트 간판과 별개예요 — 한 클럽에서 게스트 간판 파트너와 파티 파트너가 서로 달라도 돼요.
       </p>
     </div>
   );

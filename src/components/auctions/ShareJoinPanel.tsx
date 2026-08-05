@@ -45,7 +45,7 @@ interface ShareJoinPanelProps {
 }
 
 const ERROR_MESSAGES: Record<ShareClaimError, string> = {
-  NOT_SHARE_LISTING: "조각 매물이 아닙니다.",
+  NOT_SHARE_LISTING: "파티 매물이 아닙니다.",
   OWN_LISTING: "본인 매물에는 참여할 수 없습니다.",
   NOT_OPEN: "현재 참여할 수 없는 매물입니다.",
   EXPIRED: "모집 마감 시간이 지났습니다.",
@@ -430,7 +430,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
       <Sheet open={genderSheetOpen} onOpenChange={setGenderSheetOpen}>
         <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-10">
           <SheetHeader className="text-left pb-4">
-            <SheetTitle className="text-foreground text-lg">조각 매치를 위해 성별을 알려주세요</SheetTitle>
+            <SheetTitle className="text-foreground text-lg">파티 매치를 위해 성별을 알려주세요</SheetTitle>
           </SheetHeader>
           <p className="text-[12px] text-muted-foreground mb-4">한 번 설정하면 변경할 수 없어요</p>
           <div className="grid grid-cols-2 gap-3 pb-2">

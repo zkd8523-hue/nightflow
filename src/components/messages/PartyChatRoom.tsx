@@ -333,7 +333,7 @@ export function PartyChatRoom({
         setRemoved(true);
         setInput("");
         setMedia([]);
-        toast.error("이 조각에서 나가게 되어 더 이상 참여할 수 없어요");
+        toast.error("이 파티에서 나가게 되어 더 이상 참여할 수 없어요");
         setSending(false);
         return;
       }
@@ -490,7 +490,7 @@ export function PartyChatRoom({
           </button>
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-bold text-foreground truncate">
-              조각 채팅방 <span className="text-muted-foreground font-medium">{memberCount}</span>
+              파티 채팅방 <span className="text-muted-foreground font-medium">{memberCount}</span>
             </p>
             <p className="text-[11px] text-muted-foreground truncate">
               {[partyInfo.dateLabel, partyInfo.area].filter(Boolean).join(" · ")}
@@ -504,7 +504,7 @@ export function PartyChatRoom({
             <Users className="w-5 h-5" />
           </button>
         </header>
-        {/* 조각 요약 바 — 탭하면 조각 상세로 */}
+        {/* 파티 요약 바 — 탭하면 파티 상세로 */}
         <Link
           href={`/flags/${puzzleId}`}
           className="flex items-center gap-2 px-4 py-2.5 bg-background border-t border-border/70 active:bg-card"
@@ -850,11 +850,11 @@ export function PartyChatRoom({
       {/* 입력창 / 상태 안내 */}
       {removed ? (
         <div className="px-4 py-4 border-t border-border text-center text-[13px] text-muted-foreground">
-          이 조각에서 나가게 되어 더 이상 대화할 수 없어요.
+          이 파티에서 나가게 되어 더 이상 대화할 수 없어요.
         </div>
       ) : readOnly ? (
         <div className="shrink-0 px-4 py-4 border-t border-border text-center text-[13px] text-muted-foreground">
-          종료된 조각이에요. 대화를 더 보낼 수 없어요.
+          종료된 파티가에요. 대화를 더 보낼 수 없어요.
         </div>
       ) : (
         <div className="shrink-0 bg-background border-t border-border">
@@ -1026,7 +1026,7 @@ export function PartyChatRoom({
                 {kickTarget.display_name ?? "멤버"}님을 내보낼까요?
               </p>
               <p className="text-[13px] text-muted-foreground leading-relaxed">
-                내보내면 이 조각과 단체채팅에서 나가게 되고, <br />
+                내보내면 이 파티와 단체채팅에서 나가게 되고, <br />
                 다시 합류할 수 없어요.
               </p>
             </div>

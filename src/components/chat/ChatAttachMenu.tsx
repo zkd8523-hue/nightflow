@@ -100,7 +100,7 @@ export function ChatAttachMenu({ onFiles, onLocation, onSharePuzzle, disabled }:
           {
             key: "puzzle",
             icon: Puzzle,
-            label: "내 조각",
+            label: "내 파티",
             onClick: () => {
               setOpen(false);
               onSharePuzzle();

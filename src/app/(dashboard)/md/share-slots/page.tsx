@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata = {
-  title: "조각 자리 선점 — NightFlow",
+  title: "파티 자리 선점 — NightFlow",
 };
 
 function weekStartKst(d: Date): string {
@@ -130,10 +130,10 @@ export default async function MDShareSlotsPage() {
             className="block bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4"
           >
             <p className="text-[13px] font-bold text-brand-amber">
-              ⚠️ 조각을 올리려면 먼저 오픈채팅을 등록해주세요
+              ⚠️ 파티를 올리려면 먼저 오픈채팅을 등록해주세요
             </p>
             <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">
-              유저는 오픈채팅으로 안내받아요. 등록 전까지는 조각이 자동으로 올라가지 않아요.
+              유저는 오픈채팅으로 안내받아요. 등록 전까지는 파티가 자동으로 올라가지 않아요.
             </p>
             <p className="text-[12px] font-bold text-foreground mt-2">프로필 설정하러 가기 →</p>
           </Link>

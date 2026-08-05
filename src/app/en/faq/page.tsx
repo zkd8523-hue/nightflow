@@ -93,7 +93,7 @@ const FAQS = [
   },
   {
     q: "Can I share a table with strangers to lower the cost?",
-    a: "Yes — this is called 'Share' (조각) on NightFlow. MDs sell individual seats at premium tables, so you pay 1/N of the bottle price instead of booking the whole table. Great for solo travelers or pairs who want VIP access without group cost.",
+    a: "Yes — this is called 'Share' (파티) on NightFlow. MDs sell individual seats at premium tables, so you pay 1/N of the bottle price instead of booking the whole table. Great for solo travelers or pairs who want VIP access without group cost.",
   },
 ];
 

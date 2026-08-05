@@ -7,7 +7,7 @@ import type { PartyParticipant } from "@/types/database";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "조각 채팅방",
+  title: "파티 채팅방",
   robots: { index: false, follow: false },
 };
 
@@ -55,7 +55,7 @@ export default async function PartyChatPage({ params }: PageProps) {
     .maybeSingle();
 
   if (!puzzle) notFound();
-  if (!puzzle.is_recruiting_party) redirect(`/flags/${puzzleId}`); // 조각(파티)만 단체채팅
+  if (!puzzle.is_recruiting_party) redirect(`/flags/${puzzleId}`); // 파티(파티)만 단체채팅
 
   const { data: memberRows } = await supabase
     .from("puzzle_members")

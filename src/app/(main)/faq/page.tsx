@@ -25,8 +25,8 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
     a: "나플은 나이트플로우(NightFlow)의 줄임말입니다. 강남·홍대 클럽 파트너가 잔여 테이블을 올리면, 회원들이 입찰로 가격을 정해서 예약하는 서비스예요.",
   },
   {
-    q: "퍼즐(클럽 조각)이 뭔가요?",
-    a: "퍼즐은 나이트플로우의 일행 모집 기능입니다. 흔히 '클럽 조각', '클럽 합석'이라고 부르는 기능으로, 같은 클럽에 갈 일행을 모집하거나 합류할 수 있습니다.",
+    q: "퍼즐(클럽 파티)이 뭔가요?",
+    a: "퍼즐은 나이트플로우의 일행 모집 기능입니다. 흔히 '클럽 파티', '클럽 합석'이라고 부르는 기능으로, 같은 클럽에 갈 일행을 모집하거나 합류할 수 있습니다.",
   },
   {
     q: "클럽 게스트 / 무료입장이 뭔가요?",
@@ -38,7 +38,7 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   },
   {
     q: "클럽 부킹이 뭔가요?",
-    a: "클럽 부킹은 전통적인 한국 클럽 문화로 파트너가 테이블에 합석할 사람을 안내해주는 방식을 말합니다. 나플에서는 부킹 대신 테이블 경매·조각(합석)·게스트 간판 등 더 투명한 방식으로 같은 목적(테이블·일행 매칭)을 해결합니다.",
+    a: "클럽 부킹은 전통적인 한국 클럽 문화로 파트너가 테이블에 합석할 사람을 안내해주는 방식을 말합니다. 나플에서는 부킹 대신 테이블 경매·파티(합석)·게스트 간판 등 더 투명한 방식으로 같은 목적(테이블·일행 매칭)을 해결합니다.",
   },
   {
     q: "여성무료는 어떻게 받나요?",
@@ -106,17 +106,17 @@ export default function FAQPage() {
 
                         <AccordionItem value="item-0a" className="border border-border rounded-xl px-6 bg-card/30">
                             <AccordionTrigger className="text-foreground font-bold hover:no-underline">
-                                퍼즐(클럽 조각)이 뭔가요?
+                                퍼즐(클럽 파티)이 뭔가요?
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>
                                     <strong className="text-foreground">퍼즐</strong>은 나이트플로우의 일행 모집 기능입니다.
-                                    흔히 <strong className="text-foreground">"클럽 조각"</strong>,{" "}
+                                    흔히 <strong className="text-foreground">"클럽 파티"</strong>,{" "}
                                     <strong className="text-foreground">"클럽 합석"</strong>이라고 부르는 그 기능이에요.
                                 </p>
                                 <p className="mt-2">
                                     인원이 부족할 때 같은 클럽에 갈 일행을 모집하거나, 다른 사람이
-                                    모집 중인 퍼즐에 합류할 수 있습니다. 강남 클럽 조각, 홍대 클럽
+                                    모집 중인 퍼즐에 합류할 수 있습니다. 강남 클럽 파티, 홍대 클럽
                                     합석을 안전하게 찾는 가장 빠른 방법입니다.
                                 </p>
                             </AccordionContent>
@@ -174,7 +174,7 @@ export default function FAQPage() {
                                 </p>
                                 <p className="mt-2">
                                     나플에서는 부킹 대신 <strong className="text-foreground">테이블 경매</strong>,{" "}
-                                    <strong className="text-foreground">조각(합석)</strong>,{" "}
+                                    <strong className="text-foreground">파티(합석)</strong>,{" "}
                                     <strong className="text-foreground">게스트 간판</strong> 등 더 투명한 방식으로
                                     같은 목적(테이블·일행 매칭)을 해결합니다.
                                 </p>
@@ -238,14 +238,14 @@ export default function FAQPage() {
 
                         <AccordionItem value="md-2" className="border border-border rounded-xl px-6 bg-card/30">
                             <AccordionTrigger className="text-foreground font-bold hover:no-underline">
-                                조각은 어떻게 등록하나요?
+                                파티는 어떻게 등록하나요?
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground leading-relaxed">
-                                <p>1. 파트너 대시보드 → "조각 등록하기" 클릭</p>
+                                <p>1. 파트너 대시보드 → "파티 등록하기" 클릭</p>
                                 <p>2. 클럽, 테이블 타입, 인원, 포함 서비스, 이벤트 날짜를 입력합니다.</p>
                                 <p>3. 인당 가격을 설정합니다.</p>
                                 <p>4. 방문일과 마감 시각을 설정합니다.</p>
-                                <p>5. "조각 등록하기" 클릭 시 매물이 노출됩니다.</p>
+                                <p>5. "파티 등록하기" 클릭 시 매물이 노출됩니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -422,7 +422,7 @@ export default function FAQPage() {
                             <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>다음과 같은 경우 파트너를 신고할 수 있습니다:</p>
                                 <p className="pl-4 mt-2">- 반복적 미응답 또는 무단 취소</p>
-                                <p className="pl-4">- 허위 조각 등록 (존재하지 않는 테이블 등)</p>
+                                <p className="pl-4">- 허위 파티 등록 (존재하지 않는 테이블 등)</p>
                                 <p className="pl-4">- 불친절하거나 부적절한 언행</p>
                                 <p className="pl-4">- 플랫폼 외 결제 강요</p>
                                 <p className="mt-3">고객센터(maddawids@gmail.com)로 신고해주시면 <span className="text-foreground font-bold">운영팀이 조사 후 경고, 활동 정지, 영구 차단</span> 등의 조치를 취합니다.</p>

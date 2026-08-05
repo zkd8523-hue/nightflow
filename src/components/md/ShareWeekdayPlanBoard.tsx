@@ -148,7 +148,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
                 .eq("external_attendees", 0)
                 .in("status", ["active", "scheduled"]);
             } catch (delErr) {
-              console.warn("조각 내림 실패:", delErr);
+              console.warn("파티 내림 실패:", delErr);
             }
           }
         }
@@ -212,7 +212,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
               .eq("external_attendees", 0)
               .in("status", ["active", "scheduled"]);
           } catch (delErr) {
-            console.warn("조각 내림 실패:", delErr);
+            console.warn("파티 내림 실패:", delErr);
           }
         }
         router.refresh();
@@ -231,7 +231,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
   if (activeOptions.length === 0) {
     return (
       <p className="text-center py-4 text-muted-foreground text-[12.5px]">
-        먼저 위에서 조각 옵션을 만들면 요일에 배치할 수 있어요.
+        먼저 위에서 파티 옵션을 만들면 요일에 배치할 수 있어요.
       </p>
     );
   }
@@ -260,7 +260,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
       <p className="text-[11px] text-muted-foreground -mt-0.5">
         {isNextWeek
           ? "다음 주 요일표예요. 여기서 켠 대로 다음 주에 자동으로 올라가요."
-          : "요일에 옵션을 켜두면 그 요일에 자동으로 조각이 올라가요."}
+          : "요일에 옵션을 켜두면 그 요일에 자동으로 파티가 올라가요."}
       </p>
       <div className="space-y-1.5 mt-0.5">
         {DOW_ORDER.map((dow) => {

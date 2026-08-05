@@ -22,7 +22,16 @@ import { BadgeCheck } from "lucide-react";
  * onlyWhenSlotOpen: 홈처럼 조각과 직접 상관없는 화면에서는 "지금 잡을 수 있는 자리가
  * 있을 때"만 띄운다. 내 클럽이 전부 남에게 잡혀 있으면 읽어도 할 수 있는 게 없다.
  */
-export function ShareOnboardingSheet({ onlyWhenSlotOpen = false }: { onlyWhenSlotOpen?: boolean } = {}) {
+export function ShareOnboardingSheet({
+  onlyWhenSlotOpen = false,
+  manualOpen = false,
+  onManualClose,
+}: {
+  onlyWhenSlotOpen?: boolean;
+  /** "ⓘ 이용방법"처럼 직접 열 때 — 티저를 건너뛰고 전체 가이드를 바로 연다 */
+  manualOpen?: boolean;
+  onManualClose?: () => void;
+} = {}) {
   const { user, isLoading, refetch } = useCurrentUser();
   const [teaserOpen, setTeaserOpen] = useState(false);
   const [open, setOpen] = useState(false);
@@ -30,6 +39,7 @@ export function ShareOnboardingSheet({ onlyWhenSlotOpen = false }: { onlyWhenSlo
   const isMd = user?.role === "md" || user?.role === "admin";
 
   useEffect(() => {
+    if (manualOpen) { setOpen(true); return; }
     // 로컬 확인용: ?shareGuide=1 이면 조건 무시하고 바로 띄운다(프로덕션 제외)
     if (
       process.env.NEXT_PUBLIC_VERCEL_ENV !== "production" &&
@@ -55,11 +65,13 @@ export function ShareOnboardingSheet({ onlyWhenSlotOpen = false }: { onlyWhenSlo
       if (hasOpenSlot) setTeaserOpen(true);
     })();
     return () => { cancelled = true; };
-  }, [user, isLoading, isMd, onlyWhenSlotOpen]);
+  }, [user, isLoading, isMd, onlyWhenSlotOpen, manualOpen]);
 
   // best-effort: DB 쓰기가 실패해도 사용자를 시트에 가두지 않는다.
   const dismiss = async () => {
     setOpen(false);
+    // 직접 열어본 것은 "안내를 봤다"로 기록하지 않는다
+    if (manualOpen) { onManualClose?.(); return; }
     if (!user) return;
     const supabase = createClient();
     await supabase.from("users").update({ share_guide_seen: true }).eq("id", user.id);
@@ -86,7 +98,7 @@ export function ShareOnboardingSheet({ onlyWhenSlotOpen = false }: { onlyWhenSlo
       >
         <SheetHeader className="text-left p-0 gap-0 mb-5">
           <SheetTitle className="text-foreground text-[19px] font-black tracking-tight leading-tight">
-            <span className="text-brand-amber text-[23px]">조각</span>이 바뀌었어요! 🧩
+            <span className="text-brand-amber text-[23px]">파티</span>이 바뀌었어요! 🎉
           </SheetTitle>
         </SheetHeader>
         <div className="flex gap-2">
@@ -125,7 +137,7 @@ export function ShareOnboardingSheet({ onlyWhenSlotOpen = false }: { onlyWhenSlo
       >
         <SheetHeader className="text-left p-0 gap-0 mb-4">
           <SheetTitle className="text-foreground text-[19px] font-black tracking-tight leading-tight">
-            <span className="text-brand-amber text-[23px]">조각</span>, 나플에서는 이렇게! 🧩
+            <span className="text-brand-amber text-[23px]">파티</span>, 나플에서는 이렇게! 🎉
           </SheetTitle>
         </SheetHeader>
 
@@ -148,7 +160,7 @@ export function ShareOnboardingSheet({ onlyWhenSlotOpen = false }: { onlyWhenSlo
         <p className="text-center text-brand-amber text-[13px] my-1.5">↓</p>
 
         {/* 2. 세팅 — 실제 ShareLiveToggleList 행과 같은 형태 */}
-        <p className="text-[12.5px] font-black text-foreground mb-1.5">2. 나만의 조각 세팅</p>
+        <p className="text-[12.5px] font-black text-foreground mb-1.5">2. 나만의 파티 세팅</p>
         {/* overflow-hidden 금지 — SheetContent가 flex 컨테이너라, overflow가 visible이 아니면
             자동 최소 크기가 0이 되어 내용이 넘칠 때 이 블록만 0높이로 찌그러진다. */}
         <div className="bg-card border border-border rounded-2xl shrink-0">
@@ -194,7 +206,7 @@ export function ShareOnboardingSheet({ onlyWhenSlotOpen = false }: { onlyWhenSlo
         <p className="text-[12.5px] font-black text-foreground mb-1.5">3. 이렇게 홈에서 노출돼요</p>
         <div className="flex items-center gap-2 mb-2 shrink-0">
           <span className="bg-amber-500 text-black text-[12px] font-black rounded-[10px] px-2.5 py-1.5 leading-none shrink-0">
-            🧩 조각
+            🎉 파티
           </span>
           <span className="text-[15px] font-black text-foreground">8월 5일 (수)</span>
         </div>
@@ -243,7 +255,7 @@ export function ShareOnboardingSheet({ onlyWhenSlotOpen = false }: { onlyWhenSlo
           </div>
         </div>
         <p className="text-[11px] text-muted-foreground font-semibold mt-1.5">
-          같은 클럽 조각은 한 장으로 묶여서 노출돼요
+          같은 클럽 파티는 한 장으로 묶여서 노출돼요
         </p>
 
         <p className="text-center text-brand-amber text-[13px] my-1.5">↓</p>
@@ -264,7 +276,7 @@ export function ShareOnboardingSheet({ onlyWhenSlotOpen = false }: { onlyWhenSlo
           onClick={dismiss}
           className="w-full h-12 mt-4 rounded-xl bg-amber-500 text-black font-black text-[14px] active:scale-95 transition-transform"
         >
-          좋아요! 시작할게요
+          {manualOpen ? "확인" : "좋아요! 시작할게요"}
         </button>
       </SheetContent>
     </Sheet>

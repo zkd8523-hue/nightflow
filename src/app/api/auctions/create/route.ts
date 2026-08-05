@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     if (!isUpdate && auctionData.listing_type === "share") {
       if (!auctionData.event_date || !auctionData.club_id) {
         return NextResponse.json(
-          { error: "조각은 방문일과 클럽이 필요합니다." },
+          { error: "파티는 방문일과 클럽이 필요합니다." },
           { status: 400 }
         );
       }
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
       // 오픈채팅이 없으면 등록해도 아무도 참여 못 함 → 등록 자체를 막는다.
       if (!(profile.kakao_open_chat_url ?? "").trim()) {
         return NextResponse.json(
-          { error: "조각을 등록하려면 먼저 프로필에 카카오 오픈채팅 링크를 등록해야 합니다." },
+          { error: "파티를 등록하려면 먼저 프로필에 카카오 오픈채팅 링크를 등록해야 합니다." },
           { status: 409 }
         );
       }
@@ -194,13 +194,13 @@ export async function POST(request: NextRequest) {
       if (slotError) {
         logger.error("Share slot check error:", slotError);
         return NextResponse.json(
-          { error: "조각 자리 확인 중 오류가 발생했습니다." },
+          { error: "파티 자리 확인 중 오류가 발생했습니다." },
           { status: 500 }
         );
       }
       if (!slot) {
         return NextResponse.json(
-          { error: "이번 주 이 클럽의 조각 자리를 먼저 선점해야 등록할 수 있어요." },
+          { error: "이번 주 이 클럽의 파티 자리를 먼저 선점해야 등록할 수 있어요." },
           { status: 409 }
         );
       }
@@ -258,7 +258,7 @@ export async function POST(request: NextRequest) {
           error.message.includes("idx_share_one_per_day_per_md")
         ) {
           return NextResponse.json(
-            { error: "이미 해당 날짜에 등록한 조각이 있어요. 기존 조각을 수정하거나 마감 후 다시 등록해주세요." },
+            { error: "이미 해당 날짜에 등록한 파티가 있어요. 기존 파티를 수정하거나 마감 후 다시 등록해주세요." },
             { status: 409 }
           );
         }

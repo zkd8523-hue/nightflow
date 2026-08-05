@@ -288,7 +288,7 @@ export function MDDashboard({
     // 내 조각 삭제(내리기) — 상세페이지 handleCancelWithReason과 동일한 RPC 재사용
     const [shareDeleting, setShareDeleting] = useState<string | null>(null);
     const deleteShare = async (puzzleId: string, status: string) => {
-        if (!confirm("이 조각을 내리시겠어요?")) return;
+        if (!confirm("이 파티를 내리시겠어요?")) return;
         setShareDeleting(puzzleId);
         // open 조각: 정식 취소(참여자 알림 + 오퍼 만료). 종료된 조각(만료/성사 등): 목록에서 숨김만.
         const { data, error } = status === "open"
@@ -300,11 +300,11 @@ export function MDDashboard({
             : await supabase.rpc("md_hide_share", { p_puzzle_id: puzzleId });
         setShareDeleting(null);
         if (error || !data?.success) {
-            toast.error((data?.error || "삭제에 실패했습니다").replace("깃발", "조각"));
+            toast.error((data?.error || "삭제에 실패했습니다").replace("깃발", "파티"));
             return;
         }
         setMyShares((prev) => prev.filter((s) => s.id !== puzzleId));
-        toast.success("조각을 내렸어요");
+        toast.success("파티를 내렸어요");
     };
     useEffect(() => { setLocalShareSlots(shareSlots); }, [shareSlots]);
 
@@ -509,7 +509,7 @@ export function MDDashboard({
                             <div className="flex-1 space-y-1">
                                 <p className="text-sm font-bold text-red-500">활동이 일시 정지되었습니다</p>
                                 <p className="text-xs text-red-500/80 leading-relaxed">
-                                    운영 정책 위반으로 조각 등록이 제한됩니다.
+                                    운영 정책 위반으로 파티 등록이 제한됩니다.
                                     {user.md_suspended_until && (
                                         <> 정지 해제 예정: <span className="font-semibold">
                                             {new Date(user.md_suspended_until).toLocaleDateString("ko-KR")}
@@ -593,7 +593,7 @@ export function MDDashboard({
                     <span className="text-[12px] font-black text-foreground">게스트 간판</span>
                     <span className="text-[12px] font-bold text-muted-foreground">(매주 월 18시 오픈)</span>
                 </button>
-                {/* 조각 | 핫딜 — 반반 */}
+                {/* 파티 | 핫딜 — 반반 */}
                 <div className="grid grid-cols-2 gap-2">
                     <button
                         type="button"
@@ -608,9 +608,9 @@ export function MDDashboard({
                             shareInlineOpen ? "border-green-500" : "border-border"
                         }`}
                     >
-                        <span className="text-[20px] leading-none">🧩</span>
-                        <span className="text-[12px] font-black text-foreground">조각</span>
-                        {/* 조각 운영권도 게스트 간판과 같은 주 단위 선점(Migration 514) */}
+                        <span className="text-[20px] leading-none">🎉</span>
+                        <span className="text-[12px] font-black text-foreground">파티</span>
+                        {/* 파티 운영권도 게스트 간판과 같은 주 단위 선점(Migration 514) */}
                         <span className="text-[10.5px] font-bold text-muted-foreground leading-none">(매주 월 18시 오픈)</span>
                     </button>
                     <button
@@ -667,7 +667,7 @@ export function MDDashboard({
                 </div>
             )}
 
-            {/* 조각 인라인 영역 — 상시 조각(요일 On/Off) + 1회성 등록 + 내 조각 목록 */}
+            {/* 파티 인라인 영역 — 상시 파티(요일 On/Off) + 1회성 등록 + 내 파티 목록 */}
             {shareInlineOpen && (
                 <div className="px-4 mt-3">
                     <div className="bg-card border border-green-500/30 rounded-2xl p-4 space-y-4">
@@ -678,7 +678,7 @@ export function MDDashboard({
                 </div>
             )}
 
-            {/* 내 오퍼 (받은 오퍼) — 위 조각 등록과 구분 */}
+            {/* 내 오퍼 (받은 오퍼) — 위 파티 등록과 구분 */}
             <div className="px-4 mt-5">
                 <p className="text-[13px] font-black text-muted-foreground mb-2 px-1 text-center">내 오퍼</p>
                 <Tabs value={activePuzzleTab} className="w-full">
@@ -698,7 +698,7 @@ export function MDDashboard({
                                 onClick={() => setActivePuzzleTab((prev) => (prev === "share" ? "all" : "share"))}
                                 className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]"
                             >
-                                🧩 조각 {shareOffers.length > 0 && <span className="ml-0.5 text-money">{shareOffers.length}</span>}
+                                🎉 파티 {shareOffers.length > 0 && <span className="ml-0.5 text-money">{shareOffers.length}</span>}
                             </TabsTrigger>
                         </TabsList>
 
@@ -948,7 +948,7 @@ export function MDDashboard({
                                                     </div>
                                             </Link>
 
-                                            {/* 세부사항 드롭다운 — 내 제안가·구성·코멘트 (조각은 인원·가격 변동이라 숨김) */}
+                                            {/* 세부사항 드롭다운 — 내 제안가·구성·코멘트 (파티는 인원·가격 변동이라 숨김) */}
                                             {!isShare && (
                                             <div className="border-t border-border/60">
                                                 <button
@@ -994,16 +994,16 @@ export function MDDashboard({
                                         📨
                                     </div>
                                     <p className="text-muted-foreground font-medium text-sm">
-                                        {activePuzzleTab === "share" ? "보낸 조각 오퍼가 없습니다" : "보낸 깃발 오퍼가 없습니다"}
+                                        {activePuzzleTab === "share" ? "보낸 파티 오퍼가 없습니다" : "보낸 깃발 오퍼가 없습니다"}
                                     </p>
                                     <p className="text-muted-foreground text-xs px-10 leading-relaxed">
                                         {activePuzzleTab === "share"
-                                            ? <>홈 조각 탭에서 유저들이 올린 조각을 확인하고<br/>오퍼를 보내보세요</>
+                                            ? <>홈 파티 탭에서 유저들이 올린 파티를 확인하고<br/>오퍼를 보내보세요</>
                                             : <>홈에서 유저들이 꽂은 깃발을 확인하고<br/>제안을 보내보세요</>}
                                     </p>
                                     <Link href={activePuzzleTab === "share" ? "/?tab=share" : "/?tab=puzzle"}>
                                         <Button className="rounded-full bg-inverse text-inverse-foreground font-black hover:opacity-90 h-10 px-6 mt-2">
-                                            <span className="mr-1">{activePuzzleTab === "share" ? "🧩" : "⛳"}</span>
+                                            <span className="mr-1">{activePuzzleTab === "share" ? "🎉" : "⛳"}</span>
                                             둘러보기
                                         </Button>
                                     </Link>
@@ -1377,7 +1377,7 @@ function EmptyState({ label, description }: { label: string, description?: React
             <Link href="/md/auctions/new">
                 <Button className="rounded-full bg-inverse text-inverse-foreground font-black hover:opacity-90 h-10 px-6 mt-2">
                     <Plus className="w-4 h-4 mr-1" />
-                    조각 등록하기
+                    파티 등록하기
                 </Button>
             </Link>
         </div>

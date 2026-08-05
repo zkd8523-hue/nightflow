@@ -152,7 +152,7 @@ export function HomePuzzleCarousel({
     if (isAreaFiltered) {
       return (
         <div className="bg-card rounded-3xl border border-border p-6 text-center space-y-3 -mx-4">
-          <p className="text-[15px] text-foreground font-bold">{shareMode ? "이 지역엔 아직 조각이 없어요" : "이 지역엔 아직 깃발이 없어요"}</p>
+          <p className="text-[15px] text-foreground font-bold">{shareMode ? "이 지역엔 아직 파티가 없어요" : "이 지역엔 아직 깃발이 없어요"}</p>
           <p className="text-[12px] text-muted-foreground">
             다른 지역을 선택하거나 전체에서 둘러보세요
           </p>
@@ -173,16 +173,16 @@ export function HomePuzzleCarousel({
         <div className="space-y-1">
           <p className="text-[15px] text-foreground font-bold">{shareMode ? "파티원과 함께 놀아요!" : "아직 등록된 깃발이 없어요"}</p>
           <p className="text-[12px] text-muted-foreground">
-            {shareMode ? "조각이 모이면 클럽에서 테이블을 제안해요" : "예산·인원·날짜만 정하면 파트너들이 시크릿오퍼를 보내요"}
+            {shareMode ? "파티가 모이면 클럽에서 테이블을 제안해요" : "예산·인원·날짜만 정하면 파트너들이 시크릿오퍼를 보내요"}
           </p>
         </div>
-        {/* 조각 등록은 유저 전용 — MD/Admin에겐 CTA 숨김 */}
+        {/* 파티 등록은 유저 전용 — MD/Admin에겐 CTA 숨김 */}
         {!(shareMode && (userRole === "md" || userRole === "admin")) && (
           <Link
             href={newFlagHref}
             className={`inline-flex items-center gap-1 px-4 py-2 rounded-full text-black text-[13px] font-black active:scale-95 transition ${shareMode ? "bg-green-500 hover:bg-green-400" : "bg-amber-500"}`}
           >
-            {shareMode ? "🧩 조각 올리기" : "⛳ 깃발 꽂기"}
+            {shareMode ? "🎉 파티 올리기" : "⛳ 깃발 꽂기"}
           </Link>
         )}
       </div>
@@ -237,11 +237,11 @@ export function HomePuzzleCarousel({
             <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
               <div className="text-center w-full mt-8">
                 <p className="text-[14.5px] text-foreground/90 font-semibold mb-0.5">
-                  조각원을 모아 매출을 올려보세요!
+                  파티원을 모아 매출을 올려보세요!
                 </p>
                 <Link href="/md/auctions/new">
                   <Button className="h-12 pl-7 pr-9 text-black font-black text-[15px] rounded-full bg-green-500 hover:bg-green-400">
-                    🧩 조각 올리기
+                    🎉 파티 올리기
                   </Button>
                 </Link>
                 <p className="text-[10px] text-foreground/80 mt-0.5">등록 무료</p>
@@ -273,7 +273,7 @@ export function HomePuzzleCarousel({
                   </p>
                   <Link href={newFlagHref}>
                     <Button className={`h-12 pl-7 pr-9 text-black font-black text-[15px] rounded-full ${shareMode ? "bg-green-500 hover:bg-green-400" : "bg-amber-500 hover:bg-amber-400"}`}>
-                      {shareMode ? "🧩 조각 올리기" : "⛳ 깃발꽂기"}
+                      {shareMode ? "🎉 파티 올리기" : "⛳ 깃발꽂기"}
                     </Button>
                   </Link>
                   <p className="text-[10px] text-foreground/80 mt-0.5">모든 서비스 무료</p>

@@ -53,7 +53,7 @@ export function OfferCreditGuideSheet() {
 
         {[
           { cost: "15 크레딧", title: "깃발 매칭됐을 때", desc: "대화 첫 답장 또는 수락 시 1회" },
-          { cost: "10 크레딧", title: "조각 매칭됐을 때", desc: "상담 시작 또는 수락 시 1회" },
+          { cost: "10 크레딧", title: "파티 매칭됐을 때", desc: "상담 시작 또는 수락 시 1회" },
         ].map((x) => (
           <div key={x.title} className="bg-card border border-border rounded-2xl p-3 mb-2.5">
             <div className="flex items-center gap-2.5">

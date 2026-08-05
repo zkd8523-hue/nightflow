@@ -186,7 +186,7 @@ export async function GET(
                   gap: '8px',
                 }}
               >
-                <span>{auction.table_info || (auction.listing_type === 'share' ? '조각 모집' : 'TABLE')}</span>
+                <span>{auction.table_info || (auction.listing_type === 'share' ? '파티 모집' : 'TABLE')}</span>
                 <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
                 <span>{auction.event_date ? dayjs(auction.event_date).locale('ko').format('M월 D일 (dd)') : ''}</span>
               </div>
@@ -360,7 +360,7 @@ export async function GET(
             >
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontSize: '20px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'flex' }}>LOCATION</div>
-                <div style={{ fontSize: '48px', fontWeight: 'bold', display: 'flex' }}>{auction.table_info || (auction.listing_type === 'share' ? '조각 모집' : 'TABLE')}</div>
+                <div style={{ fontSize: '48px', fontWeight: 'bold', display: 'flex' }}>{auction.table_info || (auction.listing_type === 'share' ? '파티 모집' : 'TABLE')}</div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column' }}>

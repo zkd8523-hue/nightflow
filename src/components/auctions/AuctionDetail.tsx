@@ -315,7 +315,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           <ChevronLeft className="w-6 h-6" />
         </button>
         {/* 상단 라벨 — 헤더 텍스트라 h2/p 적정. 진짜 H1은 page.tsx sr-only로 풍부한 SEO 본문. */}
-        <h2 className="text-[17px] font-black text-foreground flex-1">조각 상세</h2>
+        <h2 className="text-[17px] font-black text-foreground flex-1">파티 상세</h2>
       </div>
 
       {/* 1. Hero Image Section */}
@@ -483,7 +483,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           />
         )}
 
-        {/* 조각: 방문 일정 + MD 한마디 통합 카드 */}
+        {/* 파티: 방문 일정 + MD 한마디 통합 카드 */}
         {isShare && (
           <div className="bg-card border border-border/50 rounded-2xl px-4 py-2.5 space-y-1.5">
             <p className="text-[17px] text-foreground font-extrabold leading-tight tracking-tight">{formatEventDate(displayAuction.event_date)}</p>
@@ -505,7 +505,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           </div>
         )}
 
-        {/* MD 메시지 (제목 + 한마디) — 조각이 아닌 경우 */}
+        {/* MD 메시지 (제목 + 한마디) — 파티가 아닌 경우 */}
         {!isShare && (displayAuction.md_comment || displayAuction.md_message) && (
           <div className="bg-card border border-border/50 rounded-2xl p-4 space-y-2">
             <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider">파트너의 한마디</span>
@@ -565,7 +565,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         </Card>
         )}
 
-        {/* 3. Event Summary — 조각은 가격 카드에 인라인으로 통합됨 */}
+        {/* 3. Event Summary — 파티는 가격 카드에 인라인으로 통합됨 */}
         {!isShare && (
           <div>
             <div className="bg-card border border-border/50 rounded-2xl p-4 space-y-2.5">
@@ -749,19 +749,19 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           </div>
         )}
 
-        {/* 입찰/예약/조각 패널 */}
+        {/* 입찰/예약/파티 패널 */}
         {isShare ? (
           <div className="mt-4">
             <ShareJoinPanel auction={displayAuction} currentUserId={user?.id} isMd={user?.role === "md" || user?.role === "admin"} onShareClick={() => setShareSheetOpen(true)} />
-            {/* MD 전용: 다른 조각을 보다 나도 올리도록 유도 (본인 조각이면 숨김).
-                깃발 상세 "나도 오퍼받기" CTA와 동일 스타일 → 대시보드 조각 섹션으로 이동. */}
+            {/* MD 전용: 다른 파티를 보다 나도 올리도록 유도 (본인 파티가면 숨김).
+                깃발 상세 "나도 오퍼받기" CTA와 동일 스타일 → 대시보드 파티 섹션으로 이동. */}
             {(user?.role === "md" || user?.role === "admin") && !isMdOwner && (
               <div className="mt-4 text-center space-y-1">
                 <Link
                   href="/md/dashboard?section=share"
                   className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
                 >
-                  🧩 나도 조각 올리기
+                  🎉 나도 파티 올리기
                 </Link>
                 <p className="text-[10px] text-muted-foreground">클럽당 1명 · 조기마감 될 수 있어요.</p>
               </div>

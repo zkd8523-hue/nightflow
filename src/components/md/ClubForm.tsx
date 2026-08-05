@@ -363,7 +363,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
             <span>내 대표이미지</span>
           </div>
           <p className="text-[11px] text-muted-foreground -mt-1 leading-relaxed">
-            같은 클럽이라도 파트너마다 자유롭게 설정할 수 있어요. 경매·조각 등록 시 기본 이미지로 사용됩니다.
+            같은 클럽이라도 파트너마다 자유롭게 설정할 수 있어요. 경매·파티 등록 시 기본 이미지로 사용됩니다.
           </p>
 
           <input

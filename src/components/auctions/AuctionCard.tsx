@@ -168,7 +168,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
         <div className="relative bg-card rounded-2xl border border-border p-4 space-y-3 active:scale-[0.98] transition-all cursor-pointer">
           <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-inverse text-inverse-foreground text-[11px]" style={{ lineHeight: 1, paddingBottom: '1px', WebkitTextStroke: '1px black' }}>
-              🧩
+              🎉
             </span>
             {isOwner && (
               <button
@@ -184,7 +184,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                   setShareSheetOpen(true);
                 }}
                 className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-black transition-colors active:scale-[0.97] shadow-[0_2px_10px_rgba(245,158,11,0.4)]"
-                aria-label="내 조각 공유"
+                aria-label="내 파티 공유"
               >
                 <Share2 className="w-4 h-4" />
               </button>
@@ -236,7 +236,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
               return (
                 <div className="space-y-1">
                   {isShareFull && (
-                    <span className="text-[13px] text-money font-bold">조각 완성! 🎉</span>
+                    <span className="text-[13px] text-money font-bold">파티 완성! 🎉</span>
                   )}
                   <div className="flex flex-wrap items-center gap-1.5">
                     {showPieces && slotLayout.map((slot, i) => (

@@ -685,7 +685,7 @@ export function ClubDetailContent({
         />
       )}
 
-      {/* 파트너 직통 조각 — 정보 수정 요청과 리뷰 사이. Migration 505 */}
+      {/* 파트너 직통 파티 — 정보 수정 요청과 리뷰 사이. Migration 505 */}
       {!hideShareList && sharePuzzles.length > 0 && (
         <ClubSharePuzzles puzzles={sharePuzzles} />
       )}
@@ -693,7 +693,7 @@ export function ClubDetailContent({
       {/* 5자 리뷰 워드클라우드 */}
       <WordCloudSection clubId={club.id} clubName={clubName} />
 
-      {/* 경매 목록 — 핫딜 상세에서 진입 시 조각글 숨김 (이탈 방지) */}
+      {/* 경매 목록 — 핫딜 상세에서 진입 시 파티글 숨김 (이탈 방지) */}
       {!hideShareList && (
         <AuctionList
           activeAuctions={visibleAuctions}
@@ -705,7 +705,7 @@ export function ClubDetailContent({
         />
       )}
 
-      {/* Admin 전용: 클럽 DB 삭제 — 리뷰/조각보다 아래(제일 하단) */}
+      {/* Admin 전용: 클럽 DB 삭제 — 리뷰/파티보다 아래(제일 하단) */}
       {isAdmin && (
         <div className="px-4 pt-2 pb-4">
           <button

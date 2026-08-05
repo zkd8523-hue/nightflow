@@ -13,19 +13,29 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
  *
  * 노출 여부는 계정 단위(users.share_join_guide_seen, Migration 523)로 저장한다.
  */
-export function ShareJoinGuideSheet() {
+export function ShareJoinGuideSheet({
+  manualOpen = false,
+  onManualClose,
+}: {
+  /** "ⓘ 파티란?"처럼 직접 열 때 — 계정 플래그를 소모하지 않는다 */
+  manualOpen?: boolean;
+  onManualClose?: () => void;
+} = {}) {
   const { user, isLoading, refetch } = useCurrentUser();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (manualOpen) { setOpen(true); return; }
     // 비로그인은 대상이 아니다 — 참가하려면 어차피 로그인 화면을 거친다.
     if (isLoading || !user) return;
     if (user.share_join_guide_seen) return;
     setOpen(true);
-  }, [user, isLoading]);
+  }, [user, isLoading, manualOpen]);
 
   const dismiss = async () => {
     setOpen(false);
+    // 직접 열어본 것은 "안내를 봤다"로 기록하지 않는다
+    if (manualOpen) { onManualClose?.(); return; }
     if (!user) return;
     const supabase = createClient();
     await supabase.from("users").update({ share_join_guide_seen: true }).eq("id", user.id);
@@ -42,14 +52,14 @@ export function ShareJoinGuideSheet() {
       >
         <SheetHeader className="text-left p-0 gap-0 mb-4">
           <SheetTitle className="text-foreground text-[19px] font-black tracking-tight leading-tight">
-            나플에서는 <span className="text-brand-amber text-[23px]">결제가 없어요</span> 🧩
+            혼자 와도 <span className="text-brand-amber text-[23px]">크게 놀 수 있어요</span> 🎉
           </SheetTitle>
         </SheetHeader>
 
         {[
-          { n: "1", title: "마음에 드는 자리를 고르기", desc: "가격·인원이 다른 자리를 비교해서 선택" },
-          { n: "2", title: "단체채팅에서 자유롭게!", desc: "파티원들과 의견을 맞춰요" },
-          { n: "3", title: "계산은 현장에서", desc: null },
+          { n: "1", title: "마음에 드는 자리 고르기", desc: "날짜·인원·가격이 다른 자리를 골라요" },
+          { n: "2", title: "오늘의 크루와 채팅", desc: "같이 갈 사람들과 채팅방에서 만나요" },
+          { n: "3", title: "계산은 현장에서", desc: "나플에서는 결제가 없어요" },
         ].map((x) => (
           <div key={x.n} className="bg-card border border-border rounded-2xl p-3 mb-2.5">
             <div className="flex items-center gap-2.5">
@@ -66,24 +76,27 @@ export function ShareJoinGuideSheet() {
           </div>
         ))}
 
-        <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-3 py-3 text-center text-[12.5px] font-black text-brand-amber">
+        <p className="mt-3 text-center text-[12.5px] font-black text-brand-amber">
           언제든 나갈 수 있어요
-        </div>
+        </p>
 
+        {/* 직접 열어본 설명일 땐 행동을 유도하지 않는다 — 이미 파티 화면에 참가 버튼이 있다 */}
         <button
           type="button"
           onClick={dismiss}
           className="w-full h-12 mt-4 rounded-xl bg-inverse text-inverse-foreground font-black text-[14px] active:scale-95 transition-transform"
         >
-          참가할게요
+          {manualOpen ? "확인" : "참가할게요"}
         </button>
-        <button
-          type="button"
-          onClick={dismiss}
-          className="w-full mt-2.5 text-center text-[11.5px] font-bold text-muted-foreground underline underline-offset-2"
-        >
-          다시 보지 않기
-        </button>
+        {!manualOpen && (
+          <button
+            type="button"
+            onClick={dismiss}
+            className="w-full mt-2.5 text-center text-[11.5px] font-bold text-muted-foreground underline underline-offset-2"
+          >
+            다시 보지 않기
+          </button>
+        )}
       </SheetContent>
     </Sheet>
   );

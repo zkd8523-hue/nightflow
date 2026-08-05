@@ -239,7 +239,7 @@ export default async function AdminClubRequestsPage() {
             <Sparkles className="w-10 h-10 text-muted-foreground mx-auto" />
             <p className="text-[15px] font-bold text-muted-foreground">아직 클럽 요청이 없습니다</p>
             <p className="text-[12px] text-muted-foreground">
-              조각 리스트에서 유저가 클럽을 요청하면 여기에 표시돼요
+              파티 리스트에서 유저가 클럽을 요청하면 여기에 표시돼요
             </p>
           </div>
         ) : (

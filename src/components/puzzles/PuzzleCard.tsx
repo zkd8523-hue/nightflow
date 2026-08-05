@@ -393,7 +393,7 @@ export const PuzzleCard = memo(function PuzzleCard({
               {myFlagStatus.text}
             </span>
           )}
-          {/* 공유 아이콘 — 지역 밑 (조각만) */}
+          {/* 공유 아이콘 — 지역 밑 (파티만) */}
           {isRecruitingParty && !myFlagStatus && shareIconBtn}
         </div>
       </div>
@@ -415,7 +415,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             <div className="space-y-1">
               {isFull && (
                 <span className="text-[13px] text-money font-bold">
-                  조각 완성! 🎉
+                  파티 완성! 🎉
                 </span>
               )}
               <div className="flex flex-wrap gap-1">
@@ -508,10 +508,10 @@ export const PuzzleCard = memo(function PuzzleCard({
         </div>
       )}
 
-      {/* 조각 오퍼 현황은 하단 CTA 행에 자세히와 같은 행으로 통합됨 (깃발과 동일) */}
+      {/* 파티 오퍼 현황은 하단 CTA 행에 자세히와 같은 행으로 통합됨 (깃발과 동일) */}
 
       {/* CTA 버튼 (작성날짜는 카드 상단 깃발 배지 아래로 이동) */}
-      {/* 조각/깃발 모두 동일 간격으로 통일 (모바일에서 퍼즐피스와 겹치지 않게 -mt-1로 살짝 완화) */}
+      {/* 파티/깃발 모두 동일 간격으로 통일 (모바일에서 퍼즐피스와 겹치지 않게 -mt-1로 살짝 완화) */}
       <div className="relative -mt-1">
       {isMd ? (
         // MD: 풀 버튼 대신 작고 둥근 자세히 스타일 버튼 — 오퍼수 + 버튼 한 행
@@ -550,7 +550,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 className="text-[13px] font-bold text-brand-amber hover:text-amber-100 active:scale-[0.97] transition-all shrink-0 [text-shadow:0_0_10px_rgba(245,158,11,0.65)]"
               >
                 {isRecruitingParty
-                  ? "조각줍기 →"
+                  ? "파티줍기 →"
                   : offerCount > 0 ? "나도 오퍼하기 →" : "먼저 오퍼하기 →"}
               </button>
             )}
@@ -588,7 +588,7 @@ export const PuzzleCard = memo(function PuzzleCard({
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
               className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-muted border border-border text-foreground/80 pointer-events-none shrink-0"
             >
-              내 조각
+              내 파티
             </Button>
           )}
         </div>

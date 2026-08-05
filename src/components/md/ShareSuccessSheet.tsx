@@ -60,7 +60,7 @@ export function ShareSuccessSheet({
     setSharing("kakao");
     try {
       const isShare = listingType === "share";
-      const title = `${areaName ? `[${areaName}] ` : ""}${clubName} ${isShare ? "조각 모집" : "테이블 경매"}`;
+      const title = `${areaName ? `[${areaName}] ` : ""}${clubName} ${isShare ? "파티 모집" : "테이블 경매"}`;
       const text = isShare
         ? `인당 ${startPrice.toLocaleString()}원 · 자리 모집 중`
         : `시작가 ${startPrice.toLocaleString()}원 · 입찰 진행 중`;
@@ -191,7 +191,7 @@ export function ShareSuccessSheet({
             </div>
           </div>
           <DrawerTitle className="text-foreground font-black text-2xl tracking-tight">
-            조각 등록 성공!
+            파티 등록 성공!
           </DrawerTitle>
           <DrawerDescription className="text-muted-foreground font-medium text-[14px]">
             지금 바로 공유해서 자리를 채워보세요!

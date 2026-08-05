@@ -341,7 +341,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   : "bg-muted text-muted-foreground hover:bg-muted hover:text-white"
                   }`}
               >
-                <span className="text-[16px] leading-none">🧩</span> 조각
+                <span className="text-[16px] leading-none">🎉</span> 파티
               </button>
             )}
 
@@ -377,7 +377,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             }}
           >
             <div className="flex gap-2 px-1 pr-6 w-max">
-              {/* 조각 탭은 독립 지역필터(effectiveShareArea), 그 외는 selectedArea */}
+              {/* 파티 탭은 독립 지역필터(effectiveShareArea), 그 외는 selectedArea */}
               {(() => {
               const areaForChips = tab === "share" ? effectiveShareArea : (selectedArea ?? null);
               const onAreaChipChange = tab === "share" ? effectiveShareAreaChange : onAreaChange;
@@ -420,7 +420,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             </div>
           </div>
           )}
-          {/* 조각 탭: 지역 칩 행 오른쪽에 필터 아이콘 */}
+          {/* 파티 탭: 지역 칩 행 오른쪽에 필터 아이콘 */}
           {tab === "share" && (
             <div className="relative flex-shrink-0">
               <button
@@ -565,10 +565,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         </SheetContent>
       </Sheet>
 
-      {/* 조각 날짜 선택 캘린더 — 홈 캐러셀과 동일 (하단 Sheet, 단일 선택) */}
+      {/* 파티 날짜 선택 캘린더 — 홈 캐러셀과 동일 (하단 Sheet, 단일 선택) */}
       <Sheet open={shareCalendarOpen} onOpenChange={setShareCalendarOpen}>
         <SheetContent side="bottom" showCloseButton={false} className="bg-background border-t border-border rounded-t-3xl px-4 pt-5 pb-8 max-w-lg mx-auto">
-          <SheetTitle className="text-foreground text-[16px] font-black text-center mb-3">조각 날짜 선택</SheetTitle>
+          <SheetTitle className="text-foreground text-[16px] font-black text-center mb-3">파티 날짜 선택</SheetTitle>
           <button
             type="button"
             onClick={() => { setShareSelectedDate("all"); setShareCalendarOpen(false); }}
@@ -596,7 +596,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               }}
             />
           </div>
-          <p className="text-[11px] text-muted-foreground text-center mt-2">조각이 있는 날짜만 선택할 수 있어요</p>
+          <p className="text-[11px] text-muted-foreground text-center mt-2">파티가 있는 날짜만 선택할 수 있어요</p>
         </SheetContent>
       </Sheet>
 
@@ -650,13 +650,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         </div>
       )}
 
-      {/* (폐기) 구 auctions listing_type='share' 조각 렌더 — 조각 모델이 puzzles로 이전됨. 아래 PuzzleList(shareMode)로 대체 */}
+      {/* (폐기) 구 auctions listing_type='share' 파티 렌더 — 파티 모델이 puzzles로 이전됨. 아래 PuzzleList(shareMode)로 대체 */}
       {false && tab === "share" && (
         <div className="space-y-2">
           {/* 가격 필터 버튼 (헤더는 영역 필터 위로 이동됨) */}
           {shareAuctions.length > 0 && (
             <div className="flex flex-col gap-1 px-1">
-              {/* N비 필터 + 내 조각 */}
+              {/* N비 필터 + 내 파티 */}
               <div className="flex items-center gap-1.5 pb-0.5">
                 <div data-no-pull-refresh className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x touch-pan-y flex-1 min-w-0">
                   {SHARE_NBI_CHIPS.map(({ value, label }) => (
@@ -670,7 +670,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 {userRole && ["md", "admin"].includes(userRole) && (
                   <button onClick={() => setMyShareOnly(v => !v)}
                     className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${myShareOnly ? "bg-green-500 text-black" : "bg-muted text-muted-foreground hover:bg-muted hover:text-white"}`}>
-                    내 조각
+                    내 파티
                   </button>
                 )}
               </div>
@@ -702,12 +702,12 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           {shareAuctions.length === 0 ? (
             hideShareEmptyState ? null : (
             <div className="flex flex-col items-center justify-center py-14 text-center space-y-5">
-              <span className="text-[40px] leading-none opacity-90">🧩</span>
+              <span className="text-[40px] leading-none opacity-90">🎉</span>
               {userRole && ["md", "admin"].includes(userRole) ? (
                 <>
                   <div className="space-y-0.5">
                     <p className="text-muted-foreground text-[13px] font-medium leading-tight break-keep">
-                      아직 조각이 없어요
+                      아직 파티가 없어요
                     </p>
                     <p className="text-foreground text-[16px] font-black leading-tight tracking-tight break-keep">
                       지금이 제일 먼저 노출될 타이밍!
@@ -717,24 +717,24 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                     href="/md/dashboard?section=share"
                     className="inline-flex items-center gap-1.5 h-11 px-6 bg-green-500 text-black font-black text-[13.5px] rounded-full hover:bg-green-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
-                    🧩 선점하기
+                    🎉 선점하기
                   </Link>
                 </>
               ) : (
                 <>
                   <div className="space-y-1.5">
                     <p className="text-foreground text-[16px] font-black leading-tight tracking-tight break-keep">
-                      아직 등록된 조각이 없어요
+                      아직 등록된 파티가 없어요
                     </p>
                     <p className="text-muted-foreground text-[12.5px] font-medium leading-relaxed break-keep">
-                      먼저 조각을 올려서 인원을 모아보세요
+                      먼저 파티를 올려서 인원을 모아보세요
                     </p>
                   </div>
                   <Link
                     href="/shares/new"
                     className="inline-flex items-center gap-1.5 h-11 px-6 bg-amber-500 text-black font-black text-[13.5px] rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
-                    🧩 조각 등록하기
+                    🎉 파티 등록하기
                   </Link>
                 </>
               )}
@@ -743,12 +743,12 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           ) : filteredShareAuctions.length === 0 ? (
             /* 필터(가격/좌석/날짜)로 0건 — 지역 0건과 동일한 빈 상태로 통일 */
             <div className="flex flex-col items-center justify-center py-14 text-center space-y-5">
-              <span className="text-[40px] leading-none opacity-90">🧩</span>
+              <span className="text-[40px] leading-none opacity-90">🎉</span>
               {userRole && ["md", "admin"].includes(userRole) ? (
                 <>
                   <div className="space-y-0.5">
                     <p className="text-muted-foreground text-[13px] font-medium leading-tight break-keep">
-                      아직 조각이 없어요
+                      아직 파티가 없어요
                     </p>
                     <p className="text-foreground text-[16px] font-black leading-tight tracking-tight break-keep">
                       지금이 제일 먼저 노출될 타이밍!
@@ -758,24 +758,24 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                     href="/md/dashboard?section=share"
                     className="inline-flex items-center gap-1.5 h-11 px-6 bg-green-500 text-black font-black text-[13.5px] rounded-full hover:bg-green-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
-                    🧩 선점하기
+                    🎉 선점하기
                   </Link>
                 </>
               ) : (
                 <>
                   <div className="space-y-1.5">
                     <p className="text-foreground text-[16px] font-black leading-tight tracking-tight break-keep">
-                      아직 등록된 조각이 없어요
+                      아직 등록된 파티가 없어요
                     </p>
                     <p className="text-muted-foreground text-[12.5px] font-medium leading-relaxed break-keep">
-                      먼저 조각을 올려서 인원을 모아보세요
+                      먼저 파티를 올려서 인원을 모아보세요
                     </p>
                   </div>
                   <Link
                     href="/shares/new"
                     className="inline-flex items-center gap-1.5 h-11 px-6 bg-amber-500 text-black font-black text-[13.5px] rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
-                    🧩 조각 등록하기
+                    🎉 파티 등록하기
                   </Link>
                 </>
               )}

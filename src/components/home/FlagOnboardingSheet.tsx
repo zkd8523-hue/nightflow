@@ -15,11 +15,21 @@ const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
  * - autoShow=true(비로그인 첫 방문)일 때만, localStorage 미기록이면 1회 자동 오픈
  * - 닫거나 "바로가기" 누르면 localStorage 기록 → 영구 숨김
  */
-export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
+export function FlagOnboardingSheet({
+  autoShow,
+  manualOpen = false,
+  onManualClose,
+}: {
+  autoShow: boolean;
+  /** "이용방법"에서 직접 열 때 — 자동 노출 조건(비로그인·인앱·언어)을 건너뛴다 */
+  manualOpen?: boolean;
+  onManualClose?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [secretInfoOpen, setSecretInfoOpen] = useState(false);
 
   useEffect(() => {
+    if (manualOpen) { setOpen(true); return; }
     if (!autoShow) return;
     // 외국인 트랙(?lang=en/ja/zh/zh-tw 또는 /en, /ja, /zh, /zh-tw 하위)은 이 팝업 스킵.
     // 이유: 팝업 내용이 한국어 100%(원화·한국 클럽 용어·한국어 오퍼 예시).
@@ -43,7 +53,7 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
     }
     setOpen(true);
     trackEvent("flag_onboarding_popup_view");
-  }, [autoShow]);
+  }, [autoShow, manualOpen]);
 
   const markSeen = () => {
     try {
@@ -53,6 +63,7 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
 
   const handleOpenChange = (v: boolean) => {
     setOpen(v);
+    if (!v && manualOpen) { onManualClose?.(); return; }
     if (!v) {
       // CTA 클릭은 setOpen(false)를 직접 호출 → 이 경로는 X/배경 탭으로 '닫고 나감'만 잡힘.
       trackEvent("flag_onboarding_popup_dismiss");

@@ -566,7 +566,7 @@ export function PublicProfileView({
       {/* 구분선 */}
       <div className="mt-8 border-t border-border" />
 
-      {/* 파티 평판 (받은 👍 + 태그) — 조각 참가자 상호리뷰. 👍 1개 이상일 때만 */}
+      {/* 파티 평판 (받은 👍 + 태그) — 파티 참가자 상호리뷰. 👍 1개 이상일 때만 */}
       {(partyReputation[0]?.like_count ?? 0) > 0 && (
         <div className="px-4 mt-6">
           <div className="flex items-center gap-1.5 mb-3">

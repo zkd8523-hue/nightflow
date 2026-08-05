@@ -57,7 +57,7 @@ export function SharePuzzleSheet({ open, onOpenChange, userId, onSelect }: Props
         className="bg-background border-border rounded-t-3xl p-0 pb-6 max-h-[70vh] overflow-y-auto"
       >
         <SheetHeader className="px-4 pt-4 pb-2">
-          <SheetTitle className="text-foreground text-[16px] text-left">내 조각 공유</SheetTitle>
+          <SheetTitle className="text-foreground text-[16px] text-left">내 파티 공유</SheetTitle>
         </SheetHeader>
         <p className="px-4 text-[12px] text-muted-foreground mb-3">
           고르면 입력창에 붙어요. 한마디 적어서 같이 보내세요.
@@ -68,7 +68,7 @@ export function SharePuzzleSheet({ open, onOpenChange, userId, onSelect }: Props
             <p className="py-8 text-center text-[13px] text-muted-foreground">불러오는 중...</p>
           ) : puzzles.length === 0 ? (
             <div className="py-8 flex flex-col items-center gap-3">
-              <p className="text-[13px] text-muted-foreground">모집 중인 조각이 없어요</p>
+              <p className="text-[13px] text-muted-foreground">모집 중인 파티가 없어요</p>
               <button
                 type="button"
                 onClick={() => {
@@ -78,7 +78,7 @@ export function SharePuzzleSheet({ open, onOpenChange, userId, onSelect }: Props
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-inverse text-inverse-foreground text-[13px] font-black"
               >
                 <Plus className="w-4 h-4" />
-                조각 만들기
+                파티 만들기
               </button>
             </div>
           ) : (

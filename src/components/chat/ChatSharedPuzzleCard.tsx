@@ -77,7 +77,7 @@ export function ChatSharedPuzzleCard({ puzzleId, caption }: Props) {
     return (
       <div className="mt-1 rounded-2xl border border-border bg-card max-w-[260px] overflow-hidden">
         {captionEl}
-        <p className="px-3 py-2.5 text-[12px] text-muted-foreground">사라진 조각이에요</p>
+        <p className="px-3 py-2.5 text-[12px] text-muted-foreground">사라진 파티가에요</p>
       </div>
     );
   }
@@ -101,7 +101,7 @@ export function ChatSharedPuzzleCard({ puzzleId, caption }: Props) {
       >
       {/* 2줄 고정 — 채팅에서 높이를 적게 먹도록 */}
       <p className="text-[13px] font-black text-foreground truncate">
-        🧩 {dayjs(puzzle.event_date).format("M/D")} · {puzzle.area}
+        🎉 {dayjs(puzzle.event_date).format("M/D")} · {puzzle.area}
       </p>
       <div className="flex items-center justify-between gap-2 mt-0.5">
         <span className="flex items-center gap-2 min-w-0">

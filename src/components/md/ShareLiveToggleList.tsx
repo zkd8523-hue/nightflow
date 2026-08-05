@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EXTRAS_OPTIONS } from "@/lib/constants/liquor";
+import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
 import { isRedDay } from "@/lib/utils/holidays";
 import type { AuctionTemplate, Club } from "@/types/database";
 
@@ -105,6 +106,8 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   const draftKey = `nf_share_folders_${mdId}`;
   const [folderOrder, setFolderOrder] = useState<string[]>([]);
   const [folderManagerOpen, setFolderManagerOpen] = useState(false);
+  /** ⓘ 이용방법 — 첫 안내와 같은 팝업을 그대로 연다 */
+  const [guideOpen, setGuideOpen] = useState(false);
   const [folderDropKey, setFolderDropKey] = useState<string | null>(null);
   /** 지금 끌고 있는 폴더 이름 — 필터 줄과 폴더 관리가 함께 쓴다 */
   const [folderDrag, setFolderDrag] = useState<string | null>(null);
@@ -239,7 +242,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       toast.error(data?.error || "자리 선점에 실패했어요");
       return;
     }
-    toast.success("이번 주 이 클럽 조각 자리를 잡았어요");
+    toast.success("이번 주 이 클럽 파티 자리를 잡았어요");
     await fetchSlots();
   };
 
@@ -259,7 +262,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       await supabase.rpc("publish_my_share_template", { p_template_id: t.id });
     }
     setClaiming(null);
-    toast.success("다음 주 자리도 잡았어요 · 예정된 조각까지 올렸어요");
+    toast.success("다음 주 자리도 잡았어요 · 예정된 파티까지 올렸어요");
     await fetchSlots();
     await fetchTemplates({ silent: true });
   };
@@ -324,7 +327,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       });
       // 회수 실패를 조용히 삼키면 "껐는데 아직 떠 있는" 상태가 되고 노쇼로 이어진다.
       if (unpubErr || !data?.success) {
-        toast.error(unpubErr?.message || data?.error || "예정된 조각을 내리지 못했어요");
+        toast.error(unpubErr?.message || data?.error || "예정된 파티를 내리지 못했어요");
       } else if (data.kept > 0) {
         toast.error(`참여자가 있는 ${data.kept}건은 남겨뒀어요 — 직접 확인해주세요`);
       }
@@ -337,8 +340,8 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
         // 7일치라, 숫자가 칩 개수와 안 맞아 "왜 7건이지"가 된다.
         toast.success(
           data.skipped > 0
-            ? "조각이 등록되었어요! · 일부는 다음 주 자리를 잡아야 올라가요"
-            : "조각이 등록되었어요!"
+            ? "파티가 등록되었어요! · 일부는 다음 주 자리를 잡아야 올라가요"
+            : "파티가 등록되었어요!"
         );
       } else if (data?.success && data.skipped > 0) {
         // 서버가 첫 실패 사유(SQLERRM)를 그대로 보내준다(Migration 512).
@@ -398,8 +401,8 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
         // 7일치라, 숫자가 칩 개수와 안 맞아 "왜 7건이지"가 된다.
         toast.success(
           data.skipped > 0
-            ? "조각이 등록되었어요! · 일부는 다음 주 자리를 잡아야 올라가요"
-            : "조각이 등록되었어요!"
+            ? "파티가 등록되었어요! · 일부는 다음 주 자리를 잡아야 올라가요"
+            : "파티가 등록되었어요!"
         );
       } else if (data?.success && data.skipped > 0) {
         toast.error(data.reason || "발행하지 못했어요 — 설정을 확인해주세요");
@@ -409,7 +412,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
         p_template_id: template.id,
       });
       if (unpubErr || !data?.success) {
-        toast.error(unpubErr?.message || data?.error || "예정된 조각을 내리지 못했어요");
+        toast.error(unpubErr?.message || data?.error || "예정된 파티를 내리지 못했어요");
       } else if (data.kept > 0) {
         toast.error(`참여자가 있는 ${data.kept}건은 남겨뒀어요 — 직접 확인해주세요`);
       }
@@ -527,7 +530,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
 
   const handleDelete = async (t: AuctionTemplate) => {
     setActionTarget(null);
-    if (!window.confirm(`"${t.name}" 세팅을 삭제할까요? 이미 발행된 조각은 그대로 남아요.`)) return;
+    if (!window.confirm(`"${t.name}" 세팅을 삭제할까요? 이미 발행된 파티는 그대로 남아요.`)) return;
     const { error } = await supabase.from("auction_templates").delete().eq("id", t.id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setTemplates((prev) => prev.filter((x) => x.id !== t.id));
@@ -547,7 +550,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
     const { data, error: unpubErr } = await supabase.rpc("unpublish_my_share_template", { p_template_id: t.id });
     await fetchTemplates({ silent: true });
     if (unpubErr || !data?.success) {
-      toast.error(unpubErr?.message || data?.error || "예정된 조각을 내리지 못했어요");
+      toast.error(unpubErr?.message || data?.error || "예정된 파티를 내리지 못했어요");
     } else if (data.kept > 0) {
       toast.error(`껐어요. 참여자가 있는 ${data.kept}건은 남겨뒀어요 — 직접 확인해주세요`);
     } else {
@@ -791,7 +794,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
     persistFolderOrder(folderOrder.filter((c) => c !== name));
     persistDraftFolders(draftFolders.filter((c) => c !== name));
     if (categoryFilter === name) setCategoryFilter("");
-    toast.success(`"${name}" 폴더를 없앴어요 · 조각 ${targets.length}개는 미분류로 남았어요`);
+    toast.success(`"${name}" 폴더를 없앴어요 · 파티 ${targets.length}개는 미분류로 남았어요`);
   };
 
   // 클럽이 하나뿐이면 줄마다 클럽명을 반복할 이유가 없다(같은 값이 9번 반복됨).
@@ -868,14 +871,22 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-[15px] font-black text-foreground">내 조각</span>
+        <span className="text-[15px] font-black text-foreground">내 파티</span>
         <span className="text-[12px] text-muted-foreground font-semibold">{templates.length}/{MAX_TEMPLATES}</span>
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
+        >
+          <span className="text-[12px]">ⓘ</span>
+          이용방법
+        </button>
         <button
           type="button"
           onClick={openCreate}
           className="ml-auto h-7 px-3 rounded-full bg-inverse text-inverse-foreground text-[12px] font-black inline-flex items-center gap-1 active:scale-95 transition-transform disabled:opacity-40"
         >
-          <Plus className="w-3.5 h-3.5" /> 조각 설정
+          <Plus className="w-3.5 h-3.5" /> 파티 설정
         </button>
         <button
           type="button"
@@ -912,7 +923,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                     가 운영 중이에요
                   </>
                 ) : (
-                  "이번 주 자리가 비어 있어요 — 먼저 잡으면 이 클럽 조각을 올릴 수 있어요"
+                  "이번 주 자리가 비어 있어요 — 먼저 잡으면 이 클럽 파티를 올릴 수 있어요"
                 )}
               </p>
               {s.holder_id && nextOpenLabel && (
@@ -947,7 +958,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                 <>
                   <p className="text-[12.5px] font-black text-money">✓ 다음 주도 차지함</p>
                   <p className="text-[10.5px] text-muted-foreground font-semibold mt-0.5">
-                    {s.club_name} · 다음 주 조각까지 자동으로 올라가요
+                    {s.club_name} · 다음 주 파티까지 자동으로 올라가요
                   </p>
                 </>
               ) : s.next_holder_id ? (
@@ -1307,6 +1318,8 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       </Sheet>
 
       {/* 분류하기 시트 */}
+      {guideOpen && <ShareOnboardingSheet manualOpen onManualClose={() => setGuideOpen(false)} />}
+
       {/* 폴더 관리 — 순서·이름·삭제. 꾹 누르기는 모바일에서 잘 안 잡혀 버튼으로 뺐다 */}
       <Sheet open={folderManagerOpen} onOpenChange={(v) => { if (!v) { setFolderManagerOpen(false); setManagerNewFolder(""); setManagerTarget(null); } }}>
         <SheetContent side="bottom" className="bg-background border-border rounded-t-3xl max-h-[85vh] overflow-y-auto">
@@ -1574,7 +1587,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
           href="/md/auctions/new"
           className="w-full h-12 flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl active:scale-[0.98] transition-transform"
         >
-          <span className="text-[18px] leading-none">+</span> 새 조각 등록
+          <span className="text-[18px] leading-none">+</span> 새 파티 등록
           <span className="text-[11px] font-bold opacity-70 ml-0.5">1회성</span>
         </Link>
       )}
@@ -1587,7 +1600,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
             <SheetHeader className="p-0 mb-1">
               <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-3" />
               <SheetTitle className="text-foreground text-base font-bold text-center">새 템플릿</SheetTitle>
-              <SheetDescription className="sr-only">상시 조각 템플릿 추가</SheetDescription>
+              <SheetDescription className="sr-only">상시 파티 템플릿 추가</SheetDescription>
             </SheetHeader>
 
             <div className="space-y-2">

@@ -321,7 +321,7 @@ export function ChatMessageItem({
               )}
 
               <ChatMediaGrid items={message.media ?? []} />
-              {/* 조각 공유는 본문을 카드 안에 넣어 한 덩어리로 보인다 (말풍선 분리 X) */}
+              {/* 파티 공유는 본문을 카드 안에 넣어 한 덩어리로 보인다 (말풍선 분리 X) */}
               {message.content && !message.shared_puzzle_id && (
                 <div>
                   <ChatContentText
@@ -336,7 +336,7 @@ export function ChatMessageItem({
                   />
                 </div>
               )}
-              {/* 공유된 조각 카드 (Migration 471) */}
+              {/* 공유된 파티 카드 (Migration 471) */}
               {message.shared_puzzle_id && (
                 <ChatSharedPuzzleCard
                   puzzleId={message.shared_puzzle_id}

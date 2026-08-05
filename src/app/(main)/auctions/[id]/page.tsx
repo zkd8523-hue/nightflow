@@ -55,10 +55,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (isShare) {
     const perPerson = formatPrice(auction.start_price);
-    title = `${head} 조각 - 1인 ₩${perPerson}`;
-    description = `${areaLabel}클럽 조각 매물. ${head}${
+    title = `${head} 파티 - 1인 ₩${perPerson}`;
+    description = `${areaLabel}클럽 파티 매물. ${head}${
       auction.title ? ` ${auction.title}` : ""
-    }. 1인 ₩${perPerson}. ${areaLabel}조각·합석으로 같이 갈 일행을 나플에서 찾으세요.`;
+    }. 1인 ₩${perPerson}. ${areaLabel}파티·합석으로 같이 갈 일행을 나플에서 찾으세요.`;
   } else {
     const currentPrice = formatPrice(
       auction.current_bid || auction.start_price
@@ -175,13 +175,13 @@ export default async function AuctionDetailPage({ params }: PageProps) {
         {ssrIsShare ? (
           <>
             <h1>
-              {ssrHead} 조각 - 1인 ₩{ssrPerPerson} ({ssrAreaPrefix}클럽 조각)
+              {ssrHead} 파티 - 1인 ₩{ssrPerPerson} ({ssrAreaPrefix}클럽 파티)
             </h1>
             <p>
-              {ssrAreaPrefix}클럽 조각 매물입니다. {ssrHead}에서 같이 갈 일행을
-              모집합니다. 인당 가격 ₩{ssrPerPerson}. {ssrAreaPrefix}조각·합석으로
+              {ssrAreaPrefix}클럽 파티 매물입니다. {ssrHead}에서 같이 갈 일행을
+              모집합니다. 인당 가격 ₩{ssrPerPerson}. {ssrAreaPrefix}파티·합석으로
               혼자 가기 부담스러운 클럽에 안전하게 함께 가는 방법, 나플에서
-              {ssrAreaPrefix}조각 매물을 확인하고 합류하세요.
+              {ssrAreaPrefix}파티 매물을 확인하고 합류하세요.
             </p>
           </>
         ) : (

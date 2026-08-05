@@ -137,7 +137,7 @@ export function SecretOfferCard({
       )}
 
       <div className="space-y-2">
-        {/* 깃발은 예산의 ±20% 범위에서 제안가가 달라질 수 있어 표기 (조각은 예산 고정이라 노이즈라 생략) */}
+        {/* 깃발은 예산의 ±20% 범위에서 제안가가 달라질 수 있어 표기 (파티는 예산 고정이라 노이즈라 생략) */}
         {!isRecruitingParty && (
           <p className="text-[16px] font-black text-money">
             {isForeigner ? `₩${offer.proposed_price.toLocaleString()}` : `${offer.proposed_price.toLocaleString()}원`}

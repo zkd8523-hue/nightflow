@@ -86,7 +86,7 @@ export function ShareAuctionSheet({
       // 깃발과 동일한 방식: OS 네이티브 공유 시트 → 사용자가 카카오톡 선택
       // Kakao SDK 직접 호출(sendDefault)은 imageUrl/도메인 검증 이슈로 4019 발생 가능
       const price = isShareListing ? (auction.price_per_seat ?? 0) : auction.start_price;
-      const title = `${club?.area ? `[${club.area}] ` : ""}${clubName} ${isShareListing ? "조각 모집" : "테이블 경매"}`;
+      const title = `${club?.area ? `[${club.area}] ` : ""}${clubName} ${isShareListing ? "파티 모집" : "테이블 경매"}`;
       const text = isShareListing
         ? `인당 ${price.toLocaleString()}원 · 자리 모집 중`
         : `시작가 ${price.toLocaleString()}원 · 입찰 진행 중`;
@@ -219,7 +219,7 @@ export function ShareAuctionSheet({
             }
           >
             {isShareListing
-              ? (isFromMD ? "내 조각 홍보하기" : "같이 갈 친구 데려오기")
+              ? (isFromMD ? "내 파티 홍보하기" : "같이 갈 친구 데려오기")
               : "이 경매를 공유하세요"}
           </DrawerTitle>
           <DrawerDescription

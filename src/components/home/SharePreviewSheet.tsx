@@ -25,13 +25,13 @@ export function SharePreviewSheet({ open, onOpenChange }: Props) {
         className="bg-background border-border rounded-t-3xl !h-[88vh] !max-h-[88vh] !gap-0 !p-0 !flex !flex-col"
       >
         <SheetHeader className="sr-only">
-          <SheetTitle>조각 노출 미리보기</SheetTitle>
+          <SheetTitle>파티 노출 미리보기</SheetTitle>
         </SheetHeader>
         <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-8 pb-8 space-y-5">
           <div className="space-y-1">
             <p className="text-[12px] text-brand-amber font-black tracking-wider">PREVIEW</p>
             <h2 className="text-[22px] font-black text-foreground tracking-tight">
-              내 조각이 이렇게 채워져요
+              내 파티가 이렇게 채워져요
               <span className="text-[13px] font-bold text-muted-foreground ml-1.5">(1클럽 1파트너 · 선착순)</span>
             </h2>
             <p className="text-[13px] text-muted-foreground leading-snug">
@@ -41,11 +41,11 @@ export function SharePreviewSheet({ open, onOpenChange }: Props) {
             </p>
           </div>
 
-          {/* Step 1: 홈/조각 탭 카드 노출 */}
+          {/* Step 1: 홈/파티 탭 카드 노출 */}
           <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center">1</div>
-              <p className="text-[13px] text-foreground font-bold">홈 &quot;조각&quot;에 내 자리 노출</p>
+              <p className="text-[13px] text-foreground font-bold">홈 &quot;파티&quot;에 내 자리 노출</p>
             </div>
             <div className="bg-black/40 rounded-xl p-3 space-y-2">
               <div className="flex items-baseline gap-1.5 flex-wrap">
@@ -106,13 +106,13 @@ export function SharePreviewSheet({ open, onOpenChange }: Props) {
             </p>
           </div>
 
-          {/* CTA — 대시보드 조각 탭으로 이동 (대시보드에서 열렸어도 같은 페이지라 무해) */}
+          {/* CTA — 대시보드 파티 탭으로 이동 (대시보드에서 열렸어도 같은 페이지라 무해) */}
           <Link
             href="/md/dashboard?section=share"
             onClick={() => onOpenChange(false)}
             className="w-full h-14 bg-amber-500 text-black font-black text-[15px] rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform"
           >
-            🧩 내 조각 자리 선점하기
+            🎉 내 파티 자리 선점하기
           </Link>
 
           <p className="text-[11px] text-muted-foreground text-center">

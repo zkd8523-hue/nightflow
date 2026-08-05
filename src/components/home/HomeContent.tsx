@@ -28,6 +28,7 @@ import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 import { HotdealMdCta } from "@/components/home/HotdealMdCta";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
+import { PartyOnboardingSheet } from "@/components/home/PartyOnboardingSheet";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
 
@@ -111,9 +112,9 @@ const SECRET_OFFER_INTRO_USER = {
 // 유저용 조각 이용방법 (등록 → 시크릿오퍼 → 선택·예약)
 const SHARE_ONBOARDING_STEPS = [
   {
-    title: "1. 조각 등록",
-    desc: "조각을 등록하면\n관심있는 친구들이 채팅방에 합류해요!",
-    icon: <span className="text-[20px]">🧩</span>,
+    title: "1. 파티 등록",
+    desc: "파티를 등록하면\n관심있는 친구들이 채팅방에 합류해요!",
+    icon: <span className="text-[20px]">🎉</span>,
     color: "bg-green-500/15",
   },
   {
@@ -133,14 +134,14 @@ const SHARE_ONBOARDING_STEPS = [
 // MD 전용 조각 이용방법
 const SHARE_ONBOARDING_STEPS_MD = [
   {
-    title: "1. 조각 등록",
+    title: "1. 파티 등록",
     desc: "테이블·인원·가격을 입력하면\n링크 하나로 끝!",
-    icon: <span className="text-[20px]">🧩</span>,
+    icon: <span className="text-[20px]">🎉</span>,
     color: "bg-green-500/10",
   },
   {
     title: "2. 공유 & 모집",
-    desc: "유저들이 조각을 골라\n오픈채팅방에 모여요.",
+    desc: "유저들이 파티를 골라\n오픈채팅방에 모여요.",
     icon: <span className="text-[20px]">🔗</span>,
     color: "bg-emerald-500/10",
   },
@@ -237,11 +238,11 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromi
   share: {
     content: (
       <>
-        <div className="text-[15.5px] text-foreground">이번주 조각을 미리 올려보세요!</div>
+        <div className="text-[15.5px] text-foreground">이번주 파티를 미리 올려보세요!</div>
         <div className="text-[15.5px] text-foreground">링크 하나로 공유, 인원관리도 간편해요!</div>
       </>
     ),
-    note: "🧩 수수료 0% · 현장 직접 수령",
+    note: "🎉 수수료 0% · 현장 직접 수령",
   },
 };
 
@@ -282,6 +283,8 @@ export function HomeContent({
   const [guideMode, setGuideMode] = useState<"full">("full");
   // 첫 방문 시 캐러셀 위 인라인 가이드 (Tip 박스 자리). 닫으면 영구 숨김.
   const [showTopGuide, setShowTopGuide] = useState(false);
+  /** 더보기 화면의 "이용방법" — 첫 방문 모달을 수동으로 연다 */
+  const [flagGuideOpen, setFlagGuideOpen] = useState(false);
 
   // 홈 랜딩 이벤트 — 세션→깃발 전환율 퍼널 1단계.
   // 마운트 1회만 발동. StrictMode dev double-invoke는 GA4/Mixpanel 중복이지만 raw 로그 분석엔 무해.
@@ -921,7 +924,7 @@ export function HomeContent({
     );
     const mdShareTipContent = (
       <>
-        <div className="text-foreground">이번주 조각을 미리 올려보세요!</div>
+        <div className="text-foreground">이번주 파티를 미리 올려보세요!</div>
         <div className="text-foreground">링크 하나로 공유, 인원관리도 간편해요!</div>
       </>
     );
@@ -951,7 +954,7 @@ export function HomeContent({
         <Link
           href={detailHref(opts.detailTab)}
           aria-label={`${opts.label} 더보기`}
-          className="shrink-0 text-[12.5px] font-bold px-3.5 py-1.5 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black inline-flex items-center gap-0.5 transition-all"
+          className="shrink-0 text-[13px] font-black px-3.5 py-1.5 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black inline-flex items-center gap-0.5 transition-all"
         >
           <span className="text-[13px] leading-none">{opts.icon}</span> {opts.label}
         </Link>
@@ -1241,14 +1244,14 @@ export function HomeContent({
             />
           </div>
 
-          {/* ── 조각 섹션 — order-2로 팁박스 아래 배치 (깃발 → 팁박스 → 조각) ── */}
+          {/* ── 파티 섹션 — order-2로 팁박스 아래 배치 (깃발 → 팁박스 → 파티) ── */}
           <div className="order-2 flex flex-col">
           {showShareTab && (
             <>
-              {/* ── 조각 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
-              {renderSectionRow({ icon: "🧩", label: "조각", detailTab: "share", dateLabel: shareHeaderDate, count: shareCardCount })}
+              {/* ── 파티 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
+              {renderSectionRow({ icon: "🎉", label: "파티", detailTab: "share", dateLabel: shareHeaderDate, count: shareCardCount })}
 
-              {/* 유저 조각(파티원 모집) 캐러셀 — HomePuzzleCarousel 재사용(shareMode) */}
+              {/* 유저 파티(파티원 모집) 캐러셀 — HomePuzzleCarousel 재사용(shareMode) */}
               <div className="mb-2">
                 <HomePuzzleCarousel
                   puzzles={sharePuzzles}
@@ -1300,7 +1303,7 @@ export function HomeContent({
     <>
       <div className="flex flex-col">
 
-        {/* 홈 상단 ClubStrip 일시 숨김 — 핵심 가치 경험(깃발/조각) 흐름을 가리는 노이즈로 판단. /clubs 페이지에선 정상 노출. */}
+        {/* 홈 상단 ClubStrip 일시 숨김 — 핵심 가치 경험(깃발/파티) 흐름을 가리는 노이즈로 판단. /clubs 페이지에선 정상 노출. */}
         {/* <ClubStrip clubs={clubs} /> */}
 
         {(() => {
@@ -1446,7 +1449,7 @@ export function HomeContent({
                   {(currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") && !isDetailOfferSlide && (
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
+                      onClick={(e) => { e.stopPropagation(); setFlagGuideOpen(true); }}
                       className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-brand-amber hover:bg-amber-400/25 hover:text-brand-amber active:scale-95 transition-all"
                     >
                       이용방법
@@ -1454,7 +1457,16 @@ export function HomeContent({
                   )}
                 </div>
               )}
-              {/* 이용방법 가이드 — "ⓘ 이용방법" 클릭 시 토글 */}
+              {/* 이용방법 — 탭에 맞는 모달을 연다. 깃발(내 조건 올리기)과 파티(열린 자리 합류)는
+                  흐름이 달라 같은 설명을 돌려쓰면 자기가 뭘 하는지 헷갈린다. */}
+              {flagGuideOpen && (
+                currentTab === "share" ? (
+                  <PartyOnboardingSheet manualOpen onManualClose={() => setFlagGuideOpen(false)} />
+                ) : (
+                  <FlagOnboardingSheet autoShow={false} manualOpen onManualClose={() => setFlagGuideOpen(false)} />
+                )
+              )}
+              {/* 인라인 가이드(구) — 다른 진입점에서만 사용 */}
               {showGuide && (
                 <div className="bg-card border border-border rounded-3xl p-4 relative">
                   <button
@@ -1521,7 +1533,7 @@ export function HomeContent({
                         onClick={dismissGuide}
                         className="inline-flex items-center gap-1 h-9 px-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.97] text-black font-black text-[13px] rounded-full transition-all"
                       >
-                        🧩 바로가기
+                        🎉 바로가기
                       </Link>
                     </div>
                   )}

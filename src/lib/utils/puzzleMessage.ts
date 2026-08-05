@@ -66,7 +66,7 @@ export function buildAcceptedFlagMessage(
 
   if (!isForeigner) {
     return [
-      `[NightFlow 🧩 퍼즐 오퍼 수락!]`,
+      `[NightFlow 🎉 퍼즐 오퍼 수락!]`,
       ``,
       ...koInfo,
       ``,

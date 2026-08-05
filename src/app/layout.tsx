@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     // 핵심 기능 (7)
     "클럽 테이블 예약",
     "클럽 깃발",
-    "클럽 조각",
+    "클럽 파티",
     "클럽 무료입장",
     "클럽 게스트",
     "게스트 간판",
@@ -178,7 +178,7 @@ export default async function RootLayout({
         url: "https://nightflow.kr",
         logo: "https://nightflow.kr/og-flag-square.png",
         description:
-          "나플은 강남·홍대 클럽 무료입장·조각·테이블 예약·영업시간·주대 정보를 한 곳에서 볼 수 있는 클럽 플랫폼입니다. 밤을 더 아름답게 만드는 무브먼트.",
+          "나플은 강남·홍대 클럽 무료입장·파티·테이블 예약·영업시간·주대 정보를 한 곳에서 볼 수 있는 클럽 플랫폼입니다. 밤을 더 아름답게 만드는 무브먼트.",
         slogan: "밤을 더 아름답게",
         sameAs: ["https://www.instagram.com/nightflow.kr/"],
       },

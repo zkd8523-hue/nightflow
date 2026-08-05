@@ -112,12 +112,12 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
                     </Link>
                     <div className="space-y-0.5">
                         <h1 className="text-2xl font-black text-foreground tracking-tight">
-                            {repostFrom ? "조각 재등록" : "조각 등록"}
+                            {repostFrom ? "파티 재등록" : "파티 등록"}
                         </h1>
                         <p className="text-muted-foreground text-sm font-medium">
                             {repostFrom
                                 ? "설정 그대로, 한 번 더 채워보세요."
-                                : "올리면 저절로 모이는 조각 시스템."}
+                                : "올리면 저절로 모이는 파티 시스템."}
                         </p>
                     </div>
                 </div>

@@ -59,7 +59,7 @@ export function TemplateSelector({ mdId, open, onOpenChange, onSelect }: Templat
     if (t.name && t.name.trim()) return t.name;
     const price = t.price_per_seat ? `${Math.round(t.price_per_seat / 10000)}만원` : "";
     const alcohol = t.main_alcohol || "";
-    const seats = t.total_seats ? `조각${t.total_seats}` : "";
+    const seats = t.total_seats ? `파티${t.total_seats}` : "";
     return [price, alcohol, seats].filter(Boolean).join("/") || "템플릿";
   };
 

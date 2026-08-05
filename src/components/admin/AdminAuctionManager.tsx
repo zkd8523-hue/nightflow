@@ -202,7 +202,7 @@ function AuctionTable({
                       {formatPrice(a.current_bid || a.start_price)}
                     </p>
                     <p className="text-[11px] text-muted-foreground font-bold">{a.bid_count} Bids</p>
-                    {/* Migration 269: 조각 참여 클릭 — 외부 영업 vs 플랫폼 자체 모집 판별용 */}
+                    {/* Migration 269: 파티 참여 클릭 — 외부 영업 vs 플랫폼 자체 모집 판별용 */}
                     <p
                       className={`text-[10px] font-bold mt-0.5 ${
                         (a.click_total ?? 0) > 0 ? "text-brand-amber dark:text-brand-amber/80" : "text-muted-foreground"

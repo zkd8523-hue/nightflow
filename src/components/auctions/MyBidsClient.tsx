@@ -982,7 +982,7 @@ function EmptyPuzzle() {
   return (
     <div className="py-24 text-center space-y-4">
       <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mx-auto">
-        <span className="text-3xl">🧩</span>
+        <span className="text-3xl">🎉</span>
       </div>
       <p className="text-muted-foreground font-medium">
         참여 중인 깃발이 없습니다.

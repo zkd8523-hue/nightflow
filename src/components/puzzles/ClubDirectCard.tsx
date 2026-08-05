@@ -128,7 +128,7 @@ export function ClubDirectCard({
           </div>
           {/* 섹션 헤더가 이미 "클럽 다이렉트"인 목록에선 중복이라 숨긴다(showBadge=false).
               색은 기존 "파트너 직통" 배지와 같은 파랑 — 같은 개념에 새 색을 더하지 않는다. */}
-          {/* 누가 운영하는 자리인지 — 조각은 파트너 개인을 보고 참가하는 성격이 크다 */}
+          {/* 누가 운영하는 자리인지 — 파티는 파트너 개인을 보고 참가하는 성격이 크다 */}
           {partnerName && (
             <span className="text-[11px] text-muted-foreground font-bold truncate">by {partnerName}</span>
           )}
@@ -152,7 +152,7 @@ export function ClubDirectCard({
         <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
       </div>
 
-      {/* 조각 미리보기 — "인당 N원부터"가 추상적으로 남지 않게 실제 가격표를 보여준다 */}
+      {/* 파티 미리보기 — "인당 N원부터"가 추상적으로 남지 않게 실제 가격표를 보여준다 */}
       <div className="mt-2.5 pt-2 border-t border-border/60">
         {preview.map((p) => {
           // 이름과 정원을 한 덩어리로 — "가성비 6인"이 자리 하나를 가리키는 최소 단위다.
@@ -174,7 +174,7 @@ export function ClubDirectCard({
         )}
       </div>
 
-      {/* CTA — 카드 전체가 눌리긴 하지만, 조각은 등급이 여러 개라 "고른다"는 다음 행동을
+      {/* CTA — 카드 전체가 눌리긴 하지만, 파티는 등급이 여러 개라 "고른다"는 다음 행동을
           명시해야 한다. 줄마다 참가 버튼을 달지 않는 이유는 어느 자리인지 확인 없이
           참가가 확정되면 되돌리기가 번거롭기 때문. */}
       <span className="mt-2 flex justify-end">
@@ -188,12 +188,16 @@ export function ClubDirectCard({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent side="bottom" className="bg-background border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
         <SheetHeader className="px-4 pt-5 pb-0 text-left">
-          <SheetTitle className="text-foreground text-[18px] font-black">
-            <Link href={`/clubs/${group.clubId}`} className="inline-flex items-center gap-2 active:scale-95 transition-transform">
-              {clubName}
-              <span className="text-[15px] leading-none">🧩</span>
-              {area && <span className="text-[12px] text-muted-foreground font-bold">{area}</span>}
+          {/* 오퍼 카드의 클럽명 규격 그대로 (SecretOfferCard.tsx:112-130) */}
+          <SheetTitle className="flex items-center justify-between gap-2">
+            <Link
+              href={`/clubs/${group.clubId}`}
+              className="inline-flex items-baseline gap-0.5 text-[21px] font-black text-foreground hover:text-brand-amber transition-colors min-w-0"
+            >
+              <span className="truncate">{clubName}</span>
+              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground self-center shrink-0" />
             </Link>
+            {area && <span className="text-[12px] text-muted-foreground font-black shrink-0">{area}</span>}
           </SheetTitle>
         </SheetHeader>
         <ClubSharePuzzles puzzles={sheetPuzzles ?? puzzles} hideTitle />

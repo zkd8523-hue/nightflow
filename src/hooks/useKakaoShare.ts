@@ -108,7 +108,7 @@ export function useKakaoShare(): UseKakaoShareReturn {
         : "";
 
       const title = isMD
-        ? `${params.area ? `[${params.area}] ` : ""}${!isInstant && dateStr ? `${dateStr} ` : ""}${params.clubName} ${isInstant ? "오늘특가" : isShare ? "조각 모집" : "테이블 경매"}`
+        ? `${params.area ? `[${params.area}] ` : ""}${!isInstant && dateStr ? `${dateStr} ` : ""}${params.clubName} ${isInstant ? "오늘특가" : isShare ? "파티 모집" : "테이블 경매"}`
         : isInstant
           ? `오늘 ${params.clubName} 어때?`
           : isShare
@@ -118,13 +118,13 @@ export function useKakaoShare(): UseKakaoShareReturn {
       const description = isInstant
         ? (isMD ? `${price}원 | 지금 바로 예약 가능!` : `${price}원 | 나플 특가! 웨이팅 없이 바로 고?`)
         : isShare
-          ? (isMD ? `1인 ${price}₩ | 자리 모집 중!` : `1인 ${price}₩ | 조각원 찾는 중 🔥`)
+          ? (isMD ? `1인 ${price}₩ | 자리 모집 중!` : `1인 ${price}₩ | 파티원 찾는 중 🔥`)
           : (isMD ? `시작가 ${price}원 | 경매 시작! 최저가 선점에 도전하세요.` : `${price}원 | 남들보다 싸게 잡을 기회! 지금 비딩 같이 가보자.`);
 
       const buttonTitle = isInstant
         ? (isMD ? "예약하러 가기" : "예약 정보 확인")
         : isShare
-          ? (isMD ? "조각 모집 보기" : "조각 참여하기")
+          ? (isMD ? "파티 모집 보기" : "파티 참여하기")
           : (isMD ? "테이블 쟁탈전 참여" : "경매 보러 가기");
 
       // 유입 경로 추적을 위한 UTM 파라미터 추가

@@ -319,7 +319,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
       setSending(false);
       if (error || !data?.success) {
         const msg = error?.message ?? "";
-        if (msg.includes("does not exist")) toast.error("조각 공유 마이그레이션 미적용 (471)");
+        if (msg.includes("does not exist")) toast.error("파티 공유 마이그레이션 미적용 (471)");
         else toast.error(data?.error ?? "공유하지 못했어요");
         return;
       }
@@ -450,7 +450,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
           <div className="mb-2 flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5">
             <span className="min-w-0 flex-1">
               <span className="block text-[13px] font-black text-foreground truncate">
-                🧩 {attachedPuzzle.event_date.slice(5).replace("-", "/")} · {attachedPuzzle.area}
+                🎉 {attachedPuzzle.event_date.slice(5).replace("-", "/")} · {attachedPuzzle.area}
               </span>
               <span className="block text-[11px] text-muted-foreground">
                 {attachedPuzzle.current_count}/{attachedPuzzle.target_count}명 모집 중
@@ -460,7 +460,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
               type="button"
               onClick={() => setAttachedPuzzle(null)}
               className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-foreground shrink-0"
-              aria-label="조각 첨부 삭제"
+              aria-label="파티 첨부 삭제"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -697,7 +697,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
         />
       )}
 
-      {/* 내 조각 공유 (Migration 471) */}
+      {/* 내 파티 공유 (Migration 471) */}
       <SharePuzzleSheet
         open={sharePuzzleOpen}
         onOpenChange={setSharePuzzleOpen}

@@ -421,15 +421,15 @@ export function PuzzleList({
               </>
             ) : shareMode ? (
               <>
-                <span className="text-[40px] leading-none">🧩</span>
-                <p className="text-[15px] font-bold text-foreground">아직 등록된 조각이 없어요</p>
-                <p className="text-[12px] text-muted-foreground leading-relaxed">먼저 조각을 올려서 인원을 모아보세요</p>
+                <span className="text-[40px] leading-none">🎉</span>
+                <p className="text-[15px] font-bold text-foreground">아직 등록된 파티가 없어요</p>
+                <p className="text-[12px] text-muted-foreground leading-relaxed">먼저 파티를 올려서 인원을 모아보세요</p>
                 {userRole !== "md" && userRole !== "admin" && (
                   <Link
                     href={userRole ? "/shares/new" : "/login?redirect=/shares/new"}
                     className="inline-flex items-center gap-1.5 mt-3 bg-amber-500 hover:bg-amber-400 text-black rounded-full px-5 py-2.5 text-[13px] font-black transition-colors"
                   >
-                    🧩 조각 등록하기
+                    🎉 파티 등록하기
                   </Link>
                 )}
               </>
@@ -477,7 +477,7 @@ export function PuzzleList({
               const dday = getDDayLabel(date);
               return (
                 <div key={date}>
-                  {/* 조각(AuctionList)과 동일한 날짜 헤더·카드 간격 */}
+                  {/* 파티(AuctionList)과 동일한 날짜 헤더·카드 간격 */}
                   <div className="flex items-center gap-2.5 px-1 pt-1 pb-0 mb-1.5">
                     <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
                     <h3 className="text-[16px] font-black text-foreground tracking-tight whitespace-nowrap">{dateLabel}</h3>
@@ -510,7 +510,7 @@ export function PuzzleList({
             const recentPuzzles = listPuzzles
               .filter(p => now - new Date(p.created_at).getTime() < RECENT_THRESHOLD_MS)
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            const recentTitle = shareMode ? "방금 올라온 조각" : "방금 꽂힌 깃발";
+            const recentTitle = shareMode ? "방금 올라온 파티" : "방금 꽂힌 깃발";
             // "방금 꽂힌 깃발"에 노출된 깃발은 아래 날짜별 전체 목록에서 제외 (중복 방지)
             const recentIds = new Set(recentPuzzles.map(p => p.id));
             const rest = listPuzzles.filter(p => !recentIds.has(p.id));
@@ -680,7 +680,7 @@ export function PuzzleList({
           }`}
         >
           <span className="text-black text-sm font-semibold whitespace-nowrap">
-            {shareMode ? "조각 올리기" : "깃발꽂기"}
+            {shareMode ? "파티 올리기" : "깃발꽂기"}
           </span>
           <Plus className="w-5 h-5 text-black" />
         </Link>

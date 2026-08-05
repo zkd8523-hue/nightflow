@@ -172,8 +172,8 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
             {formatDate(puzzle.event_date)} · {puzzle.area} · {perPerson.toLocaleString()}원/인
           </p>
           <p className="text-[13px] text-muted-foreground text-left">
-            {/* 파트너 조각은 채워진 인원을 노출하지 않는다 — "0/6명"이 텅 비어 보여 참가를 막는다.
-                유저끼리 모으는 조각은 몇 명 모였는지가 참가 판단의 핵심이라 그대로 둔다. */}
+            {/* 파트너 파티는 채워진 인원을 노출하지 않는다 — "0/6명"이 텅 비어 보여 참가를 막는다.
+                유저끼리 모으는 파티는 몇 명 모였는지가 참가 판단의 핵심이라 그대로 둔다. */}
             {genderNeutral
               ? puzzle.host_is_md
                 ? `👥 ${puzzle.target_count}인`
@@ -182,17 +182,17 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
           </p>
         </SheetHeader>
 
-        {/* 성별 미입력 시: 조각으로 안내 (성별 무관 조각에선 불필요) */}
+        {/* 성별 미입력 시: 파티로 안내 (성별 무관 파티에선 불필요) */}
         {genderLoaded && !myGender && !genderNeutral && (
           <div className="space-y-2 mb-5 bg-muted/50 border border-border rounded-2xl p-4">
             <p className="text-[13px] font-bold text-foreground">성별 정보가 필요해요</p>
             <p className="text-[12px] text-muted-foreground leading-relaxed">
-              깃발은 성별 슬롯 기반으로 매칭돼요. 조각 매물에 먼저 참여하면서 성별을 설정하면 깃발도 합류할 수 있어요.
+              깃발은 성별 슬롯 기반으로 매칭돼요. 파티 매물에 먼저 참여하면서 성별을 설정하면 깃발도 합류할 수 있어요.
             </p>
           </div>
         )}
 
-        {/* gender 입력 후 표시. 단, 성별 무관 조각은 성별 없이도 합류 UI 노출 */}
+        {/* gender 입력 후 표시. 단, 성별 무관 파티는 성별 없이도 합류 UI 노출 */}
         {(myGender || genderNeutral) && (
           <div className="space-y-4">
             {slotFull ? (

@@ -25,7 +25,7 @@ export function ShareManageMdCta() {
     >
       <ArrowUp className="w-4 h-4 text-brand-amber shrink-0 animate-bounce" />
       <p className="text-[12.5px] font-bold leading-snug flex-1 text-foreground dark:text-amber-50">
-        <span className="text-brand-amber">조각</span>, 나플에서 편하게 관리하세요.
+        <span className="text-brand-amber">파티</span>, 나플에서 편하게 관리하세요.
       </p>
       <ChevronRight className="w-4 h-4 shrink-0 text-brand-amber" />
     </Link>

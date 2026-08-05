@@ -502,12 +502,12 @@ export interface Auction {
   external_female: number;
   main_alcohol: string | null;
   share_date: string | null;
-  kakao_open_chat_url: string | null; // Migration 187: 조각 오픈채팅 링크
+  kakao_open_chat_url: string | null; // Migration 187: 파티 오픈채팅 링크
   target_male: number;   // Migration 188: 성별 슬롯
   target_female: number;
   seats_claimed_male: number;   // Migration 202: 인앱 참여자 성별 카운터
   seats_claimed_female: number;
-  share_option_id: string | null; // Migration 304: 자동생성 조각의 원본 옵션 (수동 등록은 NULL)
+  share_option_id: string | null; // Migration 304: 자동생성 파티의 원본 옵션 (수동 등록은 NULL)
 
   // JOIN 관계
   club?: Club;

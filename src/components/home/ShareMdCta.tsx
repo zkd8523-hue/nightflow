@@ -51,7 +51,7 @@ export function ShareMdCta() {
       >
         <Sparkles className="w-4 h-4 text-brand-amber shrink-0" />
         <p className="text-[12.5px] font-bold leading-snug flex-1 text-foreground">
-          <span className="text-brand-amber">내 조각</span> 세팅하기
+          <span className="text-brand-amber">내 파티</span> 세팅하기
         </p>
         <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
       </Link>
@@ -67,7 +67,7 @@ export function ShareMdCta() {
       >
         <ArrowUp className="w-4 h-4 text-brand-amber shrink-0 animate-bounce" />
         <p className="text-[12.5px] font-bold leading-snug flex-1 text-foreground dark:text-amber-50">
-          클럽당 1명만 <span className="text-brand-amber">조각</span>을 올릴 수 있어요. <span className="text-brand-amber dark:text-brand-amber/60 font-medium">(선착순 마감)</span>
+          클럽당 1명만 <span className="text-brand-amber">파티</span>을 올릴 수 있어요. <span className="text-brand-amber dark:text-brand-amber/60 font-medium">(선착순 마감)</span>
         </p>
         <ChevronRight className="w-4 h-4 shrink-0 text-brand-amber" />
       </button>

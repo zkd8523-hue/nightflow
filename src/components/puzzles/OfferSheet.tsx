@@ -195,7 +195,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       return;
     }
     if (currentBudget <= 0) {
-      toast.error(puzzle.is_recruiting_party ? "예산이 0원인 조각에는 제안할 수 없습니다" : "예산이 0원인 깃발에는 제안할 수 없습니다");
+      toast.error(puzzle.is_recruiting_party ? "예산이 0원인 파티에는 제안할 수 없습니다" : "예산이 0원인 깃발에는 제안할 수 없습니다");
       return;
     }
     if (!puzzle.is_recruiting_party && (proposedPrice < minPrice || proposedPrice > maxPrice)) {
@@ -338,7 +338,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         <SheetHeader className="p-0 mb-3">
           <div className="flex items-center gap-2 pr-8">
             <SheetTitle className="text-foreground text-[17px] font-black text-left">
-              {editingOffer ? "시크릿오퍼 수정" : "시크릿오퍼"}{puzzle.is_recruiting_party ? " 🧩" : ""}
+              {editingOffer ? "시크릿오퍼 수정" : "시크릿오퍼"}{puzzle.is_recruiting_party ? " 🎉" : ""}
             </SheetTitle>
             <span className="flex items-center gap-1 text-[10px] text-brand-amber font-bold flex-shrink-0">
               <Lock className="w-3 h-3" />
@@ -355,7 +355,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
 
         <div className="space-y-6">
-          {/* 템플릿 불러오기 — 조각은 인원·가격이 실시간 변동돼 템플릿 대상에서 제외 */}
+          {/* 템플릿 불러오기 — 파티는 인원·가격이 실시간 변동돼 템플릿 대상에서 제외 */}
           {!puzzle.is_recruiting_party && (
           <button
             type="button"
@@ -400,7 +400,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           </div>
 
 
-          {/* 제안 금액 (예산의 80~120%) — 조각(파티원 모집)은 인원에 따라 총액이 변동되므로 숨김 */}
+          {/* 제안 금액 (예산의 80~120%) — 파티(파티원 모집)은 인원에 따라 총액이 변동되므로 숨김 */}
           {!puzzle.is_recruiting_party && (
           <div className="space-y-2">
             <p className="text-[11px] font-bold text-muted-foreground tracking-wide">제안 금액</p>
@@ -423,7 +423,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           </div>
           )}
 
-          {/* 주류 선택 — 조각은 인원·가격이 실시간 변동되므로 제거 */}
+          {/* 주류 선택 — 파티는 인원·가격이 실시간 변동되므로 제거 */}
           {!puzzle.is_recruiting_party && (
           <LiquorSelector
             selected={liquorItems}
@@ -671,7 +671,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           <Input
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
-            placeholder={puzzle.is_recruiting_party ? "예: 주말 조각 기본 멘트" : "예: 평일 50만원 / 주말 100만원"}
+            placeholder={puzzle.is_recruiting_party ? "예: 주말 파티 기본 멘트" : "예: 평일 50만원 / 주말 100만원"}
             maxLength={30}
             className="bg-card border-border h-11 text-brand-amber font-bold text-[14px]"
           />

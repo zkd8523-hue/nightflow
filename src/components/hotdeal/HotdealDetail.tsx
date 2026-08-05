@@ -194,7 +194,7 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
           </div>
         )}
 
-        {/* 테이블 구성 (주류 + 구성 + 테이블맵 드롭다운) — 조각 TableDetailsCard와 통일 */}
+        {/* 테이블 구성 (주류 + 구성 + 테이블맵 드롭다운) — 파티 TableDetailsCard와 통일 */}
         {(hasLiquor || hasFeatures || hasFloorPlan || hasTableInfo) && (
           <div className="bg-card border border-border/50 rounded-2xl px-4 py-3 space-y-2.5">
             <h2 className="text-[19px] font-black text-foreground tracking-tight">테이블 구성</h2>

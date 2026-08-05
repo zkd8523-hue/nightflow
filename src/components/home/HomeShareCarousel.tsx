@@ -145,7 +145,7 @@ export function HomeShareCarousel({
     if (isAreaFiltered) {
       return (
         <div className="bg-card rounded-3xl border border-border p-6 text-center -mx-4">
-          <p className="text-[14px] text-muted-foreground font-bold">이 지역엔 조각이 없어요</p>
+          <p className="text-[14px] text-muted-foreground font-bold">이 지역엔 파티가 없어요</p>
           {onClearAreaFilter && (
             <button
               type="button"
@@ -163,14 +163,14 @@ export function HomeShareCarousel({
       return (
         <div className="bg-card rounded-3xl border border-border p-6 text-center space-y-3 -mx-4">
           <div className="space-y-0.5">
-            <p className="text-[13px] text-muted-foreground font-medium">아직 조각이 없어요</p>
+            <p className="text-[13px] text-muted-foreground font-medium">아직 파티가 없어요</p>
             <p className="text-[15px] text-foreground font-bold">지금이 제일 먼저 노출될 타이밍!</p>
           </div>
           <Link
             href="/md/dashboard?section=share"
             className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-[13px] font-black active:scale-95 transition"
           >
-            🧩 선점하기
+            🎉 선점하기
           </Link>
         </div>
       );
@@ -180,14 +180,14 @@ export function HomeShareCarousel({
       <div className="bg-card rounded-3xl border border-border p-6 text-center space-y-3 -mx-4">
         <div className="space-y-1">
           <p className="text-[13px] text-foreground font-bold">파티원과 함께 놀아요!</p>
-          <p className="text-[11px] text-muted-foreground">조각이 모이면 클럽에서 테이블을 제안해요</p>
+          <p className="text-[11px] text-muted-foreground">파티가 모이면 클럽에서 테이블을 제안해요</p>
         </div>
         {newShareHref && (
           <Link
             href={newShareHref}
             className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-[13px] font-black active:scale-95 transition"
           >
-            🧩 조각 올리기
+            🎉 파티 올리기
           </Link>
         )}
       </div>
@@ -199,10 +199,10 @@ export function HomeShareCarousel({
 
   return (
     <div className="space-y-3">
-      {/* 조각 카드 (홈은 날짜 필터 없이 이번 주 전체) */}
+      {/* 파티 카드 (홈은 날짜 필터 없이 이번 주 전체) */}
       {filtered.length === 0 ? (
         <div className="bg-card rounded-3xl border border-border p-6 text-center -mx-4">
-          <p className="text-[14px] text-muted-foreground font-bold">이번 주 조각이 없어요</p>
+          <p className="text-[14px] text-muted-foreground font-bold">이번 주 파티가 없어요</p>
           <p className="text-[11px] text-muted-foreground mt-1">조금만 기다려주세요</p>
         </div>
       ) : (
@@ -236,7 +236,7 @@ export function HomeShareCarousel({
             <Link
               href={detailHref}
               className="flex-shrink-0 w-[64%] max-w-[280px] snap-start snap-always flex items-center justify-center group"
-              aria-label="조각 더보기"
+              aria-label="파티 더보기"
             >
               <div className="text-center w-full mt-8">
                 <div className="inline-flex items-center gap-1 text-[15px] font-black text-foreground/80 group-hover:text-foreground transition-colors">

@@ -7,6 +7,11 @@ import { normalizeProfileImage } from "@/lib/utils/image";
 import dynamic from "next/dynamic";
 import type { Puzzle } from "@/types/database";
 
+const ShareJoinGuideSheet = dynamic(
+  () => import("@/components/puzzles/ShareJoinGuideSheet").then((m) => m.ShareJoinGuideSheet),
+  { ssr: false }
+);
+
 const PuzzleJoinSheet = dynamic(
   () => import("@/components/puzzles/PuzzleJoinSheet").then((m) => m.PuzzleJoinSheet),
   { ssr: false }
@@ -34,6 +39,7 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
 
   const [selectedDate, setSelectedDate] = useState(dates[0] ?? "");
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   if (dates.length === 0) return null;
 
@@ -51,12 +57,25 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
     <div className={`px-4 ${hideTitle ? "pt-1 pb-5" : "py-5 border-t border-border"}`}>
       {!hideTitle && (
         <div className="flex items-baseline gap-2 mb-1">
-          <h2 className="text-[16px] font-black text-foreground">조각</h2>
+          <h2 className="text-[16px] font-black text-foreground">파티</h2>
           <span className="text-[12px] text-muted-foreground font-semibold">
             인당 {(minPrice / 10000).toLocaleString()}만~{(maxPrice / 10000).toLocaleString()}만원
           </span>
         </div>
       )}
+      {/* 유저는 "파티"가 뭔지 모른 채 참가 버튼을 만난다 — 설명을 같은 자리에 둔다 */}
+      <div className="flex items-center justify-end mb-2">
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
+        >
+          <span className="text-[12px]">ⓘ</span>
+          파티란?
+        </button>
+      </div>
+      {guideOpen && <ShareJoinGuideSheet manualOpen onManualClose={() => setGuideOpen(false)} />}
+
       {partnerName && (
         <Link
           href={partnerId ? `/u/${partnerId}` : "#"}
@@ -106,7 +125,7 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-[14.5px] font-black text-foreground truncate">
-                    {p.notes || `${p.area} 조각`}
+                    {p.notes || `${p.area} 파티`}
                   </p>
                   <p className="text-[11px] text-muted-foreground font-semibold truncate">
                     {p.target_count}인
@@ -124,7 +143,7 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
                     onClick={() => setJoinTarget(p)}
                     className="shrink-0 h-8 px-3.5 rounded-full bg-green-500 hover:bg-green-400 text-black font-black text-[12px] active:scale-95 transition-transform"
                   >
-                    참가하기
+                    합류하기
                   </button>
                 )}
               </div>
@@ -134,7 +153,7 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
       </div>
 
       <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
-        참가하면 채팅방에 합류해요! 결제는 현장에서.
+        오늘 같이 갈 사람들과 채팅방에서 만나요. 결제는 현장에서.
       </p>
 
       {joinTarget && (

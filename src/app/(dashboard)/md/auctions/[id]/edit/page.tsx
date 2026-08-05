@@ -87,12 +87,12 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
     }
 
     const editTitle = auction.listing_type === "share"
-        ? "조각 정보 수정"
+        ? "파티 정보 수정"
         : auction.listing_type === "instant"
             ? "오늘특가 정보 수정"
             : "경매 정보 수정";
     const editDesc = auction.listing_type === "share"
-        ? "등록된 조각 내용을 수정합니다."
+        ? "등록된 파티 내용을 수정합니다."
         : auction.listing_type === "instant"
             ? "등록된 오늘특가 내용을 수정합니다."
             : "등록된 경매 내용을 수정합니다.";

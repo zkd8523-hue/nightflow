@@ -16,7 +16,7 @@ import type { ShareOption } from "@/types/database";
 
 const MAX_OPTIONS = 6;
 const MIN_SEATS = 2;
-const MAX_SEATS = 6; // 조각 한 테이블 최대 정원
+const MAX_SEATS = 6; // 파티 한 테이블 최대 정원
 
 interface Props {
   clubId: string;
@@ -153,7 +153,7 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
 
   const openCreate = () => {
     if (list.length >= MAX_OPTIONS) {
-      toast.error(`조각 옵션은 클럽당 최대 ${MAX_OPTIONS}개까지예요`);
+      toast.error(`파티 옵션은 클럽당 최대 ${MAX_OPTIONS}개까지예요`);
       return;
     }
     setForm(emptyForm());
@@ -332,7 +332,7 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
   // 옵션 복제: 같은 값으로 새 옵션 생성. 제목(label)에 "복사본" 표기.
   const handleCopy = async (o: ShareOption) => {
     if (list.length >= MAX_OPTIONS) {
-      toast.error(`조각 옵션은 클럽당 최대 ${MAX_OPTIONS}개까지예요`);
+      toast.error(`파티 옵션은 클럽당 최대 ${MAX_OPTIONS}개까지예요`);
       return;
     }
     setBusy(true);
@@ -397,7 +397,7 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
           onClick={() => setExpanded((v) => !v)}
           className="flex items-center gap-1.5 text-[17px] font-black text-foreground"
         >
-          📍 내 조각 세팅 <span className="text-[13px] text-muted-foreground">({list.length}/{MAX_OPTIONS})</span>
+          📍 내 파티 세팅 <span className="text-[13px] text-muted-foreground">({list.length}/{MAX_OPTIONS})</span>
           <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
         </button>
         <button
@@ -477,7 +477,7 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
         </div>
       )}
 
-      {/* 옵션 입력 Sheet (조각 등록창 시각 패턴 복제) */}
+      {/* 옵션 입력 Sheet (파티 등록창 시각 패턴 복제) */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" showCloseButton={false}
           className="bg-card border-border rounded-t-3xl px-5 pb-8 pt-4 max-h-[92vh] overflow-y-auto">
@@ -487,7 +487,7 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
               <SheetTitle className="text-foreground text-base font-bold text-center">
                 {form.id ? "옵션 수정" : "옵션 추가"}
               </SheetTitle>
-              <SheetDescription className="sr-only">조각 옵션 입력</SheetDescription>
+              <SheetDescription className="sr-only">파티 옵션 입력</SheetDescription>
             </SheetHeader>
 
             {/* 옵션 이름 (필수) */}
@@ -567,7 +567,7 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
               </div>
             </div>
 
-            {/* 주류 (선택) — 조각 등록창 LiquorSelector 재사용. includes에 주류+구성 함께 담음 */}
+            {/* 주류 (선택) — 파티 등록창 LiquorSelector 재사용. includes에 주류+구성 함께 담음 */}
             <LiquorSelector
               optional
               selected={form.includes.filter((item) => LIQUOR_KEYWORDS.some((kw) => item.includes(kw)))}

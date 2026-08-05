@@ -33,7 +33,7 @@ export default function PreviewPartyPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center gap-4 px-6">
       <h1 className="text-[18px] font-black">파티 리뷰 시트 프리뷰</h1>
       <p className="text-[13px] text-muted-foreground text-center max-w-[300px]">
-        조각 만료 후 참여자에게 뜨는 &ldquo;다녀오셨어요? → 같이 간 사람 평가&rdquo; UI (목업)
+        파티 만료 후 참여자에게 뜨는 &ldquo;다녀오셨어요? → 같이 간 사람 평가&rdquo; UI (목업)
       </p>
       <button
         onClick={() => setOpen(true)}

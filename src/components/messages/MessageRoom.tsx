@@ -408,7 +408,7 @@ export function MessageRoom({
         .eq("puzzle_id", puzzleId)
         .not("leader_chat_started_at", "is", null);
       const n = (count ?? 0) + 1; // 이번이 n번째 대화
-      const label = puzzleInfo.isRecruitingParty ? "조각" : "깃발";
+      const label = puzzleInfo.isRecruitingParty ? "파티" : "깃발";
       if (n > 5) {
         toast.error("한 깃발에서는 최대 5팀과 대화할 수 있어요.");
         return false;
@@ -536,7 +536,7 @@ export function MessageRoom({
           className="flex items-center gap-2 px-4 py-2.5 bg-background border-t border-border/70 active:bg-card"
         >
           <div className="flex-1 min-w-0">
-            {/* 위: 조각 — 날짜 · 지역 · 인당가 / 현재인원 · 깃발 — 날짜 · 인원 · 금액 */}
+            {/* 위: 파티 — 날짜 · 지역 · 인당가 / 현재인원 · 깃발 — 날짜 · 인원 · 금액 */}
             <p className="text-[13px] font-bold text-foreground truncate">
               {puzzleInfo.isRecruitingParty
                 ? [puzzleInfo.dateLabel, puzzleInfo.area, `인당 ${puzzleInfo.perPerson.toLocaleString()}원 / 현재 ${puzzleInfo.currentCount}명`]
@@ -694,7 +694,7 @@ export function MessageRoom({
           </div>
         ) : (
           <div className="px-4 py-4 border-t border-border text-center text-[13px] text-muted-foreground">
-            종료된 {puzzleInfo.isRecruitingParty ? "조각" : "깃발"}이에요. 대화를 더 보낼 수 없어요.
+            종료된 {puzzleInfo.isRecruitingParty ? "파티" : "깃발"}이에요. 대화를 더 보낼 수 없어요.
           </div>
         )
       ) : mdBlocked ? (

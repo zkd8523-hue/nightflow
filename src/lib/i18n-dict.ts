@@ -76,7 +76,7 @@ export const EN_TO_JA: Record<string, string> = {
   "Open KakaoTalk chat": "カカオトークチャットを開く",
   "Per person": "1人あたり",
   "Phone": "電話",
-  "Posted! Offers close at 8pm. You have 60 min to review 🧩": "投稿完了！オファーは20時締め切り。確認に60分あります 🧩",
+  "Posted! Offers close at 8pm. You have 60 min to review 🎉": "投稿完了！オファーは20時締め切り。確認に60分あります 🎉",
   "Reason from admin": "管理者からの理由",
   "Recorded": "記録しました",
   "Recruiting is matched by gender slots. Set your gender to start recruiting.":
@@ -334,7 +334,7 @@ export const EN_TO_ZH: Record<string, string> = {
   "Open KakaoTalk chat": "打开 KakaoTalk 聊天",
   "Per person": "每人",
   "Phone": "电话",
-  "Posted! Offers close at 8pm. You have 60 min to review 🧩": "已发布！报价20点截止。你有60分钟确认 🧩",
+  "Posted! Offers close at 8pm. You have 60 min to review 🎉": "已发布！报价20点截止。你有60分钟确认 🎉",
   "Reason from admin": "管理员说明",
   "Recorded": "已记录",
   "Recruiting is matched by gender slots. Set your gender to start recruiting.":
@@ -619,8 +619,8 @@ export const EN_TO_ZH_TW: Record<string, string> = {
 
   // 깃발 등록 성공/실패 토스트
   "Done! Top clubs will send you offers 🎉": "完成！頂級夜店將發送報價給您 🎉",
-  "Your share is up! Get party members and club offers 🧩": "您的分享已發布！獲取派對成員和夜店報價 🧩",
-  "Posted! Offers close at 8pm. You have 60 min to review 🧩": "已發布！報價於晚上8點截止。您有60分鐘檢視 🧩",
+  "Your share is up! Get party members and club offers 🎉": "您的分享已發布！獲取派對成員和夜店報價 🎉",
+  "Posted! Offers close at 8pm. You have 60 min to review 🎉": "已發布！報價於晚上8點截止。您有60分鐘檢視 🎉",
   "Updated!": "已更新！",
 
   // 성별 게이트

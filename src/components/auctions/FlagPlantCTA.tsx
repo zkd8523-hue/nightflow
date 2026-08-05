@@ -29,7 +29,7 @@ export function FlagPlantCTA({ variant = "list-end", isLoggedIn }: Props) {
   return (
     <div className="flex flex-col items-center gap-2 py-2">
       <p className="text-[12px] text-muted-foreground font-medium">
-        찾는 조각이 없어요? 깃발을 꽂으면 파트너가 오퍼해요
+        찾는 파티가 없어요? 깃발을 꽂으면 파트너가 오퍼해요
       </p>
       <Link
         href={href}

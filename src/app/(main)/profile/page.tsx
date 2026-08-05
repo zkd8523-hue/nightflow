@@ -232,7 +232,7 @@ export default function ProfilePage() {
         {user.role !== "md" && user.role !== "admin" && (
         <>
 
-        {/* 내 깃발/조각 — MD 대시보드 '내 오퍼'와 동일한 탭 구조.
+        {/* 내 깃발/파티 — MD 대시보드 '내 오퍼'와 동일한 탭 구조.
             카드는 홈과 동일하게 페이지 배경 위에 올림(패널 없음) */}
         <div className="mb-6">
           <Tabs value={myTab} onValueChange={(v) => setMyTab(v as "flag" | "share")} className="w-full">
@@ -241,7 +241,7 @@ export default function ProfilePage() {
                 ⛳ 깃발 {flagsOnly.length > 0 && <span className="ml-0.5 text-brand-amber">{flagsOnly.length}</span>}
               </TabsTrigger>
               <TabsTrigger value="share" className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]">
-                🧩 조각 {allShares.length > 0 && <span className="ml-0.5 text-money">{allShares.length}</span>}
+                🎉 파티 {allShares.length > 0 && <span className="ml-0.5 text-money">{allShares.length}</span>}
               </TabsTrigger>
             </TabsList>
 
@@ -325,7 +325,7 @@ export default function ProfilePage() {
           )}
           {allShares.length > 0 ? (
             <div className="flex flex-col gap-3">
-              {/* 모든 내 조각 — 홈과 동일한 카드. 종료는 상태 뱃지, 내가 만든 종료 조각만 삭제 */}
+              {/* 모든 내 파티 — 홈과 동일한 카드. 종료는 상태 뱃지, 내가 만든 종료 파티만 삭제 */}
               {allShares.map(({ flag, joined }, i) => {
                 const active = isActiveStatus(flag.status);
                 const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-muted-foreground" };
@@ -372,13 +372,13 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-[13px] text-muted-foreground">아직 올린 조각이 없어요</p>
+              <p className="text-[13px] text-muted-foreground">아직 올린 파티가 없어요</p>
             </div>
           )}
             </TabsContent>
           </Tabs>
 
-          {/* 제재 정보 — 깃발/조각 공통이라 탭 밖에 둔다 */}
+          {/* 제재 정보 — 깃발/파티 공통이라 탭 밖에 둔다 */}
           {((user.warning_count || 0) > 0 || (user.strike_count || 0) > 0) && (
             <Link
               href="/my-penalties"

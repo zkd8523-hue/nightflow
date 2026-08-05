@@ -63,7 +63,7 @@ export default function AboutPage() {
                     >
                         <div className="text-center">
                             <p className="text-[13px] text-muted-foreground leading-tight">
-                                전국 클럽지도 · 예약 · 조각 · 게스트
+                                전국 클럽지도 · 예약 · 파티 · 게스트
                             </p>
                             <p className="text-[15px] font-black text-foreground leading-tight mt-1">
                                 한눈에 보러가기

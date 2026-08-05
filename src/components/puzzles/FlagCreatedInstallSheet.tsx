@@ -24,7 +24,7 @@ export function FlagCreatedInstallSheet() {
   const eligibleRef = useRef(eligible);
   eligibleRef.current = eligible;
   const [open, setOpen] = useState(false);
-  const [isShare, setIsShare] = useState(false); // 조각 등록 여부 (깃발과 문구 분기)
+  const [isShare, setIsShare] = useState(false); // 파티 등록 여부 (깃발과 문구 분기)
 
   useEffect(() => {
     const onFlagCreated = (e: Event) => {
@@ -59,7 +59,7 @@ export function FlagCreatedInstallSheet() {
           />
           <div className="space-y-1.5">
             <p className="text-lg font-bold text-foreground">
-              {isShare ? "조각 등록 완료! 🧩" : "깃발이 꽂혔어요! 🚩"}
+              {isShare ? "파티 등록 완료! 🎉" : "깃발이 꽂혔어요! 🚩"}
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">
               {isShare

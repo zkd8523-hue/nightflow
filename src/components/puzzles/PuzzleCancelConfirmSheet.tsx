@@ -31,7 +31,7 @@ interface Props {
 }
 
 export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onConfirm, shareMode = false, replantHref, onGoList }: Props) {
-  const kind = shareMode ? "조각" : "깃발";
+  const kind = shareMode ? "파티" : "깃발";
   const [selected, setSelected] = useState<PuzzleCancelReason | null>(null);
   const [text, setText] = useState("");
   // "다른 곳에서 예약" 선택 시 예약 채널
