@@ -420,7 +420,11 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
     //    1개 이상이면 '검토 시작 · 선택하세요' 안내.
     const hasOffers = (offerCount ?? 0) > 0;
     // 조각은 자정 마감 → 검토 마감이 익일 새벽 1시. 문구를 expires_at에서 뽑는다.
-    const kind = puzzle.is_recruiting_party ? "조각" : "깃발";
+    const kind = puzzle.is_recruiting_party ? "파티" : "깃발";
+    // "깃발"은 받침이 있고 "파티"는 없다 — 조사를 낱말에 맞춰 고른다
+    const hasBatchim = (w: string) => (w.charCodeAt(w.length - 1) - 0xac00) % 28 !== 0;
+    const josaI = hasBatchim(kind) ? "이" : "가";
+    const josaEul = hasBatchim(kind) ? "을" : "를";
     const reviewLabel = formatKstHourLabel(puzzle.expires_at);
     await supabase.from("in_app_notifications").insert({
       user_id: puzzle.leader_id,
@@ -428,7 +432,7 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
       title: hasOffers ? "오퍼 마감 · 검토 시작" : "오퍼 마감 · 결과 안내",
       message: hasOffers
         ? `${puzzle.area} ${formatEventDate(puzzle.event_date)} ${kind}의 파트너 오퍼가 마감됐어요. ${reviewLabel}까지 선택해주세요.`
-        : `${puzzle.area} ${formatEventDate(puzzle.event_date)} ${kind}이 들어온 오퍼 없이 마감됐어요. 다음에 다시 ${kind}을 올려보세요.`,
+        : `${puzzle.area} ${formatEventDate(puzzle.event_date)} ${kind}${josaI} 들어온 오퍼 없이 마감됐어요. 다음에 다시 ${kind}${josaEul} 올려보세요.`,
       action_url: `/flags/${puzzle.id}`,
     });
 

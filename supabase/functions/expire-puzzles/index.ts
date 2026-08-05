@@ -80,8 +80,8 @@ serve(async (req: Request) => {
       const [, m, d] = p.event_date.split("-").map(Number);
       return `${p.area} ${m}/${d}`;
     };
-    // 조각(파티원 모집) / 깃발 구분 라벨
-    const kindOf = (p: { is_recruiting_party: boolean | null }) => (p.is_recruiting_party ? "조각" : "깃발");
+    // 파티(파티원 모집) / 깃발 구분 라벨
+    const kindOf = (p: { is_recruiting_party: boolean | null }) => (p.is_recruiting_party ? "파티" : "깃발");
 
     // 방장에게 in-app 알림
     const notifRows = typedExpired.map((p) => ({

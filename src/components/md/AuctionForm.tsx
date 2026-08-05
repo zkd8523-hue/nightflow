@@ -1863,6 +1863,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             value={templateNameDraft}
                             onChange={(e) => setTemplateNameDraft(e.target.value)}
                             maxLength={40}
+                            placeholder="예) 가성비 / 메인 / 초메인"
                             className="bg-card border-border h-11 text-brand-amber font-bold text-sm focus:ring-amber-500"
                         />
                     </div>
@@ -1898,7 +1899,14 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 const v = pendingShareSubmitValues;
                                 setTemplateSaving(true);
                                 try {
-                                    const templateName = templateNameDraft.trim() || `${Math.round((v.price_per_seat || 0) / 10000)}만원/${v.main_alcohol || "주류"}/파티${v.total_seats}`;
+                                    // 자동 생성 이름(17만원/주류/파티6)은 목록에서 서로 구분이 안 돼 쓸모가 없었다.
+                                    // 이름은 MD가 직접 붙이게 한다.
+                                    const templateName = templateNameDraft.trim();
+                                    if (!templateName) {
+                                        toast.error("템플릿 이름을 입력해주세요");
+                                        setTemplateSaving(false);
+                                        return;
+                                    }
                                     // 저장과 동시에 켤 때: 이번 등록의 요일을 기본 선택값으로, 종료일은 4주 후.
                                     const liveFields = turnLiveOnSave
                                         ? (() => {
