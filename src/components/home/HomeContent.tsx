@@ -622,11 +622,15 @@ export function HomeContent({
     [visibleAuctions]
   );
 
-  // 캐러셀(최대 3개) 선발.
-  // - 유저/비로그인: 기존 로직(NEW 우선 → 오퍼 많은 순 → 마감일순).
-  // - MD/Admin: NEW 최우선 → (내 지역∧미제안 > 타 지역∧미제안 > 내가 오퍼함) → 마감일순.
+  // 캐러셀(최대 3개) 선발 — 슬롯 규칙은 로그인 상태와 무관하게 동일.
+  //   1~2번 칸: NEW(6시간 이내) 우선 → 이벤트 날짜 가까운 순  ← 신규 깃발 발견 보장
+  //   3번 칸  : 오퍼 최다 1개                                ← "꽂으면 제안 온다" 소셜 프루프
+  // MD/Admin만 각 후보군 안에서 tie-break 추가:
+  //   내 지역∧미제안(0) > 타 지역∧미제안(1) > 내가 이미 오퍼함(2)
   //   내 지역 판정은 user.area(배열) 중 하나라도 matchesArea면 true → "서울 어디든" 깃발도 잡힘.
+  // 로그아웃 MD도 1~2번 칸에서 신규를 놓치지 않음(오퍼순에 밀리지 않으므로).
   const CAROUSEL_SLOTS = 3;
+  const CAROUSEL_NEW_SLOTS = 2;
   const carouselPuzzles = useMemo(() => {
     const now = Date.now();
     const byEventDate = (a: Puzzle, b: Puzzle) =>
@@ -634,49 +638,36 @@ export function HomeContent({
     const isNew = (p: Puzzle) =>
       now - new Date(p.created_at).getTime() < 6 * 60 * 60 * 1000;
 
-    // ── MD/Admin: 제안 기회 중심 정렬 ──────────────────────────────
-    if (isMdOrAdminUser) {
-      const myAreas = user?.area ?? [];
-      const isMyArea = (p: Puzzle) =>
-        myAreas.length > 0 && myAreas.some((a) => matchesArea(p.area, a));
-      // 작을수록 우선: 내 지역∧미제안(0) > 타 지역∧미제안(1) > 내가 오퍼함(2)
-      const tier = (p: Puzzle) => {
-        if (myOfferedPuzzleIds.has(p.id)) return 2;
-        return isMyArea(p) ? 0 : 1;
-      };
-      const rank = (group: Puzzle[]) =>
-        [...group].sort((a, b) => {
-          const t = tier(a) - tier(b);
-          if (t !== 0) return t;
-          return byEventDate(a, b); // 같은 tier 안에서는 마감(이벤트 날짜) 가까운 순
-        });
+    // MD/Admin 전용 tie-break. 그 외 시청자에게는 항상 0 → 규칙이 완전히 동일해짐.
+    const myAreas = user?.area ?? [];
+    const isMyArea = (p: Puzzle) =>
+      myAreas.length > 0 && myAreas.some((a) => matchesArea(p.area, a));
+    const tier = (p: Puzzle) => {
+      if (myOfferedPuzzleIds.has(p.id)) return 2;
+      return isMyArea(p) ? 0 : 1;
+    };
+    const byMdTier = (a: Puzzle, b: Puzzle) =>
+      isMdOrAdminUser ? tier(a) - tier(b) : 0;
 
-      // NEW 그룹을 절대 앞에 두고, 각 그룹 내부는 tier→마감순으로 정렬.
-      const news = rank(flagPuzzles.filter(isNew));
-      const olds = rank(flagPuzzles.filter((p) => !isNew(p)));
-      return [...news, ...olds].slice(0, CAROUSEL_SLOTS);
-    }
+    // ── 1~2번 칸: NEW 그룹 먼저, 모자라면 나머지로 채움 (둘 다 tier → 날짜순) ──
+    const rank = (group: Puzzle[]) =>
+      [...group].sort((a, b) => byMdTier(a, b) || byEventDate(a, b));
+    const front = [
+      ...rank(flagPuzzles.filter(isNew)),
+      ...rank(flagPuzzles.filter((p) => !isNew(p))),
+    ].slice(0, CAROUSEL_NEW_SLOTS);
 
-    // ── 유저/비로그인: NEW 최우선, NEW 그룹은 최근 등록순(가장 최근이 맨 왼쪽) ──
-    const news = flagPuzzles
-      .filter(isNew)
-      .sort((a, b) => {
-        // 가장 최근에 꽂은 깃발이 가장 왼쪽으로 오도록 created_at 내림차순
-        const recency = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        if (recency !== 0) return recency;
-        const diff = (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
-        return diff !== 0 ? diff : byEventDate(a, b);
-      })
-      .slice(0, CAROUSEL_SLOTS);
-    const remainingSlots = Math.max(0, CAROUSEL_SLOTS - news.length);
-    const picked = flagPuzzles
-      .filter((p) => !isNew(p))
+    // ── 3번 칸: 앞 칸에 뽑히지 않은 것 중 오퍼 최다 1개 ──
+    // 오퍼가 전부 0이면 비교값이 동률 → tier/날짜순 폴백으로 자연스럽게 다음 카드가 들어옴.
+    const frontIds = new Set(front.map((p) => p.id));
+    const [topOffer] = flagPuzzles
+      .filter((p) => !frontIds.has(p.id))
       .sort((a, b) => {
         const diff = (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
-        return diff !== 0 ? diff : byEventDate(a, b);
-      })
-      .slice(0, remainingSlots);
-    return [...news, ...picked];
+        return diff || byMdTier(a, b) || byEventDate(a, b);
+      });
+
+    return (topOffer ? [...front, topOffer] : front).slice(0, CAROUSEL_SLOTS);
   }, [flagPuzzles, puzzleOfferCounts, isMdOrAdminUser, user?.area, myOfferedPuzzleIds]);
 
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)
