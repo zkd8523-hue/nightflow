@@ -70,15 +70,20 @@ export function groupPuzzlesByClub(
   }));
 }
 
-export function ClubDirectCard({ group, showBadge = true }: { group: ClubDirectGroup; showBadge?: boolean }) {
+export function ClubDirectCard({
+  group,
+  showBadge = true,
+  sheetPuzzles,
+}: {
+  group: ClubDirectGroup;
+  showBadge?: boolean;
+  /** 시트에 보여줄 조각 — 카드가 날짜별로 쪼개져 있어도 시트에서는 그 클럽 전체 날짜를 고를 수 있게 */
+  sheetPuzzles?: Puzzle[];
+}) {
   const { clubName, area, thumbnailUrl, puzzles } = group;
+  // 클럽당 파트너 1명 전제(weekly_share_slots)라 아무 조각의 방장이나 같은 사람이다
+  const partnerName = puzzles[0]?.leader?.display_name || puzzles[0]?.leader?.name || null;
   const minPrice = Math.min(...puzzles.map((p) => p.budget_per_person));
-  const seatsRange = (() => {
-    const counts = puzzles.map((p) => p.target_count);
-    const min = Math.min(...counts);
-    const max = Math.max(...counts);
-    return min === max ? `${min}인` : `${min}~${max}인`;
-  })();
   // 미리보기 2줄 — 최저가 순. 마감 임박(1자리 이하)은 빨갛게.
   const preview = puzzles.slice(0, 2);
   const restCount = puzzles.length - preview.length;
@@ -123,12 +128,15 @@ export function ClubDirectCard({ group, showBadge = true }: { group: ClubDirectG
           </div>
           {/* 섹션 헤더가 이미 "클럽 다이렉트"인 목록에선 중복이라 숨긴다(showBadge=false).
               색은 기존 "파트너 직통" 배지와 같은 파랑 — 같은 개념에 새 색을 더하지 않는다. */}
+          {/* 누가 운영하는 자리인지 — 조각은 파트너 개인을 보고 참가하는 성격이 크다 */}
+          {partnerName && (
+            <span className="text-[11px] text-muted-foreground font-bold truncate">by {partnerName}</span>
+          )}
           {showBadge && (
             <span className="self-start inline-flex items-center gap-1 text-[10px] font-black bg-blue-500/15 text-blue-400 rounded-md px-1.5 py-[3px] leading-none">
               <BadgeCheck className="w-3 h-3" />클럽 다이렉트
             </span>
           )}
-          <span className="text-[12px] text-muted-foreground font-bold">{seatsRange}</span>
           <span className="text-[14px] font-black">
             <span className="text-[11px] text-muted-foreground font-bold">인당 </span>
             <span className="text-money">{minPrice.toLocaleString()}원</span>
@@ -180,13 +188,15 @@ export function ClubDirectCard({ group, showBadge = true }: { group: ClubDirectG
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent side="bottom" className="bg-background border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
         <SheetHeader className="px-4 pt-5 pb-0 text-left">
-          <SheetTitle className="text-foreground text-[18px] font-black flex items-center gap-2">
-            {clubName}
-            <span className="text-[15px] leading-none">🧩</span>
-            {area && <span className="text-[12px] text-muted-foreground font-bold">{area}</span>}
+          <SheetTitle className="text-foreground text-[18px] font-black">
+            <Link href={`/clubs/${group.clubId}`} className="inline-flex items-center gap-2 active:scale-95 transition-transform">
+              {clubName}
+              <span className="text-[15px] leading-none">🧩</span>
+              {area && <span className="text-[12px] text-muted-foreground font-bold">{area}</span>}
+            </Link>
           </SheetTitle>
         </SheetHeader>
-        <ClubSharePuzzles puzzles={puzzles} hideTitle />
+        <ClubSharePuzzles puzzles={sheetPuzzles ?? puzzles} hideTitle />
         <div className="px-4 pb-6">
           <Link
             href={isOwner ? "/md/dashboard?tab=share" : `/clubs/${group.clubId}`}

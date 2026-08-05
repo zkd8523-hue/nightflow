@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { normalizeProfileImage } from "@/lib/utils/image";
 import dynamic from "next/dynamic";
 import type { Puzzle } from "@/types/database";
 
@@ -41,11 +43,12 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
 
   const partnerName = puzzles[0]?.leader?.display_name || puzzles[0]?.leader?.name || null;
   const partnerId = puzzles[0]?.leader_id ?? null;
+  const partnerImage = normalizeProfileImage(puzzles[0]?.leader?.profile_image ?? null);
   const minPrice = Math.min(...puzzles.map((p) => p.budget_per_person));
   const maxPrice = Math.max(...puzzles.map((p) => p.budget_per_person));
 
   return (
-    <div className={`px-4 ${hideTitle ? "pt-3 pb-5" : "py-5 border-t border-border"}`}>
+    <div className={`px-4 ${hideTitle ? "pt-1 pb-5" : "py-5 border-t border-border"}`}>
       {!hideTitle && (
         <div className="flex items-baseline gap-2 mb-1">
           <h2 className="text-[16px] font-black text-foreground">조각</h2>
@@ -55,20 +58,23 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
         </div>
       )}
       {partnerName && (
-        <p className="text-[11.5px] text-muted-foreground font-semibold mb-3">
-          파트너{" "}
-          {partnerId ? (
-            <Link
-              href={`/u/${partnerId}`}
-              className="text-foreground font-bold underline underline-offset-2 hover:text-brand-amber transition-colors"
-            >
-              {partnerName}
-            </Link>
-          ) : (
-            <span className="text-foreground font-bold">{partnerName}</span>
-          )}{" "}
-          운영
-        </p>
+        <Link
+          href={partnerId ? `/u/${partnerId}` : "#"}
+          className="flex items-center gap-2.5 hover:opacity-80 transition-opacity mb-3"
+        >
+          <div className="relative w-11 h-11 rounded-md overflow-hidden bg-muted shrink-0 ring-1 ring-amber-500/40">
+            {partnerImage ? (
+              <Image src={partnerImage} alt={partnerName} fill sizes="44px" className="object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-foreground/40 font-black text-lg">
+                {partnerName.charAt(0)}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-foreground font-black text-[15px] truncate leading-tight">{partnerName}</p>
+          </div>
+        </Link>
       )}
 
       {dates.length > 1 && (

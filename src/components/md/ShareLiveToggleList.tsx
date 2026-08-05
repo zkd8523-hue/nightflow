@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Minus, Loader2, ChevronRight, ChevronLeft, Trash2, FolderCog } from "lucide-react";
+import { Plus, Minus, Loader2, ChevronRight, Trash2, FolderCog } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -44,6 +44,19 @@ interface Props {
 }
 
 type TemplateFormState = { club_id: string; category: string; name: string; total_seats: number; price_man: string; includes: string[]; md_comment: string };
+/**
+ * DB 제약 위반 메시지를 사람이 읽을 수 있는 문장으로. 원문(new row for relation ...)이
+ * 그대로 토스트에 뜨면 MD는 무엇을 고쳐야 하는지 알 수 없다.
+ */
+function readableDbError(message: string | undefined, fallback: string): string {
+  if (!message) return fallback;
+  if (message.includes("chk_auction_templates_price"))
+    return `1인 가격은 ${MAX_PRICE_MAN}만원까지예요 — 가격을 먼저 낮춰주세요`;
+  if (message.includes("최대")) return message;          // 개수 상한 트리거는 이미 한글
+  if (/^new row for relation|violates|constraint/i.test(message)) return fallback;
+  return message;
+}
+
 const emptyTemplateForm = (): TemplateFormState => ({ club_id: "", category: "", name: "", total_seats: 6, price_man: "", includes: [], md_comment: "" });
 
 function todayKst(): Date {
@@ -93,7 +106,11 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   const [folderOrder, setFolderOrder] = useState<string[]>([]);
   const [folderManagerOpen, setFolderManagerOpen] = useState(false);
   const [folderDropKey, setFolderDropKey] = useState<string | null>(null);
+  /** 지금 끌고 있는 폴더 이름 — 필터 줄과 폴더 관리가 함께 쓴다 */
+  const [folderDrag, setFolderDrag] = useState<string | null>(null);
   const [managerNewFolder, setManagerNewFolder] = useState("");
+  /** 폴더 관리에서 지금 편집 중인 폴더 */
+  const [managerTarget, setManagerTarget] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -292,7 +309,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       .eq("id", template.id);
     if (error) {
       setRowBusy(null);
-      toast.error(error.message || "저장에 실패했어요");
+      toast.error(readableDbError(error.message, "저장에 실패했어요"));
       return;
     }
     setTemplates((prev) =>
@@ -316,10 +333,12 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
     if (added.length > 0) {
       const { data } = await supabase.rpc("publish_my_share_template", { p_template_id: template.id });
       if (data?.success && data.published > 0) {
+        // 건수는 알리지 않는다 — 화면의 요일 칩은 이번 주만 보여주는데 발행은 앞으로
+        // 7일치라, 숫자가 칩 개수와 안 맞아 "왜 7건이지"가 된다.
         toast.success(
           data.skipped > 0
-            ? `조각 ${data.published}건을 올렸어요 · ${data.skipped}건은 다음 주 자리를 잡아야 올라가요`
-            : `조각 ${data.published}건을 올렸어요`
+            ? "조각이 등록되었어요! · 일부는 다음 주 자리를 잡아야 올라가요"
+            : "조각이 등록되었어요!"
         );
       } else if (data?.success && data.skipped > 0) {
         // 서버가 첫 실패 사유(SQLERRM)를 그대로 보내준다(Migration 512).
@@ -363,7 +382,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       .eq("id", template.id);
     if (error) {
       setRowBusy(null);
-      toast.error(error.message || "저장에 실패했어요");
+      toast.error(readableDbError(error.message, "저장에 실패했어요"));
       return;
     }
     setTemplates((prev) =>
@@ -375,10 +394,12 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       if (data?.success && data.published > 0) {
         // 다음 주 슬롯을 아직 안 잡았으면 그 날짜들은 발행되지 않는다 — 조용히 넘기면
         // "왜 7일치가 아니라 5건이지"가 된다(운영권은 주 단위, Migration 514).
+        // 건수는 알리지 않는다 — 화면의 요일 칩은 이번 주만 보여주는데 발행은 앞으로
+        // 7일치라, 숫자가 칩 개수와 안 맞아 "왜 7건이지"가 된다.
         toast.success(
           data.skipped > 0
-            ? `조각 ${data.published}건을 올렸어요 · ${data.skipped}건은 다음 주 자리를 잡아야 올라가요`
-            : `조각 ${data.published}건을 올렸어요`
+            ? "조각이 등록되었어요! · 일부는 다음 주 자리를 잡아야 올라가요"
+            : "조각이 등록되었어요!"
         );
       } else if (data?.success && data.skipped > 0) {
         toast.error(data.reason || "발행하지 못했어요 — 설정을 확인해주세요");
@@ -413,7 +434,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       .eq("id", template.id);
     setRowBusy(null);
     if (error) {
-      toast.error(error.message || "저장에 실패했어요");
+      toast.error(readableDbError(error.message, "저장에 실패했어요"));
       return;
     }
     setTemplates((prev) => prev.map((t) => (t.id === template.id ? { ...t, live_until: nextUntil } : t)));
@@ -497,7 +518,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       .select("*, club:clubs(id, name, area)")
       .single();
     if (error) {
-      toast.error(error.message?.includes("최대") ? error.message : "복제에 실패했어요");
+      toast.error(readableDbError(error.message, "복제에 실패했어요"));
       return;
     }
     setTemplates((prev) => [...prev, data as AuctionTemplate]);
@@ -601,7 +622,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       .single();
     setCreateBusy(false);
     if (error) {
-      toast.error(error.message?.includes("최대") ? error.message : "저장에 실패했어요");
+      toast.error(readableDbError(error.message, "저장에 실패했어요"));
       return;
     }
     setTemplates((prev) => [...prev, data as AuctionTemplate]);
@@ -684,20 +705,20 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       .eq("id", t.id);
     setRowBusy(null);
     if (error) {
-      toast.error(error.message || "저장에 실패했어요");
+      toast.error(readableDbError(error.message, "저장에 실패했어요"));
       return;
     }
     setTemplates((prev) => prev.map((x) => (x.id === t.id ? { ...x, category: next } : x)));
     toast.success(next ? `"${next}"로 분류했어요` : "분류를 없앴어요");
   };
 
-  /** 폴더 한 칸 위/아래로 — 화면에 보이는 순서를 그대로 저장한다 */
-  const moveFolder = (name: string, dir: -1 | 1) => {
+  /** 끌어다 놓은 자리에 폴더를 꽂는다 — 화면에 보이는 순서를 그대로 저장한다 */
+  const moveFolderTo = (name: string, toIndex: number) => {
     const base = [...usedCategories];
     const at = base.indexOf(name);
-    const to = at + dir;
-    if (at === -1 || to < 0 || to >= base.length) return;
-    [base[at], base[to]] = [base[to], base[at]];
+    if (at === -1 || at === toIndex) return;
+    base.splice(at, 1);
+    base.splice(toIndex, 0, name);
     persistFolderOrder(base);
   };
 
@@ -711,7 +732,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       .eq("id", t.id);
     setRowBusy(null);
     if (error) {
-      toast.error(error.message || "저장에 실패했어요");
+      toast.error(readableDbError(error.message, "저장에 실패했어요"));
       return;
     }
     setTemplates((prev) => prev.map((x) => (x.id === t.id ? { ...x, category: next } : x)));
@@ -823,8 +844,9 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   const hasAnySlot = Array.from(slotStatus.values()).some((s) => s.is_mine);
 
   // 일괄 토글 — 켤 수 있는 것(필수값 있고 운영권 보유)만 대상으로 한다
-  // 필터와 무관하게 전체를 대상으로 한다 — "모두 켜기"는 말 그대로 전부다.
-  const bulkTargets = templates.filter(
+  // 지금 보고 있는 폴더만 대상 — "평일" 탭에서 누른 모두 켜기가 주말 조각까지
+  // 켜면 폴더를 나눈 의미가 없다.
+  const bulkTargets = visibleTemplates.filter(
     (t) => !missingRequired(t) && !(t.club_id && slotStatus.get(t.club_id) && !slotStatus.get(t.club_id)!.is_mine)
   );
   const allOn = bulkTargets.length > 0 && bulkTargets.every((t) => t.is_live);
@@ -979,16 +1001,36 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
               <button
                 key={tab.key}
                 type="button"
+                // 폴더 자체를 끌면 순서 변경 (미분류는 항상 마지막이라 제외)
+                draggable={tab.key !== UNCATEGORIZED}
+                onDragStart={(e) => {
+                  if (tab.key === UNCATEGORIZED) return;
+                  // 유령 이미지를 이 칩으로 고정 — 기본값은 줄 전체가 잡혀 "다 움직인다"로 보인다
+                  const el = e.currentTarget as HTMLElement;
+                  const r = el.getBoundingClientRect();
+                  e.dataTransfer.setDragImage(el, r.width / 2, r.height / 2);
+                  e.dataTransfer.effectAllowed = "move";
+                  setFolderDrag(tab.key);
+                }}
+                onDragEnd={() => setFolderDrag(null)}
                 onClick={() => setCategoryFilter(tab.key)}
                 onDragOver={(e) => {
-                  // 템플릿을 끌고 오는 중이면 여기로 떨어뜨려 분류할 수 있다
-                  if (dragIndex === null) return;
+                  // 템플릿을 끌고 오면 분류, 폴더를 끌고 오면 순서 변경
+                  if (dragIndex === null && !folderDrag) return;
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
                   if (folderDropKey !== tab.key) setFolderDropKey(tab.key);
                 }}
                 onDragLeave={() => setFolderDropKey((k) => (k === tab.key ? null : k))}
                 onDrop={(e) => {
+                  if (folderDrag) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (tab.key !== UNCATEGORIZED) moveFolderTo(folderDrag, usedCategories.indexOf(tab.key));
+                    setFolderDrag(null);
+                    setFolderDropKey(null);
+                    return;
+                  }
                   if (dragIndex === null) return;
                   e.preventDefault();
                   e.stopPropagation();
@@ -999,6 +1041,8 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                   if (t) assignCategory(t, tab.key === UNCATEGORIZED ? null : tab.key);
                 }}
                 className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 h-12 bg-card border rounded-xl hover:bg-muted active:scale-95 transition-all ${
+                  folderDrag === tab.key ? "opacity-40 " : ""
+                }${
                   folderDropKey === tab.key
                     ? "border-amber-500 bg-amber-500/10"
                     : activeTab === tab.key
@@ -1264,7 +1308,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
 
       {/* 분류하기 시트 */}
       {/* 폴더 관리 — 순서·이름·삭제. 꾹 누르기는 모바일에서 잘 안 잡혀 버튼으로 뺐다 */}
-      <Sheet open={folderManagerOpen} onOpenChange={(v) => { if (!v) { setFolderManagerOpen(false); setManagerNewFolder(""); } }}>
+      <Sheet open={folderManagerOpen} onOpenChange={(v) => { if (!v) { setFolderManagerOpen(false); setManagerNewFolder(""); setManagerTarget(null); } }}>
         <SheetContent side="bottom" className="bg-background border-border rounded-t-3xl max-h-[85vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="text-foreground text-[17px] font-black">폴더 관리</SheetTitle>
@@ -1273,36 +1317,69 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
             </SheetDescription>
           </SheetHeader>
 
-          <div className="space-y-2 mt-4">
-            {usedCategories.map((name, i) => (
-              <div key={name} className="flex items-center gap-2 bg-card border border-border rounded-xl p-2">
-                {/* 필터는 가로줄이므로 이동도 좌/우 — 화면과 방향이 다르면 어디로 가는지 예측이 안 된다 */}
-                <div className="flex gap-1">
-                  <button type="button" disabled={i === 0} onClick={() => moveFolder(name, -1)}
-                    className="w-8 h-9 rounded-lg bg-muted text-muted-foreground flex items-center justify-center disabled:opacity-30 active:scale-95 transition">
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button type="button" disabled={i === usedCategories.length - 1} onClick={() => moveFolder(name, 1)}
-                    className="w-8 h-9 rounded-lg bg-muted text-muted-foreground flex items-center justify-center disabled:opacity-30 active:scale-95 transition">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-                <Input
-                  defaultValue={name}
-                  onBlur={(e) => renameFolder(name, e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                  className="flex-1 bg-muted border-transparent h-10 text-foreground font-black text-[13.5px]"
-                />
-                <span className="shrink-0 text-[11px] text-muted-foreground font-bold tabular-nums">
-                  {templates.filter((t) => t.category === name).length}개
-                </span>
-                <button type="button" onClick={() => deleteFolder(name)}
-                  className="shrink-0 w-9 h-9 rounded-lg bg-muted text-red-400 flex items-center justify-center active:scale-95 transition">
-                  <Trash2 className="w-4 h-4" />
+          {/* 실제 필터가 가로줄이므로 여기서도 가로로 늘어놓는다. 순서는 끌어서 바꾼다 —
+              화살표는 양 끝에서 항상 하나가 비활성이라 "왜 안 눌리지"가 됐다. */}
+          <div className="flex gap-2 mt-4 overflow-x-auto scrollbar-hide pb-1">
+            {usedCategories.map((name, i) => {
+              const active = managerTarget === name;
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  draggable
+                  onDragStart={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    const r = el.getBoundingClientRect();
+                    e.dataTransfer.setDragImage(el, r.width / 2, r.height / 2);
+                    e.dataTransfer.effectAllowed = "move";
+                    setFolderDrag(name);
+                  }}
+                  onDragOver={(e) => { if (folderDrag) e.preventDefault(); }}
+                  onDrop={(e) => {
+                    if (!folderDrag) return;
+                    e.preventDefault();
+                    moveFolderTo(folderDrag, i);
+                    setFolderDrag(null);
+                  }}
+                  onDragEnd={() => setFolderDrag(null)}
+                  onClick={() => setManagerTarget(active ? null : name)}
+                  className={`shrink-0 min-w-[92px] flex flex-col items-center justify-center gap-0.5 h-12 px-3 bg-card border rounded-xl active:scale-95 transition-all cursor-grab ${
+                    folderDrag === name ? "opacity-40" : ""
+                  } ${active ? "border-green-500" : "border-border"}`}
+                >
+                  <span className="text-[12.5px] font-black text-foreground truncate max-w-[120px]">{name}</span>
+                  <span className="text-[10px] font-bold text-muted-foreground leading-none">
+                    {templates.filter((t) => t.category === name).length}개
+                  </span>
                 </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          <p className="text-[10.5px] text-muted-foreground font-semibold mt-1.5">
+            꾹 눌러서 순서 변경 · 탭하면 이름 변경·삭제
+          </p>
+
+          {/* 고른 폴더 하나만 편집 — 줄마다 입력칸을 두면 가로줄에 들어가지 않는다 */}
+          {managerTarget && (
+            <div className="mt-3 bg-card border border-border rounded-xl p-2 flex items-center gap-2">
+              <Input
+                key={managerTarget}
+                defaultValue={managerTarget}
+                onBlur={(e) => {
+                  const next = e.target.value.trim();
+                  renameFolder(managerTarget, next);
+                  if (next && next !== managerTarget) setManagerTarget(next);
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                className="flex-1 bg-muted border-transparent h-10 text-foreground font-black text-[13.5px]"
+              />
+              <button type="button"
+                onClick={() => { deleteFolder(managerTarget); setManagerTarget(null); }}
+                className="shrink-0 w-10 h-10 rounded-lg bg-muted text-red-400 flex items-center justify-center active:scale-95 transition">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           <div className="flex gap-2 mt-3">
             <Input

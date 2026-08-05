@@ -598,6 +598,22 @@ export function HomeContent({
       return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
     });
   }, [areaFilteredPuzzles, isDetailMode]);
+
+  /**
+   * "N개 더보기"의 N — 화면에 실제로 깔리는 카드 수.
+   * 파트너 조각은 클럽×날짜로 한 장에 묶이므로(ClubDirectCard) 건수로 세면
+   * 카드 2장인데 15개라고 적히는 일이 생긴다.
+   */
+  const shareCardCount = useMemo(() => {
+    const clubKeys = new Set<string>();
+    let userCount = 0;
+    sharePuzzles.forEach((p) => {
+      if (p.host_is_md && p.club_id) clubKeys.add(`${p.club_id}|${p.event_date}`);
+      else userCount += 1;
+    });
+    return clubKeys.size + userCount;
+  }, [sharePuzzles]);
+
   const areaFilteredShares = useMemo(
     () => visibleAuctions.filter((a) => a.listing_type === "share"),
     [visibleAuctions]
@@ -1230,7 +1246,7 @@ export function HomeContent({
           {showShareTab && (
             <>
               {/* ── 조각 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
-              {renderSectionRow({ icon: "🧩", label: "조각", detailTab: "share", dateLabel: shareHeaderDate, count: sharePuzzles.length })}
+              {renderSectionRow({ icon: "🧩", label: "조각", detailTab: "share", dateLabel: shareHeaderDate, count: shareCardCount })}
 
               {/* 유저 조각(파티원 모집) 캐러셀 — HomePuzzleCarousel 재사용(shareMode) */}
               <div className="mb-2">

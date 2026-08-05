@@ -203,7 +203,10 @@ export function HomePuzzleCarousel({
       >
         {leadGroup && (
           <div className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always">
-            <ClubDirectCard group={leadGroup} />
+            <ClubDirectCard
+              group={leadGroup}
+              sheetPuzzles={puzzles.filter((p) => p.host_is_md && p.club_id === leadGroup.clubId)}
+            />
           </div>
         )}
         {visible.map((puzzle) => {
