@@ -150,8 +150,8 @@ export default function ZhTwGuidePage() {
           </div>
         </section>
         <section className="space-y-3 pt-2">
-          <Link href="/zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
-            獲取 VIP 通道 — 免費註冊
+          <Link href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
+            獲取 VIP 通道 — 無需註冊
           </Link>
           <p className="text-[12px] text-muted-foreground text-center leading-relaxed">
             19+ · 攜帶護照到場

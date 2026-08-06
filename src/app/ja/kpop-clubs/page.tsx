@@ -61,7 +61,7 @@ export default function JaKpopClubsPage() {
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">K-POP観光客向け予約のヒント</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed">ほとんどのK-POP観光客は弘大NB2に直行。可能ですが、週末は90分待ちもあります。入場保証とテーブル予約を希望する場合、NightFlowで予約すれば弘大K-POPクラブに直接連絡し、日本語で席を確保します。</p>
-          <Link href="/ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
+          <Link href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
         </section>
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">関連ガイド</h2>

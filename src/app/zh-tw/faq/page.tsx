@@ -160,7 +160,7 @@ export default function ZhTwFaqPage() {
 
         <section className="space-y-3 pt-4 text-center">
           <Link
-            href="/zh-tw"
+            href="/flags/new?lang=zh-tw"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             🍾 透過 NightFlow 預訂

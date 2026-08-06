@@ -158,7 +158,7 @@ export default function ZhFaqPage() {
 
         <section className="space-y-3 pt-4 text-center">
           <Link
-            href="/zh"
+            href="/flags/new?lang=zh"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             🍾 通过 NightFlow 预订

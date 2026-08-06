@@ -361,7 +361,7 @@ export default function EnglishLanding() {
             Browse Seoul clubs with real prices →
           </Link>
           <Link
-            href="/login?lang=en"
+            href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
             Skip all this — be the VIP
@@ -452,7 +452,7 @@ export default function EnglishLanding() {
             The more you bring, the more VIP the night.
           </p>
           <Link
-            href="/login?lang=en"
+            href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
             Book with NightFlow
@@ -504,10 +504,10 @@ export default function EnglishLanding() {
         {/* CTA */}
         <section className="space-y-3 pt-2">
           <Link
-            href="/login?lang=en"
+            href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
-            Get VIP access — sign up free
+            Get VIP access — no signup needed
           </Link>
           <p className="text-[12px] text-muted-foreground text-center leading-relaxed">
             19+ only · Bring your passport to the venue.

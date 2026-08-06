@@ -108,7 +108,7 @@ export default function ZhTwVipTablesPage() {
           <p className="text-[13px] text-muted-foreground leading-relaxed">
             選好想去的夜店(或者只告訴我們喜好)，填寫日期、人數和預算。NightFlow 直接聯絡夜店，為您鎖定預算內最好的桌位 — 真實價格，真實瓶裝套餐。到場後直接入場。
           </p>
-          <Link href="/zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
+          <Link href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 透過 NightFlow 預訂
           </Link>
         </section>

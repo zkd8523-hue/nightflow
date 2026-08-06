@@ -66,7 +66,7 @@ export default function JaSeoulNightlifePage() {
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">韓国語不要で予約する方法</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed">行きたいソウルクラブを選んでください、または雰囲気だけ伝えてください — 日付・人数・予算と一緒に。NightFlowが直接クラブに連絡し、予算内で一番良い席を確保します。到着後、直接入場。</p>
-          <Link href="/ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
+          <Link href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
         </section>
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">関連ガイド</h2>

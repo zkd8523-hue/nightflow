@@ -101,7 +101,7 @@ export default function JaFaqPage() {
           ))}
         </section>
         <section className="space-y-3 pt-4 text-center">
-          <Link href="/ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
+          <Link href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 NightFlowで予約する
           </Link>
           <p className="text-[12px] text-muted-foreground">19+ · パスポート持参 · 予約手数料なし</p>

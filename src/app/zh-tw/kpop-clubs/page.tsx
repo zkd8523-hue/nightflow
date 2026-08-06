@@ -113,7 +113,7 @@ export default function ZhTwKpopClubsPage() {
           <p className="text-[13px] text-muted-foreground leading-relaxed">
             大多數 K-POP 旅客直接前往弘大 NB2。可行 — 但週末排隊可能 90 分鐘。如果您想確保入場並預訂包廂，通過 NightFlow 預訂，我們會直接聯絡弘大 K-POP 夜店，用中文為您確認座位。
           </p>
-          <Link href="/zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
+          <Link href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 透過 NightFlow 預訂
           </Link>
         </section>

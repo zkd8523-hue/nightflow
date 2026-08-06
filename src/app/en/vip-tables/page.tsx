@@ -164,7 +164,7 @@ export default function EnVipTablesPage() {
             Show up, walk straight in.
           </p>
           <Link
-            href="/en"
+            href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             🍾 Book with NightFlow
