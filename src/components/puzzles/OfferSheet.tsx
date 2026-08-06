@@ -572,6 +572,9 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           {/* 크레딧 안내 */}
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
             <p className="text-[12px] text-brand-amber dark:text-brand-amber/80 leading-relaxed">
+              {puzzle.is_recruiting_party && (
+                <>✓ 뽑히면 <strong className="text-brand-amber">파티원 전원이 있는 단톡방</strong>에서 상담해요.<br /></>
+              )}
               ✓ 오퍼 전송은 무료입니다.<br />
               {offerChatOn ? (
                 <>

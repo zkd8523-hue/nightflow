@@ -34,9 +34,9 @@ export function PartyOnboardingSheet({
     <Sheet open={open} onOpenChange={(v) => { if (!v) close(); }}>
       <SheetContent
         side="bottom"
-        className="h-auto max-h-[92vh] overflow-y-auto bg-background border-border rounded-t-3xl px-5 pt-6 pb-7 gap-0"
+        className="h-auto max-h-[92vh] overflow-y-auto bg-background border-border rounded-t-3xl px-5 pt-5 pb-5 gap-0"
       >
-        <SheetHeader className="text-left p-0 gap-0 mb-3">
+        <SheetHeader className="text-left p-0 gap-0 mb-2.5">
           <SheetTitle className="text-foreground text-[21px] font-black tracking-tight leading-tight">
             혼자 와도 <span className="text-brand-amber text-[26px]">크게 놀 수 있어요</span> 🎉
           </SheetTitle>
@@ -68,7 +68,7 @@ export function PartyOnboardingSheet({
           </div>
         </div>
 
-        <div className="flex justify-center py-1">
+        <div className="flex justify-center py-0.5">
           <ArrowDown className="w-5 h-5 text-brand-amber" />
         </div>
 
@@ -93,13 +93,13 @@ export function PartyOnboardingSheet({
           ))}
         </div>
 
-        <div className="flex justify-center py-1">
+        <div className="flex justify-center py-0.5">
           <ArrowDown className="w-5 h-5 text-brand-amber" />
         </div>
 
-        {/* ③ 크루와 채팅 */}
+        {/* ③ 파티원과 채팅 */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-foreground font-bold">3. 오늘의 크루와 채팅</span>
+          <span className="text-[14px] text-foreground font-bold">3. 파티원들과 채팅</span>
         </p>
         <div className="bg-card rounded-2xl border border-border p-3 space-y-1.5">
           <div className="flex justify-start">
@@ -114,14 +114,32 @@ export function PartyOnboardingSheet({
           </div>
         </div>
 
-        <p className="text-[12.5px] font-black text-brand-amber text-center mt-3">
+        <div className="flex justify-center py-0.5">
+          <ArrowDown className="w-5 h-5 text-brand-amber" />
+        </div>
+
+        {/* ④ 시크릿오퍼 → 파티장 선택 → 파트너 합류 (유저가 연 파티에만 해당) */}
+        <p className="mb-1.5">
+          <span className="text-[14px] text-foreground font-bold">4. 파트너가 채팅방에 합류</span>
+        </p>
+        <div className="bg-card rounded-2xl border border-border p-3 space-y-1.5">
+          <p className="text-[12.5px] text-muted-foreground font-semibold leading-relaxed break-keep">
+            유저가 연 파티에는 파트너들이 <span className="text-brand-amber font-black">시크릿오퍼</span>를 보내요.
+            채팅방에서 파티원끼리 보고 투표한 뒤, 파티장이 고른 파트너가 채팅방에 들어와요.
+          </p>
+          <p className="text-[11.5px] text-muted-foreground font-semibold">
+            오퍼는 이 파티 사람들만 봐요
+          </p>
+        </div>
+
+        <p className="text-[12.5px] font-black text-brand-amber text-center mt-2.5">
           결제는 현장에서 · 언제든 나갈 수 있어요
         </p>
 
         <button
           type="button"
           onClick={close}
-          className="flex items-center justify-center w-full h-14 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black rounded-2xl shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all mt-3.5"
+          className="flex items-center justify-center w-full h-14 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black rounded-2xl shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all mt-2.5"
         >
           <span className="font-black text-[15px]">좋아요! 둘러볼게요</span>
         </button>

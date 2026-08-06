@@ -660,10 +660,12 @@ export function PartyChatRoom({
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-center my-1">
+                  <div className="flex flex-col items-center my-1">
                     <span className="text-[11px] text-muted-foreground bg-card/60 rounded-full px-3 py-1">
                       {renderSystemContent(m.content)}
                     </span>
+                    {/* 신규 오퍼 도착 알림(Migration 530)은 오퍼 카드를 함께 단다 */}
+                    {m.shared_offer_id && renderSharedOffer(m, false)}
                   </div>
                 </Fragment>
               );

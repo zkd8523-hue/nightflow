@@ -76,9 +76,9 @@ export function FlagOnboardingSheet({
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-auto max-h-[92vh] bg-background border-border rounded-t-3xl px-5 pt-6 pb-7 gap-0"
+        className="h-auto max-h-[92vh] bg-background border-border rounded-t-3xl px-5 pt-5 pb-5 gap-0"
       >
-        <SheetHeader className="text-left p-0 gap-0 mb-3">
+        <SheetHeader className="text-left p-0 gap-0 mb-2.5">
           <SheetTitle className="text-foreground text-[21px] font-black tracking-tight leading-tight">
             <span className="text-brand-amber text-[26px]">클럽 예약</span> 나플에서는 이렇게! ⛳
           </SheetTitle>
@@ -98,7 +98,7 @@ export function FlagOnboardingSheet({
           </div>
         </div>
 
-        <div className="flex justify-center py-1">
+        <div className="flex justify-center py-0.5">
           <ArrowDown className="w-5 h-5 text-brand-amber" />
         </div>
 
@@ -134,7 +134,7 @@ export function FlagOnboardingSheet({
           </p>
         </div>
 
-        <div className="flex justify-center py-1">
+        <div className="flex justify-center py-0.5">
           <ArrowDown className="w-5 h-5 text-brand-amber" />
         </div>
 
@@ -163,7 +163,7 @@ export function FlagOnboardingSheet({
             markSeen();
             setOpen(false);
           }}
-          className="flex items-center justify-center w-full h-14 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black rounded-2xl shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all mt-3.5"
+          className="flex items-center justify-center w-full h-14 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black rounded-2xl shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all mt-2.5"
         >
           <span className="font-black text-[15px]">좋아요! 둘러볼게요</span>
         </button>
@@ -174,14 +174,14 @@ export function FlagOnboardingSheet({
     <Sheet open={secretInfoOpen} onOpenChange={setSecretInfoOpen}>
       <SheetContent
         side="bottom"
-        className="h-auto bg-background border-border rounded-t-3xl px-5 pt-6 pb-8 gap-0"
+        className="h-auto bg-background border-border rounded-t-3xl px-5 pt-5 pb-6 gap-0"
       >
-        <SheetHeader className="text-left p-0 gap-0 mb-4">
+        <SheetHeader className="text-left p-0 gap-0 mb-2.5">
           <SheetTitle className="text-foreground text-[19px] font-black tracking-tight">
             💌 시크릿오퍼
           </SheetTitle>
         </SheetHeader>
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {[
             "오퍼는 본인에게만 공개",
             "100% 기밀, 맞춤 패키지",

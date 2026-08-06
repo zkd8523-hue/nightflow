@@ -74,7 +74,7 @@ const EARLYBIRD_ONBOARDING_STEPS = [
   },
 ];
 
-const PUZZLE_ONBOARDING_STEPS = [
+export const PUZZLE_ONBOARDING_STEPS = [
   {
     title: "1. 깃발꽂기",
     desc: "날짜·지역·예산을 자유롭게 정해요.",
@@ -110,7 +110,7 @@ const SECRET_OFFER_INTRO_USER = {
 };
 
 // 유저용 조각 이용방법 (등록 → 시크릿오퍼 → 선택·예약)
-const SHARE_ONBOARDING_STEPS = [
+export const SHARE_ONBOARDING_STEPS = [
   {
     title: "1. 파티 등록",
     desc: "파티를 등록하면\n관심있는 친구들이 채팅방에 합류해요!",
@@ -132,7 +132,7 @@ const SHARE_ONBOARDING_STEPS = [
 ];
 
 // MD 전용 조각 이용방법
-const SHARE_ONBOARDING_STEPS_MD = [
+export const SHARE_ONBOARDING_STEPS_MD = [
   {
     title: "1. 파티 등록",
     desc: "테이블·인원·가격을 입력하면\n링크 하나로 끝!",
@@ -153,7 +153,7 @@ const SHARE_ONBOARDING_STEPS_MD = [
   },
 ];
 
-const PUZZLE_ONBOARDING_STEPS_MD = [
+export const PUZZLE_ONBOARDING_STEPS_MD = [
   {
     title: "1. 입맛 다시기",
     desc: "유저들이 올린 퍼즐/깃발을 살펴봐요.\n예산·인원·날짜 한눈에 확인!",
@@ -162,13 +162,13 @@ const PUZZLE_ONBOARDING_STEPS_MD = [
   },
   {
     title: "2. 시크릿오퍼 제안",
-    desc: "🔒 다른 파트너는 못 봐요 (가격 눈치 X)\n🤫 인스타·연락처 비공개\n👁 방장 한 명만 봐요\n⚔️ 오직 클럽명 + 조건으로 승부!",
+    desc: "🔒 다른 파트너에겐 공개되지 않아요 (가격 눈치 X)\n🤫 인스타·연락처 비공개\n👁 깃발은 방장만, 파티는 파티원까지 봐요\n⚔️ 오직 클럽명 + 조건으로 승부!",
     icon: <span className="text-[20px]">✉️</span>,
     color: "bg-emerald-500/10",
   },
   {
     title: "3. 예약 확정하기",
-    desc: "선택된 파트너님의 연락처만이 방장에게 공개돼요.",
+    desc: "선택된 파트너님의 연락처만 공개돼요.",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
   },

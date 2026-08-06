@@ -886,8 +886,12 @@ export function PuzzleDetailClient({
     <div className="min-h-screen bg-background">
       {/* 첫 진입 안내 — 깃발은 파트너에게 크레딧 구조를, 파트너 파티는 유저에게 "앱에서 결제 없음"을.
           방장 본인에게는 띄우지 않는다(자기 글에서 볼 안내가 아니다). */}
-      {!isRecruitingParty && (isMd || isAdmin) && !isLeader && <OfferCreditGuideSheet />}
-      {isRecruitingParty && puzzle.host_is_md && !isMd && !isAdmin && !isLeader && <ShareJoinGuideSheet />}
+      {(isMd || isAdmin) && !isLeader && !(isRecruitingParty && puzzle.host_is_md) && (
+        <OfferCreditGuideSheet isParty={isRecruitingParty} />
+      )}
+      {isRecruitingParty && !isMd && !isAdmin && !isLeader && (
+        <ShareJoinGuideSheet variant={puzzle.host_is_md ? "direct" : "party"} />
+      )}
 
       {/* 관리자 전용: 일반 유저 화면 미리보기 토글 — 관리자 전용 UI(식별정보/강제철회 등)를 숨기고 유저가 보는 그대로 확인 */}
       {isRealAdmin && (
@@ -939,7 +943,7 @@ export function PuzzleDetailClient({
           )}
         </div>
 
-        <div className={`space-y-5 ${(isMd || isAdmin) && canSubmitOffer && !myOffer && !puzzle.host_is_md ? "pb-44" : (isRecruitingParty && isOpen && currentUserId && !isMember && !isLeader && !isMd) || (isRecruitingParty && isOpen && !currentUserId) ? "pb-28" : "pb-10"}`}>
+        <div className={`space-y-5 ${(isMd || isAdmin) && canSubmitOffer && !myOffer && !puzzle.host_is_md ? "pb-44" : (isRecruitingParty && isOpen && currentUserId && !isMember && !isLeader && !isMd) || (isRecruitingParty && (isMember || isLeader) && !isMd && !isAdmin) || (isRecruitingParty && isOpen && !currentUserId) ? "pb-28" : "pb-10"}`}>
           {/* 검토 중 배너 (status = selecting) */}
           {puzzle.status === "selecting" && (
             <SelectingBanner expiresAt={puzzle.expires_at} en={isForeigner} />
@@ -1765,15 +1769,6 @@ export function PuzzleDetailClient({
                   );
                 })}
                 </div>
-                {isRecruitingParty && !isAdmin && (
-                  <Link
-                    href={`/party/${puzzle.id}`}
-                    className="flex items-center justify-center gap-2 w-full py-3 bg-inverse text-inverse-foreground font-black text-[14px] rounded-xl hover:opacity-90 transition-colors"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    {t("채팅방으로 이동하기", "Go to group chat")}
-                  </Link>
-                )}
               </div>
             )}
 
@@ -1783,16 +1778,34 @@ export function PuzzleDetailClient({
                 {/* 시크릿 오퍼 이유 + 소비자 이득 (왜 비공개인지 궁금증 해소) */}
                 <details className="group rounded-xl bg-card/50 border border-border overflow-hidden">
                   <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-brand-amber">
-                    ⓘ {t("오퍼는 방장님에게만 공개!", "Offers shown only to you!", "オファーは主催者だけに公開！", "报价仅向队长公开！")}
+                    ⓘ {isRecruitingParty && isMember
+                      ? t("오퍼는 채팅방에서 볼 수 있어요!", "See the offers in the group chat!", "オファーはチャットルームで見られます！", "在聊天室可以查看报价！")
+                      : isRecruitingParty
+                        ? t("오퍼는 파티원만 볼 수 있어요!", "Offers are for party members only!", "オファーはパーティーメンバーだけが見られます！", "报价仅派对成员可见！")
+                        : t("오퍼는 방장님에게만 공개!", "Offers shown only to the host!", "オファーは主催者だけに公開！", "报价仅向队长公开！")}
                     <span className="ml-auto text-muted-foreground group-open:rotate-180 transition-transform text-[16px] leading-none">▾</span>
                   </summary>
                   <p className="px-3 pb-3 text-[12px] text-muted-foreground leading-relaxed break-keep whitespace-pre-line">
-                    {t(
-                      "다른 유저·파트너는 오퍼를 볼 수 없어요.\n클럽과 MD가 서로 눈치보지 않고, 당일 최선의 패키지를 구성합니다.\n최고의 밤을 골라보세요!",
-                      "Other users and partners can't see the offers.\nClubs and MDs, without second-guessing each other, build their best package for the day.\nPick your best night!",
-                      "他のユーザーやパートナーはオファーを見られません。\nクラブとMDがお互い様子見せず、当日の最善のパッケージを構成します。\n最高の夜を選んでください！",
-                      "其他用户和夜店都看不到报价。\n夜店和MD彼此不用顾忌，为当天组成最好的套餐。\n挑选你最棒的夜晚吧！",
-                    )}
+                    {isRecruitingParty && isMember
+                      ? t(
+                          "여기서는 가려두지만, 채팅방에서는 클럽·금액·구성까지 전부 볼 수 있어요.\n파티원끼리 투표해서 마음에 드는 오퍼를 고를 수 있어요.\n오퍼는 이 파티 사람들만 봐요 — 다른 파트너에겐 공개되지 않아요.",
+                          "They're hidden here, but in the group chat you can see the club, price and everything else.\nParty members vote together on the offer they like.\nCompeting partners can't see each other's offers.",
+                          "ここでは隠していますが、チャットルームではクラブ・金額・構成まですべて見られます。\nパーティーメンバー同士で投票して選べます。\n競合するパートナー同士はお互いのオファーを見られません。",
+                          "这里先隐藏，但在聊天室里可以看到夜店、金额和全部内容。\n派对成员可以一起投票选出喜欢的报价。\n互相竞争的搭档看不到彼此的报价。",
+                        )
+                      : isRecruitingParty
+                        ? t(
+                            "오퍼는 이 파티 사람들만 봐요. 합류하면 파티원끼리 보고 투표할 수 있어요.\n파트너끼리는 서로 뭘 냈는지 몰라서, 눈치보지 않고 당일 최선의 조건이 나와요.",
+                            "Join the party and you can see the offers and vote with the other members.\nCompeting partners can't see each other's offers, so you get their best deal of the day.",
+                            "合流すればパーティーメンバー同士でオファーを見て投票できます。\n競合するパートナー同士はお互いのオファーを見られないので、当日の最善の条件が出ます。",
+                            "加入后就能和其他成员一起查看报价并投票。\n互相竞争的搭档看不到彼此的报价，所以能拿到当天最好的条件。",
+                          )
+                        : t(
+                            "다른 유저·파트너는 오퍼를 볼 수 없어요.\n클럽과 MD가 서로 눈치보지 않고, 당일 최선의 패키지를 구성합니다.\n최고의 밤을 골라보세요!",
+                            "Other users and partners can't see the offers.\nClubs and MDs, without second-guessing each other, build their best package for the day.\nPick your best night!",
+                            "他のユーザーやパートナーはオファーを見られません。\nクラブとMDがお互い様子見せず、当日の最善のパッケージを構成します。\n最高の夜を選んでください！",
+                            "其他用户和夜店都看不到报价。\n夜店和MD彼此不用顾忌，为当天组成最好的套餐。\n挑选你最棒的夜晚吧！",
+                          )}
                   </p>
                 </details>
                 {!offersLoading && pendingOffers.length === 0 && (
@@ -2136,6 +2149,22 @@ export function PuzzleDetailClient({
               >
                 참가하기
               </Button>
+            </div>
+          )}
+
+          {/* 파티 인원 전원(파티장 포함): 채팅방 진입.
+              상세의 오퍼는 일부러 흐려두고 채팅방에서 전문을 보게 하는데, 채팅방으로 가는 길이
+              "파티장 + 오퍼 1건 이상"일 때만 있었다. 파티원은 메시지 탭까지 스스로 찾아가야 했고,
+              파티장도 오퍼가 아직 없으면 들어갈 길이 없었다. */}
+          {isRecruitingParty && (isMember || isLeader) && !isMd && !isAdmin && (
+            <div className="fixed bottom-16 left-0 right-0 z-30 max-w-lg mx-auto px-4 pb-3 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent">
+              <Link
+                href={`/party/${puzzle.id}`}
+                className="flex items-center justify-center gap-2 w-full h-13 bg-inverse text-inverse-foreground font-black text-[15px] rounded-2xl hover:opacity-90 active:scale-[0.98] transition-all shadow-lg"
+              >
+                <MessageCircle className="w-4 h-4" />
+                {t("채팅방으로 이동하기", "Go to group chat", "チャットルームへ移動", "进入聊天室")}
+              </Link>
             </div>
           )}
 
