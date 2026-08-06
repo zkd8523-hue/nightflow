@@ -532,7 +532,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                 className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500/15 border border-amber-500/30 text-brand-amber pointer-events-none"
               >
-                제안 완료
+                오퍼 완료
               </Button>
             ) : puzzle.host_is_md ? (
               /* MD 직통 조각엔 다른 MD가 오퍼 불가 (남의 클럽 직통) → 자세히로 대체해 CTA 높이 통일 */
@@ -549,9 +549,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
                 className="text-[13px] font-bold text-brand-amber hover:text-amber-100 active:scale-[0.97] transition-all shrink-0 [text-shadow:0_0_10px_rgba(245,158,11,0.65)]"
               >
-                {isRecruitingParty
-                  ? "파티줍기 →"
-                  : offerCount > 0 ? "나도 오퍼하기 →" : "먼저 오퍼하기 →"}
+                {offerCount > 0 ? "나도 오퍼하기 →" : "먼저 오퍼하기 →"}
               </button>
             )}
           </div>

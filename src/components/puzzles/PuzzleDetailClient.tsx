@@ -2150,7 +2150,7 @@ export function PuzzleDetailClient({
             </button>
           )}
 
-          {/* MD/Admin 제안하기 버튼 — MD 직통 파티(host_is_md)엔 다른 MD 오퍼 불가 · 스티키 고정(유저 참가하기와 동일 패턴) */}
+          {/* MD/Admin 오퍼하기 버튼 — MD 직통 파티(host_is_md)엔 다른 MD 오퍼 불가 · 스티키 고정(유저 참가하기와 동일 패턴) */}
           {(isMd || isAdmin) && canSubmitOffer && !myOffer && !puzzle.host_is_md && (
             <div
               className="fixed left-0 right-0 z-30 px-4 pointer-events-none"

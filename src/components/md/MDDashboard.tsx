@@ -183,7 +183,7 @@ export function MDDashboard({
     }, []);
     // 내 오퍼 카드의 "..." 수정/삭제 메뉴 — 한 번에 하나만 열림
     const [openOfferMenuId, setOpenOfferMenuId] = useState<string | null>(null);
-    // 내 오퍼 카드의 세부사항(제안가·구성·코멘트) 드롭다운 — 한 번에 하나만 열림
+    // 내 오퍼 카드의 세부사항(오퍼 금액·구성·코멘트) 드롭다운 — 한 번에 하나만 열림
     const [openOfferDetailsId, setOpenOfferDetailsId] = useState<string | null>(null);
     // prop은 서버 스냅샷이라 markSeen 후에도 갱신 안 됨 → 로컬 상태로 "봤음"을 즉시 반영해 재노출 차단
     const [areaOnboardingSeen, setAreaOnboardingSeen] = useState(user.md_onboarding_areas_seen);
@@ -840,7 +840,7 @@ export function MDDashboard({
                                                                     ? "매치됨"
                                                                     : chatStarted
                                                                         ? (mdReplied ? "상담중" : "유저가 답장을 기다리고 있어요")
-                                                                        : "오퍼완료"}
+                                                                        : "오퍼 완료"}
                                                             </span>
                                                         </div>
                                                         {/* 깃발 제목 — 방장이 쓴 헤드라인 (깃발 미리보기 카드와 동일) */}
@@ -923,7 +923,7 @@ export function MDDashboard({
                                                                                 type="button"
                                                                                 onClick={() => {
                                                                                     setOpenOfferMenuId(null);
-                                                                                    if (!confirm("이 제안을 철회하시겠습니까?")) return;
+                                                                                    if (!confirm("이 오퍼를 철회하시겠습니까?")) return;
                                                                                     (async () => {
                                                                                         const supabase = createClient();
                                                                                         const { data, error } = await supabase.rpc("withdraw_offer", { p_offer_id: offer.id });
@@ -948,7 +948,7 @@ export function MDDashboard({
                                                     </div>
                                             </Link>
 
-                                            {/* 세부사항 드롭다운 — 내 제안가·구성·코멘트 (파티는 인원·가격 변동이라 숨김) */}
+                                            {/* 세부사항 드롭다운 — 내 오퍼 금액·구성·코멘트 (파티는 인원·가격 변동이라 숨김) */}
                                             {!isShare && (
                                             <div className="border-t border-border/60">
                                                 <button
@@ -966,7 +966,7 @@ export function MDDashboard({
                                                 {openOfferDetailsId === offer.id && (
                                                 <div className="mt-2 space-y-1.5" onClick={(e) => e.stopPropagation()}>
                                                     <p className="text-[13px] font-black text-brand-amber">
-                                                        내 제안가 {offer.proposed_price.toLocaleString()}원
+                                                        내 오퍼 금액 {offer.proposed_price.toLocaleString()}원
                                                     </p>
                                                     <div className="flex flex-wrap items-center gap-1.5">
                                                     <span className="text-[11px] font-bold text-foreground/80 bg-muted px-2 py-0.5 rounded">{offer.table_type}</span>
@@ -999,7 +999,7 @@ export function MDDashboard({
                                     <p className="text-muted-foreground text-xs px-10 leading-relaxed">
                                         {activePuzzleTab === "share"
                                             ? <>홈 파티 탭에서 유저들이 올린 파티를 확인하고<br/>오퍼를 보내보세요</>
-                                            : <>홈에서 유저들이 꽂은 깃발을 확인하고<br/>제안을 보내보세요</>}
+                                            : <>홈에서 유저들이 꽂은 깃발을 확인하고<br/>오퍼를 보내보세요</>}
                                     </p>
                                     <Link href={activePuzzleTab === "share" ? "/?tab=share" : "/?tab=puzzle"}>
                                         <Button className="rounded-full bg-inverse text-inverse-foreground font-black hover:opacity-90 h-10 px-6 mt-2">

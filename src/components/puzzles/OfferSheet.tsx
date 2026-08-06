@@ -43,7 +43,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   const [selectedIncludes, setSelectedIncludes] = useState<string[]>([]);
   const [comment, setComment] = useState("");
   const [presetOpen, setPresetOpen] = useState(false);
-  // 제안서 보내기 직전 "템플릿으로 저장할까요?" 프롬프트 (레퍼런스: AuctionForm 조각 등록)
+  // 오퍼 보내기 직전 "템플릿으로 저장할까요?" 프롬프트 (레퍼런스: AuctionForm 조각 등록)
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
@@ -94,7 +94,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   const currentBudget = puzzle.current_count === puzzle.target_count
     ? baseBudget
     : Math.round(baseBudget * puzzle.current_count / puzzle.target_count);
-  // 깃발: 예산의 80~120% 범위에서 제안 가능 (조각은 인원 변동으로 currentBudget 그대로 고정)
+  // 깃발: 예산의 80~120% 범위에서 오퍼 가능 (조각은 인원 변동으로 currentBudget 그대로 고정)
   const minPrice = Math.round(currentBudget * 0.8);
   const maxPrice = Math.round(currentBudget * 1.2);
   const [proposedPrice, setProposedPrice] = useState<number>(currentBudget);
@@ -195,11 +195,11 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       return;
     }
     if (currentBudget <= 0) {
-      toast.error(puzzle.is_recruiting_party ? "예산이 0원인 파티에는 제안할 수 없습니다" : "예산이 0원인 깃발에는 제안할 수 없습니다");
+      toast.error(puzzle.is_recruiting_party ? "예산이 0원인 파티에는 오퍼할 수 없습니다" : "예산이 0원인 깃발에는 오퍼할 수 없습니다");
       return;
     }
     if (!puzzle.is_recruiting_party && (proposedPrice < minPrice || proposedPrice > maxPrice)) {
-      toast.error(`제안가는 예산의 ±20% 사이여야 해요 (${minPrice.toLocaleString()}원 ~ ${maxPrice.toLocaleString()}원)`);
+      toast.error(`오퍼 금액은 예산의 ±20% 사이여야 해요 (${minPrice.toLocaleString()}원 ~ ${maxPrice.toLocaleString()}원)`);
       return;
     }
     if (!puzzle.is_recruiting_party && selectedIncludes.length === 0) {
@@ -243,7 +243,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   };
 
   const performSubmit = async () => {
-    // 조각은 예산 고정, 깃발은 사용자가 조정한 제안가(예산의 80~120%) 사용
+    // 조각은 예산 고정, 깃발은 사용자가 조정한 오퍼 금액(예산의 80~120%) 사용
     const finalPrice = puzzle.is_recruiting_party ? currentBudget : proposedPrice;
     // 같은 구성 재제출 시 프롬프트 재노출/중복 저장 방지
     setLastLoadedKey(JSON.stringify({ i: selectedIncludes, c: comment.trim() }));
@@ -268,7 +268,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
       if (error) throw error;
       if (!data?.success) {
-        toast.error(data?.error || (editingOffer ? "수정에 실패했습니다" : "제안에 실패했습니다"));
+        toast.error(data?.error || (editingOffer ? "수정에 실패했습니다" : "오퍼 전송에 실패했습니다"));
         return;
       }
 
@@ -277,13 +277,13 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         proposed_price: finalPrice,
       });
 
-      toast.success(editingOffer ? "제안이 수정되었습니다." : "제안서가 전송되었습니다! 방장의 채팅을 기다려주세요!");
+      toast.success(editingOffer ? "오퍼가 수정되었습니다." : "오퍼를 보냈어요! 방장의 채팅을 기다려주세요!");
       onSubmitted?.();
       onClose();
     } catch (err: unknown) {
       console.error("submit_offer error:", JSON.stringify(err));
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
-      toast.error(`제안 실패: ${msg}`);
+      toast.error(`오퍼 실패: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -400,10 +400,10 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           </div>
 
 
-          {/* 제안 금액 (예산의 80~120%) — 파티(파티원 모집)은 인원에 따라 총액이 변동되므로 숨김 */}
+          {/* 오퍼 금액 (예산의 80~120%) — 파티(파티원 모집)은 인원에 따라 총액이 변동되므로 숨김 */}
           {!puzzle.is_recruiting_party && (
           <div className="space-y-2">
-            <p className="text-[11px] font-bold text-muted-foreground tracking-wide">제안 금액</p>
+            <p className="text-[11px] font-bold text-muted-foreground tracking-wide">오퍼 금액</p>
             <div className="bg-card border border-border rounded-xl h-11 px-4 flex items-center gap-2">
               <input
                 type="text"
@@ -418,7 +418,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               <span className="text-[13px] text-muted-foreground font-bold shrink-0">원</span>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              예산의 ±20%로 제안할 수 있어요 ({minPrice.toLocaleString()}원 ~ {maxPrice.toLocaleString()}원)
+              예산의 ±20%로 오퍼할 수 있어요 ({minPrice.toLocaleString()}원 ~ {maxPrice.toLocaleString()}원)
             </p>
           </div>
           )}
@@ -572,7 +572,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           {/* 크레딧 안내 */}
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
             <p className="text-[12px] text-brand-amber dark:text-brand-amber/80 leading-relaxed">
-              ✓ 제안 전송은 무료입니다.<br />
+              ✓ 오퍼 전송은 무료입니다.<br />
               {offerChatOn ? (
                 <>
                   ✓ 매칭되면 <strong className="text-brand-amber">{matchCost} 크레딧</strong> 1회 ({puzzle.is_recruiting_party ? "상담 시작 또는 수락 시" : "대화 첫 답장 또는 수락 시"})<br />
@@ -593,8 +593,8 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             >
               <p className="text-[12px] text-red-400 leading-relaxed">
                 {offerChatOn
-                  ? `${puzzle.is_recruiting_party ? "상담하려면" : "대화 답장하려면"} 크레딧이 필요해요 (${credits}/${matchCost}). 제안은 지금도 무료로 보낼 수 있어요.`
-                  : `크레딧이 부족합니다 (${credits}/30). 충전 후 제안할 수 있어요.`}
+                  ? `${puzzle.is_recruiting_party ? "상담하려면" : "대화 답장하려면"} 크레딧이 필요해요 (${credits}/${matchCost}). 오퍼는 지금도 무료로 보낼 수 있어요.`
+                  : `크레딧이 부족합니다 (${credits}/30). 충전 후 오퍼할 수 있어요.`}
               </p>
               <span className="flex items-center gap-0.5 shrink-0 text-[12px] font-black text-brand-amber">
                 충전 <ArrowRight className="w-3.5 h-3.5" />
@@ -607,7 +607,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             disabled={loading || myClubs.length === 0 || currentBudget <= 0 || (!puzzle.is_recruiting_party && (proposedPrice < minPrice || proposedPrice > maxPrice)) || (puzzle.is_recruiting_party ? !comment.trim() : selectedIncludes.length === 0) || (!editingOffer && !offerChatOn && credits !== null && credits < 30)}
             className="w-full h-13 bg-inverse hover:opacity-90 text-inverse-foreground font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
-            {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "제안서 보내기")}
+            {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "오퍼 보내기")}
           </Button>
         </div>
       </SheetContent>
@@ -621,7 +621,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       kind={offerKind}
     />
 
-    {/* 제안서 보내기 직전 "템플릿으로 저장할까요?" — 예/아니오 모두 실제 전송으로 이어짐 */}
+    {/* 오퍼 보내기 직전 "템플릿으로 저장할까요?" — 예/아니오 모두 실제 전송으로 이어짐 */}
     <Sheet
       open={showSavePrompt}
       onOpenChange={(o) => {
@@ -636,7 +636,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         <SheetHeader className="text-left pb-2 p-0">
           <SheetTitle className="text-foreground text-[17px] font-black">이 구성을 템플릿으로 저장할까요?</SheetTitle>
         </SheetHeader>
-        <p className="text-muted-foreground text-[13px] mb-4">다음 제안 때 한 번에 불러올 수 있어요.</p>
+        <p className="text-muted-foreground text-[13px] mb-4">다음 오퍼 때 한 번에 불러올 수 있어요.</p>
 
         {/* 이미 저장된 템플릿 (참고용, 접이식) — 중복 저장/한도 인지 */}
         {existingPresets.length > 0 && (
