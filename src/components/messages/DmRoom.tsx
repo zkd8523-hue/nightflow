@@ -13,10 +13,24 @@ import { useDmThread } from "@/hooks/useDmThread";
 import type { DmMessage } from "@/types/dm";
 import { ChatAttachMenu } from "@/components/chat/ChatAttachMenu";
 import { SwipeToReply } from "@/components/chat/SwipeToReply";
+import { ContactCardMessage, isContactCardContent } from "@/components/messages/ContactCardMessage";
+import { ContactPickerButton } from "@/components/messages/ContactPickerButton";
+import type { ContactMethodType } from "@/types/database";
+
+interface MeProfile {
+  id: string;
+  instagram?: string | null;
+  phone?: string | null;
+  kakao_open_chat_url?: string | null;
+  preferred_contact_methods?: ContactMethodType[] | null;
+}
 
 interface Props {
   threadId: string;
   currentUserId?: string;
+  /** 연락처 남기기(인스타/카톡/전화) 기능용 — MessageRoom과 동일 */
+  me?: MeProfile;
+  isMd?: boolean;
   onRequireLogin?: () => void;
 }
 
@@ -42,7 +56,7 @@ function formatDateDivider(d: Date) {
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEKDAYS[d.getDay()]}요일`;
 }
 
-export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
+export function DmRoom({ threadId, currentUserId, me, isMd = false, onRequireLogin }: Props) {
   const router = useRouter();
   const { thread, messages, loading, send } = useDmThread(threadId, currentUserId);
   // 입력 포커스 중엔 하단 네비를 숨겨 키보드와 겹치지 않게 (와글과 동일)
@@ -191,9 +205,13 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
                     )}
                     {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                     {m.content && (
-                      <p className="text-[14px] leading-snug whitespace-pre-wrap break-words">
-                        {m.content}
-                      </p>
+                      isContactCardContent(m.content) ? (
+                        <ContactCardMessage content={m.content} />
+                      ) : (
+                        <p className="text-[14px] leading-snug whitespace-pre-wrap break-words">
+                          {m.content}
+                        </p>
+                      )
                     )}
                   </div>
                   </SwipeToReply>
@@ -214,6 +232,12 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
 
       {/* 입력 — 수락 게이트 없이 항상 노출 (Migration 470) */}
       <div className="shrink-0 bg-background border-t border-border">
+          {/* 연락처 남기기(인스타/카톡/전화) — 오퍼 채팅과 동일 기능 */}
+          {me && (
+            <div className="flex gap-2 px-3 pt-2.5 overflow-x-auto no-scrollbar">
+              <ContactPickerButton me={me} isMd={isMd} onSend={(content) => send(content)} />
+            </div>
+          )}
           {replyTarget && (
             <div className="flex items-center gap-2 px-3 pt-3">
               <div className="flex-1 min-w-0 pl-2 border-l-2 border-amber-400">

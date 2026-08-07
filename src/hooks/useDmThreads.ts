@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { DmThread, DmCounterpart } from "@/types/dm";
+import type { DmThread, DmCounterpart, DmPuzzleContext } from "@/types/dm";
 
 /**
  * 현재 유저의 DM 스레드 목록 — 최근 메시지순.
@@ -38,8 +38,10 @@ export function useDmThreads(currentUserId?: string) {
       ...new Set(list.map((t) => (t.requester_id === currentUserId ? t.recipient_id : t.requester_id))),
     ];
     const threadIds = list.map((t) => t.id);
+    // 파티에서 시작된 DM 묶기용 (Migration 535) — 메시지함에서 어느 파티 건인지 라벨/그룹핑
+    const puzzleIds = [...new Set(list.map((t) => t.context_puzzle_id).filter((id): id is string => !!id))];
 
-    const [{ data: profs }, { data: msgs }] = await Promise.all([
+    const [{ data: profs }, { data: msgs }, { data: puzzles }] = await Promise.all([
       supabase.from("public_user_profiles").select("id, display_name, profile_image").in("id", otherIds),
       supabase
         .from("dm_messages")
@@ -47,9 +49,16 @@ export function useDmThreads(currentUserId?: string) {
         .in("thread_id", threadIds)
         .eq("is_deleted", false)
         .order("created_at", { ascending: false }),
+      puzzleIds.length > 0
+        ? supabase
+            .from("puzzles")
+            .select("id, area, event_date, status, is_recruiting_party, budget_per_person, total_budget")
+            .in("id", puzzleIds)
+        : Promise.resolve({ data: [] as DmPuzzleContext[] }),
     ]);
 
     const pMap = new Map((profs ?? []).map((p) => [p.id, p as DmCounterpart]));
+    const puzzleMap = new Map((puzzles ?? []).map((p) => [p.id, p as DmPuzzleContext]));
     const lastMap = new Map<string, string>();
     // 안읽음 개수 = 상대가 보냈고 read_at이 비어 있는 메시지 (Migration 484 mark_dm_read)
     const unreadMap = new Map<string, number>();
@@ -69,6 +78,7 @@ export function useDmThreads(currentUserId?: string) {
           counterpart: pMap.get(otherId),
           last_message: lastMap.get(t.id) ?? null,
           unread_count: unreadMap.get(t.id) ?? 0,
+          puzzle: t.context_puzzle_id ? puzzleMap.get(t.context_puzzle_id) ?? null : null,
         };
       })
     );

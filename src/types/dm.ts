@@ -21,6 +21,17 @@ export interface DmCounterpart {
   profile_image: string | null;
 }
 
+/** DM이 시작된 파티(깃발/조각) 컨텍스트 — 메시지함 그룹핑용 (Migration 535) */
+export interface DmPuzzleContext {
+  id: string;
+  area: string;
+  event_date: string;
+  status: string;
+  is_recruiting_party: boolean;
+  budget_per_person: number;
+  total_budget: number | null;
+}
+
 export interface DmThread {
   id: string;
   requester_id: string;
@@ -28,6 +39,8 @@ export interface DmThread {
   status: DmStatus;
   source: string;
   shot_id: string | null;
+  /** 마지막으로 이 DM을 촉발한 파티 (Migration 535) */
+  context_puzzle_id: string | null;
   created_at: string;
   accepted_at: string | null;
   last_message_at: string;
@@ -37,4 +50,6 @@ export interface DmThread {
   last_message?: string | null;
   /** 안읽은 메시지 개수 (Migration 484 · 카톡식 N 뱃지) */
   unread_count?: number;
+  /** context_puzzle_id 조인 결과 (목록 그룹핑용, Migration 535) */
+  puzzle?: DmPuzzleContext | null;
 }

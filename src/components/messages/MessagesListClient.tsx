@@ -14,6 +14,7 @@ import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
 import { useDmThreads } from "@/hooks/useDmThreads";
 import { UnreadBadge, unreadCountOf } from "@/components/chat/UnreadBadge";
 import { contactCardPreview } from "@/components/messages/ContactCardMessage";
+import type { DmThread } from "@/types/dm";
 
 function formatDate(d: string): string {
   try {
@@ -49,6 +50,52 @@ function previewText(content: string | null | undefined, fallback: string): stri
 // 종료된 대화(만료/거절/철회)는 읽을 수 없으므로 미읽음 집계에서 제외
 function isClosedStatus(status: string): boolean {
   return status === "expired" || status === "rejected" || status === "withdrawn";
+}
+
+// DM이 시작된 파티 헤더 라벨 — 깃발/파티 헤더와 같은 톤(날짜 · 지역 · 예산)
+function dmPartyHeaderLabel(puzzle: DmThread["puzzle"]): string {
+  if (!puzzle) return "파티";
+  const budgetText = puzzle.total_budget ? ` · ${Math.round(puzzle.total_budget / 10000)}만원` : "";
+  return `${formatDate(puzzle.event_date)} · ${puzzle.area}${budgetText}`;
+}
+
+function dmPartyHref(puzzle: DmThread["puzzle"], puzzleId: string): string {
+  return puzzle?.is_recruiting_party ? `/party/${puzzleId}` : `/flags/${puzzleId}`;
+}
+
+// 메시지(DM) 탭 한 행 — 단독 대화든 파티 그룹 안 대화든 동일하게 사용
+function DmThreadRow({ thread, dim, subtitle }: { thread: DmThread; dim?: boolean; subtitle?: string }) {
+  const name = thread.counterpart?.display_name ?? "익명";
+  return (
+    <Link
+      href={`/dm/${thread.id}`}
+      className={`flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-card transition-colors ${dim ? "opacity-50" : ""}`}
+    >
+      <div className="relative w-11 h-11 rounded-full overflow-hidden bg-muted shrink-0">
+        {thread.counterpart?.profile_image ? (
+          <Image src={thread.counterpart.profile_image} alt="" fill sizes="44px" className="object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-foreground/60 text-[14px] font-black">
+            {name.charAt(0)}
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-foreground text-[14px] font-black truncate">{name}</span>
+        </div>
+        {subtitle && <p className="text-[11px] text-muted-foreground truncate">{subtitle}</p>}
+        <p className={`text-[13px] truncate ${(thread.unread_count ?? 0) > 0 ? "text-foreground/90 font-semibold" : "text-muted-foreground"}`}>
+          {previewText(thread.last_message, "")}
+        </p>
+      </div>
+      {(thread.unread_count ?? 0) > 0 ? (
+        <UnreadBadge count={thread.unread_count ?? 0} className="shrink-0" />
+      ) : (
+        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+      )}
+    </Link>
+  );
 }
 
 export function MessagesListClient() {
@@ -180,6 +227,46 @@ export function MessagesListClient() {
     [sections]
   );
 
+  // 메시지(DM) 탭: 파티에서 시작된 대화는 그 파티별로 묶고(Migration 535 context_puzzle_id),
+  // 파티가 이미 매칭/종료됐으면 "지난 대화"로 내려 접어둔다. 파티 무관 DM은 그대로 개별 표시.
+  const [dmClosedOpen, setDmClosedOpen] = useState(false);
+  const dmFeed = useMemo(() => {
+    const openGroups = new Map<string, typeof dmThreads>();
+    const closed: typeof dmThreads = [];
+    const singles: typeof dmThreads = [];
+
+    for (const t of dmThreads) {
+      if (!t.context_puzzle_id) {
+        singles.push(t);
+        continue;
+      }
+      if (t.puzzle && (t.puzzle.status === "open" || t.puzzle.status === "selecting")) {
+        const arr = openGroups.get(t.context_puzzle_id);
+        if (arr) arr.push(t);
+        else openGroups.set(t.context_puzzle_id, [t]);
+      } else {
+        // 파티가 매칭/취소/만료됐거나(또는 삭제돼 조인 실패) → 지난 대화로
+        closed.push(t);
+      }
+    }
+
+    type FeedItem =
+      | { kind: "thread"; thread: (typeof dmThreads)[number]; sortAt: number }
+      | { kind: "group"; puzzleId: string; threads: typeof dmThreads; sortAt: number };
+    const items: FeedItem[] = [
+      ...singles.map((t): FeedItem => ({ kind: "thread", thread: t, sortAt: new Date(t.last_message_at).getTime() })),
+      ...Array.from(openGroups.entries()).map(([puzzleId, threads]): FeedItem => ({
+        kind: "group",
+        puzzleId,
+        threads,
+        sortAt: Math.max(...threads.map((t) => new Date(t.last_message_at).getTime())),
+      })),
+    ];
+    items.sort((a, b) => b.sortAt - a.sortAt);
+
+    return { items, closed };
+  }, [dmThreads]);
+
   // 탭별 안읽음 합계 (카톡식 N 뱃지)
   const dmUnread = useMemo(
     () => dmThreads.reduce((sum, t) => sum + (t.unread_count ?? 0), 0),
@@ -294,40 +381,50 @@ export function MessagesListClient() {
           <p className="text-center text-[13px] text-muted-foreground mt-16">메시지가 없어요</p>
         ) : (
           <div className="px-2 pt-1">
-            {dmThreads.map((t) => {
-              const name = t.counterpart?.display_name ?? "익명";
-              return (
-                <Link
-                  key={t.id}
-                  href={`/dm/${t.id}`}
-                  className="flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-card transition-colors"
-                >
-                  <div className="relative w-11 h-11 rounded-full overflow-hidden bg-muted shrink-0">
-                    {t.counterpart?.profile_image ? (
-                      <Image src={t.counterpart.profile_image} alt="" fill sizes="44px" className="object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-foreground/60 text-[14px] font-black">
-                        {name.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-foreground text-[14px] font-black truncate">{name}</span>
-                      {/* 수락 게이트 폐지(Migration 470) — 신청/대기중 배지 없음 */}
-                    </div>
-                    <p className={`text-[13px] truncate ${(t.unread_count ?? 0) > 0 ? "text-foreground/90 font-semibold" : "text-muted-foreground"}`}>
-                      {previewText(t.last_message, "")}
+            {dmFeed.items.map((item) =>
+              item.kind === "thread" ? (
+                <DmThreadRow key={item.thread.id} thread={item.thread} />
+              ) : (
+                <div key={item.puzzleId} className="mb-1">
+                  {/* 파티 헤더 — 이 파티에서 시작된 파트너 1:1 대화들을 묶음 */}
+                  <Link
+                    href={dmPartyHref(item.threads[0].puzzle, item.puzzleId)}
+                    className="flex items-center justify-between gap-2 px-4 py-2.5 bg-card/40 active:bg-card rounded-xl"
+                  >
+                    <p className="text-[13px] font-bold text-foreground/80 truncate">
+                      {dmPartyHeaderLabel(item.threads[0].puzzle)}
                     </p>
-                  </div>
-                  {(t.unread_count ?? 0) > 0 ? (
-                    <UnreadBadge count={t.unread_count ?? 0} className="shrink-0" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                  )}
-                </Link>
-              );
-            })}
+                    <span className="shrink-0 text-[11px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-bold">
+                      {item.threads.length}명과 대화중
+                    </span>
+                  </Link>
+                  {item.threads.map((t) => (
+                    <DmThreadRow key={t.id} thread={t} />
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* 매칭/취소/만료로 끝난 파티의 1:1 대화 — 맨 아래 접힌 드롭다운으로 정리 */}
+            {dmFeed.closed.length > 0 && (
+              <div className="mt-2 border-t border-border">
+                <button
+                  onClick={() => setDmClosedOpen((v) => !v)}
+                  className="w-full flex items-center justify-between gap-2 px-4 py-3.5 active:bg-card/60"
+                >
+                  <span className="text-[13px] font-bold text-muted-foreground">
+                    지난 대화 {dmFeed.closed.length}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-muted-foreground transition-transform ${dmClosedOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {dmClosedOpen &&
+                  dmFeed.closed.map((t) => (
+                    <DmThreadRow key={t.id} thread={t} dim subtitle={dmPartyHeaderLabel(t.puzzle) + " · 종료"} />
+                  ))}
+              </div>
+            )}
           </div>
         )
       ) : tab === "share" && partyRooms.length === 0 ? (

@@ -223,6 +223,7 @@ export function PuzzleDetailClient({
 
   const [showJoin, setShowJoin] = useState(false);
   const [showOffer, setShowOffer] = useState(false);
+  const [openingDm, setOpeningDm] = useState(false);
   const [floorPlanOpen, setFloorPlanOpen] = useState(false);
   // admin 전용: 조각 상담(파티챗) 상태 — 초대 MD·선택 오퍼·과금·채팅 활성 (Migration 444)
   const [partyMdStatus, setPartyMdStatus] = useState<{
@@ -727,6 +728,30 @@ export function PuzzleDetailClient({
     } finally {
       setActionLoading(false);
     }
+  };
+
+  /** 파트너 → 방장 1:1 메시지 (Migration 470 수락 게이트 없음 + 535 파티 컨텍스트 태깅) */
+  const handleOpenDm = async () => {
+    if (!currentUserId) {
+      router.push(`/login?redirect=${encodeURIComponent(`/flags/${puzzle.id}`)}`);
+      return;
+    }
+    if (!puzzle.leader_id) return;
+    setOpeningDm(true);
+    const { data, error } = await supabase.rpc("open_dm", {
+      p_recipient_id: puzzle.leader_id,
+      p_shot_id: null,
+      p_puzzle_id: puzzle.id,
+    });
+    setOpeningDm(false);
+    if (error) {
+      const msg = error.message || "";
+      if (msg.includes("blocked")) toast.error("차단된 상대예요");
+      else if (msg.includes("cannot_dm_self")) toast.error("본인에게는 보낼 수 없어요");
+      else toast.error("채팅방을 열지 못했어요");
+      return;
+    }
+    router.push(`/dm/${data}`);
   };
 
   const handleRemoveMember = async (memberId: string) => {
@@ -2195,12 +2220,23 @@ export function PuzzleDetailClient({
                     💳 <strong>{t(isRecruitingParty ? "외국인 파티" : "외국인 깃발", isRecruitingParty ? "International Share" : "International Flag")}</strong> — {t("매칭 시 사용자가 즉시 선결제, 방문 확정 후 정산 (NightFlow 9% 차감 후 송금)", "Prepaid instantly on match, settled after the visit is confirmed (9% NightFlow fee deducted)")}
                   </div>
                 )}
-                <Button
-                  onClick={() => setShowOffer(true)}
-                  className="w-full py-3.5 h-auto rounded-full bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] border border-black/60 shadow-[0_0_20px_rgba(245,158,11,0.45)] active:scale-[0.98] transition-all"
-                >
-                  오퍼하기
-                </Button>
+                <div className="flex items-stretch gap-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenDm}
+                    disabled={openingDm}
+                    className="shrink-0 h-13 px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-card border border-border text-foreground text-[13px] font-black active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    1:1메시지
+                  </button>
+                  <Button
+                    onClick={() => setShowOffer(true)}
+                    className="flex-1 py-3.5 h-auto rounded-full bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] border border-black/60 shadow-[0_0_20px_rgba(245,158,11,0.45)] active:scale-[0.98] transition-all"
+                  >
+                    오퍼하기
+                  </Button>
+                </div>
               </div>
             </div>
           )}
