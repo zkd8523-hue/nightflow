@@ -1,5 +1,4 @@
 import { BottomNav } from "@/components/layout/BottomNav";
-import { ChatUpdateSheet } from "@/components/common/ChatUpdateSheet";
 import { PriceRangeOnboardingSheet } from "@/components/md/PriceRangeOnboardingSheet";
 import { GuestSignPromoGate } from "@/components/md/GuestSignPromoGate";
 import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
@@ -14,7 +13,6 @@ export default function DashboardLayout({
     <>
       <div className="pb-16">{children}</div>
       <BottomNav />
-      <ChatUpdateSheet />
       <PriceRangeOnboardingSheet />
       <GuestSignPromoGate />
       <ShareOnboardingSheet />

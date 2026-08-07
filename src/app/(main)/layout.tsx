@@ -10,7 +10,6 @@ import { VisitConfirmTrigger } from "@/components/puzzles/VisitConfirmTrigger";
 import { PartyReviewTrigger } from "@/components/puzzles/PartyReviewTrigger";
 import { NewOffersAlertSheet } from "@/components/puzzles/NewOffersAlertSheet";
 import { FlagCreatedInstallSheet } from "@/components/puzzles/FlagCreatedInstallSheet";
-import { ChatUpdateSheet } from "@/components/common/ChatUpdateSheet";
 import { InAppBrowserBanner } from "@/components/common/InAppBrowserBanner";
 import { PriceRangeOnboardingSheet } from "@/components/md/PriceRangeOnboardingSheet";
 import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
@@ -130,7 +129,6 @@ export default function MainLayout({
         <VisitConfirmTrigger />
         <PartyReviewTrigger />
         <FlagCreatedInstallSheet />
-        <ChatUpdateSheet />
         <PriceRangeOnboardingSheet />
         {/* 파티 가이드 — 홈에서는 "지금 잡을 수 있는 자리가 있을 때"만 (계정당 1회) */}
         <ShareOnboardingSheet onlyWhenSlotOpen />
