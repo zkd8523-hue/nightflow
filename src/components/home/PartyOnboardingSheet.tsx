@@ -34,7 +34,9 @@ export function PartyOnboardingSheet({
     <Sheet open={open} onOpenChange={(v) => { if (!v) close(); }}>
       <SheetContent
         side="bottom"
-        className="h-auto max-h-[92vh] overflow-y-auto bg-background border-border rounded-t-3xl px-5 pt-5 pb-5 gap-0"
+        // SheetContent 는 flex flex-col 이라 92vh 를 넘기면 자식이 스크롤 대신 눌려서 잘린다
+        // (합류 카드가 overflow-hidden 이라 텍스트가 반만 보였다). shrink 를 막아 스크롤로 넘긴다.
+        className="h-auto max-h-[92vh] overflow-y-auto bg-background border-border rounded-t-3xl px-5 pt-5 pb-5 gap-0 [&>*]:shrink-0"
       >
         <SheetHeader className="text-left p-0 gap-0 mb-2.5">
           <SheetTitle className="text-foreground text-[21px] font-black tracking-tight leading-tight">
@@ -42,12 +44,13 @@ export function PartyOnboardingSheet({
           </SheetTitle>
         </SheetHeader>
 
-        {/* ① 파티 고르기 — 실제 ClubDirectCard 스타일 */}
+        {/* ① 파티 고르기 — 클럽(ClubDirectCard)과 그 안의 자리(ClubSharePuzzles)는
+            사실상 한 동작이다. 카드를 쪼개면 단계가 둘로 보여 실제보다 번거로워 보인다. */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-foreground font-bold">1. 오늘의 파티 고르기</span>
+          <span className="text-[14px] text-foreground font-bold">1. 마음에 드는 파티 고르기</span>
         </p>
-        <div className="bg-card rounded-2xl border border-border p-3 shrink-0">
-          <div className="flex items-center gap-3">
+        <div className="rounded-2xl border border-border overflow-hidden bg-card">
+          <div className="p-3 flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/guide-club-sample.jpg" alt="" className="w-[62px] h-[62px] rounded-xl object-cover shrink-0" />
             <div className="flex-1 min-w-0 flex flex-col gap-1">
@@ -66,22 +69,11 @@ export function PartyOnboardingSheet({
               </span>
             </div>
           </div>
-        </div>
-
-        <div className="flex justify-center py-0.5">
-          <ArrowDown className="w-5 h-5 text-brand-amber" />
-        </div>
-
-        {/* ② 자리 고르기 — 실제 ClubSharePuzzles 행 스타일 */}
-        <p className="mb-1.5">
-          <span className="text-[14px] text-foreground font-bold">2. 마음에 드는 자리 합류</span>
-        </p>
-        <div className="rounded-2xl border border-border overflow-hidden">
           {[
             { name: "가성비", meta: "6인 · 퍼레이드 · 인당 150,000원" },
             { name: "초메인", meta: "5인 · 전광판 · 인당 200,000원" },
-          ].map((x, i) => (
-            <div key={x.name} className={`bg-card px-4 py-3 flex items-center gap-3 ${i > 0 ? "border-t border-border" : ""}`}>
+          ].map((x) => (
+            <div key={x.name} className="px-4 py-3 flex items-center gap-3 border-t border-border">
               <div className="min-w-0 flex-1">
                 <p className="text-[14.5px] font-black text-foreground truncate">{x.name}</p>
                 <p className="text-[11px] text-muted-foreground font-semibold truncate">{x.meta}</p>
@@ -97,9 +89,9 @@ export function PartyOnboardingSheet({
           <ArrowDown className="w-5 h-5 text-brand-amber" />
         </div>
 
-        {/* ③ 파티원과 채팅 */}
+        {/* ② 파티원과 채팅 */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-foreground font-bold">3. 파티원들과 채팅</span>
+          <span className="text-[14px] text-foreground font-bold">2. 파티원들과 채팅</span>
         </p>
         <div className="bg-card rounded-2xl border border-border p-3 space-y-1.5">
           <div className="flex justify-start">
@@ -118,14 +110,14 @@ export function PartyOnboardingSheet({
           <ArrowDown className="w-5 h-5 text-brand-amber" />
         </div>
 
-        {/* ④ 오퍼 도착 → 파티원끼리 선택 → 파트너 합류 (유저가 연 파티에만 해당) */}
+        {/* ③ 오퍼 도착 → 파티원끼리 선택 → 파트너 합류 (유저가 연 파티에만 해당) */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-foreground font-bold">4. 오퍼도 고를 수 있어요!</span>
+          <span className="text-[14px] text-foreground font-bold">3. 오퍼도 고를 수 있어요!</span>
         </p>
         <div className="bg-card rounded-2xl border border-border p-3 space-y-1.5">
-          <p className="text-[12.5px] text-muted-foreground font-semibold leading-relaxed break-keep">
-            채팅방에서 <span className="text-brand-amber font-black">오퍼</span>를 골라,
-            클럽 파트너를 채팅방에 합류시킬 수 있어요!
+          <p className="text-[15px] text-muted-foreground font-semibold leading-relaxed break-keep">
+            <span className="text-brand-amber font-black">오퍼</span>를 고르면
+            클럽 파트너가 채팅방에 합류해요
           </p>
         </div>
 

@@ -63,48 +63,64 @@ export function OfferCreditGuideSheet({
         side="bottom"
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
-        className="bg-background border-border rounded-t-3xl max-h-[90vh] overflow-y-auto px-5 pt-5 pb-5"
+        className="bg-background border-border rounded-t-3xl max-h-[90vh] overflow-y-auto px-5 pt-5 pb-5 gap-0"
       >
+        {/* 파트너가 이 시트에서 가장 먼저 봐야 하는 건 요금이 아니라 이 화면으로 뭘 얻는가다.
+            요금은 버튼 바로 위 한 줄로 내렸다. */}
         <SheetHeader className="text-left p-0 gap-0 mb-0.5">
           <SheetTitle className="text-foreground text-[19px] font-black tracking-tight leading-tight">
-            오퍼는 <span className="text-brand-amber text-[23px]">무료</span>입니다 💬
+            {isParty ? (
+              <>나플로 <span className="text-emerald-400 text-[23px]">조각</span>을 모아보세요!</>
+            ) : (
+              <><span className="text-emerald-400 text-[23px]">깃발</span>을 따고 <span className="text-emerald-400 text-[23px]">매출</span>을 높여보세요!</>
+            )}
           </SheetTitle>
         </SheetHeader>
-        {/* 요금은 한 줄이면 충분하다 — 카드로 키우면 "무료"라는 머리말과 싸운다 */}
-        <p className="text-[12px] text-muted-foreground font-semibold mb-2.5">
-          오직 매칭됐을 때만 <span className="text-brand-amber font-black">{isParty ? 10 : 15} 크레딧</span>이 소모돼요.
-        </p>
 
         {/* 파티는 깃발과 상담 구조가 다르다 — 1:1이 아니라 파티원 전원이 보는 단톡방이고,
-            파티당 파트너는 한 명뿐이다. 모르고 들어가면 1:1처럼 말하게 된다. */}
-        {isParty && (
-          <div className="bg-card border border-border rounded-2xl p-3 space-y-1.5">
-            <p className="text-[12px] font-black text-brand-amber">파티 운용방법</p>
-            {[
-              { n: "1", t: "마음에 드는 파티에 오퍼를 보내요 (파티원 전체가 볼 수 있어요)" },
-              { n: "2", t: "파티원들이 상의하여 오퍼를 선택해요." },
-              { n: "3", t: "채팅방에 초대되어 상담이 시작돼요." },
-            ].map((x) => (
-              <div key={x.n} className="flex items-start gap-2">
-                <span className="shrink-0 w-5 h-5 mt-[1px] rounded-full bg-amber-500/15 text-brand-amber text-[10px] font-black flex items-center justify-center">
-                  {x.n}
-                </span>
-                <p className="min-w-0 flex-1 text-[12.5px] font-black text-foreground leading-snug break-keep">{x.t}</p>
-              </div>
-            ))}
-          </div>
+            파티당 파트너는 한 명뿐이다. 모르고 들어가면 1:1처럼 말하게 된다.
+            깃발은 방장 1인에게만 공개되는 시크릿오퍼다 (OfferSheet.tsx "방장에게만 공개돼요"). */}
+        <div className="bg-card border border-border rounded-2xl p-3 space-y-1.5 mt-2.5">
+          <p className="text-[12px] font-black text-brand-amber">{isParty ? "파티 운용방법" : "이용안내"}</p>
+          {(isParty
+            ? [
+                { n: "1", t: "마음에 드는 파티에 오퍼를 보내요 (파티원 전체가 볼 수 있어요)" },
+                { n: "2", t: "파티원들이 상의하여 오퍼를 선택해요." },
+                { n: "3", t: "채팅방에 초대되어 상담이 시작돼요." },
+              ]
+            : [
+                { n: "1", t: "마음에 드는 깃발에 오퍼를 보내요 (방장에게만 공개돼요)" },
+                { n: "2", t: "방장이 받은 오퍼들을 비교하고 선택해요." },
+                { n: "3", t: "채팅방이 열리고 상담이 시작돼요." },
+              ]
+          ).map((x) => (
+            <div key={x.n} className="flex items-start gap-2">
+              <span className="shrink-0 w-5 h-5 mt-[1px] rounded-full bg-amber-500/15 text-brand-amber text-[10px] font-black flex items-center justify-center">
+                {x.n}
+              </span>
+              <p className="min-w-0 flex-1 text-[12.5px] font-black text-foreground leading-snug break-keep">{x.t}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 파티는 운용방법 3줄이 이미 길다 — 여기에 한 줄 더 붙으면 요금이 접힌다 */}
+        {!isParty && (
+          <p className="mt-3 text-center text-[12.5px] font-black text-foreground">
+            유저가 혹할만한 <span className="text-brand-amber">테이블 구성</span>으로 오퍼해보세요!
+          </p>
         )}
 
-        <p className="mt-2.5 text-center text-[12.5px] font-black text-foreground">
-          유저가 혹할만한 <span className="text-brand-amber">테이블 구성</span>으로 오퍼해보세요!
+        {/* 금액 근거: OfferSheet.tsx(Migration 358) — 깃발 15, 조각 10 크레딧 */}
+        <p className={`text-center text-[11px] text-muted-foreground font-semibold ${isParty ? "mt-3" : "mt-1.5"}`}>
+          무료 오퍼, 매치시에만 <span className="text-brand-amber font-black">{isParty ? 10 : 15} 크레딧</span>
         </p>
 
         <button
           type="button"
           onClick={dismiss}
-          className="w-full h-12 mt-2.5 rounded-xl bg-amber-500 text-black font-black text-[14px] active:scale-95 transition-transform"
+          className="w-full h-12 mt-3 rounded-xl bg-amber-500 text-black font-black text-[14px] active:scale-95 transition-transform"
         >
-          확인, 계속할게요
+          {isParty ? "조각원 모으기" : "확인, 계속할게요"}
         </button>
         <button
           type="button"

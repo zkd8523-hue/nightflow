@@ -29,6 +29,7 @@ import { HotdealMdCta } from "@/components/home/HotdealMdCta";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
 import { PartyOnboardingSheet } from "@/components/home/PartyOnboardingSheet";
+import { OfferCreditGuideSheet } from "@/components/md/OfferCreditGuideSheet";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
 
@@ -1449,9 +1450,18 @@ export function HomeContent({
                 </div>
               )}
               {/* 이용방법 — 탭에 맞는 모달을 연다. 깃발(내 조건 올리기)과 파티(열린 자리 합류)는
-                  흐름이 달라 같은 설명을 돌려쓰면 자기가 뭘 하는지 헷갈린다. */}
+                  흐름이 달라 같은 설명을 돌려쓰면 자기가 뭘 하는지 헷갈린다.
+                  파트너는 보는 각도가 반대다(오퍼를 보내는 쪽) — 상세 첫 진입에서 1회만 뜨고
+                  다시 열 길이 없던 파트너 안내를 여기에 붙인다. manualOpen 이라 계정 플래그는
+                  소모하지 않는다. */}
               {flagGuideOpen && (
-                currentTab === "share" ? (
+                isMdOrAdminUser ? (
+                  <OfferCreditGuideSheet
+                    isParty={currentTab === "share"}
+                    manualOpen
+                    onManualClose={() => setFlagGuideOpen(false)}
+                  />
+                ) : currentTab === "share" ? (
                   <PartyOnboardingSheet manualOpen onManualClose={() => setFlagGuideOpen(false)} />
                 ) : (
                   <FlagOnboardingSheet autoShow={false} manualOpen onManualClose={() => setFlagGuideOpen(false)} />
