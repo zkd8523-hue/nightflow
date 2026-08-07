@@ -66,7 +66,19 @@ export const CLUB_TAG_GROUPS: ClubTagGroupDef[] = [
   },
 ];
 
-export const FILTER_GROUPS = CLUB_TAG_GROUPS.filter((g) => g.isFilter);
+/**
+ * 필터 UI에서만 숨기는 태그 (데이터·등록폼·상세 표시에는 그대로 유지).
+ * pool_party: 해당 클럽이 사실상 1곳(반얀트리 풀파티)뿐이라 필터 칩으로 자리만 차지.
+ */
+const HIDDEN_FILTER_OPTIONS: Partial<Record<ClubTagGroup, string[]>> = {
+  venue_type: ["pool_party"],
+};
+
+export const FILTER_GROUPS = CLUB_TAG_GROUPS.filter((g) => g.isFilter).map((g) => {
+  const hidden = HIDDEN_FILTER_OPTIONS[g.group];
+  if (!hidden) return g;
+  return { ...g, options: g.options.filter((o) => !hidden.includes(o.key)) };
+});
 export const FEATURE_GROUPS = CLUB_TAG_GROUPS.filter((g) => !g.isFilter);
 
 export const AREA_OPTIONS = [

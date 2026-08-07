@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ChevronDown, Info, Check } from "lucide-react";
 import { ForeignClubDetailPanel, displayClubName } from "@/components/clubs/ForeignClubDetailPanel";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
@@ -174,8 +174,20 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
 
   const homeHref = lang === "ko" ? "/" : `/${lang}`;
   const bottomCtaHref = buildFlagHref(lang);
-  const guideTitle = t("서울 클럽 가이드", "Seoul Club Guide", "ソウル クラブガイド", "首尔夜店指南");
-  const clubsSuffix = t("곳", "clubs", "軒", "家");
+  // 검색으로 처음 들어온 외국인이 대부분인데(클럽 목록 도달 후 카드 클릭 14.5%),
+  // 설명이 sr-only에만 있어 사람 눈엔 안 보였음 → 헤더 아래 짧은 안내 노출.
+  const introHeadline = t(
+    "클럽을 고르면 저희가 대신 예약해드려요",
+    "Pick a club — we book it for you",
+    "クラブを選べば、私たちが予約します",
+    "选好夜店,我们帮你预订"
+  );
+  const introSub = t(
+    "실제 가격 그대로, 중개 수수료 없음. 한국어 못해도 괜찮아요.",
+    "Real prices, no broker fee. No Korean needed.",
+    "実際の価格そのまま、仲介手数料なし。韓国語不要。",
+    "真实价格,无中介费。不会韩语也没关系。"
+  );
   const noClubs = t("등록된 클럽이 없습니다.", "No clubs found.", "登録されたクラブがありません。", "暂无登记的夜店。");
   const noImage = t("이미지 없음", "No image", "画像なし", "无图片");
   const notSureCopy = t("어디로 갈지 모르겠나요?", "Not sure where to go?", "どこに行くか迷っていますか？", "不知道去哪家?");
@@ -237,10 +249,95 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
           <Link href={homeHref} className="inline-block text-[13px] text-muted-foreground hover:text-foreground transition-colors">
             ← NightFlow
           </Link>
-          <div className="space-y-1">
-            <h1 className="text-[28px] font-black tracking-tight">{guideTitle}</h1>
-            <p className="text-[13px] text-muted-foreground">{shownCount} {clubsSuffix}</p>
+          {/* 제목 자리에 가치 제안을 바로 노출 — "Seoul Club Guide"는 라벨일 뿐 정보가 없어서
+              처음 온 사람이 여기가 뭐 하는 곳인지 모른 채 목록만 보고 이탈했음.
+              클럽 개수는 아래 줄로 내려 맥락(몇 곳 중에 고르는지)만 유지. */}
+          <div className="space-y-1.5">
+            <h1 className="text-[26px] font-black tracking-tight leading-tight break-keep">{introHeadline}</h1>
+            <p className="text-[13.5px] text-muted-foreground leading-snug break-keep">{introSub}</p>
           </div>
+
+          {/* How it works — /en 홈과 동일한 3단계 안내. 검색으로 처음 들어온 사람이
+              목록만 보고 이탈하지 않도록, 접힌 상태로 두되 원하면 펼쳐볼 수 있게. */}
+          <details className="group rounded-2xl bg-card border border-border overflow-hidden">
+            <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer list-none select-none">
+              <span className="flex items-center gap-2 font-bold text-[14px]">
+                <Info className="w-4 h-4 text-muted-foreground" />
+                {t("이용 방법", "How it works?", "ご利用方法", "使用方法")}
+              </span>
+              <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
+            </summary>
+            <div className="px-4 pb-4 space-y-4">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 pb-3 border-b border-border">
+                {[
+                  t("웃돈 없음", "No markup", "上乗せなし", "无加价"),
+                  t("실제 가격", "Real price", "実際の価格", "真实价格"),
+                  t("수수료 0원", "Zero fee", "手数料ゼロ", "零手续费"),
+                  t("예약금 없음", "No deposit", "デポジット不要", "无押金"),
+                ].map((b) => (
+                  <div key={b} className="flex items-center gap-1.5">
+                    <Check className="w-4 h-4 text-money shrink-0" strokeWidth={3} />
+                    <span className="text-[13px] font-bold text-foreground">{b}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3">
+                {[
+                  {
+                    n: "1",
+                    title: t("클럽 고르기", "Pick your club", "クラブを選ぶ", "选择夜店"),
+                    body: t(
+                      "원하는 클럽을 고르거나 분위기만 알려주세요 — 날짜·예산·인원.",
+                      "Choose the clubs you want (or just tell us your vibe) — date, budget, group size.",
+                      "行きたいクラブを選ぶか、雰囲気だけ教えてください — 日付・予算・人数。",
+                      "选好想去的夜店,或只告诉我们你想要的氛围 — 日期·预算·人数。"
+                    ),
+                  },
+                  {
+                    n: "2",
+                    title: t("대신 예약해드려요", "We book it for you", "私たちが予約します", "我们帮你预订"),
+                    body: t(
+                      "저희가 클럽에 직접 연락해 예산에 맞는 최적의 테이블을 잡아드려요 — 실제 가격, 중개 수수료 없음.",
+                      "We contact the club directly and lock in the best table for your budget — real price, no broker markup.",
+                      "私たちがクラブに直接連絡し、予算に合う最適なテーブルを確保します — 実際の価格、仲介手数料なし。",
+                      "我们直接联系夜店,按你的预算锁定最佳卡座 — 真实价格,无中介加价。"
+                    ),
+                  },
+                  {
+                    n: "3",
+                    title: t("VIP처럼 입장", "Walk in like a VIP", "VIPのように入場", "像VIP一样入场"),
+                    body: t(
+                      "최고의 자리 예약 완료, 줄 설 필요 없음. 입구에서 여권만 보여주세요 (만 19세 이상).",
+                      "Best table booked, no line, no broker. Show your passport at the door (19+).",
+                      "最高の席を予約済み、列に並ぶ必要なし。入口でパスポートをご提示ください（19歳以上）。",
+                      "已订好最佳卡座,无需排队。在门口出示护照即可（19岁以上）。"
+                    ),
+                  },
+                ].map((s) => (
+                  <div key={s.n} className="flex gap-3">
+                    <div className="shrink-0 w-7 h-7 rounded-full bg-inverse text-inverse-foreground font-black text-[12px] flex items-center justify-center">
+                      {s.n}
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[14px]">{s.title}</p>
+                      <p className="text-[12px] text-muted-foreground leading-relaxed break-keep">{s.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="pt-3 border-t border-border">
+                <p className="flex items-center gap-2 text-[13px] font-black text-money">
+                  {t("🛡️ 바가지 제로 보장", "🛡️ Zero rip-off, guaranteed", "🛡️ ぼったくりゼロ保証", "🛡️ 零宰客保证")}
+                </p>
+                <p className="text-[12px] text-muted-foreground leading-relaxed mt-1 break-keep">
+                  {t("정가보다 더 내셨나요?", "Pay more than the standard price?", "標準価格より多く払いましたか？", "付了高于标准价的钱?")}{" "}
+                  <span className="font-bold text-foreground">
+                    {t("200% 환불해드립니다.", "We refund you 200%.", "200%返金します。", "我们退你200%。")}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </details>
 
           {/* 정렬 버튼 (추천순 default = MD 있는 클럽 우선 / 리뷰 많은순 / 평점순) */}
           {totalCount > 0 && (
