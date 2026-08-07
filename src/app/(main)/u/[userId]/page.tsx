@@ -65,9 +65,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
     { data: receivedReviews },
     { data: partyReputation },
   ] = await Promise.all([
-    // 프로필 조회 (공개 필드만)
+    // 프로필 조회 (공개 뷰 — 실명/전화번호 등 비공개 컬럼 원천 차단)
     supabase
-      .from("users")
+      .from("public_user_profiles")
       .select(
         "id, display_name, profile_image, bio, created_at, role, md_unique_slug, md_status, instagram, preferred_music_genres, preferred_areas, kakao_open_chat_url, contact_public, md_avg_rating, md_review_count"
       )

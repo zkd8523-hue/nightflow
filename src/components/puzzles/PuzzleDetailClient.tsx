@@ -59,7 +59,7 @@ const ShareCreatedSheet = dynamic(() => import("./ShareCreatedSheet").then((m) =
 const LeaderInfoSheet = dynamic(() => import("./LeaderInfoSheet").then((m) => ({ default: m.LeaderInfoSheet })), { ssr: false });
 const RecentMatchShowcaseSheet = dynamic(() => import("./RecentMatchShowcaseSheet").then((m) => ({ default: m.RecentMatchShowcaseSheet })), { ssr: false });
 
-interface PuzzleLeaderInfo {
+export interface PuzzleLeaderInfo {
   id: string;
   name: string | null;
   display_name: string | null;
@@ -2013,7 +2013,10 @@ export function PuzzleDetailClient({
           {/* 비방장·비멤버·비MD: 홈 캐러셀과 동일한 깃발꽂기 유도 CTA (비로그인 포함, 파티 상세는 숨김) */}
           {!isLeader && !isMember && !isMd && !isRecruitingParty && (
             <div className="text-center space-y-1">
-              {currentUserId && pendingOffers.length > 0 && !isAccepted && (
+              {/* 비로그인에게도 노출 — 첫 방문자에게 가장 필요한 소셜 프루프.
+                  puzzle_offers RLS("Anyone can view offers", Mig 101)와 get_recent_matched_puzzle RPC
+                  모두 anon 조회가 열려 있어 데이터는 그대로 뜬다. */}
+              {pendingOffers.length > 0 && !isAccepted && (
                 <button
                   type="button"
                   onClick={() => setShowMatchedShowcase(true)}

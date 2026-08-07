@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { PuzzleDetailClient } from "@/components/puzzles/PuzzleDetailClient";
+import { PuzzleDetailClient, type PuzzleLeaderInfo } from "@/components/puzzles/PuzzleDetailClient";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -155,9 +155,12 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
   // 상담 횟수(consultation_count)는 리더 정보 시트에서만 쓰이므로 크리티컬 패스에서 제외 →
   // 클라이언트에서 시트 열 때 지연 조회 (PuzzleDetailClient). SSR blocking 쿼리 4→3.
   const [{ data: leader }, { data: members }, { data: profile }] = await Promise.all([
+    // 공개 뷰 사용 + 실제로 화면에 쓰는 컬럼만 조회.
+    // (기존엔 phone/실명/strike_count 등을 select 해놓고 쓰지 않아, 깃발 상세를 여는
+    //  모든 사람에게 방장 전화번호가 서버 응답으로 나가고 있었다.)
     supabase
-      .from("users")
-      .select("id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked, deal_count_total, deal_amount_total, created_at, gender, last_seen_at, lang, alimtalk_consent, alimtalk_consent_at")
+      .from("public_user_profiles")
+      .select("id, display_name, profile_image, deal_count_total, deal_amount_total, created_at, gender, last_seen_at")
       .eq("id", puzzle.leader_id)
       .maybeSingle(),
     supabase
@@ -179,7 +182,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
         ...puzzle,
         leader: {
           id: leader.id,
-          name: leader.name,
+          name: null, // 실명은 클라이언트로 내려보내지 않음 (표시는 display_name)
           display_name: leader.display_name,
           profile_image: leader.profile_image,
           deal_count_total: leader.deal_count_total ?? 0,
@@ -191,13 +194,27 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
       }
     : puzzle;
 
-  // admin이면 leader의 마지막 접속(auth.last_sign_in_at) 추가 조회
-  let leaderLastSeenAt: string | null = null;
+  // admin 전용 방장 상세 — 실명/전화번호/스트라이크는 admin 모니터링 패널에서만 쓴다.
+  // 일반 조회(위 leader)는 공개 뷰라 이 컬럼들이 없으므로, admin일 때만 users를 직접 읽는다.
+  // ("Admin can read all users" 정책으로 통과. 비admin은 여기 진입 자체를 안 한다.)
+  let adminLeader: PuzzleLeaderInfo | null = null;
   if (profile?.role === "admin" && leader) {
-    const { data } = await supabase.rpc("admin_get_user_last_sign_in_at", {
-      p_user_id: leader.id,
-    });
-    leaderLastSeenAt = (data as string | null) ?? null;
+    const [{ data: lastSignInAt }, { data: full }] = await Promise.all([
+      supabase.rpc("admin_get_user_last_sign_in_at", { p_user_id: leader.id }),
+      supabase
+        .from("users")
+        .select(
+          "id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked, last_seen_at, alimtalk_consent, alimtalk_consent_at"
+        )
+        .eq("id", puzzle.leader_id)
+        .maybeSingle(),
+    ]);
+    if (full) {
+      adminLeader = {
+        ...(full as Omit<PuzzleLeaderInfo, "last_sign_in_at">),
+        last_sign_in_at: (lastSignInAt as string | null) ?? null,
+      };
+    }
   }
 
   return (
@@ -206,13 +223,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
       members={members || []}
       currentUserId={authUser?.id}
       userRole={profile?.role as "user" | "md" | "admin" | undefined}
-      leader={
-        profile?.role === "admin"
-          ? leader
-            ? { ...leader, last_sign_in_at: leaderLastSeenAt }
-            : null
-          : null
-      }
+      leader={adminLeader}
       currentUserKakaoUrl={profile?.kakao_open_chat_url ?? null}
     />
   );

@@ -78,7 +78,7 @@ export function WordVotersSheet({
       setLoading(true);
       const supabase = createClient();
       const { data, error } = await supabase
-        .from("users")
+        .from("public_user_profiles")
         .select("id, display_name, profile_image")
         .in("id", authorIds);
       if (cancelled) return;

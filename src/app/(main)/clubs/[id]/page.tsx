@@ -152,7 +152,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
   // expires_at(=다음 월 18:00, Migration 283)과 등가이므로 중복 필터는 두지 않는다.
   if (slotRow) {
     const { data: mdRow } = await supabase
-      .from("users")
+      .from("public_user_profiles")
       .select("id, display_name, profile_image, instagram, kakao_open_chat_url")
       .eq("id", slotRow.md_id)
       .maybeSingle();

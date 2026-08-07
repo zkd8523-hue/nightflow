@@ -13,14 +13,14 @@ export async function generateMetadata({
   const { slug } = await params;
   const supabase = await createClient();
   const { data: md } = await supabase
-    .from("users")
-    .select("display_name, name, area")
+    .from("public_user_profiles")
+    .select("display_name, area")
     .eq("md_unique_slug", slug)
     .single();
 
   if (!md) return { title: "MD 프로필" };
 
-  const displayName = md.display_name || md.name || "MD";
+  const displayName = md.display_name || "MD";
   const areaPrefix = md.area ? `${md.area} ` : "";
   const title = `${displayName} - ${areaPrefix}클럽 MD·테이블 예약`;
   const description = `${displayName} 나플 파트너 MD 프로필. ${areaPrefix}클럽 테이블 예약·무료입장 게스트, 깃발 꽂고 조건 제안 받기.`;
@@ -53,7 +53,7 @@ export default async function MDPublicProfilePage({
 
     // 1. MD 정보 조회
     const { data: mdUser } = await supabase
-        .from("users")
+        .from("public_user_profiles")
         .select("*")
         .eq("md_unique_slug", slug)
         .single();
@@ -113,7 +113,7 @@ export default async function MDPublicProfilePage({
     const avgRating = (mdUser as { md_avg_rating?: number | null }).md_avg_rating ?? 0;
     const reviewCount = (mdUser as { md_review_count?: number | null }).md_review_count ?? 0;
     const instagram = (mdUser as { instagram?: string | null }).instagram ?? null;
-    const displayName = (mdUser as { display_name?: string | null }).display_name ?? mdUser.name ?? "파트너";
+    const displayName = (mdUser as { display_name?: string | null }).display_name ?? "파트너";
 
     return (
         <div className="min-h-screen bg-background pb-20">

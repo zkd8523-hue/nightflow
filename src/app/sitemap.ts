@@ -167,13 +167,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .order("updated_at", { ascending: false })
         .limit(500),
       // 승인 MD 공개 프로필 — 검색 유입용. 테스트 계정 제외.
+      // 공개 뷰 사용. deleted_at 필터는 뷰 정의(WHERE deleted_at IS NULL)에 이미 포함돼
+      // 있고 뷰에 그 컬럼이 없으므로 여기서 다시 걸지 않는다.
       supabase
-        .from("users")
+        .from("public_user_profiles")
         .select("md_unique_slug, updated_at")
         .eq("md_status", "approved")
         .not("md_unique_slug", "is", null)
         .eq("is_test", false)
-        .is("deleted_at", null)
         .limit(500),
     ]);
 

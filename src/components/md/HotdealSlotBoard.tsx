@@ -322,13 +322,13 @@ export function HotdealSlotBoard({
     let cancelled = false;
     (async () => {
       const { data } = await supabase
-        .from("users")
-        .select("id, display_name, name")
+        .from("public_user_profiles")
+        .select("id, display_name")
         .in("id", ids);
       if (cancelled || !data) return;
       const map: Record<string, string> = {};
-      for (const u of data as { id: string; display_name: string | null; name: string | null }[]) {
-        map[u.id] = u.display_name || u.name || "다른 파트너";
+      for (const u of data as { id: string; display_name: string | null }[]) {
+        map[u.id] = u.display_name || "다른 파트너";
       }
       setClaimerNames(map);
     })();

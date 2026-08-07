@@ -28,7 +28,7 @@ export function MyShareCard({ auction, onCancelled }: MyShareCardProps) {
 
   const handleOpenChat = async () => {
     const { data: md } = await supabase
-      .from("users")
+      .from("public_user_profiles")
       .select("kakao_open_chat_url")
       .eq("id", auction.md_id)
       .single();

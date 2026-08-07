@@ -79,7 +79,7 @@ export function UserPeekSheet({
     let cancelled = false;
     setLoading(true);
     createClient()
-      .from("users")
+      .from("public_user_profiles")
       .select(
         "id, display_name, profile_image, bio, role, preferred_music_genres, preferred_areas"
       )
