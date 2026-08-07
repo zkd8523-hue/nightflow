@@ -1,9 +1,84 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { PublicProfileView } from "@/components/profile/PublicProfileView";
 
 interface PageProps {
   params: Promise<{ userId: string }>;
+}
+
+// ── SEO ──────────────────────────────────────────────────────────────────────
+// 검색 수요는 "닉네임"보다 "클럽명 + 파트너/MD"에 있다(그 클럽 가려고 담당자를 찾는 의도).
+// 그래서 소속 클럽명을 title에 싣는다. 일반 유저 프로필은 내용이 얇고 검색 수요도 없어
+// noindex 처리한다(사이트맵에도 승인 파트너만 싣는다).
+const getProfileMeta = cache(async (userId: string) => {
+  const supabase = await createClient();
+  const [{ data: profile }, { data: partnerships }] = await Promise.all([
+    supabase
+      .from("public_user_profiles")
+      .select("display_name, bio, md_status, md_unique_slug, profile_image")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("club_partners")
+      .select("club:clubs(name, area)")
+      .eq("md_id", userId),
+  ]);
+  return { profile, partnerships };
+});
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { userId } = await params;
+  const { profile, partnerships } = await getProfileMeta(userId);
+
+  if (!profile) return { title: "프로필" };
+
+  const name = profile.display_name || "회원";
+  const isPartner = profile.md_status === "approved" && !!profile.md_unique_slug;
+
+  if (!isPartner) {
+    // 일반 유저: 검색 노출 대상 아님 (얇은 콘텐츠 + 닉네임 노출 최소화)
+    return {
+      title: `${name} | 나플`,
+      robots: { index: false, follow: true },
+    };
+  }
+
+  const clubs: Array<{ name: string; area: string | null }> = [];
+  for (const row of (partnerships ?? []) as Array<{
+    club: { name: string; area: string | null } | { name: string; area: string | null }[] | null;
+  }>) {
+    const c = Array.isArray(row.club) ? row.club[0] : row.club;
+    if (c?.name) clubs.push(c);
+  }
+
+  // title이 길면 검색결과에서 잘리므로 클럽은 2곳까지만
+  const clubNames = clubs.slice(0, 2).map((c) => c.name).join("·");
+  const area = clubs.find((c) => c.area)?.area ?? null;
+
+  const title = clubNames
+    ? `${name} - ${clubNames} 파트너 | ${area ? `${area} ` : ""}클럽 테이블 예약`
+    : `${name} - ${area ? `${area} ` : ""}클럽 파트너 | 테이블 예약`;
+
+  const description = clubNames
+    ? `${name} 나이트플로우 공식 파트너. ${clubNames}${area ? ` (${area})` : ""} 테이블·게스트 문의. 원하는 예산으로 깃발 꽂으면 파트너가 조건을 제안합니다.`
+    : `${name} 나이트플로우 공식 파트너 프로필. 원하는 예산으로 깃발 꽂으면 파트너가 조건을 제안합니다.`;
+
+  const url = `https://nightflow.kr/u/${userId}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "profile",
+      ...(profile.profile_image ? { images: [{ url: profile.profile_image }] } : {}),
+    },
+  };
 }
 
 type ClubLite = {

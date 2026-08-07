@@ -1,277 +1,50 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { notFound, permanentRedirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
 
-// MD 공개 프로필 SEO. 개인정보(phone·kakao)는 노출 금지 — 닉네임·지역만.
-export async function generateMetadata({
-  params,
-}: {
+/**
+ * 구 MD 공개 프로필(/md/<slug>) → 통합 공개 프로필(/u/<id>) 영구 리다이렉트.
+ *
+ * 이 경로는 구 경매 모델 시절의 MD 페이지였고("진행 중인 경매" 노출), 지금 살아있는
+ * 공개 프로필은 /u/[userId](PublicProfileView) 하나다. 앱 내부 링크는 이미 전부
+ * /u/<id>를 가리키고 있어 이 경로는 사이트맵과 어드민 링크로만 남아 있었다.
+ *
+ * 삭제가 아니라 308(permanent)로 넘기는 이유:
+ *  - MD가 인스타 바이오 등 외부에 이미 /md/<slug>를 걸어뒀을 수 있다.
+ *  - 검색엔진이 수집해둔 URL의 평가를 새 주소로 승계시킨다.
+ */
+export const dynamic = "force-dynamic";
+
+interface PageProps {
   params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+}
+
+export default async function LegacyMdProfileRedirect({ params }: PageProps) {
   const { slug } = await params;
   const supabase = await createClient();
+
   const { data: md } = await supabase
     .from("public_user_profiles")
-    .select("display_name, area")
+    .select("id")
     .eq("md_unique_slug", slug)
-    .single();
+    .maybeSingle();
 
-  if (!md) return { title: "MD 프로필" };
+  if (!md) {
+    notFound();
+  }
 
-  const displayName = md.display_name || "MD";
-  const areaPrefix = md.area ? `${md.area} ` : "";
-  const title = `${displayName} - ${areaPrefix}클럽 MD·테이블 예약`;
-  const description = `${displayName} 나플 파트너 MD 프로필. ${areaPrefix}클럽 테이블 예약·무료입장 게스트, 깃발 꽂고 조건 제안 받기.`;
+  // MD 추천인 쿠키(7일) — 기존 동작 유지. Next 15에서 page의 직접 set은 차단될 수 있어 try/catch.
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set("md_referrer", md.id, {
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+  } catch {
+    // 쿠키 설정 실패는 부수효과라 무시하고 리다이렉트는 그대로 진행
+  }
 
-  return {
-    title,
-    description,
-    alternates: { canonical: `https://nightflow.kr/md/${slug}` },
-    openGraph: {
-      title,
-      description,
-      url: `https://nightflow.kr/md/${slug}`,
-      type: "profile",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
-    },
-  };
-}
-import { AuctionCard } from "@/components/auctions/AuctionCard";
-import { Badge } from "@/components/ui/badge";
-import { User, Star, ShieldCheck, Instagram, Building2 } from "lucide-react";
-import { ProfileAvatar } from "@/components/shared/ProfileAvatar";
-
-export default async function MDPublicProfilePage({
-    params
-}: {
-    params: Promise<{ slug: string }>
-}) {
-    const { slug } = await params;
-    const supabase = await createClient();
-
-    // 1. MD 정보 조회
-    const { data: mdUser } = await supabase
-        .from("public_user_profiles")
-        .select("*")
-        .eq("md_unique_slug", slug)
-        .single();
-
-    if (!mdUser) {
-        notFound();
-    }
-
-    // 2. MD 추천인 쿠키 설정 (7일 유지) — Next.js 15에서 page 컴포넌트의 직접 set은 차단됨
-    try {
-        const cookieStore = await cookies();
-        cookieStore.set("md_referrer", mdUser.id, {
-            maxAge: 60 * 60 * 24 * 7,
-            path: "/",
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-        });
-    } catch {
-        // page 컴포넌트에서 cookies.set 실패는 무시 (referrer는 부수효과)
-    }
-
-    // 3. 활성 경매 + MD 활동 클럽 + 리뷰 목록 병렬 조회
-    const [{ data: auctions }, { data: partnerships }, { data: reviews }] = await Promise.all([
-        supabase
-            .from("auctions")
-            .select(`*, club:club_id (*)`)
-            .eq("md_id", mdUser.id)
-            .eq("status", "active")
-            .order("created_at", { ascending: false }),
-        supabase
-            .from("club_partners")
-            .select("club:clubs(id, name, area, thumbnail_url)")
-            .eq("md_id", mdUser.id),
-        supabase.rpc("get_md_reviews", { p_md_id: mdUser.id, p_limit: 10, p_offset: 0 }),
-    ]);
-
-    type ClubLite = { id: string; name: string; area: string | null; thumbnail_url: string | null };
-    const clubs: ClubLite[] = [];
-    for (const row of (partnerships ?? []) as Array<{ club: ClubLite | ClubLite[] | null }>) {
-        const c = Array.isArray(row.club) ? row.club[0] : row.club;
-        if (c) clubs.push(c);
-    }
-
-    type ReviewRow = {
-        id: string;
-        rating: number;
-        comment: string | null;
-        tags: string[];
-        created_at: string;
-        club_name: string | null;
-        reviewer_display_name: string | null;
-        reviewer_profile_image: string | null;
-    };
-    const reviewList: ReviewRow[] = ((reviews ?? []) as ReviewRow[]).filter((r) => r && typeof r.rating === "number");
-
-    const dealCount = (mdUser as { deal_count_total?: number }).deal_count_total ?? 0;
-    const avgRating = (mdUser as { md_avg_rating?: number | null }).md_avg_rating ?? 0;
-    const reviewCount = (mdUser as { md_review_count?: number | null }).md_review_count ?? 0;
-    const instagram = (mdUser as { instagram?: string | null }).instagram ?? null;
-    const displayName = (mdUser as { display_name?: string | null }).display_name ?? "파트너";
-
-    return (
-        <div className="min-h-screen bg-background pb-20">
-            {/* Profile Header */}
-            <div className="bg-gradient-to-b from-neutral-900 to-background pt-14 pb-10 px-6 text-center">
-                <ProfileAvatar
-                    src={mdUser.profile_image}
-                    alt={displayName}
-                    fallback={<User className="w-10 h-10 text-muted-foreground" />}
-                    className="w-24 h-24 bg-muted rounded-full mx-auto mb-5 border-4 border-card shadow-2xl"
-                />
-
-                <div className="space-y-1.5">
-                    <div className="flex items-center justify-center gap-2">
-                        <h1 className="text-[22px] font-black text-foreground tracking-tight">{displayName} 파트너</h1>
-                        <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 font-black px-2 py-0.5 h-auto text-[10px] tracking-wider">
-                            <ShieldCheck className="w-3 h-3 mr-0.5" /> 인증
-                        </Badge>
-                    </div>
-                    <p className="text-muted-foreground text-[12px] font-medium">NightFlow 공식 파트너</p>
-                    {instagram && (
-                        <a
-                            href={`https://instagram.com/${instagram}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted-foreground text-[12px] font-medium inline-flex items-center gap-1 hover:text-brand-amber transition-colors"
-                        >
-                            <Instagram className="w-3.5 h-3.5" />
-                            @{instagram}
-                        </a>
-                    )}
-                </div>
-
-                {/* 지표 3종: 거래 / 평점 / 진행 중 */}
-                <div className="mt-6 grid grid-cols-3 gap-2 max-w-sm mx-auto">
-                    <div className="bg-card px-3 py-3 rounded-2xl border border-border/50">
-                        <p className="text-[10px] text-muted-foreground font-bold tracking-wider mb-1">거래</p>
-                        <p className="text-[18px] font-black text-foreground tabular-nums">{dealCount}<span className="text-[12px] text-muted-foreground font-bold">건</span></p>
-                    </div>
-                    <div className="bg-card px-3 py-3 rounded-2xl border border-border/50">
-                        <p className="text-[10px] text-muted-foreground font-bold tracking-wider mb-1">평점</p>
-                        <p className="text-[18px] font-black text-brand-amber tabular-nums inline-flex items-baseline gap-0.5">
-                            {reviewCount > 0 ? avgRating.toFixed(1) : "-"}
-                            {reviewCount > 0 && <Star className="w-3 h-3 fill-amber-300 text-brand-amber self-center" />}
-                        </p>
-                    </div>
-                    <div className="bg-card px-3 py-3 rounded-2xl border border-border/50">
-                        <p className="text-[10px] text-muted-foreground font-bold tracking-wider mb-1">진행 중</p>
-                        <p className="text-[18px] font-black text-foreground tabular-nums">{auctions?.length || 0}<span className="text-[12px] text-muted-foreground font-bold">건</span></p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="max-w-lg mx-auto px-4 space-y-8">
-                {/* 활동 클럽 */}
-                {clubs.length > 0 && (
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2 px-1">
-                            <Building2 className="w-4 h-4 text-muted-foreground" />
-                            <h2 className="text-[14px] font-bold text-foreground/80">활동 클럽</h2>
-                            <span className="text-[11px] text-muted-foreground">{clubs.length}곳</span>
-                        </div>
-                        <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-2 px-2">
-                            {clubs.map((club) => (
-                                <Link
-                                    key={club.id}
-                                    href={`/clubs/${club.id}`}
-                                    className="flex-shrink-0 bg-card border border-border/60 rounded-xl px-3 py-2 hover:border-amber-500/30 transition-colors"
-                                >
-                                    <p className="text-[13px] font-bold text-foreground">{club.name}</p>
-                                    {club.area && (
-                                        <p className="text-[10.5px] text-muted-foreground font-medium mt-0.5">{club.area}</p>
-                                    )}
-                                </Link>
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {/* 리뷰 섹션 */}
-                <section className="space-y-3">
-                    <div className="flex items-center gap-2 px-1">
-                        <Star className="w-4 h-4 text-muted-foreground" />
-                        <h2 className="text-[14px] font-bold text-foreground/80">리뷰</h2>
-                        {reviewList.length > 0 && (
-                            <span className="text-[11px] text-muted-foreground">{reviewList.length}건</span>
-                        )}
-                    </div>
-                    {reviewList.length === 0 ? (
-                        <div className="py-10 text-center bg-card/40 rounded-2xl border border-dashed border-border/50">
-                            <p className="text-[13px] text-muted-foreground font-medium">아직 작성된 리뷰가 없어요</p>
-                            <p className="text-[11px] text-muted-foreground mt-1">첫 매치 후 리뷰가 누적되면 표시돼요</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {reviewList.map((r) => (
-                                <div key={r.id} className="bg-card rounded-2xl border border-border p-4 space-y-2">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-1">
-                                            {[1, 2, 3, 4, 5].map((n) => (
-                                                <Star
-                                                    key={n}
-                                                    className={`w-3.5 h-3.5 ${n <= r.rating ? "fill-amber-400 text-brand-amber" : "fill-transparent text-muted-foreground"}`}
-                                                    strokeWidth={1.5}
-                                                />
-                                            ))}
-                                        </div>
-                                        <span className="text-[10.5px] text-muted-foreground font-medium">
-                                            {new Date(r.created_at).toLocaleDateString("ko-KR", { year: "2-digit", month: "numeric", day: "numeric" })}
-                                        </span>
-                                    </div>
-                                    {r.tags && r.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-1">
-                                            {r.tags.map((t) => (
-                                                <span key={t} className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-brand-amber border border-amber-500/20">
-                                                    {t}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {r.comment && (
-                                        <p className="text-[13px] text-foreground/90 leading-snug break-keep whitespace-pre-line">
-                                            {r.comment}
-                                        </p>
-                                    )}
-                                    <div className="flex items-center justify-between gap-2 pt-1">
-                                        <p className="text-[11px] text-muted-foreground font-medium truncate">
-                                            {r.reviewer_display_name || "익명"}
-                                        </p>
-                                        {r.club_name && (
-                                            <p className="text-[11px] text-muted-foreground font-medium truncate">{r.club_name}</p>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </section>
-
-                {/* 진행 중인 경매 */}
-                <section className="space-y-3">
-                    <div className="flex items-center justify-between px-1">
-                        <h2 className="text-[14px] font-bold text-foreground/80">진행 중인 경매</h2>
-                        <span className="text-[11px] text-muted-foreground">최신순</span>
-                    </div>
-                    {auctions && auctions.length > 0 ? (
-                        <div className="space-y-4">
-                            {auctions.map(auction => (
-                                <AuctionCard key={auction.id} auction={auction} />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="py-10 text-center bg-card/30 rounded-2xl border border-dashed border-border/50">
-                            <p className="text-[13px] text-muted-foreground font-medium">진행 중인 경매가 없어요</p>
-                        </div>
-                    )}
-                </section>
-            </div>
-        </div>
-    );
+  permanentRedirect(`/u/${md.id}`);
 }
