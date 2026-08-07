@@ -127,7 +127,7 @@ export const EN_TO_JA: Record<string, string> = {
   "🆓 100% free · no payment": "🆓 完全無料・決済なし",
   "🚩 This request was cancelled": "🚩 このリクエストはキャンセルされました",
   // ── 랜딩(EnHomeClient) ──
-  "Want an unforgettable night in Seoul Club?": "ソウルのクラブで忘れられない夜を？",
+  "Unforgettable night in Seoul Club?": "ソウルのクラブで忘れられない夜を？",
   "You're in the right place.": "ここがその場所です。",
   "Pick a club & your budget": "クラブと予算を選ぶだけ",
   "We book it with the club for you.": "私たちがクラブと直接予約します。",
@@ -139,7 +139,7 @@ export const EN_TO_JA: Record<string, string> = {
   "Book with NightFlow": "NightFlowで予約する",
   "Book now": "今すぐ予約",
   "19+ only · Bring your passport to the venue.": "19歳以上限定 · パスポートをご持参ください。",
-  "The easiest way to book Seoul clubs.": "ソウルのクラブを予約する一番カンタンな方法。",
+  "Korea Club Guide": "韓国クラブガイド",
   "Log in": "ログイン",
   "Home": "ホーム",
   "My": "マイ",
@@ -178,7 +178,7 @@ export const EN_TO_JA: Record<string, string> = {
   "My requests": "マイリクエスト",
   "offers": "件のオファー",
   "people": "名",
-  "Top clubs in Seoul": "ソウルの人気クラブ",
+  "Clubs in Seoul": "ソウルの人気クラブ",
   "Premium, luxury night": "プレミアムで贅沢な夜",
   "Young, wild night": "若くてワイルドな夜",
   "Global, borderless night": "国境なきグローバルな夜",
@@ -385,7 +385,7 @@ export const EN_TO_ZH: Record<string, string> = {
   "🆓 100% free · no payment": "🆓 100%免费·无需付款",
   "🚩 This request was cancelled": "🚩 此请求已被取消",
   // ── 랜딩(EnHomeClient) ──
-  "Want an unforgettable night in Seoul Club?": "想在首尔夜店度过难忘的一夜？",
+  "Unforgettable night in Seoul Club?": "想在首尔夜店度过难忘的一夜？",
   "You're in the right place.": "你来对地方了。",
   "Pick a club & your budget": "选好夜店和预算",
   "We book it with the club for you.": "我们直接为你联系夜店预订。",
@@ -397,7 +397,7 @@ export const EN_TO_ZH: Record<string, string> = {
   "Book with NightFlow": "通过 NightFlow 预订",
   "Book now": "立即预订",
   "19+ only · Bring your passport to the venue.": "仅限19岁以上 · 请携带护照到场。",
-  "The easiest way to book Seoul clubs.": "预订首尔夜店最简单的方式。",
+  "Korea Club Guide": "韩国夜店指南",
   "Log in": "登录",
   "Home": "首页",
   "My": "我的",
@@ -436,7 +436,7 @@ export const EN_TO_ZH: Record<string, string> = {
   "My requests": "我的请求",
   "offers": "个报价",
   "people": "人",
-  "Top clubs in Seoul": "首尔人气夜店",
+  "Clubs in Seoul": "首尔夜店",
   "Premium, luxury night": "高端奢华之夜",
   "Young, wild night": "年轻狂野之夜",
   "Global, borderless night": "无国界的世界之夜",
@@ -532,7 +532,7 @@ export const EN_TO_ZH: Record<string, string> = {
 // 사전에 없는 문구는 makeT()에서 자동으로 간체(zh)로 폴백. 유저가 이해 가능.
 export const EN_TO_ZH_TW: Record<string, string> = {
   // 홈·랜딩
-  "The easiest way to book Seoul clubs.": "預訂首爾夜店最簡單的方式。",
+  "Book Seoul clubs, easily.": "輕鬆預訂首爾夜店。",
   "The easiest way to book Seoul clubs": "預訂首爾夜店最簡單的方式",
   "Book Seoul clubs the smart way.": "聰明預訂首爾夜店。",
   "🍾 Book with NightFlow": "🍾 透過 NightFlow 預訂",
@@ -550,7 +550,7 @@ export const EN_TO_ZH_TW: Record<string, string> = {
   "Track your requests and our replies.": "管理您的請求和回覆。",
   "Pick a club & we'll book it for you.": "選好夜店，我們直接為您預訂。",
   "people": "人",
-  "Top clubs in Seoul": "首爾人氣夜店",
+  "Clubs in Seoul": "首爾夜店",
   "No markup": "無中介加價",
 
   // 클럽 가이드

@@ -204,12 +204,6 @@ function FlagCarouselCard({ flag }: { flag: FlagItem }) {
       <p className="text-[18px] font-black text-brand-amber mt-3">{budget}</p>
       <div className="flex items-center gap-1.5 mt-1 text-[12px] text-muted-foreground">
         <span className="font-bold text-foreground">{flag.target_count}{tr(" ppl")}</span>
-        {flag.offerCount > 0 && (
-          <>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-money font-bold">{flag.offerCount} {tr("offers")}</span>
-          </>
-        )}
       </div>
     </Link>
   );
@@ -261,12 +255,12 @@ function ClubThumb({ club }: { club: ClubItem }) {
   );
 }
 
-function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: React.RefObject<HTMLAnchorElement | null> }) {
+function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags: FlagItem[]; bookCtaRef?: React.RefObject<HTMLAnchorElement | null> }) {
   const { lang, tr } = useTr();
   return (
     <div className="pt-5 pb-6 border-b border-border space-y-5">
       <div className="px-4 flex items-center justify-between gap-2">
-        <p className="text-[22px] font-black text-foreground tracking-tight">{tr("Top clubs in Seoul")}</p>
+        <p className="text-[22px] font-black text-foreground tracking-tight">{tr("Clubs in Seoul")}</p>
         <Link
           href={`/${lang}/clubs`}
           className="shrink-0 text-[12px] font-bold text-brand-amber hover:text-brand-amber transition-colors whitespace-nowrap"
@@ -293,6 +287,19 @@ function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: 
           </div>
         );
       })}
+
+      {/* 한국인이 지금 올린 깃발 = 소셜 프루프 (캐러셀) — 클럽 목록 바로 아래, 지역 버튼 바로 위 */}
+      {flags.length > 0 && (
+        <div className="space-y-3">
+          <div className="px-4">
+            <p className="text-[14px] font-black text-foreground">{tr("🇰🇷 Koreans are doing it right now")}</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">{tr("Live requests from people in Seoul")}</p>
+          </div>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x snap-mandatory">
+            {flags.map((f) => <FlagCarouselCard key={f.id} flag={f} />)}
+          </div>
+        </div>
+      )}
 
       {/* 지역 버튼 → 해당 지역 깃발 등록 바로 */}
       <div className="px-4 space-y-2.5">
@@ -368,44 +375,14 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
       {/* ① 타겟 후킹 + 설명 (헤더 아래) */}
-      <div className="px-5 pt-6 pb-5 text-center space-y-3 border-b border-border">
+      <div className="px-5 pt-6 pb-5 text-center space-y-3">
         <h1 className="text-[24px] font-black leading-[1.18] tracking-tight">
-          {tr("Want an unforgettable night in Seoul Club?")}
+          {tr("Unforgettable night in Seoul Club?")}
         </h1>
         <p className="text-[18px] font-black text-brand-amber pt-1">{tr("You're in the right place.")}</p>
-        <p className="text-[14px] text-foreground/90 leading-relaxed font-medium">
-          {tr("Pick a club & your budget")}<br />
-          {tr("We book it with the club for you.")}<br />
-          {tr("No Korean, no hassle.")}
-        </p>
       </div>
 
-      {/* ② 신뢰 배지 — 被宰(바가지) 공포 해결. 프리미엄 유지 위해 초록 체크만(붉은색 X) */}
-      <div className="px-5 py-4 border-b border-border">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-w-[320px] mx-auto">
-          {["No markup", "Real price", "Zero fee", "No deposit"].map((b) => (
-            <div key={b} className="flex items-center gap-1.5">
-              <Check className="w-4 h-4 text-money shrink-0" strokeWidth={3} />
-              <span className="text-[13px] font-bold text-foreground">{tr(b)}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ③ 한국인이 지금 올린 깃발 = 소셜 프루프 (캐러셀) */}
-      {flags.length > 0 && (
-        <div className="pt-5 pb-5 border-b border-border">
-          <div className="px-4 mb-3">
-            <p className="text-[14px] font-black text-foreground">{tr("🇰🇷 Koreans are doing it right now")}</p>
-            <p className="text-[12px] text-muted-foreground mt-0.5">{tr("Live requests from people in Seoul")}</p>
-          </div>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x snap-mandatory">
-            {flags.map((f) => <FlagCarouselCard key={f.id} flag={f} />)}
-          </div>
-        </div>
-      )}
-
-      {/* How it works (드롭다운) */}
+      {/* ② How it works (드롭다운) — 신뢰 배지 + 3단계 설명 + 바가지 보장 통합 */}
       <div className="px-4 pb-6">
         <details className="group rounded-2xl bg-card border border-border overflow-hidden">
           <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer list-none select-none">
@@ -415,22 +392,33 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
             </span>
             <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
           </summary>
-          <div className="px-4 pb-4 space-y-3">
-            {[
-              { n: "1", title: "Pick your club", body: "Choose the clubs you want (or just tell us your vibe) — date, budget, group size." },
-              { n: "2", title: "We book it for you", body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup." },
-              { n: "3", title: "Walk in like a VIP", body: "Best table booked, no line, no broker. Show your passport at the door (19+)." },
-            ].map((s) => (
-              <div key={s.n} className="flex gap-3">
-                <div className="shrink-0 w-7 h-7 rounded-full bg-inverse text-inverse-foreground font-black text-[12px] flex items-center justify-center">{s.n}</div>
-                <div className="space-y-0.5">
-                  <p className="font-bold text-[14px]">{tr(s.title)}</p>
-                  <p className="text-[12px] text-muted-foreground leading-relaxed">{tr(s.body)}</p>
+          <div className="px-4 pb-4 space-y-4">
+            {/* 신뢰 배지 — 被宰(바가지) 공포 해결. 프리미엄 유지 위해 초록 체크만(붉은색 X) */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 pb-3 border-b border-border">
+              {["No markup", "Real price", "Zero fee", "No deposit"].map((b) => (
+                <div key={b} className="flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-money shrink-0" strokeWidth={3} />
+                  <span className="text-[13px] font-bold text-foreground">{tr(b)}</span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="space-y-3">
+              {[
+                { n: "1", title: "Pick your club", body: "Choose the clubs you want (or just tell us your vibe) — date, budget, group size." },
+                { n: "2", title: "We book it for you", body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup." },
+                { n: "3", title: "Walk in like a VIP", body: "Best table booked, no line, no broker. Show your passport at the door (19+)." },
+              ].map((s) => (
+                <div key={s.n} className="flex gap-3">
+                  <div className="shrink-0 w-7 h-7 rounded-full bg-inverse text-inverse-foreground font-black text-[12px] flex items-center justify-center">{s.n}</div>
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-[14px]">{tr(s.title)}</p>
+                    <p className="text-[12px] text-muted-foreground leading-relaxed">{tr(s.body)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
             {/* Zero 바가지 보장 — How it works 안에 포함 */}
-            <div className="mt-1 pt-3 border-t border-border">
+            <div className="pt-3 border-t border-border">
               <p className="flex items-center gap-2 text-[13px] font-black text-money">{tr("🛡️ Zero rip-off, guaranteed")}</p>
               <p className="text-[12px] text-muted-foreground leading-relaxed mt-1">
                 {tr("Pay more than the standard price?")}{" "}
@@ -441,8 +429,8 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
         </details>
       </div>
 
-      {/* 지역 섹션 (강남/홍대 소개 + 클럽 리스트 + 지역 버튼) */}
-      {clubs.length > 0 && <RegionSection clubs={clubs} bookCtaRef={bookCtaRef} />}
+      {/* 지역 섹션 (강남/홍대 소개 + 클럽 리스트 + 지역 버튼 + 한국인 소셜프루프 캐러셀) */}
+      {clubs.length > 0 && <RegionSection clubs={clubs} flags={flags} bookCtaRef={bookCtaRef} />}
 
       {/* Safety tips */}
       <div className="px-4 pb-6 space-y-3">
@@ -600,7 +588,7 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
         {tab === "flags" ? (
           <div>
             <span className="text-[17px] font-black tracking-tight">NightFlow</span>
-            <p className="text-[11px] text-muted-foreground leading-none mt-0.5">{tr("The easiest way to book Seoul clubs.")}</p>
+            <p className="text-[11px] text-muted-foreground leading-none mt-0.5">{tr("Korea Club Guide")}</p>
           </div>
         ) : (
           <button
