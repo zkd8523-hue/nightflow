@@ -5,13 +5,15 @@ import Link from "next/link";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { FaqTab } from "./FaqTab";
-import { ChevronLeft, ChevronDown, Info, Home, User, HelpCircle, Map, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map, Check } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ForeignAppCta } from "@/components/layout/ForeignAppCta";
-import { displayClubName } from "@/components/clubs/ForeignClubDetailPanel";
+import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { trackForeignEvent } from "@/lib/analytics/events";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
@@ -24,14 +26,15 @@ type MyRequest = {
   group_size: number;
 };
 
-type ClubItem = {
-  id: string;
-  name: string;
-  name_en?: string | null;
-  area: string;
-  thumbnail_url: string | null;
-  address?: string | null;
-};
+type ClubItem = ForeignClubDetail;
+
+// 로그인 후 깃발 폼으로 복귀하는 링크. 미로그인이면 폼 서버 컴포넌트가 자동으로 /login?redirect= 로 튕김.
+function buildFlagHref(lang: Lang, area?: string) {
+  const params = new URLSearchParams();
+  params.set("lang", lang);
+  if (area) params.set("area", area);
+  return `/flags/new?${params.toString()}`;
+}
 
 type FlagItem = {
   id: string;
@@ -231,16 +234,16 @@ const REGIONS = [
   },
 ] as const;
 
-function ClubThumb({ club }: { club: ClubItem }) {
-  const { lang, tr } = useTr();
+function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
+  const { tr } = useTr();
   const name = displayClubName(club);
-  // 클릭 시 클럽 페이지에서 해당 클럽 상세시트가 바로 열리도록 club 쿼리로 전달
-  // (예전엔 #club-{id} 앵커 스크롤이었는데, 그 페이지가 카드 클릭=Sheet 오픈 방식으로 바뀌면서
-  //  앵커 대상 엘리먼트가 없어져 그냥 목록만 보여주고 끝났음 — ClubsClient가 이 쿼리를 읽어 자동 오픈).
+  // 홈에서 이탈시키지 않고 제자리에서 상세 모달을 띄움 — "How it works" 교육 기회를 잃지 않도록.
+  // (예전엔 /clubs 페이지로 바로 이동했음. RegionSection이 오픈 상태를 관리.)
   return (
-    <Link
-      href={`/${lang}/clubs?club=${club.id}`}
-      className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity"
+    <button
+      type="button"
+      onClick={onOpen}
+      className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity text-left"
     >
       <div className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-muted border border-border">
         {club.thumbnail_url ? (
@@ -251,12 +254,32 @@ function ClubThumb({ club }: { club: ClubItem }) {
         )}
       </div>
       <p className="text-[12px] font-bold text-foreground mt-1.5 truncate">{name}</p>
-    </Link>
+    </button>
   );
 }
 
 function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags: FlagItem[]; bookCtaRef?: React.RefObject<HTMLAnchorElement | null> }) {
-  const { lang, tr } = useTr();
+  const { lang, t, tr } = useTr();
+
+  // 클럽 상세 모달 — 열린 캐러셀(지역별) 내에서 좌우 이동 가능
+  const [detailList, setDetailList] = useState<ClubItem[]>([]);
+  const [detailIndex, setDetailIndex] = useState(0);
+  const detailClub = detailList[detailIndex] ?? null;
+  const openDetail = (list: ClubItem[], club: ClubItem) => {
+    const idx = list.findIndex((c) => c.id === club.id);
+    setDetailList(list);
+    setDetailIndex(idx >= 0 ? idx : 0);
+  };
+  const closeDetail = () => setDetailList([]);
+  const hasPrevDetail = detailIndex > 0;
+  const hasNextDetail = detailIndex < detailList.length - 1;
+  const goPrevDetail = () => setDetailIndex((i) => Math.max(i - 1, 0));
+  const goNextDetail = () => setDetailIndex((i) => Math.min(i + 1, detailList.length - 1));
+  const detailTouchStartXRef = useRef<number | null>(null);
+
+  const bookAtClubLabel = (name: string) =>
+    t(`🍾 ${name} 예약하기`, `🍾 Book ${name}`, `🍾 ${name}を予約`, `🍾 预订 ${name}`);
+
   return (
     <div className="pt-5 pb-6 border-b border-border space-y-5">
       <div className="px-4 flex items-center justify-between gap-2">
@@ -281,12 +304,95 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
             </div>
             {regionClubs.length > 0 && (
               <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x">
-                {regionClubs.map((c) => <ClubThumb key={c.id} club={c} />)}
+                {regionClubs.map((c) => <ClubThumb key={c.id} club={c} onOpen={() => openDetail(regionClubs, c)} />)}
               </div>
             )}
           </div>
         );
       })}
+
+      {/* 클럽 상세 모달 — 클릭 시 이탈 없이 제자리에서 오픈, 화살표/스와이프로 같은 지역 내 이동 */}
+      <Sheet open={!!detailClub} onOpenChange={(o) => !o && closeDetail()}>
+        <SheetContent
+          side="bottom"
+          className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0"
+          onTouchStart={(e) => { detailTouchStartXRef.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => {
+            const startX = detailTouchStartXRef.current;
+            detailTouchStartXRef.current = null;
+            if (startX == null) return;
+            const deltaX = e.changedTouches[0].clientX - startX;
+            const SWIPE_THRESHOLD = 60;
+            if (deltaX > SWIPE_THRESHOLD) goPrevDetail();
+            else if (deltaX < -SWIPE_THRESHOLD) goNextDetail();
+          }}
+        >
+          {detailClub && (
+            <>
+              <SheetTitle className="sr-only">{detailClub.name}</SheetTitle>
+              {hasPrevDetail && (
+                <button
+                  type="button"
+                  onClick={goPrevDetail}
+                  aria-label={tr("Previous club")}
+                  className="absolute left-3 top-24 z-10 w-9 h-9 rounded-full bg-black/45 border border-white/30 text-white flex items-center justify-center hover:bg-black/65"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              )}
+              {hasNextDetail && (
+                <button
+                  type="button"
+                  onClick={goNextDetail}
+                  aria-label={tr("Next club")}
+                  className="absolute right-3 top-24 z-10 w-9 h-9 rounded-full bg-black/45 border border-white/30 text-white flex items-center justify-center hover:bg-black/65"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
+              <ForeignClubDetailPanel
+                club={detailClub}
+                lang={lang}
+                cta={
+                  <div className="flex gap-2 mt-2">
+                    <Link
+                      href={buildFlagHref(lang, detailClub.area)}
+                      onClick={() => {
+                        // 회원가입 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트 — ClubsClient와 동일 패턴.
+                        if (typeof window !== "undefined") {
+                          try {
+                            sessionStorage.setItem(
+                              "nightflow_book_intent",
+                              JSON.stringify({
+                                club_id: detailClub.id,
+                                club_name: detailClub.name,
+                                area: detailClub.area,
+                                lang,
+                                savedAt: Date.now(),
+                              })
+                            );
+                          } catch { /* noop */ }
+                        }
+                        if (lang !== "ko") {
+                          trackForeignEvent("foreign_book_at_club_click", {
+                            area: detailClub.area,
+                            club_id: detailClub.id,
+                            club_name: detailClub.name,
+                          });
+                        }
+                        closeDetail();
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
+                    >
+                      {bookAtClubLabel(displayClubName(detailClub))}
+                    </Link>
+                  </div>
+                }
+              />
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* 한국인이 지금 올린 깃발 = 소셜 프루프 (캐러셀) — 클럽 목록 바로 아래, 지역 버튼 바로 위 */}
       {flags.length > 0 && (

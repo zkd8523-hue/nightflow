@@ -80,7 +80,7 @@ export function ForeignClubDetailPanel({
   const name = displayClubName(club);
 
   return (
-    <div className="pb-8">
+    <div>
       {club.thumbnail_url && (
         <div className="relative w-full h-48">
           <Image src={club.thumbnail_url} alt={name} fill className="object-cover" sizes="(max-width: 640px) 100vw, 512px" />
@@ -186,8 +186,6 @@ export function ForeignClubDetailPanel({
           />
         )}
 
-        {cta}
-
         {/* 별점 있는 클럽은 상단 링크(별점+리뷰수)로 충분 → 하단 버튼 중복 제거.
             별점 없는 클럽만 정보 접근용 fallback으로 노출. */}
         {club.google_rating == null && (
@@ -200,6 +198,12 @@ export function ForeignClubDetailPanel({
             🔍 {searchReviewsLabel}
           </a>
         )}
+      </div>
+
+      {/* CTA — 클럽마다 리뷰·태그 등 위쪽 콘텐츠 길이가 달라 본문 흐름 안에 두면 버튼이
+          안 보이거나(스크롤 필요) 위치가 계속 바뀜. 시트 스크롤 컨테이너 하단에 고정. */}
+      <div className="sticky bottom-0 px-5 pt-3 pb-5 bg-card/95 backdrop-blur-sm border-t border-border">
+        {cta}
       </div>
     </div>
   );

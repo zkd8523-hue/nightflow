@@ -168,7 +168,7 @@ export default async function ZhHomePage() {
   // 강남·홍대 클럽 (지역 섹션 "Spots competing for you"용) — /en 홈과 동일 로직
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, name_en, area, thumbnail_url, address, featured_rank, google_review_count, partners:club_partners(md_id)")
+    .select("id, name, name_en, area, thumbnail_url, address, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, partners:club_partners(md_id)")
     .in("area", ["강남", "홍대", "이태원"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -195,6 +195,18 @@ export default async function ZhHomePage() {
         area: c.area,
         thumbnail_url: c.thumbnail_url,
         address: c.address,
+        drink_menu_url: c.drink_menu_url,
+        drink_menu_updated_at: c.drink_menu_updated_at,
+        drink_menu_urls: c.drink_menu_urls,
+        floor_plan_url: c.floor_plan_url,
+        floor_plan_urls: c.floor_plan_urls,
+        operating_hours: c.operating_hours,
+        entry_fee_detail: c.entry_fee_detail,
+        google_rating: c.google_rating,
+        instagram: c.instagram,
+        dresscode: c.dresscode,
+        tags: c.tags,
+        google_reviews: c.google_reviews,
         featured_rank: c.featured_rank,
         google_review_count: c.google_review_count,
         has_md: (((c as { partners?: unknown[] }).partners?.length) ?? 0) > 0,
