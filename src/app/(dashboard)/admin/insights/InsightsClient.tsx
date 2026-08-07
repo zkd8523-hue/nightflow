@@ -211,12 +211,19 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
                         <b className="text-foreground text-lg">{step.value}</b> 세션
                       </span>
                       {step.rate !== null && (
-                        <span
-                          className={`text-sm font-bold w-16 text-right ${
-                            isDropoff ? "text-red-400" : "text-emerald-400"
-                          }`}
-                        >
-                          {step.rate}%
+                        <span className="text-right leading-tight">
+                          <span
+                            className={`block text-sm font-bold ${
+                              isDropoff ? "text-red-400" : "text-emerald-400"
+                            }`}
+                          >
+                            {step.rate}%
+                          </span>
+                          {/* 막대 안 %(전체 1단계 대비 누적)와 분모가 다름 — 이 배지는 직전 단계 대비.
+                              라벨 없이 나란히 두면 같은 지표의 오차처럼 보여 혼동 유발(예: 63% vs 69%). */}
+                          <span className="block text-[9px] font-normal text-muted-foreground/70">
+                            직전 단계 대비
+                          </span>
                         </span>
                       )}
                     </div>

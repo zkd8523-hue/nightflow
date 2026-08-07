@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
-import { validateDisplayName, isDisplayNameTaken } from "@/lib/utils/displayName";
+import { validateDisplayName, isDisplayNameTaken, generateRandomNickname } from "@/lib/utils/displayName";
 import { normalizeProfileImage } from "@/lib/utils/image";
 import { ChevronRight, Check, ArrowLeft, Camera } from "lucide-react";
 import Link from "next/link";
@@ -182,13 +182,22 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const completedRef = useRef(false);
 
 
-  // 닉네임 단계 진입 시 입력값 초기화
+  // 닉네임 단계 진입 시 입력값 초기화 + 랜덤 닉네임 자동 채움(한국인만).
+  // 빈 입력창에서 뭘 쓸지 고민하다 이탈하는 게 가입 퍼널 마지막 단계 최대 이탈 지점이라
+  // 기본값을 채워 타이핑 0번으로 "가입 완료"까지 갈 수 있게 함 — 마음에 안 들면 직접 수정 가능.
+  // 아래 debounce 중복확인 effect가 이 값도 그대로 검증하므로 별도 처리 불필요.
   useEffect(() => {
-    if (step === "nickname") {
-      setNicknameInput("");
-      setNicknameError(null);
-      setNicknameOk(false);
-    }
+    if (step !== "nickname") return;
+    setNicknameInput("");
+    setNicknameError(null);
+    setNicknameOk(false);
+    if (isForeigner) return;
+    let cancelled = false;
+    (async () => {
+      const name = await generateRandomNickname(supabase);
+      if (!cancelled) setNicknameInput(name);
+    })();
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
@@ -740,7 +749,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                     <button
                       key={opt.key}
                       type="button"
-                      onClick={() => setGender(opt.key)}
+                      onClick={() => {
+                        // 선택 즉시 다음 단계로 — "다음" 버튼 탭 한 번을 줄임
+                        setGender(opt.key);
+                        setStep(isForeigner ? "nickname" : "phone");
+                      }}
                       className={`h-14 rounded-xl border text-[15px] font-bold transition-colors ${
                         active
                           ? "bg-inverse text-inverse-foreground border-white"
@@ -752,14 +765,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   );
                 })}
               </div>
-
-              <Button
-                onClick={() => setStep(isForeigner ? "nickname" : "phone")}
-                disabled={gender === null}
-                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
-              >
-                {tt("다음", "Next")}
-              </Button>
 
               {/* 선택안함 — 작은 문구로 건너뛰기 */}
               <button
@@ -784,87 +789,79 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
           </>
         )}
 
-        {step === "phone" && (
+        {(step === "phone" || step === "otp") && (
           <>
             <div className="space-y-2 text-center">
               <p className="text-[18px] font-bold text-foreground">휴대폰 번호로 인증해주세요</p>
               <p className="text-[13px] text-muted-foreground">오퍼 도착 시 알림톡으로 알려드려요</p>
             </div>
 
+            {/* 인증번호 받기를 눌러도 화면 전체가 안 바뀌고, 번호 입력창 아래에 OTP 입력이
+                그대로 이어서 나타남 — 별도 화면으로 넘어가는 느낌(다음창) 제거. */}
             <div className="space-y-3">
               <input
                 type="tel"
                 inputMode="numeric"
                 autoComplete="tel"
+                readOnly={step === "otp"}
                 value={formatPhoneDisplay(phoneInput)}
                 onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, "").slice(0, 11))}
                 placeholder="010-1234-5678"
-                className="w-full h-14 px-4 rounded-xl bg-muted border border-border text-foreground text-[16px] placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
+                className={`w-full h-14 px-4 rounded-xl bg-muted border border-border text-foreground text-[16px] placeholder-neutral-500 focus:outline-none focus:border-white transition-colors ${
+                  step === "otp" ? "opacity-60" : ""
+                }`}
               />
 
-              <Button
-                onClick={handleSendOtp}
-                disabled={!phoneValid || !isAdult || otpSending}
-                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
-              >
-                {otpSending ? "발송 중..." : "인증번호 받기"}
-              </Button>
+              {step === "phone" ? (
+                <Button
+                  onClick={handleSendOtp}
+                  disabled={!phoneValid || !isAdult || otpSending}
+                  className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
+                >
+                  {otpSending ? "발송 중..." : "인증번호 받기"}
+                </Button>
+              ) : (
+                <>
+                  <p className="text-[13px] text-muted-foreground text-center">6자리 인증번호를 입력하세요</p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    autoFocus
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="______"
+                    maxLength={6}
+                    className="w-full h-14 px-4 rounded-xl bg-muted border border-border text-foreground text-center text-[20px] tracking-[0.5em] placeholder-neutral-600 focus:outline-none focus:border-white transition-colors"
+                  />
+                  <Button
+                    onClick={handleVerifyOtp}
+                    disabled={otpCode.length !== 6 || otpVerifying || loading}
+                    className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
+                  >
+                    {otpVerifying ? "확인 중..." : "확인"}
+                  </Button>
+                  <div className="flex justify-end text-sm">
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={resendIn > 0 || otpSending}
+                      className="text-muted-foreground hover:text-foreground transition-colors disabled:text-muted-foreground"
+                    >
+                      {resendIn > 0 ? `다시 받기 (${resendIn}s)` : "다시 받기"}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             <button
               type="button"
-              onClick={() => setStep("gender")}
+              onClick={() => setStep(step === "otp" ? "phone" : "gender")}
               className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> 이전
             </button>
-          </>
-        )}
-
-        {step === "otp" && (
-          <>
-            <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-foreground">{formatPhoneDisplay(phoneInput)}</p>
-              <p className="text-[13px] text-muted-foreground">6자리 인증번호를 입력하세요</p>
-            </div>
-
-            <div className="space-y-3">
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="______"
-                maxLength={6}
-                className="w-full h-14 px-4 rounded-xl bg-muted border border-border text-foreground text-center text-[20px] tracking-[0.5em] placeholder-neutral-600 focus:outline-none focus:border-white transition-colors"
-              />
-              <Button
-                onClick={handleVerifyOtp}
-                disabled={otpCode.length !== 6 || otpVerifying || loading}
-                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
-              >
-                {otpVerifying ? "확인 중..." : "확인"}
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-between text-sm">
-              <button
-                type="button"
-                onClick={() => setStep("phone")}
-                className="flex items-center gap-1 text-muted-foreground hover:text-foreground/80 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" /> 이전
-              </button>
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={resendIn > 0 || otpSending}
-                className="text-muted-foreground hover:text-foreground transition-colors disabled:text-muted-foreground"
-              >
-                {resendIn > 0 ? `다시 받기 (${resendIn}s)` : "다시 받기"}
-              </button>
-            </div>
           </>
         )}
 
