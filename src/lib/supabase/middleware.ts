@@ -2,7 +2,32 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // 로그인 필수 경로 (prefix 매칭)
-const PROTECTED_PREFIXES = ["/md/", "/admin", "/bids", "/my-wins", "/profile", "/favorites", "/settings", "/my-penalties"];
+const PROTECTED_PREFIXES = ["/md/apply", "/admin", "/bids", "/my-wins", "/profile", "/favorites", "/settings", "/my-penalties"];
+
+// /md/ 아래에는 MD 대시보드((dashboard)/md/*)와 공개 MD 프로필((main)/md/[slug])이 섞여 있다.
+// "/md/" 전체를 보호하면 MD가 인스타 바이오에 걸어둔 공개 프로필까지 로그인 벽에 걸리고,
+// sitemap에 올라간 /md/<slug> URL들이 크롤러에게 로그인 리다이렉트를 반환해 색인이 안 된다.
+// 그래서 대시보드 경로만 명시적으로 보호하고, 나머지(=슬러그)는 공개로 둔다.
+// ⚠️ (dashboard)/md 아래에 새 라우트를 추가하면 이 배열에도 반드시 추가할 것.
+const MD_DASHBOARD_PREFIXES = [
+  "/md/auctions",
+  "/md/clubs",
+  "/md/credits",
+  "/md/dashboard",
+  "/md/floor-plan",
+  "/md/hotdeal",
+  "/md/hotdeal-now",
+  "/md/settings",
+  "/md/share-slots",
+  "/md/transactions",
+  "/md/vip",
+];
+
+// "/md/hotdeal"이 "/md/hotdeal-now"를 삼키지 않도록 정확 일치 또는 하위 경로만 매칭
+const isMdDashboardPath = (pathname: string) =>
+  MD_DASHBOARD_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
 
 export async function updateSession(request: NextRequest) {
   // request.headers는 부모 미들웨어에서 x-pathname을 이미 세팅함.
@@ -79,7 +104,9 @@ export async function updateSession(request: NextRequest) {
 
   // 보호된 경로 접근 시 로그인 확인
   const pathname = request.nextUrl.pathname;
-  const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
+  const isProtected =
+    PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix)) ||
+    isMdDashboardPath(pathname);
 
   if (isProtected && !user) {
     const loginUrl = new URL("/login", request.url);
@@ -109,7 +136,9 @@ export async function updateSession(request: NextRequest) {
       console.warn(`[Middleware] Admin 접근 거부 - userId: ${user.id}, role: ${profile?.role}, path: ${pathname}`);
       return NextResponse.redirect(new URL("/", request.url));
     }
-    if (pathname.startsWith("/md/") && pathname !== "/md/apply" && profile?.role !== "md" && profile?.role !== "admin") {
+    // MD 역할 체크는 대시보드 경로에만. /md/apply는 로그인만 필요(역할 무관),
+    // /md/<slug> 공개 프로필은 애초에 isProtected가 아니라 여기 오지 않는다.
+    if (isMdDashboardPath(pathname) && profile?.role !== "md" && profile?.role !== "admin") {
       console.warn(`[Middleware] MD 접근 거부 - userId: ${user.id}, role: ${profile?.role}, path: ${pathname}`);
       return NextResponse.redirect(new URL("/", request.url));
     }
