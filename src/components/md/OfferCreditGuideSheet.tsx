@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { isGuideDismissedLocally, markGuideSeen } from "@/lib/utils/guideFlag";
 
 /**
  * 파트너 크레딧 가이드 — 깃발 상세 첫 진입 1회.
@@ -36,6 +36,8 @@ export function OfferCreditGuideSheet({
     if (dismissedRef.current) return;
     if (isLoading || !user || !isMd) return;
     if (user.offer_credit_guide_seen) return;
+    // 계정 플래그 기록이 실패한 기기에서도 다시 뜨지 않게 (guideFlag 참고)
+    if (isGuideDismissedLocally("offer_credit_guide_seen", user.id)) return;
     setOpen(true);
   }, [user, isLoading, isMd, manualOpen]);
 
@@ -45,16 +47,8 @@ export function OfferCreditGuideSheet({
     if (manualOpen) { onManualClose?.(); return; }
     dismissedRef.current = true;
     if (!user) return;
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("users")
-      .update({ offer_credit_guide_seen: true })
-      .eq("id", user.id);
-    if (error) {
-      console.error("[OfferCreditGuideSheet] 안내 확인 기록 실패:", error.message);
-      return;
-    }
-    refetch();
+    const saved = await markGuideSeen("offer_credit_guide_seen", user.id);
+    if (saved) refetch();
   };
 
   return (

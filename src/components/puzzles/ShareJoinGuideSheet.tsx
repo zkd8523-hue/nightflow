@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { isGuideDismissedLocally, markGuideSeen } from "@/lib/utils/guideFlag";
 
 /**
  * 유저 조각 안내 — 조각 상세 첫 진입 1회.
@@ -42,6 +42,7 @@ export function ShareJoinGuideSheet({
     // 비로그인은 대상이 아니다 — 참가하려면 어차피 로그인 화면을 거친다.
     if (isLoading || !user) return;
     if (user.share_join_guide_seen) return;
+    if (isGuideDismissedLocally("share_join_guide_seen", user.id)) return;
     setOpen(true);
   }, [user, isLoading, manualOpen]);
 
@@ -51,17 +52,8 @@ export function ShareJoinGuideSheet({
     if (manualOpen) { onManualClose?.(); return; }
     dismissedRef.current = true;
     if (!user) return;
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("users")
-      .update({ share_join_guide_seen: true })
-      .eq("id", user.id);
-    // 조용히 삼키면 "닫았는데 다음에 또 뜬다"로만 드러난다 — 원인을 남긴다
-    if (error) {
-      console.error("[ShareJoinGuideSheet] 안내 확인 기록 실패:", error.message);
-      return;
-    }
-    refetch();
+    const saved = await markGuideSeen("share_join_guide_seen", user.id);
+    if (saved) refetch();
   };
 
   return (
