@@ -56,7 +56,7 @@ export default async function HotdealIndexPage() {
     .select(
       `*,
        club:clubs(id, name, area, thumbnail_url),
-       md:users!daily_hotdeals_md_id_fkey(id, display_name, instagram, profile_image)`
+       md:public_user_profiles!daily_hotdeals_md_id_fkey(id, display_name, instagram, profile_image)`
     )
     .eq("status", "active")
     .gt("ends_at", new Date().toISOString())

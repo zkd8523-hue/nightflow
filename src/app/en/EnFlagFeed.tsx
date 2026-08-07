@@ -61,7 +61,7 @@ type FlagItem = {
   status: string;
   gender_pref: string;
   notes: string | null;
-  leader?: { display_name: string | null; name: string | null; country_code: string | null } | null;
+  leader?: { display_name: string | null; country_code: string | null } | null;
   offerCount?: number;
 };
 

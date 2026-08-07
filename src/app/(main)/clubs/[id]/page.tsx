@@ -126,7 +126,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
       .maybeSingle(),
     supabase
       .from("puzzles")
-      .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender, country_code)")
+      .select("*, leader:public_user_profiles!puzzles_leader_id_fkey(id, display_name, profile_image, deal_count_total, deal_amount_total, created_at, gender, country_code)")
       .eq("club_id", id)
       .eq("host_is_md", true)
       .eq("is_recruiting_party", true)

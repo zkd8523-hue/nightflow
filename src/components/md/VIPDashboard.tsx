@@ -32,7 +32,7 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
             const { data, error } = await supabase
                 .from("md_vip_users")
                 .insert({ md_id: mdId, user_id: userId, note })
-                .select("*, user:users(id, name)")
+                .select("*, user:public_user_profiles!md_vip_users_user_id_fkey(id, display_name)")
                 .single();
 
             if (error) {

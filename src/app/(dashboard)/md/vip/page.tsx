@@ -23,7 +23,7 @@ export default async function MDVipPage() {
     // VIP 목록 조회
     const { data: vipList } = await supabase
         .from("md_vip_users")
-        .select("*, user:users(id, display_name)")
+        .select("*, user:public_user_profiles!md_vip_users_user_id_fkey(id, display_name)")
         .eq("md_id", authUser.id)
         .order("created_at", { ascending: false });
 

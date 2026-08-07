@@ -153,8 +153,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .limit(200),
       supabase
         .from("puzzles")
-        .select("id, updated_at, leader:users!puzzles_leader_id_fkey!inner(is_test)")
-        .eq("users.is_test", false)
+        .select("id, updated_at, leader:public_user_profiles!puzzles_leader_id_fkey!inner(is_test)")
+        .eq("public_user_profiles.is_test", false)
         .eq("status", "open")
         .gt("expires_at", new Date().toISOString())
         .order("updated_at", { ascending: false })

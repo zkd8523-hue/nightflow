@@ -78,7 +78,7 @@ export default async function HotdealDetailPage({ params }: Props) {
     .select(
       `*,
        club:clubs(id, name, area, thumbnail_url, floor_plan_url, address, instagram),
-       md:users!daily_hotdeals_md_id_fkey(id, display_name, instagram, profile_image)`
+       md:public_user_profiles!daily_hotdeals_md_id_fkey(id, display_name, instagram, profile_image)`
     )
     .eq("id", id)
     .single();

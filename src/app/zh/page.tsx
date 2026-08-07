@@ -119,7 +119,7 @@ export default async function ZhHomePage() {
     supabase
       .from("puzzles")
       .select(
-        "id, area, event_date, budget_per_person, total_budget, target_count, current_count, target_male, target_female, status, gender_pref, notes, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, country_code, is_test)"
+        "id, area, event_date, budget_per_person, total_budget, target_count, current_count, target_male, target_female, status, gender_pref, notes, leader:public_user_profiles!puzzles_leader_id_fkey!inner(id, display_name, country_code, is_test)"
       )
       .in("status", ["open", "selecting"])
       .gt("expires_at", nowIso)

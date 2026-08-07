@@ -141,12 +141,12 @@ export default async function EnHomePage() {
   const { data: puzzlesRaw } = await supabase
     .from("puzzles")
     .select(
-      "id, area, event_date, budget_per_person, total_budget, target_count, current_count, target_male, target_female, status, gender_pref, notes, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, country_code, is_test)"
+      "id, area, event_date, budget_per_person, total_budget, target_count, current_count, target_male, target_female, status, gender_pref, notes, leader:public_user_profiles!puzzles_leader_id_fkey!inner(id, display_name, country_code, is_test)"
     )
     .in("status", ["open", "selecting"])
     .gt("expires_at", nowIso)
-    .eq("users.is_test", false)
-    .is("users.country_code", null)
+    .eq("public_user_profiles.is_test", false)
+    .is("public_user_profiles.country_code", null)
     .order("created_at", { ascending: false })
     .limit(30);
 

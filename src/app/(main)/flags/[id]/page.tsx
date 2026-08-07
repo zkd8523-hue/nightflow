@@ -167,7 +167,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
       .from("puzzle_members")
       .select(`
         *,
-        user:users(id, name, display_name, profile_image)
+        user:public_user_profiles!puzzle_members_user_id_fkey(id, display_name, profile_image)
       `)
       .eq("puzzle_id", id)
       .order("joined_at", { ascending: true }),
