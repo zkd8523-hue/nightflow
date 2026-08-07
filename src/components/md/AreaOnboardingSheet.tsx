@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage, logError } from "@/lib/utils/error";
+import { markGuideSeen } from "@/lib/utils/guideFlag";
 
 const SEOUL_AREAS = ["강남", "홍대", "이태원", "건대"] as const;
 const REGIONAL_AREAS = ["부산", "대구", "인천", "광주", "대전", "울산", "세종"] as const;
@@ -28,11 +29,8 @@ export function AreaOnboardingSheet({ userId, onClose }: AreaOnboardingSheetProp
   // best-effort: DB 쓰기가 실패해도(예: 컬럼 미배포) 사용자를 모달에 가두지 않는다.
   // 로컬 상태(MDDashboard)에서 같은 세션 재노출은 막고, 영구 저장은 컬럼 배포 후 정상화된다.
   const markSeen = async () => {
-    const { error } = await supabase
-      .from("users")
-      .update({ md_onboarding_areas_seen: true })
-      .eq("id", userId);
-    if (error) logError(error, "Mark MD onboarding seen");
+    // 0행 반영(RLS 차단/세션 불일치)까지 감지하고 기기 단위 폴백을 남긴다 (guideFlag 참고)
+    await markGuideSeen("md_onboarding_areas_seen", userId);
   };
 
   const handleSave = async () => {

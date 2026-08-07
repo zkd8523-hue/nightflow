@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { isGuideDismissedLocally, markGuideSeen } from "@/lib/utils/guideFlag";
 
 // 제안가 ±20% 범위 조정 기능(Migration 477) 안내 (1회). 대상: MD/관리자.
 // 노출 여부는 계정 단위(users.price_range_onboarding_v1_seen, Migration 483)로 저장.
@@ -17,6 +18,7 @@ export function PriceRangeOnboardingSheet() {
   useEffect(() => {
     if (isLoading || !user || !isMd) return;
     if (user.price_range_onboarding_v1_seen) return;
+    if (isGuideDismissedLocally("price_range_onboarding_v1_seen", user.id)) return;
     setOpen(true);
   }, [user, isLoading, isMd]);
 
@@ -24,12 +26,8 @@ export function PriceRangeOnboardingSheet() {
   const dismiss = async () => {
     setOpen(false);
     if (!user) return;
-    const supabase = createClient();
-    await supabase
-      .from("users")
-      .update({ price_range_onboarding_v1_seen: true })
-      .eq("id", user.id);
-    refetch();
+    const saved = await markGuideSeen("price_range_onboarding_v1_seen", user.id);
+    if (saved) refetch();
   };
 
   return (

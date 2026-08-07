@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { BadgeCheck } from "lucide-react";
+import { isGuideDismissedLocally, isShareGuideSnoozedLocally, markGuideSeen, snoozeShareGuide } from "@/lib/utils/guideFlag";
 
 /**
  * 파트너 조각 가이드 — 첫 로그인 1회.
@@ -52,6 +53,9 @@ export function ShareOnboardingSheet({
     if (isLoading || !user || !isMd) return;
     if (user.share_guide_seen) return;
     if (user.share_guide_snoozed_until && new Date(user.share_guide_snoozed_until) > new Date()) return;
+    // 서버 기록이 실패한 기기에서도 "봤음"·"한 달간 보지 않기"가 유지되게 (guideFlag 참고)
+    if (isGuideDismissedLocally("share_guide_seen", user.id)) return;
+    if (isShareGuideSnoozedLocally(user.id)) return;
     if (!onlyWhenSlotOpen) {
       setTeaserOpen(true);
       return;
@@ -73,9 +77,8 @@ export function ShareOnboardingSheet({
     // 직접 열어본 것은 "안내를 봤다"로 기록하지 않는다
     if (manualOpen) { onManualClose?.(); return; }
     if (!user) return;
-    const supabase = createClient();
-    await supabase.from("users").update({ share_guide_seen: true }).eq("id", user.id);
-    refetch();
+    const saved = await markGuideSeen("share_guide_seen", user.id);
+    if (saved) refetch();
   };
 
   /** 한 달 뒤에 다시 — 봤다고 표시하지 않는다(아직 안 읽었으므로) */
@@ -83,9 +86,8 @@ export function ShareOnboardingSheet({
     setTeaserOpen(false);
     if (!user) return;
     const until = new Date(Date.now() + 30 * 86400000).toISOString();
-    const supabase = createClient();
-    await supabase.from("users").update({ share_guide_snoozed_until: until }).eq("id", user.id);
-    refetch();
+    const saved = await snoozeShareGuide(user.id, until);
+    if (saved) refetch();
   };
 
   return (

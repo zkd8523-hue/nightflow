@@ -14,7 +14,11 @@ import { createClient } from "@/lib/supabase/client";
 
 export type GuideFlag =
   | "offer_credit_guide_seen"
-  | "share_join_guide_seen";
+  | "share_join_guide_seen"
+  | "chat_update_v1_seen"
+  | "price_range_onboarding_v1_seen"
+  | "share_guide_seen"
+  | "md_onboarding_areas_seen";
 
 const localKey = (flag: GuideFlag, userId: string) => `nf_guide:${flag}:${userId}`;
 
@@ -51,6 +55,47 @@ export async function markGuideSeen(flag: GuideFlag, userId: string): Promise<bo
   if (!data || data.length === 0) {
     // 에러 없이 0행 = RLS 로 걸러졌거나 id 가 안 맞음. 세션이 클라이언트에 안 실렸을 때 나온다.
     console.error(`[guideFlag] ${flag} 기록이 0행 반영됨 (RLS 차단 또는 세션 불일치). userId=${userId}`);
+    return false;
+  }
+  return true;
+}
+
+// ── 스누즈(기간 유예) ────────────────────────────────────────────────────────
+// 조각 가이드의 "한 달간 보지 않기"(users.share_guide_snoozed_until, Migration 525).
+// boolean 플래그와 같은 이유로 서버 기록이 실패해도 그 기기에선 유예가 유지돼야 한다.
+
+const snoozeKey = (userId: string) => `nf_guide_snooze:share_guide:${userId}`;
+
+export function isShareGuideSnoozedLocally(userId: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const until = window.localStorage.getItem(snoozeKey(userId));
+    return !!until && new Date(until).getTime() > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+export async function snoozeShareGuide(userId: string, untilIso: string): Promise<boolean> {
+  try {
+    window.localStorage.setItem(snoozeKey(userId), untilIso);
+  } catch {
+    // 저장 실패해도 서버 기록은 진행
+  }
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("users")
+    .update({ share_guide_snoozed_until: untilIso })
+    .eq("id", userId)
+    .select("id");
+
+  if (error) {
+    console.error("[guideFlag] share_guide_snoozed_until 기록 실패:", error.message, error.code);
+    return false;
+  }
+  if (!data || data.length === 0) {
+    console.error(`[guideFlag] share_guide_snoozed_until 0행 반영됨 (RLS 차단 또는 세션 불일치). userId=${userId}`);
     return false;
   }
   return true;

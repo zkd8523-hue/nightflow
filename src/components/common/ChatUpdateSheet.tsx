@@ -7,6 +7,7 @@ import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
+import { isGuideDismissedLocally, markGuideSeen } from "@/lib/utils/guideFlag";
 
 // 인앱 채팅 도입 안내 (계정당 최초 1회, Migration 482 users.chat_update_v1_seen).
 // 대상: MD/관리자 또는 깃발 보유 방장.
@@ -20,6 +21,7 @@ export function ChatUpdateSheet() {
   useEffect(() => {
     if (isLoading || !user || !chatOn) return;
     if (user.chat_update_v1_seen) return;
+    if (isGuideDismissedLocally("chat_update_v1_seen", user.id)) return;
     setOpen(true);
   }, [user, isLoading, chatOn]);
 
@@ -27,9 +29,8 @@ export function ChatUpdateSheet() {
   const dismiss = async () => {
     setOpen(false);
     if (!user) return;
-    const supabase = createClient();
-    await supabase.from("users").update({ chat_update_v1_seen: true }).eq("id", user.id);
-    refetch();
+    const saved = await markGuideSeen("chat_update_v1_seen", user.id);
+    if (saved) refetch();
   };
 
   return (
