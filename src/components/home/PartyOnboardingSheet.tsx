@@ -120,15 +120,12 @@ export function PartyOnboardingSheet({
 
         {/* ④ 오퍼 도착 → 파티원끼리 선택 → 파트너 합류 (유저가 연 파티에만 해당) */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-foreground font-bold">4. 파트너가 채팅방에 합류</span>
+          <span className="text-[14px] text-foreground font-bold">4. 오퍼도 고를 수 있어요!</span>
         </p>
         <div className="bg-card rounded-2xl border border-border p-3 space-y-1.5">
           <p className="text-[12.5px] text-muted-foreground font-semibold leading-relaxed break-keep">
-            유저가 연 파티에는 파트너들이 <span className="text-brand-amber font-black">오퍼</span>를 보내요.
-            채팅방에서 파티원끼리 보고 투표한 뒤, 파티장이 고른 파트너가 채팅방에 들어와요.
-          </p>
-          <p className="text-[11.5px] text-muted-foreground font-semibold">
-            오퍼는 이 파티 사람들만 봐요
+            채팅방에서 <span className="text-brand-amber font-black">오퍼</span>를 골라,
+            클럽 파트너를 채팅방에 합류시킬 수 있어요!
           </p>
         </div>
 
