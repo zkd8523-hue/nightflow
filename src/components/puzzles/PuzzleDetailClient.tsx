@@ -1640,7 +1640,7 @@ export function PuzzleDetailClient({
               <div className="flex items-center gap-2">
                 <span className="text-[16px] leading-none">💌</span>
                 <h2 className="text-[16px] font-bold text-foreground">
-                  {t("시크릿오퍼", "Secret Offers")}
+                  {isRecruitingParty ? t("오퍼", "Offers") : t("시크릿오퍼", "Secret Offers")}
                   {pendingOffers.length > 0 && !isAccepted && (
                     <span className="ml-1.5 text-foreground">{pendingOffers.length}{t("건", "")}</span>
                   )}

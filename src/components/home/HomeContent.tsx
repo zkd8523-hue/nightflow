@@ -109,7 +109,7 @@ const SECRET_OFFER_INTRO_USER = {
   ],
 };
 
-// 유저용 조각 이용방법 (등록 → 시크릿오퍼 → 선택·예약)
+// 유저용 조각 이용방법 (등록 → 오퍼 → 선택·예약)
 export const SHARE_ONBOARDING_STEPS = [
   {
     title: "1. 파티 등록",
@@ -118,8 +118,8 @@ export const SHARE_ONBOARDING_STEPS = [
     color: "bg-green-500/15",
   },
   {
-    title: "2. 시크릿오퍼 받기",
-    desc: "선택한 지역 클럽들이 오퍼를 보내요.\n→ 오퍼는 파티원에게만 공개\n→ **100% 맞춤 패키지!**",
+    title: "2. 오퍼 받기",
+    desc: "선택한 지역 클럽들이 오퍼를 보내요.\n→ 오퍼는 파티원끼리 함께 봐요\n→ **100% 맞춤 패키지!**",
     icon: <span className="text-[20px]">💌</span>,
     color: "bg-sky-500/15",
   },

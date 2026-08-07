@@ -7,11 +7,11 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "파티 올리기",
-  description: "친구가 모자라도 인당 부담 소액으로 좋은 자리. 파티 등록하고 시크릿오퍼 받으세요.",
+  description: "친구가 모자라도 인당 부담 소액으로 좋은 자리. 파티 등록하고 오퍼 받으세요.",
   alternates: { canonical: "https://nightflow.kr/shares/new" },
   openGraph: {
     title: "파티 올리기 — 파티원 모집",
-    description: "파티를 등록하면 친구들이 채팅방에 합류. 클럽에서 시크릿오퍼가 옵니다.",
+    description: "파티를 등록하면 친구들이 채팅방에 합류. 클럽에서 오퍼가 옵니다.",
     url: "https://nightflow.kr/shares/new",
     siteName: "나플",
     locale: "ko_KR",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "파티 올리기 — 파티원 모집",
-    description: "파티를 등록하면 친구들이 채팅방에 합류. 클럽에서 시크릿오퍼가 옵니다.",
+    description: "파티를 등록하면 친구들이 채팅방에 합류. 클럽에서 오퍼가 옵니다.",
     images: ["/og-image.png"],
   },
 };

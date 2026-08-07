@@ -338,11 +338,13 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         <SheetHeader className="p-0 mb-3">
           <div className="flex items-center gap-2 pr-8">
             <SheetTitle className="text-foreground text-[17px] font-black text-left">
-              {editingOffer ? "시크릿오퍼 수정" : "시크릿오퍼"}{puzzle.is_recruiting_party ? " 🎉" : ""}
+              {puzzle.is_recruiting_party
+                ? (editingOffer ? "오퍼 수정" : "오퍼") + " 🎉"
+                : (editingOffer ? "시크릿오퍼 수정" : "시크릿오퍼")}
             </SheetTitle>
             <span className="flex items-center gap-1 text-[10px] text-brand-amber font-bold flex-shrink-0">
               <Lock className="w-3 h-3" />
-              방장에게만 공개돼요
+              {puzzle.is_recruiting_party ? "파티원에게만 공개돼요" : "방장에게만 공개돼요"}
             </span>
           </div>
           {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
