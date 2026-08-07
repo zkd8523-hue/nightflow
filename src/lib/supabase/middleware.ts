@@ -102,8 +102,39 @@ export async function updateSession(request: NextRequest) {
     });
   }
 
-  // 보호된 경로 접근 시 로그인 확인
   const pathname = request.nextUrl.pathname;
+
+  // 구 MD 프로필(/md/<slug>) → 통합 프로필(/u/<id>) 308 영구 리다이렉트.
+  // page.tsx의 permanentRedirect()는 스트리밍 중이라 200 + 메타 리프레시(소프트 리다이렉트)로
+  // 나가서 크롤러에게 약한 신호가 된다. 미들웨어에서 처리해야 진짜 308이 나간다.
+  // 대시보드 경로와 /md/apply는 제외. 슬러그가 없으면 그냥 통과시켜 페이지가 404를 내게 둔다.
+  if (
+    pathname.startsWith("/md/") &&
+    pathname !== "/md/apply" &&
+    !isMdDashboardPath(pathname)
+  ) {
+    const slug = pathname.slice("/md/".length).split("/")[0];
+    if (slug) {
+      const { data: md } = await supabase
+        .from("public_user_profiles")
+        .select("id")
+        .eq("md_unique_slug", decodeURIComponent(slug))
+        .maybeSingle();
+      if (md?.id) {
+        const res = NextResponse.redirect(new URL(`/u/${md.id}`, request.url), 308);
+        // MD 추천인 쿠키(7일) — 기존 /md/<slug> 페이지의 동작을 그대로 승계
+        res.cookies.set("md_referrer", md.id, {
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+        });
+        return res;
+      }
+    }
+  }
+
+  // 보호된 경로 접근 시 로그인 확인
   const isProtected =
     PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix)) ||
     isMdDashboardPath(pathname);
