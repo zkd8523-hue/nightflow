@@ -57,13 +57,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const clubNames = clubs.slice(0, 2).map((c) => c.name).join("·");
   const area = clubs.find((c) => c.area)?.area ?? null;
 
+  // 서비스 용어는 "파트너"지만 검색어는 "MD"다("OO클럽 MD"로 찾지 "OO클럽 파트너"로 안 찾음).
+  // 가중치 높은 title 앞쪽에 "클럽명 + MD"를 두고, 브랜드 용어 "파트너"는 뒤쪽·본문에 남긴다.
   const title = clubNames
-    ? `${name} - ${clubNames} 파트너 | ${area ? `${area} ` : ""}클럽 테이블 예약`
-    : `${name} - ${area ? `${area} ` : ""}클럽 파트너 | 테이블 예약`;
+    ? `${name} - ${clubNames} MD | ${area ? `${area} ` : ""}클럽 파트너·테이블 예약`
+    : `${name} - ${area ? `${area} ` : ""}클럽 MD·파트너 | 테이블 예약`;
 
   const description = clubNames
-    ? `${name} 나이트플로우 공식 파트너. ${clubNames}${area ? ` (${area})` : ""} 테이블·게스트 문의. 원하는 예산으로 깃발 꽂으면 파트너가 조건을 제안합니다.`
-    : `${name} 나이트플로우 공식 파트너 프로필. 원하는 예산으로 깃발 꽂으면 파트너가 조건을 제안합니다.`;
+    ? `${name} - ${clubNames}${area ? ` (${area})` : ""} 클럽 MD. 나이트플로우 공식 파트너로 테이블·게스트 문의를 받습니다. 원하는 예산으로 깃발 꽂으면 조건을 제안받을 수 있어요.`
+    : `${name} - ${area ? `${area} ` : ""}클럽 MD. 나이트플로우 공식 파트너로 테이블·게스트 문의를 받습니다. 원하는 예산으로 깃발 꽂으면 조건을 제안받을 수 있어요.`;
 
   const url = `https://nightflow.kr/u/${userId}`;
 
