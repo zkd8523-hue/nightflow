@@ -2221,15 +2221,18 @@ export function PuzzleDetailClient({
                   </div>
                 )}
                 <div className="flex items-stretch gap-2">
-                  <button
-                    type="button"
-                    onClick={handleOpenDm}
-                    disabled={openingDm}
-                    className="shrink-0 h-13 px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-card border border-border text-foreground text-[13px] font-black active:scale-[0.98] transition-all disabled:opacity-50"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    1:1메시지
-                  </button>
+                  {/* 깃발(경매)엔 1:1 없음 — 경쟁 입찰 우회 방지. 조각/파티(고정가)만 허용 */}
+                  {isRecruitingParty && (
+                    <button
+                      type="button"
+                      onClick={handleOpenDm}
+                      disabled={openingDm}
+                      className="shrink-0 h-13 px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-card border border-border text-foreground text-[13px] font-black active:scale-[0.98] transition-all disabled:opacity-50"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      1:1메시지
+                    </button>
+                  )}
                   <Button
                     onClick={() => setShowOffer(true)}
                     className="flex-1 py-3.5 h-auto rounded-full bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] border border-black/60 shadow-[0_0_20px_rgba(245,158,11,0.45)] active:scale-[0.98] transition-all"
