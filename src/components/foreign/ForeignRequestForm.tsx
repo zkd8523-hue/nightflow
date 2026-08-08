@@ -676,12 +676,31 @@ export function ForeignRequestForm({
         </div>
         {selectedClubIds.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
-            {selectedClubIds.map((id) => (
-              <span key={id} className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-brand-amber text-[13px] font-bold">
-                {clubById[id] ? displayClubName(clubById[id]) : ""}
-                <button type="button" onClick={() => toggleClub(id)}><X className="w-3.5 h-3.5" /></button>
-              </span>
-            ))}
+            {selectedClubIds.map((id) => {
+              const full = clubById[id];
+              const selectedList = selectedClubIds.map((x) => clubById[x]).filter(Boolean);
+              return (
+                <span key={id} className="flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 text-brand-amber text-[13px] font-bold">
+                  {/* 이름 탭 = 상세 열기 (담은 뒤에도 다시 확인할 수 있어야 함), X = 빼기 */}
+                  <button
+                    type="button"
+                    disabled={!full}
+                    onClick={() => full && openDetail(selectedList, full)}
+                    className="pl-3 pr-1.5 py-1.5 disabled:cursor-default"
+                  >
+                    {full ? displayClubName(full) : ""}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("빼기", "Remove", "外す", "移除")}
+                    onClick={() => toggleClub(id)}
+                    className="pl-0.5 pr-2.5 py-1.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              );
+            })}
           </div>
         )}
 
