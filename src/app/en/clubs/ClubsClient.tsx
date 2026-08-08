@@ -48,10 +48,13 @@ type GoogleReview = {
 };
 
 // 로그인 후 깃발 폼으로 복귀하는 링크. 미로그인이면 폼 서버 컴포넌트가 자동으로 /login?redirect= 로 튕김.
-function buildFlagHref(lang: Lang, area?: string) {
+// clubId를 실으면 폼이 그 클럽을 미리 선택하고 여행확정 게이트도 건너뜀(page.tsx의 presetClubId).
+// "Book at BADASS"를 눌렀는데 클럽 얘기가 없는 질문 화면이 뜨면 선택이 증발한 것처럼 보여 되돌아가던 이탈이 있었음.
+function buildFlagHref(lang: Lang, area?: string, clubId?: string) {
   const params = new URLSearchParams();
   params.set("lang", lang);
   if (area) params.set("area", area);
+  if (clubId) params.set("club", clubId);
   return `/flags/new?${params.toString()}`;
 }
 
@@ -554,7 +557,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
         >
           {selectedClub && (() => {
             const club = selectedClub;
-            const clubFlagHref = buildFlagHref(lang, club.area);
+            const clubFlagHref = buildFlagHref(lang, club.area, club.id);
             const nextButton = hasNextDetail ? (
               <button
                 type="button"

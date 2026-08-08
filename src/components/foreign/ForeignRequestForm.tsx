@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search, X, Check, MapPin, Users, Calendar, Coins, MessageCircle, Languages, ChevronRight } from "lucide-react";
+import { Search, X, Check, MapPin, Users, Calendar, Coins, MessageCircle, Languages, ChevronRight, Heart, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -13,6 +13,7 @@ import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from 
 import { krwTo } from "@/lib/utils/currency";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
 import { trackForeignEvent, trackEvent } from "@/lib/analytics/events";
+import { useSavedClubs } from "@/lib/clubs/savedClubs";
 
 // 언어별로 가장 익숙할 통화 하나만 보여줌 (4개 다 나열하면 정보 과다)
 const CURRENCY_BY_LANG: Partial<Record<Lang, string>> = {
@@ -114,28 +115,48 @@ export function ForeignRequestForm({
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   // 여행 확정 게이트 — 계획중(막연) 유저는 깃발 마켓 오염·MD 오퍼 낭비라 걸러 홈으로 회유.
-  // 클럽 상세에서 특정 클럽 의도를 갖고 온 경우(presetClubId)는 이미 확정에 가까워 스킵.
-  const [tripStatus, setTripStatus] = useState<null | "qualified" | "planning">(
-    presetClubId ? "qualified" : null
-  );
+  //
+  // ⚠️ 클럽을 지정해서 왔다고(presetClubId) 게이트를 건너뛰지 않는다.
+  // "Book at ○○" 버튼은 현재 관심을 표현하는 유일한 수단이라 사실상 찜 대용으로 눌린다 —
+  // 확정된 방문 의사로 보기엔 신호가 약해서, 게이트를 스킵하면 미확정 리드가 그대로 들어온다.
+  // 대신 게이트 화면에 고른 클럽명을 띄워 "내 선택이 살아있다"는 것만 보여준다.
+  const [tripStatus, setTripStatus] = useState<null | "qualified" | "planning">(null);
+
+  // 게이트·폼에서 "네가 고른 클럽"을 확인시켜 줄 이름.
+  // 이게 없으면 "Book at BADASS"를 눌렀는데 클럽 얘기 없는 질문 화면이 떠서 선택이 증발한 걸로 보임.
+  const [intentClubName, setIntentClubName] = useState<string | null>(() => {
+    const preset = presetClubId ? clubs.find((c) => c.id === presetClubId) : undefined;
+    return preset ? displayClubName(preset) : null;
+  });
 
   // 클럽상세 CTA(ClubsClient)가 sessionStorage "nightflow_book_intent"에 club_id/area를 저장 →
   // 그 클럽을 자동 프리셀렉트 (Gemini의 기존 배관 재사용). 소비 후 삭제.
+  // 지금은 CTA URL에 ?club=도 실리므로(presetClubId) 이 경로는 로그인 왕복 등의 폴백 역할.
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("nightflow_book_intent");
       if (!raw) return;
       sessionStorage.removeItem("nightflow_book_intent");
       const intent = JSON.parse(raw) as { club_id?: string; area?: string };
-      if (intent.club_id && clubs.some((c) => c.id === intent.club_id)) {
+      const match = intent.club_id ? clubs.find((c) => c.id === intent.club_id) : undefined;
+      if (match) {
         setSelectedClubIds((prev) =>
-          prev.includes(intent.club_id!) ? prev : [intent.club_id!, ...prev].slice(0, MAX_CLUBS)
+          prev.includes(match.id) ? prev : [match.id, ...prev].slice(0, MAX_CLUBS)
         );
+        setIntentClubName((prev) => prev ?? displayClubName(match));
       }
       if (intent.area && AREAS.includes(intent.area)) setArea((prev) => prev || intent.area!);
     } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 찜해둔 클럽 — 아직 폼에 안 담긴 것만 "원탭 추가" 칩으로 노출.
+  // 여러 클럽을 둘러보다 이름을 잊고 재검색하다 이탈하던 구간을 없애는 용도.
+  const savedClubs = useSavedClubs();
+  const savedNotSelected = useMemo(
+    () => savedClubs.filter((s) => !selectedClubIds.includes(s.id) && clubs.some((c) => c.id === s.id)),
+    [savedClubs, selectedClubIds, clubs]
+  );
 
   const clubById = useMemo(() => Object.fromEntries(clubs.map((c) => [c.id, c])), [clubs]);
   const venueTypeGroup = FILTER_GROUPS.find((g) => g.group === "venue_type");
@@ -413,6 +434,22 @@ export function ForeignRequestForm({
   if (tripStatus === null) {
     return (
       <div className="space-y-6 pb-12">
+        {/* 고른 클럽을 게이트에서도 보여줌 — 이게 없으면 "Book at BADASS"를 눌렀는데
+            클럽 얘기가 없는 질문 화면이 떠서, 선택이 날아간 줄 알고 목록으로 되돌아가 이탈했음. */}
+        {intentClubName && (
+          <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25">
+            <Check className="w-4 h-4 text-brand-amber shrink-0 mt-0.5" />
+            <p className="text-[13px] text-foreground leading-relaxed break-keep">
+              <span className="font-black text-brand-amber">{intentClubName}</span>{" "}
+              {t(
+                "— 선택했어요. 아래 한 가지만 확인할게요.",
+                "— saved for your request. Just one quick question first.",
+                "— 選択しました。まず1つだけ確認します。",
+                "— 已选择。先确认一个问题。"
+              )}
+            </p>
+          </div>
+        )}
         <div className="bg-card rounded-3xl border border-border p-6 space-y-5">
           <div className="space-y-1.5">
             <h2 className="text-[20px] font-black text-foreground leading-snug tracking-tight">
@@ -485,6 +522,28 @@ export function ForeignRequestForm({
 
   return (
     <div className="space-y-7">
+      {/* 클럽 상세에서 "Book at ○○"를 눌러 넘어온 경우, 그 선택이 살아있음을 폼 최상단에서 바로 보여줌.
+          클럽 선택 섹션은 한참 아래라, 확인 없이는 선택이 증발한 걸로 보여 되돌아가던 이탈이 있었음. */}
+      {selectedClubIds.length > 0 && (
+        <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25">
+          <Check className="w-4 h-4 text-brand-amber shrink-0 mt-0.5" />
+          <p className="text-[13px] text-foreground leading-relaxed break-keep">
+            <span className="font-black text-brand-amber">
+              {selectedClubIds
+                .map((id) => (clubById[id] ? displayClubName(clubById[id]) : ""))
+                .filter(Boolean)
+                .join(", ")}
+            </span>{" "}
+            {t(
+              "— 이 클럽으로 요청할게요. 아래에서 더 추가할 수 있어요.",
+              "— we'll request this club for you. You can add more below.",
+              "— このクラブでリクエストします。下でさらに追加できます。",
+              "— 我们会为你申请这家夜店。你可以在下面添加更多。"
+            )}
+          </p>
+        </div>
+      )}
+
       {/* 날짜 */}
       <section>
         {label(<Calendar className="w-4 h-4 text-money" />, t("날짜", "Date", "日付", "日期"))}
@@ -623,6 +682,54 @@ export function ForeignRequestForm({
                 <button type="button" onClick={() => toggleClub(id)}><X className="w-3.5 h-3.5" /></button>
               </span>
             ))}
+          </div>
+        )}
+
+        {/* 찜해둔 클럽 원탭 추가 — 둘러보며 하트한 것을 이름 재검색 없이 바로 담게 함 */}
+        {savedNotSelected.length > 0 && (
+          <div className="mb-3 p-3 rounded-2xl bg-card border border-border">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Heart className="w-3.5 h-3.5 text-brand-amber fill-current" />
+              <span className="text-[12px] font-bold text-foreground">
+                {t("찜한 클럽", "Your saved clubs", "保存したクラブ", "收藏的夜店")}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                {t("+ 담기 · 이름 탭하면 상세", "+ to add · tap name for details", "+で追加・名前で詳細", "+添加 · 点名称看详情")}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {savedNotSelected.map((s) => {
+                const full = clubById[s.id];
+                const savedList = savedNotSelected.map((x) => clubById[x.id]).filter(Boolean);
+                return (
+                  <span key={s.id} className="flex items-center rounded-full bg-muted border border-border overflow-hidden">
+                    {/* + : 바로 담기 (아는 클럽이면 한 번에) */}
+                    <button
+                      type="button"
+                      aria-label={t("담기", "Add", "追加", "添加")}
+                      onClick={() => {
+                        toggleClub(s.id);
+                        trackForeignEvent("foreign_saved_club_added", { club_id: s.id, club_name: s.name });
+                      }}
+                      className="pl-2.5 pr-1.5 py-2 text-muted-foreground hover:text-brand-amber transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                    {/* 이름 : 상세 열기 (담기 전에 뭐였는지 다시 확인) — 폼의 클럽 카드와 같은 규칙.
+                        찜 해제 버튼은 여기 두지 않는다 — 담으면 어차피 목록에서 빠지고,
+                        해제는 헤더의 찜 목록이나 클럽 상세의 Save 토글에서 하면 됨. */}
+                    <button
+                      type="button"
+                      disabled={!full}
+                      onClick={() => full && openDetail(savedList, full)}
+                      className="pl-1 pr-3.5 py-2 text-[13px] font-bold text-foreground hover:text-brand-amber transition-colors disabled:cursor-default disabled:hover:text-foreground"
+                    >
+                      {full ? displayClubName(full) : s.name}
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
           </div>
         )}
         {/* 정렬 탭 */}
@@ -869,6 +976,7 @@ export function ForeignRequestForm({
               <ForeignClubDetailPanel
                 club={detailClub}
                 lang={lang}
+                showSave={false}
                 cta={
                   <div className="flex gap-2 mt-2">
                     <button

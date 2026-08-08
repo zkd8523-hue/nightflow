@@ -186,7 +186,14 @@ export const trackForeignEvent = (
     | 'foreign_login_view'
     | 'foreign_login_success'
     | 'foreign_request_form_view'
-    | 'foreign_request_submitted',
+    | 'foreign_request_submitted'
+    | 'foreign_club_saved'
+    | 'foreign_saved_club_added'
+    // 외국어 홈 진입 (Admin 인사이트가 이 이름들로 집계)
+    | 'en_home_view'
+    | 'ja_home_view'
+    | 'zh_home_view'
+    | 'zh_tw_home_view',
   params: {
     area?: string | null;
     club_id?: string;

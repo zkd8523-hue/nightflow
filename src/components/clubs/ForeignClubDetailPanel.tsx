@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { MapPin, ExternalLink } from "lucide-react";
 import { DrinkMenuViewer } from "@/components/clubs/DrinkMenuViewer";
+import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
 import { clubFeatureLabels } from "@/lib/clubs/tagLabelsI18n";
@@ -64,10 +65,13 @@ export function ForeignClubDetailPanel({
   club,
   lang,
   cta,
+  showSave = true,
 }: {
   club: ForeignClubDetail;
   lang: Lang;
   cta: React.ReactNode;
+  /** 찜(하트) 버튼 노출. 이미 "선택하기" 액션이 있는 컨시어지 폼에서는 중복이라 끔. */
+  showSave?: boolean;
 }) {
   const t = makeT(lang);
   const googleReviewsLabel = t("구글 리뷰", "Google reviews", "Googleレビュー", "谷歌评价");
@@ -93,6 +97,7 @@ export function ForeignClubDetailPanel({
             {areaI18n(club.area, lang)}
           </span>
         </div>
+
 
         {club.google_rating != null && (
           <a href={googleUrl} target="_blank" rel="noopener noreferrer"
@@ -203,7 +208,27 @@ export function ForeignClubDetailPanel({
       {/* CTA — 클럽마다 리뷰·태그 등 위쪽 콘텐츠 길이가 달라 본문 흐름 안에 두면 버튼이
           안 보이거나(스크롤 필요) 위치가 계속 바뀜. 시트 스크롤 컨테이너 하단에 고정. */}
       <div className="sticky bottom-0 px-5 pt-3 pb-5 bg-card/95 backdrop-blur-sm border-t border-border">
-        {cta}
+        {showSave ? (
+          // 예약(8) : 찜(2). 찜을 예약 버튼 바로 옆에 둬야 "지금은 아니지만 기억해두기"가
+          // 예약과 동등한 선택지로 보임 — 상세 상단에 있으면 스크롤 밖으로 밀려 안 눌림.
+          <div className="flex items-stretch gap-2">
+            <div className="flex-[8] min-w-0">{cta}</div>
+            <SaveClubButton
+              variant="cta"
+              className="flex-[2] min-w-0 mt-2"
+              club={{
+                id: club.id,
+                name: club.name,
+                name_en: club.name_en,
+                area: club.area,
+                thumbnail_url: club.thumbnail_url,
+              }}
+              lang={lang}
+            />
+          </div>
+        ) : (
+          cta
+        )}
       </div>
     </div>
   );

@@ -441,6 +441,7 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT, area,
               <ForeignClubDetailPanel
                 club={detailClub}
                 lang="ko"
+                showSave={false}
                 cta={
                   <div className="flex gap-2 mt-2">
                     <button

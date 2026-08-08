@@ -153,20 +153,22 @@ export default async function PuzzleNewPage({
         {/* 외국인만 헤더 유지(자체 chrome이라 타이틀 필요). 한국인은 게이트/폼이 헤더 역할 */}
         {isForeigner && (
           <div className="mb-8">
+            {/* 제목=결과, 부제=무엇을 하면 무슨 일이 일어나는지 + 여러 개 고를 이유("up to 5"의 근거).
+                이전 문구는 제목·부제가 "클럽을 고르세요"를 두 번 말하고 이유를 안 줬음. */}
             <h1 className="text-2xl font-black text-foreground tracking-tight">
               {t(
-                "🚩 깃발",
-                "Pick your club",
-                "クラブを選ぶ",
-                "选择夜店"
+                "서울의 밤 예약하기",
+                "Book your Seoul night",
+                "ソウルの夜を予約",
+                "预订你的首尔夜晚"
               )}
             </h1>
-            <p className="text-muted-foreground text-sm font-medium mt-0.5 break-keep">
+            <p className="text-muted-foreground text-sm font-medium mt-1 break-keep leading-relaxed">
               {t(
-                "클럽 골라주면 우리가 연결해드려요",
-                "Pick your clubs — we'll get you in",
-                "クラブを選べば、私たちがつなぎます",
-                "选好夜店,我们帮你连接"
+                "가고 싶은 클럽을 고르면 우리가 직접 연락해 테이블을 잡아드려요. 여러 곳 고를수록 붐비는 날 성공률이 올라가요.",
+                "Pick the clubs you want — we contact them directly and lock in your table, in English. More picks, better odds on a busy night.",
+                "行きたいクラブを選べば、私たちが直接連絡してテーブルを確保します。複数選ぶほど、混雑する日に取れる可能性が上がります。",
+                "选好想去的夜店,我们直接联系并帮你锁定卡座。多选几家,人多的日子成功率更高。"
               )}
             </p>
           </div>

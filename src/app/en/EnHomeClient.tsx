@@ -12,6 +12,7 @@ import { BusinessInfo } from "@/components/layout/BusinessInfo";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ForeignAppCta } from "@/components/layout/ForeignAppCta";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
+import { SavedClubsButton } from "@/components/clubs/SavedClubsButton";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { trackForeignEvent } from "@/lib/analytics/events";
 
@@ -29,10 +30,13 @@ type MyRequest = {
 type ClubItem = ForeignClubDetail;
 
 // 로그인 후 깃발 폼으로 복귀하는 링크. 미로그인이면 폼 서버 컴포넌트가 자동으로 /login?redirect= 로 튕김.
-function buildFlagHref(lang: Lang, area?: string) {
+// clubId를 실으면 폼이 그 클럽을 미리 선택하고 여행확정 게이트도 건너뜀(page.tsx의 presetClubId).
+// "Book at BADASS"를 눌렀는데 클럽 얘기가 없는 질문 화면이 뜨면 선택이 증발한 것처럼 보여 되돌아가던 이탈이 있었음.
+function buildFlagHref(lang: Lang, area?: string, clubId?: string) {
   const params = new URLSearchParams();
   params.set("lang", lang);
   if (area) params.set("area", area);
+  if (clubId) params.set("club", clubId);
   return `/flags/new?${params.toString()}`;
 }
 
@@ -356,7 +360,7 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
                 cta={
                   <div className="flex gap-2 mt-2">
                     <Link
-                      href={buildFlagHref(lang, detailClub.area)}
+                      href={buildFlagHref(lang, detailClub.area, detailClub.id)}
                       onClick={() => {
                         // 회원가입 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트 — ClubsClient와 동일 패턴.
                         if (typeof window !== "undefined") {
@@ -680,6 +684,14 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
   const [tab, setTab] = useState<Tab>("flags");
   const { lang, tr } = useTr();
 
+  // 외국어 홈 진입 계측. 이게 없어서 /en·/ja·/zh 착지 후 아무것도 안 누르고 나간 유저는
+  // user_events에 한 줄도 안 남았고(광고 클릭 60 vs 기록 20), 상단 이탈을 아예 못 보고 있었음.
+  // Admin 인사이트에는 en_home_view/ja_home_view/zh_home_view 라벨이 이미 있는데 발동부만 비어 있었다.
+  useEffect(() => {
+    const key = lang === "zh-tw" ? "zh_tw" : lang;
+    trackForeignEvent(`${key}_home_view` as Parameters<typeof trackForeignEvent>[0], { lang });
+  }, [lang]);
+
   const tabs: { code: Tab; label: string; icon: React.ReactNode }[] = [
     { code: "flags", label: tr("Home"),  icon: <Home className="w-4 h-4" /> },
     { code: "my",    label: tr("My"),    icon: <User className="w-4 h-4" /> },
@@ -706,12 +718,16 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
           </button>
         )}
         {/* 컨시어지는 로그인 불필요 — 상단 CTA는 항상 예약(Book now)으로 통일(로그인 버튼 제거) */}
-        <Link
-          href={`/flags/new?lang=${lang}`}
-          className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-inverse text-inverse-foreground font-black text-[13px] hover:opacity-90 transition-colors"
-        >
-          {tr("Book K-Club")}
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* 찜한 클럽 진입점 — 0개면 스스로 숨음 */}
+          <SavedClubsButton lang={lang} clubs={clubs} />
+          <Link
+            href={`/flags/new?lang=${lang}`}
+            className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-inverse text-inverse-foreground font-black text-[13px] hover:opacity-90 transition-colors"
+          >
+            {tr("Book K-Club")}
+          </Link>
+        </div>
       </header>
 
       {/* 콘텐츠 */}
