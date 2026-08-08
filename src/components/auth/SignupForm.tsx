@@ -11,7 +11,7 @@ import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
 import { validateDisplayName, isDisplayNameTaken, generateRandomNickname } from "@/lib/utils/displayName";
 import { normalizeProfileImage } from "@/lib/utils/image";
-import { ChevronRight, Check, ArrowLeft, Camera } from "lucide-react";
+import { ChevronRight, Check, ArrowLeft, Camera, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -166,6 +166,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [nicknameInput, setNicknameInput] = useState("");
   const [nicknameError, setNicknameError] = useState<string | null>(null);
   const [nicknameChecking, setNicknameChecking] = useState(false);
+  const [nicknameRegenerating, setNicknameRegenerating] = useState(false);
   const [nicknameOk, setNicknameOk] = useState(false);
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [countrySearch, setCountrySearch] = useState("");
@@ -200,6 +201,19 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
+
+  // 리롤 버튼 — 자동 채워진 닉네임이 마음에 안 들면 새로 하나 더 뽑기.
+  // "빈칸에서 직접 입력" 대신 "채워진 걸 원하면 바꿀 수 있음"으로 통제감을 줌.
+  const handleRegenerateNickname = async () => {
+    if (nicknameRegenerating) return;
+    setNicknameRegenerating(true);
+    try {
+      const name = await generateRandomNickname(supabase);
+      setNicknameInput(name);
+    } finally {
+      setNicknameRegenerating(false);
+    }
+  };
 
   // 닉네임 debounce 중복 체크: 형식 통과 후 600ms 대기하여 자동 확인
   useEffect(() => {
@@ -948,11 +962,22 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                       else { setNicknameError(null); setNicknameOk(true); }
                     } finally { setNicknameChecking(false); }
                   }}
-                  className="w-full h-12 px-4 pr-14 rounded-xl bg-muted border border-border text-foreground placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
+                  className="w-full h-12 pl-4 pr-20 rounded-xl bg-muted border border-border text-foreground placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
                 />
-                {/* 글자수 */}
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <span className="text-[11px] text-muted-foreground tabular-nums">{nicknameInput.length}/16</span>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <span className="text-[11px] text-muted-foreground tabular-nums pr-0.5">{nicknameInput.length}/16</span>
+                  {/* 리롤 버튼 — 외국인은 자동 채움 자체가 없으니(영어권엔 안 맞는 한글 조합) 숨김 */}
+                  {!isForeigner && (
+                    <button
+                      type="button"
+                      onClick={handleRegenerateNickname}
+                      disabled={nicknameRegenerating}
+                      aria-label={tt("닉네임 다시 생성", "Generate new nickname")}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-card disabled:opacity-50 transition-colors"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${nicknameRegenerating ? "animate-spin" : ""}`} />
+                    </button>
+                  )}
                 </div>
               </div>
 
