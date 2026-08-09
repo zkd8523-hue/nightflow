@@ -262,6 +262,176 @@ function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
   );
 }
 
+// 가이드 카드 인덱스.
+// 주제 선정 근거: 외국인 검색·커뮤니티에서 반복되는 불안은 "얼마 드나 / 뭐 입나 /
+// 외국인이라고 막히나 / 혼자 가도 되나"에 몰려 있다. 추상적인 "한국 클럽의 특징" 류보다
+// 이런 구체적 질문이 검색량·전환 모두 낫다(이 프로젝트 블로그 실측에서도 구체 주제만 성과).
+// 답이 이미 있는 페이지들이 아코디언·하위 페이지에 묻혀 있어 진입점을 표면으로 끌어올린다.
+function GuideIndex() {
+  const { lang, t } = useTr();
+
+  const cards = [
+    {
+      cat: t("이용 방법", "HOW IT WORKS", "利用方法", "使用方法", "使用方法"),
+      title: t(
+        "예약이 실제로 어떻게 되나요?",
+        "How does booking actually work?",
+        "予約は実際どう進むの？",
+        "预订到底怎么进行?",
+        "預約到底怎麼進行?"
+      ),
+      desc: t(
+        "날짜·인원·예산만 주면 우리가 클럽에 직접 연락해 테이블을 잡습니다. 중개 수수료도 예약금도 없습니다.",
+        "Tell us the date, group size and budget — we contact the club directly and lock your table. No broker fee, no deposit.",
+        "日程・人数・予算を教えてくれれば、私たちがクラブに直接連絡してテーブルを確保します。仲介手数料もデポジットもなし。",
+        "告诉我们日期、人数和预算,我们直接联系夜店锁定卡座。无中介费,无押金。",
+        "告訴我們日期、人數和預算,我們直接聯絡夜店鎖定包廂。無中介費,無訂金。"
+      ),
+      href: `/${lang}/guide`,
+    },
+    {
+      cat: t("테이블", "TABLES", "テーブル", "卡座", "包廂"),
+      title: t(
+        "테이블과 그냥 입장, 뭐가 다른가요?",
+        "Table or just entry — what's the difference?",
+        "テーブルと入場だけ、何が違う？",
+        "卡座和普通入场有什么区别?",
+        "包廂和一般入場有什麼差別?"
+      ),
+      desc: t(
+        "VIP 테이블은 자리·보틀·줄 안 서기가 붙습니다. 가격대와 언제 값어치를 하는지 정리했습니다.",
+        "A VIP table gets you seating, bottle service and no queue. Here's what it costs and when it's worth it.",
+        "VIPテーブルは席・ボトル・列スキップが付きます。価格帯と、どんな時に元が取れるかをまとめました。",
+        "VIP 卡座包含座位、酒水和免排队。这里说明价格区间和什么时候值得。",
+        "VIP 包廂包含座位、酒水和免排隊。這裡說明價格區間和什麼時候值得。"
+      ),
+      href: `/${lang}/vip-tables`,
+    },
+    {
+      cat: t("무료 입장", "FREE ENTRY", "無料入場", "免费入场", "免費入場"),
+      title: t(
+        "무료로 들어갈 수도 있나요?",
+        "Can I get in for free?",
+        "無料で入れることもある？",
+        "可以免费进场吗?",
+        "可以免費進場嗎?"
+      ),
+      desc: t(
+        "게스트 리스트가 어떻게 돌아가는지, 누가 대상이고 어떤 날 가능한지 설명합니다.",
+        "How the guest list actually works — who qualifies, and which nights it's possible.",
+        "ゲストリストの仕組み — 誰が対象で、どの日なら可能かを説明します。",
+        "嘉宾名单是怎么运作的 — 谁符合条件,哪些日子可行。",
+        "嘉賓名單是怎麼運作的 — 誰符合條件,哪些日子可行。"
+      ),
+      href: `/${lang}/guests`,
+    },
+    {
+      cat: t("음악", "MUSIC", "音楽", "音乐", "音樂"),
+      title: t(
+        "K-pop이 나오는 클럽은 어디인가요?",
+        "Which clubs actually play K-pop?",
+        "K-popがかかるクラブはどこ？",
+        "哪些夜店真的放 K-pop?",
+        "哪些夜店真的放 K-pop?"
+      ),
+      desc: t(
+        "장르는 클럽마다, 요일마다 다릅니다. K-pop·힙합·EDM이 실제로 나오는 곳을 골랐습니다.",
+        "Genre changes by club and by night. Here are the ones that really play K-pop, hip-hop and EDM.",
+        "ジャンルはクラブごと・曜日ごとに変わります。K-pop・ヒップホップ・EDMが実際にかかる店を選びました。",
+        "音乐风格因店和日子而异。这里挑出真正放 K-pop、嘻哈和 EDM 的店。",
+        "音樂風格因店和日子而異。這裡挑出真正放 K-pop、嘻哈和 EDM 的店。"
+      ),
+      href: `/${lang}/kpop-clubs`,
+    },
+    {
+      cat: t("지역", "AREAS", "エリア", "区域", "區域"),
+      title: t(
+        "강남, 홍대, 이태원 중 어디로 가야 하나요?",
+        "Gangnam, Hongdae or Itaewon?",
+        "江南・弘大・梨泰院、どこに行くべき？",
+        "江南、弘大还是梨泰院?",
+        "江南、弘大還是梨泰院?"
+      ),
+      desc: t(
+        "동네마다 가격대·연령대·분위기가 확연히 다릅니다. 첫 방문이라면 어디가 무난한지도 함께.",
+        "Price, crowd and vibe differ sharply by district — including which one is safest for a first night out.",
+        "エリアごとに価格帯・客層・雰囲気がはっきり違います。初めてならどこが無難かも。",
+        "各区域的价格、客群和氛围差别很大 — 也包括第一次去哪里最稳妥。",
+        "各區域的價格、客群和氛圍差別很大 — 也包括第一次去哪裡最穩妥。"
+      ),
+      href: `/${lang}/seoul-nightlife`,
+    },
+    {
+      cat: t("기본 정보", "THE BASICS", "基本情報", "基本信息", "基本資訊"),
+      title: t(
+        "복장·나이·여권, 뭘 챙겨야 하나요?",
+        "Dress code, age, passport — what do I need?",
+        "服装・年齢・パスポート、何が必要？",
+        "着装、年龄、护照 — 需要准备什么?",
+        "服裝、年齡、護照 — 需要準備什麼?"
+      ),
+      desc: t(
+        "외국인이 입장을 거부당하는 경우, 실제 비용, 신분증 규정까지 자주 묻는 질문을 모았습니다.",
+        "Whether foreigners get turned away, what a night really costs, and the ID rules — the questions we get most.",
+        "外国人が入場を断られるケース、実際にかかる費用、身分証のルールまで、よくある質問をまとめました。",
+        "外国人会不会被拒之门外、一晚实际花多少、证件规定 — 我们最常被问到的问题。",
+        "外國人會不會被拒於門外、一晚實際花多少、證件規定 — 我們最常被問到的問題。"
+      ),
+      href: `/${lang}/faq`,
+    },
+  ];
+
+  return (
+    <section className="px-4 pb-8">
+      <p className="text-[12px] font-black text-brand-amber tracking-widest uppercase">
+        {t("나플 가이드", "NightFlow Guide", "NightFlow ガイド", "NightFlow 指南", "NightFlow 指南")}
+      </p>
+      <h2 className="mt-1.5 text-[26px] font-black tracking-tight leading-tight break-keep">
+        {t(
+          "처음 가도 헤매지 않게",
+          "Everything to know before your first night",
+          "初めてでも迷わないために",
+          "第一次来也不会手足无措",
+          "第一次來也不會手足無措"
+        )}
+      </h2>
+      <p className="mt-2 text-[14px] text-muted-foreground leading-relaxed break-keep">
+        {t(
+          "비용부터 복장, 입장 규정, 지역별 분위기까지 실제로 알아야 할 것만 정리했습니다.",
+          "Costs, dress code, entry rules and what each district is actually like — only what you'll actually need.",
+          "費用から服装、入場ルール、エリアごとの雰囲気まで、実際に必要なことだけまとめました。",
+          "从费用、着装到入场规定和各区域氛围 — 只整理你真正需要知道的。",
+          "從費用、著裝到入場規定和各區域氛圍 — 只整理你真正需要知道的。"
+        )}
+      </p>
+
+      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {cards.map((c, i) => (
+          <Link
+            key={c.href}
+            href={c.href}
+            className="group flex flex-col rounded-2xl bg-card border border-border p-4 hover:border-amber-500/40 transition-colors"
+          >
+            <p className="text-[11px] font-black text-brand-amber tracking-wider">
+              {String(i + 1).padStart(2, "0")} · {c.cat}
+            </p>
+            <h3 className="mt-2 text-[16px] font-black text-foreground leading-snug break-keep">
+              {c.title}
+            </h3>
+            <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed break-keep flex-1">
+              {c.desc}
+            </p>
+            <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-brand-amber">
+              {t("읽어보기", "Read", "読む", "阅读", "閱讀")}
+              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags: FlagItem[]; bookCtaRef?: React.RefObject<HTMLAnchorElement | null> }) {
   const { lang, t, tr } = useTr();
 
@@ -576,6 +746,11 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
           </details>
         ))}
       </div>
+
+      {/* 가이드 인덱스 — 외국인이 실제로 불안해하는 것들(비용·복장·입장거부·혼자오기)에
+          답하는 페이지로 보내는 진입점. SEO 내부링크(거미줄) 역할도 겸한다.
+          6장 모두 en/ja/zh/zh-tw 네 언어에 실재하는 페이지로만 연결. */}
+      <GuideIndex />
 
       {/* 앱 다운로드 CTA (플랫폼 자동 감지: iPhone→App Store / Android→Play) */}
       <ForeignAppCta lang={lang} />
