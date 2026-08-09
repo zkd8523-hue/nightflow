@@ -272,6 +272,26 @@ function GuideIndex() {
 
   const cards = [
     {
+      // 실데이터 기반이라 다른 카드보다 앞에 — "얼마 드나"가 가장 큰 불안이고
+      // 경쟁 블로그의 뭉뚱그린 숫자와 달리 클럽별 실제 값을 보여준다.
+      cat: t("가격", "PRICES", "料金", "价格", "價格"),
+      title: t(
+        "서울 클럽, 실제로 얼마 드나요?",
+        "How much does a Seoul club cost?",
+        "ソウルのクラブ、いくらかかる？",
+        "首尔夜店要花多少钱?",
+        "首爾夜店要花多少錢?"
+      ),
+      desc: t(
+        "클럽 50곳의 실제 입장료를 지역별로 정리했습니다. 대부분 1~2만원이고 무료인 곳도 많습니다.",
+        "Verified entry fees from 50 clubs, by district. Most are ₩10,000–20,000 and plenty are free.",
+        "50店の実際の入場料をエリア別に。ほとんどが₩10,000〜20,000で、無料の店も多数。",
+        "50家夜店的真实入场费,按区域整理。大多数₩10,000–20,000,不少免费。",
+        "50家夜店的真實入場費,按區域整理。大多數₩10,000–20,000,不少免費。"
+      ),
+      href: `/${lang}/club-prices`,
+    },
+    {
       cat: t("이용 방법", "HOW IT WORKS", "利用方法", "使用方法", "使用方法"),
       title: t(
         "예약이 실제로 어떻게 되나요?",
@@ -362,22 +382,58 @@ function GuideIndex() {
       href: `/${lang}/seoul-nightlife`,
     },
     {
-      cat: t("기본 정보", "THE BASICS", "基本情報", "基本信息", "基本資訊"),
+      cat: t("영업시간", "HOURS", "営業時間", "营业时间", "營業時間"),
       title: t(
-        "복장·나이·여권, 뭘 챙겨야 하나요?",
-        "Dress code, age, passport — what do I need?",
-        "服装・年齢・パスポート、何が必要？",
-        "着装、年龄、护照 — 需要准备什么?",
-        "服裝、年齡、護照 — 需要準備什麼?"
+        "몇 시에 열고, 몇 시에 가야 하나요?",
+        "When do clubs open — and when should I go?",
+        "何時に開いて、何時に行くべき？",
+        "几点开门,该几点去?",
+        "幾點開門,該幾點去?"
       ),
       desc: t(
-        "외국인이 입장을 거부당하는 경우, 실제 비용, 신분증 규정까지 자주 묻는 질문을 모았습니다.",
-        "Whether foreigners get turned away, what a night really costs, and the ID rules — the questions we get most.",
-        "外国人が入場を断られるケース、実際にかかる費用、身分証のルールまで、よくある質問をまとめました。",
-        "外国人会不会被拒之门外、一晚实际花多少、证件规定 — 我们最常被问到的问题。",
-        "外國人會不會被拒於門外、一晚實際花多少、證件規定 — 我們最常被問到的問題。"
+        "클럽 96곳의 실제 영업시간. 대부분 22시에 열지만 진짜 붐비는 건 새벽 1시부터입니다.",
+        "Real hours from 96 clubs. Most open at 22:00, but the room only fills around 1am.",
+        "96店の実際の営業時間。ほとんどが22時オープンですが、本当に混むのは深夜1時からです。",
+        "96家夜店的实际营业时间。大多数22点开门,但真正热闹是凌晨1点。",
+        "96家夜店的實際營業時間。大多數22點開門,但真正熱鬧是凌晨1點。"
       ),
-      href: `/${lang}/faq`,
+      href: `/${lang}/club-hours`,
+    },
+    {
+      cat: t("입장 규정", "ENTRY RULES", "入場ルール", "入场规定", "入場規定"),
+      title: t(
+        "나이·여권, 뭘 챙겨야 하나요?",
+        "Age, passport — what do I need at the door?",
+        "年齢・パスポート、何が必要？",
+        "年龄、护照 — 门口需要什么?",
+        "年齡、護照 — 門口需要什麼?"
+      ),
+      desc: t(
+        "한국은 '연 나이' 기준이라 매년 바뀝니다. 여권 실물이 필요하고, 외국인 입장 여부까지 정리했습니다.",
+        "Korea uses year-age, so the cutoff shifts annually. You need a physical passport — and here's whether foreigners get in.",
+        "韓国は「年年齢」基準なので毎年変わります。パスポートの実物が必要で、外国人の入場可否もまとめました。",
+        "韩国按「年龄年」算,每年都变。需要护照原件,外国人能不能进也一并说明。",
+        "韓國按「年齡年」算,每年都變。需要護照正本,外國人能不能進也一併說明。"
+      ),
+      href: `/${lang}/club-entry-rules`,
+    },
+    {
+      cat: t("드레스코드", "DRESS CODE", "ドレスコード", "着装要求", "服裝規定"),
+      title: t(
+        "뭐 입고 가야 하나요?",
+        "What should I wear?",
+        "何を着ていけばいい？",
+        "该穿什么?",
+        "該穿什麼?"
+      ),
+      desc: t(
+        "강남은 깐깐하고 홍대는 자유롭습니다. 다만 슬리퍼·쪼리는 어디서나 걸립니다.",
+        "Gangnam is strict, Hongdae is relaxed. But slippers and flip-flops get stopped everywhere.",
+        "江南は厳しく弘大は自由です。ただしスリッパ・ビーチサンダルはどこでも引っかかります。",
+        "江南严格,弘大自由。但拖鞋和人字拖哪里都会被拦。",
+        "江南嚴格,弘大自由。但拖鞋和夾腳拖哪裡都會被攔。"
+      ),
+      href: `/${lang}/dress-code`,
     },
   ];
 
@@ -892,16 +948,10 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
             <span className="text-[15px] font-black">NightFlow</span>
           </button>
         )}
-        {/* 컨시어지는 로그인 불필요 — 상단 CTA는 항상 예약(Book now)으로 통일(로그인 버튼 제거) */}
+        {/* 상단 예약 버튼은 제거 — 하단 sticky "Book with NightFlow" CTA와 중복이라
+            같은 화면에 예약 버튼이 두 개 떠 있었다. 찜 진입점만 남긴다(0개면 스스로 숨음). */}
         <div className="flex items-center gap-2">
-          {/* 찜한 클럽 진입점 — 0개면 스스로 숨음 */}
           <SavedClubsButton lang={lang} clubs={clubs} />
-          <Link
-            href={`/flags/new?lang=${lang}`}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-inverse text-inverse-foreground font-black text-[13px] hover:opacity-90 transition-colors"
-          >
-            {tr("Book K-Club")}
-          </Link>
         </div>
       </header>
 

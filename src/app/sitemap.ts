@@ -74,6 +74,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/en/clubs/apgujeong`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
     { url: `${BASE_URL}/en/clubs/busan`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${BASE_URL}/en/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    // 실용 질문 대응 — 외국인이 실제로 검색하는 불안(비용·시간·입장규정·복장).
+    // 입장료/영업시간은 클럽 실데이터 기반이라 경쟁 블로그와 차별된다.
+    ...["club-prices", "club-hours", "club-entry-rules", "dress-code"].flatMap((slug) =>
+      ["en", "ja", "zh", "zh-tw"].map((l) => ({
+        url: `${BASE_URL}/${l}/${slug}`,
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.85,
+      }))
+    ),
     { url: `${BASE_URL}/en/vip-tables`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE_URL}/en/guests`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/en/kpop-clubs`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
