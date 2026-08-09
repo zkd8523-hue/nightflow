@@ -2,6 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Search, Home, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+// ⚠️ loading.tsx 를 라우트 세그먼트에 추가할 때 주의 (2026-08-09 소프트 404 장애).
+//
+// loading.tsx가 있으면 Next.js가 해당 세그먼트에 Suspense 경계를 만들고, 로딩 UI를
+// HTTP 200으로 먼저 흘려보낸다. 헤더가 이미 나간 뒤라 하위 페이지에서 notFound()를
+// 호출해도 상태코드를 404로 바꾸지 못한다 → 본문은 이 404 페이지인데 응답은 200인
+// "소프트 404". 구글이 가장 싫어하는 신호라 색인 점수가 떨어진다.
+//
+// 실제로 (main)/loading.tsx 하나 때문에 /clubs/[id], /auctions/[id], /hotdeal/[id],
+// /u/[userId] 등 sitemap에 올라간 상세 페이지 전부가 소프트 404였다(GSC에서 발견).
+// notFound()를 호출하는 페이지가 하위에 있는 세그먼트에는 loading.tsx를 두지 말 것.
+// 로딩 UI가 필요하면 페이지 안에서 <Suspense>로 감싸면 된다(라우트 경계를 안 만듦).
 export default function NotFound() {
     return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">

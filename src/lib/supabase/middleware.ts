@@ -1,5 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { gonePageHtml } from "@/lib/http/gonePage";
+
+// /flags/<uuid> 상세만 매칭 — /flags/new, /flags/<id>/edit, /flags/<id>/review 는 제외.
+const FLAG_DETAIL_RE =
+  /^\/flags\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // 로그인 필수 경로 (prefix 매칭)
 const PROTECTED_PREFIXES = ["/md/apply", "/admin", "/bids", "/my-wins", "/profile", "/favorites", "/settings", "/my-penalties"];
@@ -103,6 +108,37 @@ export async function updateSession(request: NextRequest) {
   }
 
   const pathname = request.nextUrl.pathname;
+
+  // 종료된 깃발(/flags/<uuid>) → 410 Gone.
+  //
+  // 깃발은 시한부라 sitemap에 실려 색인된 뒤 만료된다. 만료·취소되면 RLS가 익명 읽기를
+  // 막아 page.tsx가 /login으로 307을 내보내는데, 307은 "임시 이동 — 원래 주소는 살려둬"라
+  // 크롤러에게 잘못된 신호다(로그인 페이지엔 색인할 내용도 없다).
+  // 410은 "영구히 사라짐"이라 색인에서 확실히 빠진다.
+  //
+  // 로그인한 사용자는 그대로 통과시킨다 — 본인 깃발이면 만료 뒤에도 볼 수 있어야 하고,
+  // 익명일 때만 판정하므로 살아있는 깃발 공유 링크(익명 열람 가능)는 영향 없다.
+  // page.tsx에서 못 하는 이유는 gonePage.ts 주석 참고(임의 상태코드 불가).
+  if (!user && request.method === "GET" && FLAG_DETAIL_RE.test(pathname)) {
+    const flagId = pathname.slice("/flags/".length);
+    const { data: flag } = await supabase
+      .from("puzzles")
+      .select("id")
+      .eq("id", flagId)
+      .maybeSingle();
+    // 익명이 못 읽는다 = 만료·취소됐거나 애초에 없는 깃발
+    if (!flag) {
+      return new NextResponse(
+        gonePageHtml({
+          title: "종료된 깃발이에요",
+          message: "이 깃발은 마감되었거나 취소됐어요. 지금 열려 있는 깃발을 보러 가볼까요?",
+          homeLabel: "홈으로",
+          homeHref: "/",
+        }),
+        { status: 410, headers: { "content-type": "text/html; charset=utf-8" } }
+      );
+    }
+  }
 
   // 구 MD 프로필(/md/<slug>) → 통합 프로필(/u/<id>) 308 영구 리다이렉트.
   // page.tsx의 permanentRedirect()는 스트리밍 중이라 200 + 메타 리프레시(소프트 리다이렉트)로
