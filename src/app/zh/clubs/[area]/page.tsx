@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ClubsClient } from "../../../en/clubs/ClubsClient";
+import { clubSlug } from "@/lib/clubs/slug";
 
 type AreaSlug = "gangnam" | "hongdae" | "itaewon" | "busan" | "apgujeong";
 
@@ -246,12 +248,16 @@ export default async function ZhClubsAreaPage({
 
         <h2>NightFlow 上的所有 {config.zh} 夜店 ({clubCount})</h2>
         <ul>
-          {clubList.slice(0, 30).map((c) => (
-            <li key={c.id}>
-              {c.name} — {config.zh}夜店
-              {c.google_rating ? ` (${c.google_rating}★)` : ""}
-            </li>
-          ))}
+          {clubList.map((c) => {
+            const nameEn = c.name_en?.trim();
+            const slug = nameEn ? clubSlug(nameEn) : null;
+            const label = `${nameEn || c.name} — ${config.zh}夜店${c.google_rating ? ` (${c.google_rating}★)` : ""}`;
+            return (
+              <li key={c.id}>
+                {slug ? <Link href={`/zh/clubs/${area}/${slug}`}>{label}</Link> : label}
+              </li>
+            );
+          })}
         </ul>
 
         <h2>如何通过 NightFlow 预订 {config.zh} 夜店</h2>
@@ -269,6 +275,28 @@ export default async function ZhClubsAreaPage({
         </ul>
       </div>
       <ClubsClient clubs={clubList} lang="zh" />
+
+      <nav className="max-w-lg mx-auto px-4 pb-10 pt-2">
+        <h2 className="text-[15px] font-black text-foreground mb-2">
+          {config.zh}夜店 — 营业时间・入场费・点评
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {clubList.map((c) => {
+            const nameEn = c.name_en?.trim();
+            const slug = nameEn ? clubSlug(nameEn) : null;
+            if (!slug) return null;
+            return (
+              <Link
+                key={c.id}
+                href={`/zh/clubs/${area}/${slug}`}
+                className="px-3 py-1.5 rounded-full bg-muted border border-border text-[13px] font-bold text-foreground hover:text-brand-amber transition-colors"
+              >
+                {nameEn}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </>
   );
 }

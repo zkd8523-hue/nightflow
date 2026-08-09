@@ -200,8 +200,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    // 영어 클럽 개별 페이지 — 클럽명+속성 롱테일("Hongdae B1 opening hours") 대응.
-    // 영어 지역 페이지가 있는 지역(강남/홍대/이태원/부산)만. 나머지는 부모 없는 고아가 됨.
+    // 클럽 개별 페이지 — 클럽명+속성 롱테일("Hongdae B1 opening hours") 대응.
+    // 4개 언어 트랙 전부(en/ja/zh/zh-tw) — 지역 페이지가 있는 지역(강남/홍대/이태원/부산)만.
+    // 나머지 지역은 부모(지역 페이지) 없는 고아 URL이 되므로 제외.
+    const FOREIGN_LANGS = ["en", "ja", "zh", "zh-tw"] as const;
     const enClubRoutes: MetadataRoute.Sitemap = (clubsRes.data ?? [])
       .flatMap((c) => {
         const areaSlug = canonicalAreaSlug(c.area);
@@ -209,12 +211,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         if (!areaSlug || !nameEn || c.hidden_from_guide) return [];
         const slug = clubSlug(nameEn);
         if (!slug) return [];
-        return [{
-          url: `${BASE_URL}/en/clubs/${areaSlug}/${slug}`,
+        return FOREIGN_LANGS.map((lang) => ({
+          url: `${BASE_URL}/${lang}/clubs/${areaSlug}/${slug}`,
           lastModified: now,
           changeFrequency: "weekly" as const,
           priority: 0.75,
-        }];
+        }));
       });
 
     const puzzleRoutes: MetadataRoute.Sitemap = (puzzlesRes.data ?? []).map((p) => ({

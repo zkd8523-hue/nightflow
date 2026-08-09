@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ClubsClient } from "../../../en/clubs/ClubsClient";
+import { clubSlug } from "@/lib/clubs/slug";
 
 type AreaSlug = "gangnam" | "hongdae" | "itaewon" | "busan" | "apgujeong";
 
@@ -247,12 +249,16 @@ export default async function JaClubsAreaPage({
 
         <h2>NightFlow上のすべての{config.ja}クラブ ({clubCount}軒)</h2>
         <ul>
-          {clubList.slice(0, 30).map((c) => (
-            <li key={c.id}>
-              {c.name} — {config.ja}クラブ
-              {c.google_rating ? ` (${c.google_rating}★)` : ""}
-            </li>
-          ))}
+          {clubList.map((c) => {
+            const nameEn = c.name_en?.trim();
+            const slug = nameEn ? clubSlug(nameEn) : null;
+            const label = `${nameEn || c.name} — ${config.ja}クラブ${c.google_rating ? ` (${c.google_rating}★)` : ""}`;
+            return (
+              <li key={c.id}>
+                {slug ? <Link href={`/ja/clubs/${area}/${slug}`}>{label}</Link> : label}
+              </li>
+            );
+          })}
         </ul>
 
         <h2>NightFlowで{config.ja}クラブを予約する方法</h2>
@@ -270,6 +276,28 @@ export default async function JaClubsAreaPage({
         </ul>
       </div>
       <ClubsClient clubs={clubList} lang="ja" />
+
+      <nav className="max-w-lg mx-auto px-4 pb-10 pt-2">
+        <h2 className="text-[15px] font-black text-foreground mb-2">
+          {config.ja}のクラブ — 営業時間・入場料・口コミ
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {clubList.map((c) => {
+            const nameEn = c.name_en?.trim();
+            const slug = nameEn ? clubSlug(nameEn) : null;
+            if (!slug) return null;
+            return (
+              <Link
+                key={c.id}
+                href={`/ja/clubs/${area}/${slug}`}
+                className="px-3 py-1.5 rounded-full bg-muted border border-border text-[13px] font-bold text-foreground hover:text-brand-amber transition-colors"
+              >
+                {nameEn}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </>
   );
 }

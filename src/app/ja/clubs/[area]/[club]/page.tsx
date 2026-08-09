@@ -10,21 +10,21 @@ import { clubFeatureLabels } from "@/lib/clubs/tagLabelsI18n";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 
-// 클럽 개별 페이지 — 외국인 롱테일 SEO의 핵심.
+// 일본어판 클럽 개별 페이지 — /en/clubs/[area]/[club] 과 완전히 동일한 구조를 복제.
+// (이 사이트의 기존 관례: /ja, /zh, /zh-tw 지역 페이지도 공용 컴포넌트로 추상화하지 않고
+//  언어별 파일을 그대로 복제해왔음 — AREA_CONFIG 문구만 다르고 구조는 동일)
 //
-// 배경(2026-08-09 감사): /en 에는 지역 페이지까지만 있고 클럽 상세는 시트(모달)라
-// "Hongdae B1 opening hours", "Waikiki entrance fee" 같은 클럽명+속성 검색에 걸릴 URL이
-// 아예 없었다. 영업시간(99%)·입장료(63%)·구글평점(91%) 데이터를 다 갖고도 크롤러에겐
-// 안 보이는 상태였음(시트는 클릭해야 마운트되므로 초기 HTML에 없음).
-//
-// 그래서 이 페이지는 모든 정보를 서버 렌더링하고, 같은 정보를 JSON-LD(NightClub/FAQPage)로
-// 한 번 더 준다 — 구글이 "영업시간/위치/리뷰" 질의에 직접 답으로 쓸 수 있는 형태.
+// ⚠️ 클럽 고유명사(name_en)는 언어 불문 라틴 표기 그대로 쓴다 — 기존 ja/zh/zh-tw 지역
+// 페이지의 topClubsNote가 이미 "Club ACE", "Massive" 처럼 라틴 표기를 유지하고 있고,
+// 밤문화 브랜드명은 실제로 일본/중국 유저도 라틴 표기로 검색하는 게 현지 관행이라(현지 블로그·
+// 샤오홍슈 게시물 다수가 라틴 표기 사용) 억지로 가나/한자 음차를 만들면 오히려 실제 검색어와 어긋남.
+// 대신 "영업시간/입장료/후기" 같은 속성어만 언어별로 번역해 검색 거미줄을 넓힌다.
 
-const AREA_EN: Record<string, string> = {
-  gangnam: "Gangnam",
-  hongdae: "Hongdae",
-  itaewon: "Itaewon",
-  busan: "Busan",
+const AREA_JA: Record<string, string> = {
+  gangnam: "江南",
+  hongdae: "弘大",
+  itaewon: "梨泰院",
+  busan: "釜山",
 };
 
 const SELECT =
@@ -49,10 +49,9 @@ type ClubRow = {
   drink_menu_url: string | null;
 };
 
-/** 슬러그로 클럽 찾기. 슬러그는 name_en 파생이라 DB에서 직접 못 걸러 지역 단위로 받아 매칭. */
 async function findClub(areaSlug: string, clubParam: string) {
-  const areaEn = AREA_EN[areaSlug];
-  if (!areaEn) return null;
+  const areaJa = AREA_JA[areaSlug];
+  if (!areaJa) return null;
 
   const supabase = await createClient();
   const { data } = await supabase
@@ -69,7 +68,6 @@ async function findClub(areaSlug: string, clubParam: string) {
   );
   if (!club) return null;
 
-  // 같은 지역의 다른 클럽 — 내부 링크(거미줄)용. 크롤러가 한 페이지에서 이웃으로 퍼져나감.
   const siblings = rows
     .filter((c) => c.id !== club.id && c.area === club.area && c.name_en?.trim())
     .sort((a, b) => (b.google_review_count ?? 0) - (a.google_review_count ?? 0))
@@ -89,73 +87,69 @@ export async function generateMetadata({
   const { club } = found;
 
   const name = club.name_en!.trim();
-  const areaEn = AREA_EN[area] ?? club.area;
-  const hours = club.operating_hours ? translateClubMeta(club.operating_hours, "en") : null;
-  const fee = club.entry_fee_detail ? translateClubMeta(club.entry_fee_detail, "en") : null;
-  const url = `https://nightflow.kr/en/clubs/${area}/${clubParam}`;
+  const areaJa = AREA_JA[area] ?? club.area;
+  const hours = club.operating_hours ? translateClubMeta(club.operating_hours, "ja") : null;
+  const fee = club.entry_fee_detail ? translateClubMeta(club.entry_fee_detail, "ja") : null;
+  const url = `https://nightflow.kr/ja/clubs/${area}/${clubParam}`;
 
-  // 설명에 실제 영업시간·입장료를 넣는다 — 검색 스니펫이 곧 질문의 답이 되도록.
   const descBits = [
-    `${name} is a nightclub in ${areaEn}, Seoul.`,
-    hours ? `Open ${hours}.` : null,
-    fee ? `Entry ${fee}.` : null,
-    club.google_rating ? `Rated ${club.google_rating.toFixed(1)} on Google (${club.google_review_count ?? 0} reviews).` : null,
-    "Book a table in English with NightFlow — no broker, real prices.",
+    `${name}はソウル${areaJa}にあるナイトクラブです。`,
+    hours ? `営業時間：${hours}。` : null,
+    fee ? `入場料：${fee}。` : null,
+    club.google_rating ? `Google評価${club.google_rating.toFixed(1)}（${club.google_review_count ?? 0}件のレビュー）。` : null,
+    "NightFlowなら日本語でテーブル予約 — ブローカーなし、正規料金。",
   ].filter(Boolean);
 
-  // 롱테일 거미줄 — 이름 단독부터 이름+속성까지 폭넓게.
   const keywords = [
     name,
-    `${name} Seoul`,
-    `${name} ${areaEn}`,
-    `${name} club`,
-    `${name} nightclub`,
-    `${name} entrance fee`,
-    `${name} entry fee`,
-    `${name} cover charge`,
-    `${name} opening hours`,
-    `${name} hours`,
-    `${name} address`,
-    `${name} location`,
-    `${name} reviews`,
-    `${name} dress code`,
-    `${name} table price`,
-    `${name} bottle service`,
-    `${name} reservation`,
-    `${name} booking`,
-    `${areaEn} club`,
-    `${areaEn} nightclub`,
-    `Seoul nightclub`,
-    club.name, // 한글 등록명 — 한국어 병기 검색 대응
+    `${name} ソウル`,
+    `${name} ${areaJa}`,
+    `${name} クラブ`,
+    `${name} 営業時間`,
+    `${name} 入場料`,
+    `${name} 入場料金`,
+    `${name} 住所`,
+    `${name} アクセス`,
+    `${name} 口コミ`,
+    `${name} レビュー`,
+    `${name} ドレスコード`,
+    `${name} テーブル料金`,
+    `${name} ボトルサービス`,
+    `${name} 予約`,
+    `${areaJa} クラブ`,
+    `${areaJa} ナイトクラブ`,
+    "ソウル クラブ",
+    "韓国 クラブ",
+    club.name,
   ];
 
   return {
-    title: `${name} ${areaEn} — Entry Fee, Opening Hours & Table Booking`,
+    title: `${name} ${areaJa} — 営業時間・入場料・テーブル予約`,
     description: descBits.join(" ").slice(0, 300),
     keywords,
     alternates: {
       canonical: url,
       languages: {
-        "en-US": url,
-        "ja-JP": `https://nightflow.kr/ja/clubs/${area}/${clubParam}`,
+        "en-US": `https://nightflow.kr/en/clubs/${area}/${clubParam}`,
+        "ja-JP": url,
         "zh-CN": `https://nightflow.kr/zh/clubs/${area}/${clubParam}`,
         "zh-TW": `https://nightflow.kr/zh-tw/clubs/${area}/${clubParam}`,
         "ko-KR": `https://nightflow.kr/clubs/${club.id}`,
-        "x-default": url,
+        "x-default": `https://nightflow.kr/en/clubs/${area}/${clubParam}`,
       },
     },
     openGraph: {
-      title: `${name} — ${areaEn} Club, Seoul`,
+      title: `${name} — ${areaJa}のクラブ、ソウル`,
       description: descBits.join(" ").slice(0, 200),
       url,
-      locale: "en_US",
+      locale: "ja_JP",
       type: "website",
       images: [{ url: club.thumbnail_url || "/og-image.png", width: 1200, height: 630 }],
     },
   };
 }
 
-export default async function EnClubDetailPage({
+export default async function JaClubDetailPage({
   params,
 }: {
   params: Promise<{ area: string; club: string }>;
@@ -165,30 +159,28 @@ export default async function EnClubDetailPage({
   if (!found) notFound();
   const { club, siblings } = found;
 
-  // apgujeong 등 별칭 경로로 들어오면 정본으로 보냄 (중복 콘텐츠 방지)
   const canonical = canonicalAreaSlug(club.area);
   if (canonical && canonical !== area) {
-    permanentRedirect(`/en/clubs/${canonical}/${clubParam}`);
+    permanentRedirect(`/ja/clubs/${canonical}/${clubParam}`);
   }
 
   const name = club.name_en!.trim();
-  const areaEn = AREA_EN[area] ?? club.area;
-  const hours = club.operating_hours ? translateClubMeta(club.operating_hours, "en") : null;
-  const fee = club.entry_fee_detail ? translateClubMeta(club.entry_fee_detail, "en") : null;
-  const dress = club.dresscode ? translateClubMeta(club.dresscode, "en") : null;
-  const features = clubFeatureLabels(club.tags, "en");
+  const areaJa = AREA_JA[area] ?? club.area;
+  const hours = club.operating_hours ? translateClubMeta(club.operating_hours, "ja") : null;
+  const fee = club.entry_fee_detail ? translateClubMeta(club.entry_fee_detail, "ja") : null;
+  const dress = club.dresscode ? translateClubMeta(club.dresscode, "ja") : null;
+  const features = clubFeatureLabels(club.tags, "ja");
   const reviews = (club.google_reviews ?? []).filter((r) => r.text?.trim()).slice(0, 5);
-  const googleUrl = getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, "en");
-  const url = `https://nightflow.kr/en/clubs/${area}/${clubParam}`;
-  const bookHref = `/flags/new?lang=en&area=${encodeURIComponent(club.area)}&club=${club.id}`;
+  const googleUrl = getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, "ja");
+  const url = `https://nightflow.kr/ja/clubs/${area}/${clubParam}`;
+  const bookHref = `/flags/new?lang=ja&area=${encodeURIComponent(club.area)}&club=${club.id}`;
 
-  // FAQ는 실제 데이터가 있는 항목만 만든다 — 빈 답을 넣으면 구조화 데이터 품질만 떨어짐.
   const faqs = [
-    hours && { q: `What time does ${name} open?`, a: `${name} in ${areaEn} operates ${hours}.` },
-    fee && { q: `How much is the entry fee at ${name}?`, a: `Entry at ${name} is ${fee}.` },
-    dress && { q: `What is the dress code at ${name}?`, a: `${name} dress code: ${dress}.` },
-    club.address && { q: `Where is ${name} located?`, a: `${name} is at ${club.address}, ${areaEn}, Seoul.` },
-    { q: `Can I book a table at ${name} in English?`, a: `Yes. NightFlow contacts ${name} directly and locks in your table — you deal only in English, with no broker fee.` },
+    hours && { q: `${name}の営業時間は？`, a: `${name}（${areaJa}）の営業時間は${hours}です。` },
+    fee && { q: `${name}の入場料はいくらですか？`, a: `${name}の入場料は${fee}です。` },
+    dress && { q: `${name}のドレスコードは？`, a: `${name}のドレスコード：${dress}。` },
+    club.address && { q: `${name}はどこにありますか？`, a: `${name}は${areaJa}（ソウル）の${club.address}にあります。` },
+    { q: `${name}を日本語で予約できますか？`, a: `はい。NightFlowが${name}に直接連絡してテーブルを確保します。英語・日本語対応、ブローカー手数料なし。` },
   ].filter(Boolean) as { q: string; a: string }[];
 
   const jsonLd = {
@@ -204,12 +196,10 @@ export default async function EnClubDetailPage({
         address: {
           "@type": "PostalAddress",
           streetAddress: club.address || undefined,
-          addressLocality: areaEn,
+          addressLocality: areaJa,
           addressRegion: area === "busan" ? "Busan" : "Seoul",
           addressCountry: "KR",
         },
-        // 원본이 자유 텍스트라 openingHours(문자열)로 준다 — openingHoursSpecification은
-        // 요일·시각 구조가 정확해야 해서, 파싱 실패 시 오히려 잘못된 정보를 심게 됨.
         openingHours: hours || undefined,
         aggregateRating: club.google_rating
           ? {
@@ -230,8 +220,8 @@ export default async function EnClubDetailPage({
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Seoul Clubs", item: "https://nightflow.kr/en/clubs" },
-          { "@type": "ListItem", position: 2, name: `${areaEn} Clubs`, item: `https://nightflow.kr/en/clubs/${area}` },
+          { "@type": "ListItem", position: 1, name: "ソウルのクラブ", item: "https://nightflow.kr/ja/clubs" },
+          { "@type": "ListItem", position: 2, name: `${areaJa}のクラブ`, item: `https://nightflow.kr/ja/clubs/${area}` },
           { "@type": "ListItem", position: 3, name, item: url },
         ],
       },
@@ -257,30 +247,25 @@ export default async function EnClubDetailPage({
   );
 
   return (
-    // 하단 sticky 예약바에 안 가리도록 실제 콘텐츠 높이만큼 여백 확보 (pb-safe: 아이폰 홈 인디케이터).
     <div className="min-h-screen bg-background text-foreground pb-28 pb-safe">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      {/* 상단 헤더 — 클럽 하나만 보고 이탈하지 않게, 홈/다른 클럽으로 돌아갈 진입점을 항상 노출.
-          클럽 상세가 시트였을 때는 "닫기"만 하면 원래 목록이었는데, 페이지가 되면서
-          브레드크럼(아래)만으론 "여기서 더 둘러볼 수 있다"는 게 눈에 안 띔. */}
       <header className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between bg-background/95 backdrop-blur-sm border-b border-border">
-        <Link href="/en" className="flex items-center gap-1 -ml-1 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors">
+        <Link href="/ja" className="flex items-center gap-1 -ml-1 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors">
           <ChevronLeft className="w-4 h-4" />
           <span className="text-[15px] font-black tracking-tight">NightFlow</span>
         </Link>
-        <Link href={`/en/clubs/${area}`}
+        <Link href={`/ja/clubs/${area}`}
           className="px-3.5 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold text-foreground hover:text-brand-amber transition-colors">
-          More {areaEn} clubs
+          {areaJa}の他のクラブ
         </Link>
       </header>
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
-        {/* 브레드크럼 — 크롤러 경로이자 유저 탈출구 */}
         <nav className="flex items-center gap-1.5 text-[12px] text-muted-foreground flex-wrap">
-          <Link href="/en/clubs" className="hover:text-foreground">Seoul Clubs</Link>
+          <Link href="/ja/clubs" className="hover:text-foreground">ソウルのクラブ</Link>
           <span>/</span>
-          <Link href={`/en/clubs/${area}`} className="hover:text-foreground">{areaEn}</Link>
+          <Link href={`/ja/clubs/${area}`} className="hover:text-foreground">{areaJa}</Link>
           <span>/</span>
           <span className="text-foreground font-bold">{name}</span>
         </nav>
@@ -288,7 +273,7 @@ export default async function EnClubDetailPage({
         <header className="space-y-2">
           <h1 className="text-3xl font-black tracking-tight">{name}</h1>
           <p className="text-muted-foreground text-[14px]">
-            Nightclub in {areaEn}, Seoul{club.name !== name && <> · {club.name}</>}
+            {areaJa}（ソウル）のナイトクラブ{club.name !== name && <> ・ {club.name}</>}
           </p>
           {club.google_rating != null && (
             <a href={googleUrl} target="_blank" rel="noopener noreferrer"
@@ -296,7 +281,7 @@ export default async function EnClubDetailPage({
               <Star className="w-4 h-4 fill-current" />
               {club.google_rating.toFixed(1)}
               <span className="text-muted-foreground">
-                · {(club.google_review_count ?? 0).toLocaleString()} Google reviews
+                ・Googleレビュー{(club.google_review_count ?? 0).toLocaleString()}件
               </span>
             </a>
           )}
@@ -304,25 +289,24 @@ export default async function EnClubDetailPage({
 
         {club.thumbnail_url && (
           <div className="relative w-full h-56 rounded-2xl overflow-hidden">
-            <Image src={club.thumbnail_url} alt={`${name} — ${areaEn} nightclub in Seoul`} fill
+            <Image src={club.thumbnail_url} alt={`${name} — ${areaJa}のナイトクラブ、ソウル`} fill
               className="object-cover" sizes="(max-width: 640px) 100vw, 512px" priority />
           </div>
         )}
 
-        {/* 핵심 정보 — 검색 질의에 그대로 대응하는 항목들 */}
         <section>
-          <h2 className="text-[18px] font-black mb-1">{name} — hours, entry fee & location</h2>
+          <h2 className="text-[18px] font-black mb-1">{name} — 営業時間・入場料・住所</h2>
           <dl className="rounded-2xl bg-card border border-border px-4">
-            {hours && fact(<Clock className="w-4 h-4" />, "Opening hours", hours)}
-            {fee && fact(<Ticket className="w-4 h-4" />, "Entry fee", fee)}
-            {club.address && fact(<MapPin className="w-4 h-4" />, "Address", club.address)}
-            {dress && fact(<Shirt className="w-4 h-4" />, "Dress code", dress)}
+            {hours && fact(<Clock className="w-4 h-4" />, "営業時間", hours)}
+            {fee && fact(<Ticket className="w-4 h-4" />, "入場料", fee)}
+            {club.address && fact(<MapPin className="w-4 h-4" />, "住所", club.address)}
+            {dress && fact(<Shirt className="w-4 h-4" />, "ドレスコード", dress)}
           </dl>
         </section>
 
         {features.length > 0 && (
           <section>
-            <h2 className="text-[18px] font-black mb-2">Music & venue type</h2>
+            <h2 className="text-[18px] font-black mb-2">音楽・タイプ</h2>
             <div className="flex flex-wrap gap-2">
               {features.map((f) => (
                 <span key={f} className="px-3 py-1.5 rounded-full bg-muted border border-border text-[13px] font-bold">
@@ -335,37 +319,36 @@ export default async function EnClubDetailPage({
 
         {reviews.length > 0 && (
           <section>
-            <h2 className="text-[18px] font-black mb-2">What people say about {name}</h2>
+            <h2 className="text-[18px] font-black mb-2">{name}の口コミ</h2>
             <div className="space-y-2">
               {reviews.map((r, i) => (
                 <blockquote key={i} className="p-3 rounded-xl bg-card border border-border">
                   <p className="text-[13px] text-foreground leading-relaxed">{r.text}</p>
                   <footer className="text-[11px] text-muted-foreground mt-1.5">
                     — {r.author_name || "Google user"}
-                    {r.relative_time && <>, {r.relative_time}</>}
+                    {r.relative_time && <>、{r.relative_time}</>}
                   </footer>
                 </blockquote>
               ))}
             </div>
             <a href={googleUrl} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1 mt-2 text-[12px] text-brand-amber">
-              More reviews on Google <ExternalLink className="w-3 h-3" />
+              Googleでもっと見る <ExternalLink className="w-3 h-3" />
             </a>
           </section>
         )}
 
         <section className="rounded-2xl bg-card border border-border p-5 space-y-1.5">
-          <h2 className="text-[18px] font-black">Book a table at {name}</h2>
+          <h2 className="text-[18px] font-black">{name}のテーブル予約</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
-            Tell us your date, group size and budget. We contact {name} directly, negotiate your
-            table in Korean, and reply to you in English. No broker fee, no deposit.
+            日程・人数・予算を教えてください。NightFlowが{name}に直接連絡し、韓国語で交渉、
+            日本語でご案内します。ブローカー手数料なし、デポジットなし。
           </p>
         </section>
 
-        {/* FAQ — 화면에도 보여준다. JSON-LD만 있고 본문에 없으면 구글이 신뢰하지 않음. */}
         {faqs.length > 0 && (
           <section>
-            <h2 className="text-[18px] font-black mb-2">{name} FAQ</h2>
+            <h2 className="text-[18px] font-black mb-2">{name}のよくある質問</h2>
             <div className="space-y-3">
               {faqs.map((f) => (
                 <div key={f.q}>
@@ -377,37 +360,35 @@ export default async function EnClubDetailPage({
           </section>
         )}
 
-        {/* 이웃 클럽 — 크롤러가 지역 안을 돌아다니게 하는 거미줄 */}
         {siblings.length > 0 && (
           <section>
-            <h2 className="text-[18px] font-black mb-2">Other clubs in {areaEn}</h2>
+            <h2 className="text-[18px] font-black mb-2">{areaJa}の他のクラブ</h2>
             <div className="flex flex-wrap gap-2">
               {siblings.map((s) => (
-                <Link key={s.id} href={`/en/clubs/${area}/${clubSlug(s.name_en!)}`}
+                <Link key={s.id} href={`/ja/clubs/${area}/${clubSlug(s.name_en!)}`}
                   className="px-3 py-1.5 rounded-full bg-muted border border-border text-[13px] font-bold hover:text-brand-amber">
                   {s.name_en!.trim()}
                 </Link>
               ))}
             </div>
-            <Link href={`/en/clubs/${area}`} className="inline-block mt-3 text-[13px] text-brand-amber underline underline-offset-2">
-              See all {areaEn} clubs →
+            <Link href={`/ja/clubs/${area}`} className="inline-block mt-3 text-[13px] text-brand-amber underline underline-offset-2">
+              {areaJa}のクラブをすべて見る →
             </Link>
           </section>
         )}
       </div>
 
-      {/* 예약(8) : 찜(2) — ForeignClubDetailPanel의 하단 sticky CTA와 같은 패턴·비율. */}
       <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
         <div className="flex items-stretch gap-2 w-full max-w-lg mx-auto">
           <Link href={bookHref}
             className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
-            🍾 Book {name}
+            🍾 {name}を予約
           </Link>
           <SaveClubButton
             variant="cta"
             className="flex-[2] min-w-0"
             club={{ id: club.id, name: club.name, name_en: club.name_en, area: club.area, thumbnail_url: club.thumbnail_url }}
-            lang="en"
+            lang="ja"
           />
         </div>
       </div>
