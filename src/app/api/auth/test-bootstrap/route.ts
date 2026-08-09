@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
 
-type TestRole = "user" | "md" | "admin";
+type TestRole = "user";
 
+// MD/Admin 테스트 계정 제거: 이 엔드포인트로는 일반 유저 외의 권한을 부여할 수 없다
 const TEST_ACCOUNTS: Record<string, { phone: string; role: TestRole; displayName: string }> = {
   "test-user@nightflow.test": { phone: "01099990001", role: "user", displayName: "TestUser" },
-  "test-md@nightflow.test": { phone: "01099990002", role: "md", displayName: "TestMD" },
-  "test-admin@nightflow.test": { phone: "01099990003", role: "admin", displayName: "TestAdmin" },
 };
 
 export async function POST() {
@@ -64,7 +63,7 @@ export async function POST() {
     display_name: preset.displayName,
     gender: "male" as const,
     role: preset.role,
-    md_status: preset.role === "md" ? "approved" : null,
+    md_status: null,
     alimtalk_consent: false,
     alimtalk_consent_at: null,
   };

@@ -20,13 +20,10 @@ const isTestLoginEnabled =
 const TEST_PASSWORD = "test1234";
 const TEST_EMAILS = new Set([
   "test-user@nightflow.test",
-  "test-md@nightflow.test",
-  "test-admin@nightflow.test",
 ]);
+// MD/Admin 프리셋 제거: 타이틀 5회 탭 우회로 권한 계정에 접근할 수 없도록 일반 유저만 남김
 const TEST_PRESETS = [
   { label: "User", email: "test-user@nightflow.test", color: "bg-amber-500 hover:bg-amber-400" },
-  { label: "MD", email: "test-md@nightflow.test", color: "bg-purple-500 hover:bg-purple-400 text-white" },
-  { label: "Admin", email: "test-admin@nightflow.test", color: "bg-red-500 hover:bg-red-400 text-white" },
 ] as const;
 
 function getAuthErrorMessage(error: string | null) {
@@ -652,7 +649,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
             <p className="text-xs text-brand-amber text-center font-bold">
               Test Login (auto-creates account if missing)
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               {TEST_PRESETS.map((preset) => (
                 <Button
                   key={preset.email}
