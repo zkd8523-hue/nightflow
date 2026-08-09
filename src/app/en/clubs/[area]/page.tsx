@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ClubsClient } from "../ClubsClient";
+import { clubSlug } from "@/lib/clubs/slug";
 
 // 동네별 단독 페이지 — 외국인 SEO 핵심 라우트.
 // "Gangnam club booking", "Hongdae nightclub", "Itaewon club" 등
@@ -272,25 +274,35 @@ export default async function EnClubsAreaPage({
         name: `${config.en} Clubs — Seoul Club Booking`,
         description: config.intro,
         numberOfItems: clubCount,
-        itemListElement: clubList.slice(0, 10).map((c, i) => ({
-          "@type": "ListItem",
-          position: i + 1,
-          item: {
-            "@type": "NightClub",
-            name: c.name,
-            address: c.address
-              ? { "@type": "PostalAddress", addressLocality: config.en, addressCountry: "KR" }
-              : undefined,
-            aggregateRating: c.google_rating
-              ? {
-                  "@type": "AggregateRating",
-                  ratingValue: c.google_rating,
-                  reviewCount: c.google_review_count ?? 1,
-                }
-              : undefined,
-            url: `https://nightflow.kr/clubs/${c.id}`,
-          },
-        })),
+        // 전체를 싣는다(예전엔 상위 10개만) — 홍대 30곳 중 20곳이 구조화 데이터에서 빠져 있었음.
+        // name은 영문명, url은 영어 클럽 페이지로 — 한국어 페이지를 가리키면 영어 검색 결과에서
+        // 한국어 제목이 노출돼 클릭률이 떨어진다.
+        itemListElement: clubList.map((c, i) => {
+          const nameEn = c.name_en?.trim();
+          const slug = nameEn ? clubSlug(nameEn) : null;
+          return {
+            "@type": "ListItem",
+            position: i + 1,
+            item: {
+              "@type": "NightClub",
+              name: nameEn || c.name,
+              alternateName: nameEn ? c.name : undefined,
+              address: c.address
+                ? { "@type": "PostalAddress", addressLocality: config.en, addressCountry: "KR" }
+                : undefined,
+              aggregateRating: c.google_rating
+                ? {
+                    "@type": "AggregateRating",
+                    ratingValue: c.google_rating,
+                    reviewCount: c.google_review_count ?? 1,
+                  }
+                : undefined,
+              url: slug
+                ? `https://nightflow.kr/en/clubs/${area}/${slug}`
+                : `https://nightflow.kr/clubs/${c.id}`,
+            },
+          };
+        }),
       },
       {
         "@type": "BreadcrumbList",
@@ -337,14 +349,24 @@ export default async function EnClubsAreaPage({
         <h2>Top {config.en} Clubs</h2>
         <p>{config.topClubsNote}</p>
 
+        {/* 클럽 개별 페이지로 가는 크롤 경로. 예전엔 평문이라 링크가 없었고 30개로 잘려 있었음 —
+            링크가 없으면 개별 페이지가 sitemap에만 존재하는 고아가 된다. */}
         <h2>All {config.en} Clubs on NightFlow ({clubCount})</h2>
         <ul>
-          {clubList.slice(0, 30).map((c) => (
-            <li key={c.id}>
-              {c.name} — {config.en} club
-              {c.google_rating ? ` (${c.google_rating}★)` : ""}
-            </li>
-          ))}
+          {clubList.map((c) => {
+            const nameEn = c.name_en?.trim();
+            const slug = nameEn ? clubSlug(nameEn) : null;
+            const label = `${nameEn || c.name} — ${config.en} club${c.google_rating ? ` (${c.google_rating}★)` : ""}`;
+            return (
+              <li key={c.id}>
+                {slug ? (
+                  <Link href={`/en/clubs/${area}/${slug}`}>{label}</Link>
+                ) : (
+                  label
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         <h2>How to Book a {config.en} Club Through NightFlow</h2>
@@ -380,6 +402,31 @@ export default async function EnClubsAreaPage({
         </ul>
       </div>
       <ClubsClient clubs={clubList} lang="en" />
+
+      {/* 클럽별 상세 페이지 인덱스 — 눈에 보이는 내부 링크.
+          숨은(sr-only) 링크만으로는 크롤러가 가중치를 낮게 보고, 유저에게도
+          "각 클럽의 영업시간·입장료 페이지가 따로 있다"는 발견 경로가 된다. */}
+      <nav className="max-w-lg mx-auto px-4 pb-10 pt-2">
+        <h2 className="text-[15px] font-black text-foreground mb-2">
+          {config.en} clubs — hours, entry fee &amp; reviews
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {clubList.map((c) => {
+            const nameEn = c.name_en?.trim();
+            const slug = nameEn ? clubSlug(nameEn) : null;
+            if (!slug) return null;
+            return (
+              <Link
+                key={c.id}
+                href={`/en/clubs/${area}/${slug}`}
+                className="px-3 py-1.5 rounded-full bg-muted border border-border text-[13px] font-bold text-foreground hover:text-brand-amber transition-colors"
+              >
+                {nameEn}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </>
   );
 }

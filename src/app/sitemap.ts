@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { createServerClient } from "@supabase/ssr";
+import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
 
 const BASE_URL = "https://nightflow.kr";
 
@@ -146,7 +147,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .from("clubs")
         // status='approved'만 — 클럽 상세페이지(generateMetadata)가 approved만 렌더하고
         // 나머지는 404를 내므로, 미승인/병합 클럽이 sitemap에 들어가면 soft 404 색인 오염.
-        .select("id")
+        // name_en/area는 영어 클럽 페이지(/en/clubs/{area}/{slug}) URL 생성에 필요
+        .select("id, name_en, area, hidden_from_guide")
         .eq("status", "approved")
         .is("deleted_at", null)
         .eq("is_test", false)
@@ -198,6 +200,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
+    // 영어 클럽 개별 페이지 — 클럽명+속성 롱테일("Hongdae B1 opening hours") 대응.
+    // 영어 지역 페이지가 있는 지역(강남/홍대/이태원/부산)만. 나머지는 부모 없는 고아가 됨.
+    const enClubRoutes: MetadataRoute.Sitemap = (clubsRes.data ?? [])
+      .flatMap((c) => {
+        const areaSlug = canonicalAreaSlug(c.area);
+        const nameEn = c.name_en?.trim();
+        if (!areaSlug || !nameEn || c.hidden_from_guide) return [];
+        const slug = clubSlug(nameEn);
+        if (!slug) return [];
+        return [{
+          url: `${BASE_URL}/en/clubs/${areaSlug}/${slug}`,
+          lastModified: now,
+          changeFrequency: "weekly" as const,
+          priority: 0.75,
+        }];
+      });
+
     const puzzleRoutes: MetadataRoute.Sitemap = (puzzlesRes.data ?? []).map((p) => ({
       url: `${BASE_URL}/flags/${p.id}`,
       lastModified: p.updated_at ? new Date(p.updated_at) : now,
@@ -225,6 +244,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...staticRoutes,
       ...auctionRoutes,
       ...clubRoutes,
+      ...enClubRoutes,
       ...puzzleRoutes,
       ...hotdealRoutes,
       ...mdRoutes,
