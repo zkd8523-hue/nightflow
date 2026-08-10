@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { krwToAll } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
   title: {
@@ -147,6 +148,93 @@ export default function ZhGuidePage() {
             ))}
           </div>
         </section>
+
+        {/* Price tiers */}
+        <section className="space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-black tracking-tight">想要完整的 VIP 之夜吗？</h2>
+            <p className="text-[14px] text-muted-foreground leading-relaxed">
+              带上朋友，消费 ₩500,000+，留下旅途中最美好的回忆。这是首尔一晚真实的花费 — 不用再猜了。
+            </p>
+          </div>
+          <div className="space-y-3">
+            {[
+              { icon: "🎟️", label: "普通入场", price: "₩20,000–30,000/人", krwAmount: 25000, desc: "入场费 + 第一杯酒。舞池里畅快的一晚。" },
+              { icon: "👑", label: "全套 VIP", price: "₩500,000+", krwAmount: 500000, desc: "最佳座位、酒水服务、专属服务员全程照顾 — 让您毕生难忘的一晚。" },
+            ].map((t) => (
+              <div key={t.label} className="flex gap-4 p-5 rounded-2xl bg-card border border-border">
+                <div className="shrink-0 text-2xl leading-none pt-0.5">{t.icon}</div>
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-bold text-[15px] text-foreground">{t.label}</p>
+                    <p className="font-black text-[14px] text-brand-amber whitespace-nowrap">{t.price}</p>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground tabular-nums">≈ {krwToAll(t.krwAmount)}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{t.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
+            设定您的预算 — 我们会为您匹配最好的桌位。带的人越多，夜晚就越 VIP。
+          </p>
+          <Link href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
+            通过 NightFlow 预订
+          </Link>
+        </section>
+
+        {/* Safety tips */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-black tracking-tight text-center">出发前须知</h2>
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
+            首尔夜生活精彩纷呈 — 但游客确实会被骗。以下是如何保护自己的方法。
+          </p>
+          <div className="space-y-3">
+            {[
+              {
+                q: "🚩 常见骗局要当心",
+                items: [
+                  "“免费入场”陷阱 — 先免费引你进去，不交高额酒水费或入场费就不让走。",
+                  "隐藏价格 — 没有官方菜单；外国人被收取数倍于实际价格的桌位费和酒水费。",
+                  "盗刷银行卡 — 趁客人喝醉，拿走信用卡在未经同意的情况下反复扣款。",
+                  "假冒中介 — 私信兜售“预订”，从中赚取远超真实价格的差价。",
+                ],
+              },
+              {
+                q: "🛡️ 如何保护自己",
+                items: [
+                  "不要跟着在弘大或梨泰院街头发放“免费入场”卡的拉客者走。",
+                  "务必查看印刷的价格菜单。每单先付款。",
+                  "核对收据，并在手机上开启银行卡支付即时提醒。",
+                  "只通过官方渠道预订 — 夜店官方账号，绝不通过未经验证的中介。",
+                ],
+              },
+              {
+                q: "📞 万一出事怎么办",
+                items: [
+                  "报警 — 112。遇到人身危险、被限制人身自由或被强迫付款时拨打。",
+                  "旅游投诉中心 — 1330。由韩国观光公社运营，提供外语帮助和超额收费调解。",
+                ],
+              },
+            ].map((t) => (
+              <details key={t.q} className="group rounded-2xl bg-card border border-border overflow-hidden">
+                <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer list-none select-none">
+                  <span className="font-bold text-[15px] text-foreground">{t.q}</span>
+                  <span className="text-muted-foreground transition-transform group-open:rotate-180">▾</span>
+                </summary>
+                <div className="px-5 pb-5 space-y-2">
+                  {t.items.map((it, i) => (
+                    <p key={i} className="text-[13px] text-muted-foreground leading-relaxed">• {it}</p>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
+            或者直接跳过这些风险 — NightFlow 是经过验证的正规渠道。真实夜店，透明价格，没有拉客者。
+          </p>
+        </section>
+
         <section className="space-y-3 pt-2">
           <Link href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             获取 VIP 通道 — 无需注册

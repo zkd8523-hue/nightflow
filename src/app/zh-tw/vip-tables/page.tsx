@@ -7,7 +7,7 @@ export const metadata: Metadata = {
       "首爾 VIP 包廂預訂 — 韓國夜店瓶裝服務指南 (2026)",
   },
   description:
-    "預訂首爾頂級夜店 VIP 包廂 — 江南、弘大、梨泰院、狎鷗亭。真實價格，瓶裝服務，無中介，無需韓語。韓國在地人的預訂方式。",
+    "預訂首爾頂級夜店 VIP 包廂 — 江南、弘大、梨泰院、狎鷗亭。真實價格,瓶裝服務,無中介,無需韓語。韓國在地人的預訂方式。",
   keywords: [
     "首爾VIP包廂",
     "首爾VIP預訂",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "首爾 VIP 包廂預訂 — 韓國夜店瓶裝服務指南",
-    description: "預訂首爾頂級夜店，無需韓語。真實價格，無中介。",
+    description: "預訂首爾頂級夜店,無需韓語。真實價格,無中介。",
     url: "https://nightflow.kr/zh-tw/vip-tables",
     locale: "zh_TW",
     type: "website",
@@ -49,9 +49,9 @@ export const metadata: Metadata = {
 };
 
 const TIERS = [
-  { name: "弘大 walk-in 友善", price: "₩300,000–600,000", perPerson: "每人 ₩50,000–100,000 (6 人)", desc: "中小型夜店，嘻哈/K-POP 為主，無嚴格門禁。Club Dokkaebi、Sabotage、Purple。" },
-  { name: "江南主桌 VIP", price: "₩750,000–1,500,000", perPerson: "每人 ₩150,000–300,000 (4–6 人)", desc: "EDM 大型夜店，黃金座位，全套瓶裝服務。Club ACE、Massive、Club Pop。" },
-  { name: "狎鷗亭高端包廂", price: "₩2,000,000+", perPerson: "每人 ₩400,000+ (4–6 人)", desc: "高端包廂，香檳文化，獨家人群。Core Lounge、Club Arzu、DM Seoul。" },
+  { name: "弘大 walk-in 友善", price: "₩300,000–600,000", perPerson: "每人 ₩50,000–100,000 (6 人)", desc: "中小型夜店,嘻哈/K-POP 為主,無嚴格門禁。Club Dokkaebi、Sabotage、Purple。" },
+  { name: "江南主桌 VIP", price: "₩750,000–1,500,000", perPerson: "每人 ₩150,000–300,000 (4–6 人)", desc: "EDM 大型夜店,黃金座位,全套瓶裝服務。Club ACE、Massive、Club Pop。" },
+  { name: "狎鷗亭高端包廂", price: "₩2,000,000+", perPerson: "每人 ₩400,000+ (4–6 人)", desc: "高端包廂,香檳文化,獨家人群。Core Lounge、Club Arzu、DM Seoul。" },
 ];
 
 export default function ZhTwVipTablesPage() {
@@ -63,7 +63,7 @@ export default function ZhTwVipTablesPage() {
         name: "首爾 VIP 包廂預訂",
         provider: { "@type": "Organization", name: "NightFlow", url: "https://nightflow.kr/zh-tw" },
         areaServed: { "@type": "City", name: "首爾" },
-        description: "預訂首爾頂級夜店 VIP 包廂和瓶裝服務，江南、弘大、梨泰院、狎鷗亭。中文友善，無中介，韓國在地價。",
+        description: "預訂首爾頂級夜店 VIP 包廂和瓶裝服務,江南、弘大、梨泰院、狎鷗亭。中文友善,無中介,韓國在地價。",
         serviceType: "VIP Table Reservation",
         offers: TIERS.map((t) => ({ "@type": "Offer", name: t.name, description: t.desc, priceRange: t.price })),
       },
@@ -85,7 +85,7 @@ export default function ZhTwVipTablesPage() {
           <Link href="/zh-tw" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">首爾 VIP 包廂預訂</h1>
           <p className="text-[14px] text-muted-foreground leading-relaxed">
-            預訂首爾頂級夜店 VIP 包廂和瓶裝服務 — 江南、弘大、梨泰院、狎鷗亭。無中介，無需韓語，無旅客加價。
+            預訂首爾頂級夜店 VIP 包廂和瓶裝服務 — 江南、弘大、梨泰院、狎鷗亭。無中介,無需韓語,無旅客加價。
           </p>
         </header>
         <section className="space-y-4">
@@ -106,7 +106,7 @@ export default function ZhTwVipTablesPage() {
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">VIP 預訂流程</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed">
-            選好想去的夜店(或者只告訴我們喜好)，填寫日期、人數和預算。NightFlow 直接聯絡夜店，為您鎖定預算內最好的桌位 — 真實價格，真實瓶裝套餐。到場後直接入場。
+            選好想去的夜店(或者只告訴我們喜好),填寫日期、人數和預算。NightFlow 直接聯絡夜店,為您鎖定預算內最好的桌位 — 真實價格,真實瓶裝套餐。到場後直接入場。
           </p>
           <Link href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 透過 NightFlow 預訂

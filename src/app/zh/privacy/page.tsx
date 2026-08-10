@@ -96,7 +96,12 @@ export default function ZhPrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-foreground">7. 联系</h2>
+            <h2 className="text-lg font-black text-foreground">7. 安全性</h2>
+            <p>我们采用业界标准加密技术（HTTPS、TLS），并遵守韩国《个人信息保护法》（PIPA）的相关要求。</p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-black text-foreground">8. 联系</h2>
             <p>隐私相关问题：<a href="mailto:maddawids@gmail.com" className="text-brand-amber underline">maddawids@gmail.com</a></p>
           </section>
 

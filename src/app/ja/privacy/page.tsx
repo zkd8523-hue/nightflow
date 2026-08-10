@@ -96,7 +96,15 @@ export default function JaPrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-foreground">7. お問い合わせ</h2>
+            <h2 className="text-lg font-black text-foreground">7. セキュリティ</h2>
+            <p>
+              当社は業界標準の暗号化技術（HTTPS、TLS）を採用しており、韓国の個人情報保護法
+              （PIPA：Personal Information Protection Act）の要件を遵守しています。
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-black text-foreground">8. お問い合わせ</h2>
             <p>プライバシーに関するご質問：<a href="mailto:maddawids@gmail.com" className="text-brand-amber underline">maddawids@gmail.com</a></p>
           </section>
 

@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: { absolute: "ソウルのK-POPクラブ — K-POPライブが聴ける場所 (日本人旅行者ガイド 2026)" },
-  description: "ソウルのベストK-POPクラブとナイトライフガイド、日本人K-POPファン向け。弘大NB2、K-POPダンスパーティー、アイドル名曲を一晩中。本物の価格、ブローカーなし、日本語フレンドリー。",
+  description: "ソウルのベストK-POPクラブとナイトライフガイド、日本人K-POPファン向け。弘大NB2、K-POPダンスパーティー、アイドルのヒット曲を一晩中。本物の価格、ブローカーなし、日本語フレンドリー。",
   keywords: ["K-POPクラブ","ソウルK-POPクラブ","K-POPナイトクラブ","ソウルK-POPナイトライフ","韓国K-POPクラブ","韓国K-POPナイトライフ","弘大K-POPクラブ","NB2 ソウル","NB2 弘大","K-POPバー","K-POPダンスクラブ","ソウルアイドルクラブ","BTSクラブソウル","K-POPファンクラブ","K-POP旅行ソウル"],
   alternates: {
     canonical: "https://nightflow.kr/ja/kpop-clubs",

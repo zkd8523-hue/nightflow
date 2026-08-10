@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { krwToAll } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
   title: {
@@ -149,6 +150,112 @@ export default function ZhTwGuidePage() {
             ))}
           </div>
         </section>
+
+        {/* 信任 — VIP、公平價格 */}
+        <section className="space-y-4 text-center">
+          <h2 className="text-2xl font-black tracking-tight">
+            VIP 夜店預訂,公平價格
+          </h2>
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
+            我們會親自代您聯絡夜店,為您鎖定預算內最好的桌位。價格透明公開,直接付款給夜店,無預訂費,無中介抽成。就是最好的座位,本地人的預訂方式。
+          </p>
+        </section>
+
+        {/* 預算等級 — 真實價格 + 引導預算感 */}
+        <section className="space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-black tracking-tight">
+              想體驗完整 VIP 之夜?
+            </h2>
+            <p className="text-[14px] text-muted-foreground leading-relaxed">
+              和朋友們一起,花費 ₩500,000 以上,留下這趟旅程最美好的回憶。以下是首爾夜店真實的消費行情 — 不用再猜了。
+            </p>
+          </div>
+          <div className="space-y-3">
+            {[
+              { icon: "🎟️", label: "先進場再說", price: "₩20,000–30,000 / 人", krwAmount: 25000, desc: "入場費 + 第一杯飲料。輕鬆享受一晚舞池時光。" },
+              { icon: "👑", label: "完整 VIP 體驗", price: "₩500,000 起", krwAmount: 500000, desc: "頂級桌位、瓶裝服務、專屬人員全程照顧 — 讓您難忘的一夜。" },
+            ].map((t) => (
+              <div key={t.label} className="flex gap-4 p-5 rounded-2xl bg-card border border-border">
+                <div className="shrink-0 text-2xl leading-none pt-0.5">{t.icon}</div>
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-bold text-[15px] text-foreground">{t.label}</p>
+                    <p className="font-black text-[14px] text-brand-amber whitespace-nowrap">{t.price}</p>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground tabular-nums">≈ {krwToAll(t.krwAmount)}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{t.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
+            設定您的預算 — 我們會為您找到最合適的桌位。帶的人越多,這一夜就越 VIP。
+          </p>
+          <Link
+            href="/flags/new?lang=zh-tw"
+            className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
+          >
+            透過 NightFlow 預訂
+          </Link>
+        </section>
+
+        {/* 安全提示 — 可展開(原生 details,無需 JS) */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-black tracking-tight text-center">
+            出發前必看
+          </h2>
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
+            首爾夜生活很精彩 — 但遊客確實有被騙的案例。以下教您如何保護自己。
+          </p>
+          <div className="space-y-3">
+            {[
+              {
+                q: "🚩 常見詐騙手法",
+                items: [
+                  "「免費入場」陷阱 — 先誘騙入場,之後不付高額飲料費或最低消費就不讓離開。",
+                  "隱藏價格 — 沒有正式菜單,外國人被收取遠高於實際價格的桌位費和飲料費。",
+                  "盜刷卡片 — 趁客人喝醉,拿走信用卡在未經同意下重複刷卡。",
+                  "假冒中介 — 私訊聲稱可「代訂」,實際收取遠高於實際價格的費用後私吞差額。",
+                ],
+              },
+              {
+                q: "🛡️ 如何保護自己",
+                items: [
+                  "不要跟隨弘大或梨泰院街頭派發「免費入場」卡片的拉客人員。",
+                  "務必確認有印刷版的價目表,每筆消費先付款。",
+                  "檢查收據,並在手機上開啟即時刷卡通知。",
+                  "只透過官方管道預訂 — 夜店官方帳號,絕不透過未經驗證的中介。",
+                ],
+              },
+              {
+                q: "📞 遇到問題時",
+                items: [
+                  "報警 — 112。如遇立即危險、被限制人身自由或被強迫付款。",
+                  "旅遊申訴中心 — 1330。由韓國觀光公社營運,提供外語協助與超收爭議調解。",
+                ],
+              },
+            ].map((t) => (
+              <details key={t.q} className="group rounded-2xl bg-card border border-border overflow-hidden">
+                <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer list-none select-none">
+                  <span className="font-bold text-[15px] text-foreground">{t.q}</span>
+                  <span className="text-muted-foreground transition-transform group-open:rotate-180">▾</span>
+                </summary>
+                <div className="px-5 pb-5 space-y-2">
+                  {t.items.map((it, i) => (
+                    <p key={i} className="text-[13px] text-muted-foreground leading-relaxed">
+                      • {it}
+                    </p>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
+            或者直接跳過這些風險 — NightFlow 是經過驗證的正規管道。真實夜店,價格透明,沒有拉客。
+          </p>
+        </section>
+
         <section className="space-y-3 pt-2">
           <Link href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             獲取 VIP 通道 — 無需註冊

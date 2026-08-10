@@ -334,7 +334,7 @@ export default async function ZhTwClubDetailPage({
         <section className="rounded-2xl bg-card border border-border p-5 space-y-1.5">
           <h2 className="text-[18px] font-black">預約{name}的包廂</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
-            告訴我們日期、人數和預算。NightFlow 會直接聯絡{name},用韓語溝通,為您用中文回覆。
+            告訴我們日期、人數和預算。NightFlow 會直接用韓語聯絡{name},並用中文為您回覆結果。
             無中介費,無需訂金。
           </p>
         </section>

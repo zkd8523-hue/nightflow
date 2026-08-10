@@ -1,5 +1,53 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { krwToAll } from "@/lib/utils/currency";
+
+// 外国人観光客向け 詐欺注意アコーディオン（英語版 TIPS と同じ内容）
+const TIPS = [
+  {
+    q: "🚩 よくある詐欺に注意",
+    items: [
+      "「無料入場」の罠 — 無料で誘い込み、高額なドリンク代やカバーチャージを払うまで帰してもらえない。",
+      "不透明な価格 — 公式メニューがなく、外国人は実際の数倍の料金をテーブルやドリンクに請求される。",
+      "カード不正利用 — 酔った客のカードを預かり、同意なく何度も繰り返し決済される。",
+      "偽プロモーター — DMで「予約できます」と持ちかけ、実際の価格よりはるかに多くの金額を中抜きする。",
+    ],
+  },
+  {
+    q: "🛡️ 身を守る方法",
+    items: [
+      "弘大や梨泰院で「無料入場」カードを配る客引きについて行かない。",
+      "必ず印刷された価格メニューを確認する。注文ごとに前払いする。",
+      "レシートを必ず確認し、スマホでカード決済の即時通知をオンにしておく。",
+      "公式チャンネルのみで予約する — クラブの公式アカウント経由で。未確認のプロモーター経由は避ける。",
+    ],
+  },
+  {
+    q: "📞 トラブルが起きたら",
+    items: [
+      "警察 — 112。すぐの危険、監禁、支払いの強要があった場合。",
+      "観光苦情センター — 1330。韓国観光公社が運営し、外国語対応と過剰請求の仲裁を行う。",
+    ],
+  },
+];
+
+// 予算ティア — 本物の価格を伝える
+const PRICE_TIERS = [
+  {
+    icon: "🎟️",
+    label: "とりあえず入場",
+    price: "₩20,000〜30,000 / 人",
+    krwAmount: 25000,
+    desc: "入場料 + 最初の1杯。ダンスフロアで軽く楽しむ夜。",
+  },
+  {
+    icon: "👑",
+    label: "本物のVIP体験",
+    price: "₩500,000〜",
+    krwAmount: 500000,
+    desc: "一等席のテーブル、ボトルサービス、夜通しのスタッフ対応 — 忘れられない夜に。",
+  },
+];
 
 export const metadata: Metadata = {
   title: { absolute: "韓国クラブ予約ガイド — 江南・弘大・梨泰院でVIPに" },
@@ -90,6 +138,62 @@ export default function JaGuidePage() {
             ))}
           </div>
         </section>
+
+        {/* Price tiers — 本物の価格を伝える */}
+        <section className="space-y-6">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-black tracking-tight">本物のVIPな夜を過ごしたい？</h2>
+            <p className="text-[14px] text-muted-foreground leading-relaxed">
+              友達と一緒に₩500,000以上使えば、旅の一番の思い出になります。ソウルの夜遊びに実際いくらかかるのか、もう推測は不要です。
+            </p>
+          </div>
+          <div className="space-y-3">
+            {PRICE_TIERS.map((t) => (
+              <div key={t.label} className="flex gap-4 p-5 rounded-2xl bg-card border border-border">
+                <div className="shrink-0 text-2xl leading-none pt-0.5">{t.icon}</div>
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-bold text-[15px] text-foreground">{t.label}</p>
+                    <p className="font-black text-[14px] text-brand-amber whitespace-nowrap">{t.price}</p>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground tabular-nums">≈ {krwToAll(t.krwAmount)}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{t.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
+            予算を伝えれば、それに合った最高のテーブルを探します。人数が多いほど、夜はもっとVIPに。
+          </p>
+          <Link href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">NightFlowで予約する</Link>
+        </section>
+
+        {/* Safety tips — collapsible (native details, no JS) */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-black tracking-tight text-center">行く前に知っておこう</h2>
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
+            ソウルのナイトライフは最高です。でも観光客が詐欺に遭うこともあります。安全に楽しむ方法をご紹介します。
+          </p>
+          <div className="space-y-3">
+            {TIPS.map((t) => (
+              <details key={t.q} className="group rounded-2xl bg-card border border-border overflow-hidden">
+                <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer list-none select-none">
+                  <span className="font-bold text-[15px] text-foreground">{t.q}</span>
+                  <span className="text-muted-foreground transition-transform group-open:rotate-180">▾</span>
+                </summary>
+                <div className="px-5 pb-5 space-y-2">
+                  {t.items.map((it, i) => (
+                    <p key={i} className="text-[13px] text-muted-foreground leading-relaxed">• {it}</p>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
+            リスクを避けたいなら、NightFlowが安心の窓口です。本物のクラブ、明朗な価格、客引きなし。
+          </p>
+        </section>
+
         <section className="space-y-3 pt-2">
           <Link href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">VIPアクセス取得 — 登録不要</Link>
           <p className="text-[12px] text-muted-foreground text-center leading-relaxed">19+ · パスポート持参<br />夜をもっと美しく</p>

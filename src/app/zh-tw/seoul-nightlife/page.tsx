@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: { absolute: "首爾夜生活指南 2026 — 去哪裡、訂哪裡 (外國旅客版)" },
-  description: "完整的首爾夜生活指南，專為外國旅客打造。江南 EDM、弘大嘻哈、梨泰院國際化、狎鷗亭 VIP 包廂。真實價格，無中介，無需韓語。",
+  description: "完整的首爾夜生活指南,專為外國旅客打造。江南 EDM、弘大嘻哈、梨泰院國際化、狎鷗亭 VIP 包廂。真實價格,無中介,無需韓語。",
   keywords: ["首爾夜生活","首爾夜生活指南","韓國夜生活","韓國夜生活指南","首爾夜場","首爾派對","首爾夜店","首爾最好的夜生活","首爾夜生活技巧","首爾夜生活區","江南夜生活","弘大夜生活","梨泰院夜生活","狎鷗亭夜生活","首爾酒吧和夜店","韓國旅遊夜生活"],
   alternates: {
     canonical: "https://nightflow.kr/zh-tw/seoul-nightlife",
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
         "x-default": "https://nightflow.kr/en/seoul-nightlife",
     },
   },
-  openGraph: { title: "首爾夜生活指南 2026 — 去哪裡、訂哪裡", description: "外國旅客的誠實指南。江南、弘大、梨泰院、狎鷗亭。真實價格，無中介。", url: "https://nightflow.kr/zh-tw/seoul-nightlife", locale: "zh_TW", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
+  openGraph: { title: "首爾夜生活指南 2026 — 去哪裡、訂哪裡", description: "外國旅客的誠實指南。江南、弘大、梨泰院、狎鷗亭。真實價格,無中介。", url: "https://nightflow.kr/zh-tw/seoul-nightlife", locale: "zh_TW", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
 };
 
 export default function ZhTwSeoulNightlifePage() {
@@ -36,7 +36,7 @@ export default function ZhTwSeoulNightlifePage() {
         <header className="space-y-4 text-center">
           <Link href="/zh-tw" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">首爾夜生活指南</h1>
-          <p className="text-[14px] text-muted-foreground leading-relaxed">外國旅客該去哪裡、訂哪裡、如何真正享受首爾夜生活。無中介費，無需韓語。</p>
+          <p className="text-[14px] text-muted-foreground leading-relaxed">外國旅客該去哪裡、訂哪裡、如何真正享受首爾夜生活。無中介費,無需韓語。</p>
         </header>
         <section className="space-y-4">
           <h2 className="text-[20px] font-black">按地區瀏覽首爾夜生活</h2>
@@ -67,7 +67,7 @@ export default function ZhTwSeoulNightlifePage() {
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">無需韓語如何預訂</h2>
-          <p className="text-[13px] text-muted-foreground leading-relaxed">選好想去的夜店(或者只告訴我們喜好)，填寫日期、人數和預算。NightFlow 直接聯絡夜店，用中文為您鎖定桌位。到場後直接入場。</p>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">選好想去的夜店(或者只告訴我們喜好),填寫日期、人數和預算。NightFlow 直接聯絡夜店,用中文為您鎖定桌位。到場後直接入場。</p>
           <Link href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">🍾 透過 NightFlow 預訂</Link>
         </section>
         <section className="space-y-2 pt-4">

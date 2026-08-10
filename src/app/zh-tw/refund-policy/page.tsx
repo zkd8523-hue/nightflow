@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ScrollText, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { ScrollText, AlertCircle, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { BUSINESS_INFO } from "@/lib/business-info";
 
 export const metadata: Metadata = {
@@ -104,6 +104,11 @@ export default function ZhTwRefundPolicyPage() {
             </ol>
           </section>
 
+          <section className="space-y-3">
+            <h2 className="text-lg font-black text-foreground">7. 政策變更</h2>
+            <p>NightFlow 得於必要時更新本政策。變更內容將於生效前至少 7 天在網站公告。若變更可能對用戶造成不利影響,將提前 30 天公告。</p>
+          </section>
+
           <section className="space-y-3 pt-6 border-t border-border">
             <h2 className="text-lg font-black text-foreground">公司資訊</h2>
             <div className="text-[13px] text-muted-foreground space-y-1">
@@ -120,6 +125,19 @@ export default function ZhTwRefundPolicyPage() {
           <section className="space-y-2 pt-4 border-t border-border">
             <p className="text-[13px] text-muted-foreground">本政策自 2026 年 6 月 30 日起生效。</p>
           </section>
+        </div>
+
+        <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-brand-amber mt-0.5 flex-shrink-0" />
+          <div className="text-[13px] text-foreground/80">
+            <p className="font-bold text-brand-amber mb-1">需要協助?</p>
+            <p>
+              請聯絡我們:{" "}
+              <a href={`mailto:${BUSINESS_INFO.email}`} className="text-brand-amber underline hover:text-brand-amber">
+                {BUSINESS_INFO.email}
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </div>

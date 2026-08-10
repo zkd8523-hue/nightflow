@@ -333,7 +333,7 @@ export default async function ZhClubDetailPage({
         <section className="rounded-2xl bg-card border border-border p-5 space-y-1.5">
           <h2 className="text-[18px] font-black">预订{name}的卡座</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
-            告诉我们日期、人数和预算。NightFlow 会直接联系{name}，用韩语沟通，为您用中文回复。
+            告诉我们日期、人数和预算。NightFlow 会直接用韩语联系{name}，并用中文为您回复进度。
             无中介费，无需押金。
           </p>
         </section>

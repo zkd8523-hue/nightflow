@@ -56,7 +56,14 @@ export default function ZhTermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-foreground">4. 用户责任</h2>
+            <h2 className="text-lg font-black text-foreground">4. 预订与取消</h2>
+            <p>
+              所有预订均取决于库存情况以及夜店 MD 的确认。取消权利与退款政策详见退款政策文档。
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-black text-foreground">5. 用户责任</h2>
             <ul className="space-y-1 list-disc pl-5 text-[14px]">
               <li>提供准确的个人信息</li>
               <li>按约定时间到达夜店</li>
@@ -66,12 +73,12 @@ export default function ZhTermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-foreground">5. 争议解决</h2>
+            <h2 className="text-lg font-black text-foreground">6. 争议解决</h2>
             <p>争议首先由 NightFlow 客服处理，未解决的争议依据韩国法律，可提交至韩国消费者院或电子商务争议调解委员会。</p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-foreground">6. 适用法律</h2>
+            <h2 className="text-lg font-black text-foreground">7. 适用法律</h2>
             <p>本服务由韩国运营，适用韩国法律。</p>
           </section>
 

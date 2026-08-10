@@ -7,7 +7,7 @@ export const metadata: Metadata = {
       "首爾 K-POP 夜店 — 哪裡能聽 K-POP 現場 (台灣旅客指南 2026)",
   },
   description:
-    "首爾最佳 K-POP 夜店和夜生活指南，專為台灣 K-POP 粉絲整理。弘大 NB2、K-POP 舞會、偶像金曲整夜。真實價格，無中介，中文友善。",
+    "首爾最佳 K-POP 夜店和夜生活指南,專為台灣 K-POP 粉絲整理。弘大 NB2、K-POP 舞會、偶像金曲整夜。真實價格,無中介,中文友善。",
   keywords: [
     "K-POP夜店",
     "K-POP夜店首爾",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "首爾 K-POP 夜店 — 台灣旅客指南",
-    description: "首爾最佳 K-POP 夜店。真實價格，中文友善。K-POP 粉絲真正會去的地方。",
+    description: "首爾最佳 K-POP 夜店。真實價格,中文友善。K-POP 粉絲真正會去的地方。",
     url: "https://nightflow.kr/zh-tw/kpop-clubs",
     locale: "zh_TW",
     type: "website",
@@ -48,10 +48,10 @@ export const metadata: Metadata = {
 };
 
 const KPOP_VENUES = [
-  { name: "NB2 (Noise Basement 2)", district: "弘大", vibe: "指標性 K-POP 夜店。YG 旗下，嘻哈+K-POP 金曲整夜。首爾國際旅客集中度最高。", bestFor: "首次訪韓 K-POP 粉絲旅客" },
-  { name: "Club Purple", district: "弘大", vibe: "嘻哈為主，但 K-POP 金曲頻繁播放。新手友善，無嚴格門禁。", bestFor: "嘻哈 + K-POP 隨性夜" },
-  { name: "Club ACE", district: "江南", vibe: "大型 EDM 夜店，繁忙夜晚設 K-POP 樓層。時尚人群，有服裝要求。", bestFor: "EDM + K-POP 結合夜" },
-  { name: "Club Dokkaebi", district: "弘大", vibe: "嘻哈為主，但定期播放 K-POP 金曲。高端製作，氣氛熱烈。", bestFor: "同時喜歡嘻哈的 K-POP 粉絲" },
+  { name: "NB2 (Noise Basement 2)", district: "弘大", vibe: "指標性 K-POP 夜店。YG 旗下,嘻哈+K-POP 金曲整夜。首爾國際旅客集中度最高。", bestFor: "首次訪韓 K-POP 粉絲旅客" },
+  { name: "Club Purple", district: "弘大", vibe: "嘻哈為主,但 K-POP 金曲頻繁播放。新手友善,無嚴格門禁。", bestFor: "嘻哈 + K-POP 隨性夜" },
+  { name: "Club ACE", district: "江南", vibe: "大型 EDM 夜店,繁忙夜晚設 K-POP 樓層。時尚人群,有服裝要求。", bestFor: "EDM + K-POP 結合夜" },
+  { name: "Club Dokkaebi", district: "弘大", vibe: "嘻哈為主,但定期播放 K-POP 金曲。高端製作,氣氛熱烈。", bestFor: "同時喜歡嘻哈的 K-POP 粉絲" },
 ];
 
 export default function ZhTwKpopClubsPage() {
@@ -111,7 +111,7 @@ export default function ZhTwKpopClubsPage() {
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">K-POP 旅客預訂建議</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed">
-            大多數 K-POP 旅客直接前往弘大 NB2。可行 — 但週末排隊可能 90 分鐘。如果您想確保入場並預訂包廂，通過 NightFlow 預訂，我們會直接聯絡弘大 K-POP 夜店，用中文為您確認座位。
+            大多數 K-POP 旅客直接前往弘大 NB2。可行 — 但週末排隊可能 90 分鐘。如果您想確保入場並預訂包廂,通過 NightFlow 預訂,我們會直接聯絡弘大 K-POP 夜店,用中文為您確認座位。
           </p>
           <Link href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 透過 NightFlow 預訂

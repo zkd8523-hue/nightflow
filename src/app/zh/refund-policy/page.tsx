@@ -101,6 +101,11 @@ export default function ZhRefundPolicyPage() {
             </ol>
           </section>
 
+          <section className="space-y-3">
+            <h2 className="text-lg font-black text-foreground">7. 政策变更</h2>
+            <p>NightFlow 可能会在必要时更新本政策。变更内容将在生效前至少 7 天于网站上公告。可能对用户不利的重大变更将提前 30 天公告。</p>
+          </section>
+
           <section className="space-y-3 pt-6 border-t border-border">
             <h2 className="text-lg font-black text-foreground">公司信息</h2>
             <div className="text-[13px] text-muted-foreground space-y-1">

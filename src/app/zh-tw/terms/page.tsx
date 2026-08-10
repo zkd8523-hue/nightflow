@@ -59,7 +59,12 @@ export default function ZhTwTermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-foreground">4. 用戶責任</h2>
+            <h2 className="text-lg font-black text-foreground">4. 預訂與取消</h2>
+            <p>所有預訂皆須視庫存狀況與夜店 MD 確認結果而定。取消權利與退款政策詳見退款政策頁面。</p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-black text-foreground">5. 用戶責任</h2>
             <ul className="space-y-1 list-disc pl-5 text-[14px]">
               <li>提供正確的個人資訊</li>
               <li>依約定時間到達夜店</li>
@@ -69,12 +74,12 @@ export default function ZhTwTermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-foreground">5. 爭議解決</h2>
+            <h2 className="text-lg font-black text-foreground">6. 爭議解決</h2>
             <p>爭議首先由 NightFlow 客服處理,未解決之爭議依據韓國法律,可提交至韓國消費者院或電子商務爭議調解委員會。</p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-foreground">6. 適用法律</h2>
+            <h2 className="text-lg font-black text-foreground">7. 適用法律</h2>
             <p>本服務由韓國營運,適用韓國法律。</p>
           </section>
 

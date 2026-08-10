@@ -18,7 +18,7 @@ export const TAG_LABEL_I18N: Record<string, Record<Lang, string>> = {
   house:       { ko: "하우스", en: "House", ja: "ハウス", zh: "House", "zh-tw": "House" },
   latin:       { ko: "라틴", en: "Latin", ja: "ラテン", zh: "拉丁", "zh-tw": "拉丁" },
   techno:      { ko: "테크노", en: "Techno", ja: "テクノ", zh: "Techno", "zh-tw": "Techno" },
-  rock:        { ko: "락", en: "Rock", ja: "ロック", zh: "搖滾", "zh-tw": "搖滾" },
+  rock:        { ko: "락", en: "Rock", ja: "ロック", zh: "摇滚", "zh-tw": "搖滾" },
   mix:         { ko: "믹스", en: "Mixed", ja: "ミックス", zh: "混合", "zh-tw": "混合" },
   // smoking
   allowed:     { ko: "흡연", en: "Smoking OK", ja: "喫煙可", zh: "可吸烟", "zh-tw": "可吸菸" },
