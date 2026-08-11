@@ -686,29 +686,33 @@ export function ForeignRequestForm({
             ₩
           </span>
         </div>
-        {/* 내 나라 돈으로 얼마인지 먼저, 그 다음 이 금액이면 뭘 받는지.
-            숫자만 있으면 시세 모르는 외국인은 비싸 보여서 이탈한다 — 실제로 그 구간에서 빠졌다.
-            ⚠️ 순서 중요: 입력칸 바로 아래에 둔다. 프리셋 버튼(조작)이 금액과 그 의미 사이를
-            가로막으면, 숫자를 보고 "그래서 이게 뭔데"에 답이 늦어져 이탈한다. */}
+        {/* 가독성: 통화 4개를 한 줄에 나열하면 332px 안에 숫자가 뭉쳐 스캔이 안 된다.
+            2열로 펼치고 역할별로 크기를 나눈다(받는 것 = 가장 큼 > 환산 > 기준일).
+            순서 중요: 입력칸 바로 아래. 프리셋 버튼이 금액과 그 의미 사이를 막으면 안 된다. */}
         {budgetAmount() > 0 && (
-          <div className="mt-2 rounded-xl bg-card border border-border p-3 space-y-1.5">
-            <p className="text-[13px] text-foreground tabular-nums font-bold">
-              ≈ {krwToAll(budgetAmount(), fxRates)}
-            </p>
-            {/* 환율 기준 시점 명시 — 근사치라는 걸 밝혀야 나중에 "환율 다르잖아" 소리를 안 듣는다.
-                날짜는 언어별 형식으로 표기(일본·중국어에 "Aug 11, 2026"은 어색). */}
-            <p className="text-[11px] text-muted-foreground/70">
-              {t(
-                `환율 ${fxAsOf} 기준 · 참고용 근사치`,
-                `Approx. rates as of ${fxAsOf}`,
-                `${fxAsOf} 時点のレート・目安`,
-                `汇率参考 ${fxAsOf} · 仅供参考`,
-                `匯率參考 ${fxAsOf} · 僅供參考`
-              )}
-            </p>
-            <p className="text-[12px] text-muted-foreground leading-relaxed break-keep">
-              <span className="text-money font-bold">✓</span> {budgetTier(budgetAmount())}
-            </p>
+          <div className="mt-2 rounded-xl bg-card border border-border overflow-hidden">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 p-3">
+              {krwToAll(budgetAmount(), fxRates).split(" · ").map((v) => (
+                <span key={v} className="text-[14px] text-foreground font-bold tabular-nums">
+                  ≈ {v}
+                </span>
+              ))}
+            </div>
+            {/* 이 박스의 핵심 정보 — 구분선으로 띄우고 가장 크게 */}
+            <div className="border-t border-border px-3 py-2.5">
+              <p className="text-[14px] text-foreground leading-relaxed break-keep">
+                <span className="text-money font-bold">✓</span> {budgetTier(budgetAmount())}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {t(
+                  `환율 ${fxAsOf} 기준 · 참고용`,
+                  `Rates as of ${fxAsOf}`,
+                  `${fxAsOf} 時点のレート`,
+                  `汇率参考 ${fxAsOf}`,
+                  `匯率參考 ${fxAsOf}`
+                )}
+              </p>
+            </div>
           </div>
         )}
         <div className="grid grid-cols-4 gap-1.5 mt-2">
