@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { krwToAll } from "@/lib/utils/currency";
+import { krwToAll, getKrwRates } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
   title: {
@@ -51,7 +51,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ZhTwGuidePage() {
+export default async function ZhTwGuidePage() {
+  // 환율은 15일 주기 갱신 (실패 시 폴백) — currency.ts 참고
+  const { rates: fxRates } = await getKrwRates();
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -183,7 +185,7 @@ export default function ZhTwGuidePage() {
                     <p className="font-bold text-[15px] text-foreground">{t.label}</p>
                     <p className="font-black text-[14px] text-brand-amber whitespace-nowrap">{t.price}</p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground tabular-nums">≈ {krwToAll(t.krwAmount)}</p>
+                  <p className="text-[11px] text-muted-foreground tabular-nums">≈ {krwToAll(t.krwAmount, fxRates)}</p>
                   <p className="text-[13px] text-muted-foreground leading-relaxed">{t.desc}</p>
                 </div>
               </div>

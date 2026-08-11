@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { krwToAll } from "@/lib/utils/currency";
+import { krwToAll, getKrwRates } from "@/lib/utils/currency";
 
 // 外国人観光客向け 詐欺注意アコーディオン（英語版 TIPS と同じ内容）
 const TIPS = [
@@ -66,7 +66,9 @@ export const metadata: Metadata = {
   openGraph: { title: "韓国クラブ予約ガイド — 江南・弘大・梨泰院でVIPに", description: "韓国語不要でソウルのトップクラブを予約。本物の価格、ブローカーなし。", url: "https://nightflow.kr/ja/guide", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
 };
 
-export default function JaGuidePage() {
+export default async function JaGuidePage() {
+  // 환율은 15일 주기 갱신 (실패 시 폴백) — currency.ts 참고
+  const { rates: fxRates } = await getKrwRates();
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -156,7 +158,7 @@ export default function JaGuidePage() {
                     <p className="font-bold text-[15px] text-foreground">{t.label}</p>
                     <p className="font-black text-[14px] text-brand-amber whitespace-nowrap">{t.price}</p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground tabular-nums">≈ {krwToAll(t.krwAmount)}</p>
+                  <p className="text-[11px] text-muted-foreground tabular-nums">≈ {krwToAll(t.krwAmount, fxRates)}</p>
                   <p className="text-[13px] text-muted-foreground leading-relaxed">{t.desc}</p>
                 </div>
               </div>

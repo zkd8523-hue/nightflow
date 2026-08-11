@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { krwToAll } from "@/lib/utils/currency";
+import { krwToAll, getKrwRates } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
   // absolute = root layout의 "%s | 나플" template 무시 (한글 노출 차단)
@@ -163,7 +163,9 @@ const PRICE_TIERS = [
   },
 ];
 
-export default function EnglishLanding() {
+export default async function EnglishLanding() {
+  // 환율은 15일 주기 갱신 (실패 시 폴백) — currency.ts 참고
+  const { rates: fxRates } = await getKrwRates();
   // Schema.org Article — Google Top Stories 노출 후보.
   // FAQPage와 함께 = 검색 결과 영역 압도적 확장.
   const articleJsonLd = {
@@ -438,7 +440,7 @@ export default function EnglishLanding() {
                     </p>
                   </div>
                   <p className="text-[11px] text-muted-foreground tabular-nums">
-                    ≈ {krwToAll(t.krwAmount)}
+                    ≈ {krwToAll(t.krwAmount, fxRates)}
                   </p>
                   <p className="text-[13px] text-muted-foreground leading-relaxed">
                     {t.desc}

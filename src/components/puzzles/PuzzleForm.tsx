@@ -28,7 +28,8 @@ import {
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { validateTitleDateConsistency } from "@/lib/utils/date";
-import { krwTo, RATE_AS_OF } from "@/lib/utils/currency";
+import { krwTo } from "@/lib/utils/currency";
+import { useKrwRates } from "@/lib/utils/useKrwRates";
 import { detectContactInfo, describeContactDetection } from "@/lib/utils/contact-detector";
 
 const CURRENCIES = [
@@ -43,7 +44,8 @@ function CurrencyHint({ amount, convertLabel = "환산" }: { amount: number; con
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<CurrencyCode | null>(null);
 
-  const singleConversion = selected ? krwTo(amount, selected) : null;
+  const { rates: fxRates, asOf: fxAsOf } = useKrwRates();
+  const singleConversion = selected ? krwTo(amount, selected, fxRates) : null;
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -87,7 +89,7 @@ function CurrencyHint({ amount, convertLabel = "환산" }: { amount: number; con
               </button>
             ))}
           </div>
-          <span className="text-[10px] text-muted-foreground w-full">Rates as of {RATE_AS_OF} · approximate</span>
+          <span className="text-[10px] text-muted-foreground w-full">Rates as of {fxAsOf} · approximate</span>
         </div>
       )}
     </div>
