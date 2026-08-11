@@ -163,7 +163,11 @@ export default async function ZhTwClubDetailPage({
   const fee = club.entry_fee_detail ? translateClubMeta(club.entry_fee_detail, "zh-tw") : null;
   const dress = club.dresscode ? translateClubMeta(club.dresscode, "zh-tw") : null;
   const features = clubFeatureLabels(club.tags, "zh-tw");
-  const reviews = (club.google_reviews ?? []).filter((r) => r.text?.trim()).slice(0, 5);
+  // 평점 높은 순 — 구글이 주는 순서는 뒤죽박죽이라 첫 리뷰가 1점이면 바로 이탈한다.
+  const reviews = (club.google_reviews ?? [])
+    .filter((r) => r.text?.trim())
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    .slice(0, 5);
   const googleUrl = getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, "zh-tw");
   const url = `https://nightflow.kr/zh-tw/clubs/${area}/${clubParam}`;
   const bookHref = `/flags/new?lang=zh-tw&area=${encodeURIComponent(club.area)}&club=${club.id}`;

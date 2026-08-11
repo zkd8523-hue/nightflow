@@ -109,10 +109,14 @@ export function ForeignClubDetailPanel({
           </a>
         )}
 
-        {/* 구글 리뷰 미리보기 — 최대 5개, ingest-google-ratings.mjs가 월 1회 갱신(영어 자동번역) */}
+        {/* 구글 리뷰 미리보기 — 최대 5개, ingest-google-ratings.mjs가 월 1회 갱신(영어 자동번역).
+            평점 높은 순으로 보여준다 — 구글이 주는 순서는 뒤죽박죽이라 첫 카드가 1점짜리면
+            클럽을 열어본 사람이 바로 닫는다(카드→예약 전환이 병목이었음). */}
         {club.google_reviews && club.google_reviews.length > 0 && (
           <div className="-mx-5 px-5 flex gap-2.5 overflow-x-auto no-scrollbar snap-x">
-            {club.google_reviews.map((r, i) => (
+            {[...club.google_reviews]
+              .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+              .map((r, i) => (
               <div
                 key={i}
                 className="shrink-0 w-[220px] snap-start rounded-xl bg-card border border-border p-3 space-y-1.5"

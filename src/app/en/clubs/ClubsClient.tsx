@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, ChevronDown, Info, Check } from "lucide-react";
+import { ChevronRight, ChevronLeft, ChevronDown, Info, Check } from "lucide-react";
 import { ForeignClubDetailPanel, displayClubName } from "@/components/clubs/ForeignClubDetailPanel";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
@@ -75,6 +75,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   };
   const closeDetail = () => setDetailList([]);
   const hasNextDetail = detailIndex < detailList.length - 1;
+  const hasPrevDetail = detailIndex > 0;
   const goPrevDetail = () => setDetailIndex((i) => Math.max(i - 1, 0));
   const goNextDetail = () => setDetailIndex((i) => Math.min(i + 1, detailList.length - 1));
   const detailTouchStartXRef = useRef<number | null>(null);
@@ -557,20 +558,38 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
         >
           {selectedClub && (() => {
             const club = selectedClub;
+            // 좌우 이동은 홈 시트(EnHomeClient)와 동일하게 이미지 위 화살표로 통일.
+            // 하단 "Next" 텍스트 버튼은 예약 버튼과 자리를 다퉈서(Book 47% / Next 21%)
+            // 결정보다 "계속 둘러보기"를 부추겼다.
+            const navArrows = (
+              <>
+                {hasPrevDetail && (
+                  <button
+                    type="button"
+                    onClick={goPrevDetail}
+                    aria-label={t("이전 클럽", "Previous club", "前のクラブ", "上一家")}
+                    className="absolute left-3 top-24 z-10 w-9 h-9 rounded-full bg-black/45 border border-white/30 text-white flex items-center justify-center hover:bg-black/65"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                )}
+                {hasNextDetail && (
+                  <button
+                    type="button"
+                    onClick={goNextDetail}
+                    aria-label={t("다음 클럽", "Next club", "次のクラブ", "下一家")}
+                    className="absolute right-3 top-24 z-10 w-9 h-9 rounded-full bg-black/45 border border-white/30 text-white flex items-center justify-center hover:bg-black/65"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
+              </>
+            );
             const clubFlagHref = buildFlagHref(lang, club.area, club.id);
-            const nextButton = hasNextDetail ? (
-              <button
-                type="button"
-                onClick={goNextDetail}
-                className="flex-[3] flex items-center justify-center gap-1 py-3.5 rounded-xl font-black text-[15px] bg-card border border-border text-foreground hover:bg-muted transition-colors"
-              >
-                {t("다음", "Next", "次へ", "下一个")}
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            ) : null;
             return (
               <>
                 <SheetTitle className="sr-only">{displayClubName(club)}</SheetTitle>
+                {navArrows}
                 <ForeignClubDetailPanel
                   club={club}
                   lang={lang}
@@ -591,7 +610,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                           <Link
                             href={`/en/clubs/hongdae?lang=${lang}`}
                             onClick={closeDetail}
-                            className="flex-[7] flex items-center justify-center gap-1.5 py-3 rounded-xl bg-amber-500 text-black text-[14px] font-black hover:bg-amber-400 transition-colors"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-amber-500 text-black text-[14px] font-black hover:bg-amber-400 transition-colors"
                           >
                             {t(
                               "→ 홍대·강남 클럽 예약하기",
@@ -600,7 +619,6 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                               "→ 预订江南或弘大夜店",
                             )}
                           </Link>
-                          {nextButton}
                         </div>
                       </div>
                     ) : (
@@ -633,11 +651,10 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                             }
                             closeDetail();
                           }}
-                          className="flex-[7] flex items-center justify-center gap-1.5 py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
                         >
                           {bookAtClubLabel(displayClubName(club))}
                         </Link>
-                        {nextButton}
                       </div>
                     )
                   }

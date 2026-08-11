@@ -10,18 +10,12 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
-import { krwTo } from "@/lib/utils/currency";
+import { krwToAll, formatAsOfLocale } from "@/lib/utils/currency";
+import { useKrwRates } from "@/lib/utils/useKrwRates";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
 import { trackForeignEvent, trackEvent } from "@/lib/analytics/events";
 import { useSavedClubs } from "@/lib/clubs/savedClubs";
 
-// 언어별로 가장 익숙할 통화 하나만 보여줌 (4개 다 나열하면 정보 과다)
-const CURRENCY_BY_LANG: Partial<Record<Lang, string>> = {
-  en: "USD",
-  ja: "JPY",
-  zh: "CNY",
-  "zh-tw": "TWD",
-};
 // 한국 깃발 폼(PuzzleForm)의 BUDGET_PRESETS_FIXED와 동일 — 총액 기준 +50만/+10만/+5만
 const BUDGET_PRESETS = [500000, 100000, 50000];
 
@@ -45,7 +39,8 @@ const BROWSE_AREAS = ["이태원", "강남", "홍대"];
 // 이태원 Recommend 상위 3자리 수동 큐레이션 — 자동 알고리즘(리뷰수 기준)이 구글 장소 오매칭 등으로
 // 신뢰 못 할 값을 낼 때가 있어(예: BAT 리뷰수 급증), 검증된 클럽 3곳을 고정 후보로 두고 노출 순서만 섞음.
 const ITAEWON_RECOMMEND_CURATED = ["Dawn", "BADASS", "Day&night"];
-const MAX_CLUBS = 5;
+// 3개면 MD가 비교 제안하기 충분하고, 그 이상은 고르다 지쳐 폼을 못 끝낸다.
+const MAX_CLUBS = 3;
 const AREAS = ["이태원", "강남", "홍대", "서울 어디든"];
 const CONTACT_TYPES = ["whatsapp", "instagram", "email", "wechat", "line"] as const;
 type ContactType = (typeof CONTACT_TYPES)[number];
@@ -89,6 +84,9 @@ export function ForeignRequestForm({
 }) {
   const router = useRouter();
   const t = makeT(lang);
+  const fx = useKrwRates();
+  const fxRates = fx.rates;
+  const fxAsOf = formatAsOfLocale(fx.asOfIso, lang);
 
   // 외국인 컨시어지 폼 노출 — 전환 퍼널 측정 (SOP 5단계 대체 지표)
   useEffect(() => {
@@ -102,8 +100,57 @@ export function ForeignRequestForm({
   const detailTouchStartXRef = useRef<number | null>(null);
   const [area, setArea] = useState<string>(presetArea && AREAS.includes(presetArea) ? presetArea : "이태원");
   const [groupSize, setGroupSize] = useState(2);
-  const [budget, setBudget] = useState(""); // 표시용, 쉼표 포함 (예: "600,000")
+  // 기본 40만원으로 시작. 빈칸이면 외국인은 시세를 몰라 아무 숫자도 못 적고 이탈했다
+  // (게이트까지 통과한 13명 중 12명이 폼에서 증발, 상당수가 클럽 목록으로 되돌아감).
+  // 40만 = private table + 보틀 2~3병 수준이라, 금액과 받는 것을 같이 보여줄 수 있는 기준점.
+  const DEFAULT_BUDGET = 400000;
+  const [budget, setBudget] = useState(DEFAULT_BUDGET.toLocaleString("en-US"));
   const budgetAmount = () => Number(budget.replace(/[^0-9]/g, "")) || 0;
+
+  // 금액이 오르면 받는 것도 달라져야 한다 — 고정 문구면 "올려도 그대로"라 올릴 이유가 없어진다.
+  // 구간은 실제 업장 통념 기준(입장만 → 스탠딩 → 프라이빗+보틀 → VIP). 클럽마다 편차가 커서
+  // 단정하지 않고 "보통 이 정도"로 표현한다.
+  const budgetTier = (won: number) => {
+    if (won < 100000)
+      return t(
+        "입장료 + 음료 정도 (테이블 없이)",
+        "Entry and drinks — no table",
+        "入場料+ドリンク程度（テーブルなし）",
+        "入场费+饮料（无卡座）",
+        "入場費+飲料（無包廂）"
+      );
+    if (won < 300000)
+      return t(
+        "스탠딩 테이블 + 보틀 1병 정도",
+        "Standing table + 1 bottle",
+        "スタンディングテーブル + ボトル1本",
+        "站台 + 1瓶酒",
+        "站檯 + 1瓶酒"
+      );
+    if (won < 700000)
+      return t(
+        "프라이빗 테이블 + 보틀 2~3병 (클럽에 따라 다름)",
+        "Private table + 2–3 bottles (varies by club)",
+        "プライベートテーブル + ボトル2〜3本（クラブにより異なる）",
+        "私人卡座 + 2~3瓶酒（因店而异）",
+        "私人包廂 + 2~3瓶酒（因店而異）"
+      );
+    if (won < 1500000)
+      return t(
+        "좋은 자리의 프라이빗 테이블 + 보틀 4병 이상",
+        "Prime private table + 4+ bottles",
+        "良い位置のプライベートテーブル + ボトル4本以上",
+        "位置好的私人卡座 + 4瓶以上",
+        "位置好的私人包廂 + 4瓶以上"
+      );
+    return t(
+      "VIP 테이블 · 샴페인 세트 (대형 클럽 최상위 라인)",
+      "VIP table · champagne service",
+      "VIPテーブル・シャンパンサービス",
+      "VIP 卡座 · 香槟服务",
+      "VIP 包廂 · 香檳服務"
+    );
+  };
   const [selectedClubIds, setSelectedClubIds] = useState<string[]>(
     presetClubId && clubs.some((c) => c.id === presetClubId) ? [presetClubId] : []
   );
@@ -261,7 +308,7 @@ export function ForeignRequestForm({
     setSelectedClubIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= MAX_CLUBS) {
-        toast(t("최대 5개까지 선택할 수 있어요", "Pick up to 5 clubs", "最大5つまで", "最多选5家"));
+        toast(t("최대 3개까지 선택할 수 있어요", "Pick up to 3 clubs", "最大3つまで", "最多选3家", "最多選3家"));
         return prev;
       }
       return [...prev, id];
@@ -454,20 +501,13 @@ export function ForeignRequestForm({
           <div className="space-y-1.5">
             <h2 className="text-[20px] font-black text-foreground leading-snug tracking-tight">
               {t(
-                "한국 여행 일정이 확정됐나요? 또는 이미 한국인가요?",
-                "Is your Korea trip confirmed, or are you already in Korea?",
-                "韓国旅行の予定は確定していますか？または、もう韓国にいますか？",
-                "你的韩国行程确定了吗?或者你已经在韩国了?"
+                "한국 여행 일정이 확정됐나요?",
+                "Is your Korea trip confirmed?",
+                "韓国旅行の予定は確定していますか？",
+                "你的韩国行程确定了吗?",
+                "你的韓國行程確定了嗎?"
               )}
             </h2>
-            <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
-              {t(
-                "서울 클럽은 확정된 방문자에게만 실제 오퍼를 보내요.",
-                "Seoul clubs send real offers — only for confirmed visitors.",
-                "ソウルのクラブは、確定した訪問者にのみ実際のオファーを送ります。",
-                "首尔夜店只向确定到访的客人发送真实报价。"
-              )}
-            </p>
           </div>
           <div className="space-y-3">
             <button
@@ -615,6 +655,17 @@ export function ForeignRequestForm({
           <span className="min-w-[3rem] text-center text-foreground font-black text-lg">{groupSize}</span>
           <button type="button" onClick={() => setGroupSize((n) => Math.min(20, n + 1))} className="w-10 h-10 rounded-lg bg-muted text-foreground text-xl font-bold">+</button>
         </div>
+        {/* 인원은 나중에 바뀌기 쉬워서 여기서 확정을 요구하면 입력이 멈춘다 — 대략이면 된다고 풀어준다.
+            (금액은 반대로 오퍼 기준이라 정확해야 하므로 그쪽엔 이 문구를 쓰지 않는다.) */}
+        <p className="text-[12px] text-muted-foreground mt-1.5 break-keep">
+          {t(
+            "대략만 적어도 괜찮아요. 나중에 바뀌어도 됩니다.",
+            "A rough number is fine — you can change it later.",
+            "だいたいでOK。あとで変わっても大丈夫です。",
+            "写个大概就行,之后改也没关系。",
+            "寫個大概就行,之後改也沒關係。"
+          )}
+        </p>
       </section>
 
       {/* 예산 */}
@@ -628,13 +679,38 @@ export function ForeignRequestForm({
               const raw = e.target.value.replace(/[^0-9]/g, "");
               setBudget(raw ? Number(raw).toLocaleString("en-US") : "");
             }}
-            placeholder={t("예) 600,000", "e.g. 600,000", "例) 600,000", "例) 600,000")}
+            placeholder={t("예) 400,000", "e.g. 400,000", "例) 400,000", "例) 400,000")}
             className="w-full h-12 pl-4 pr-9 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[15px] font-bold pointer-events-none">
             ₩
           </span>
         </div>
+        {/* 내 나라 돈으로 얼마인지 먼저, 그 다음 이 금액이면 뭘 받는지.
+            숫자만 있으면 시세 모르는 외국인은 비싸 보여서 이탈한다 — 실제로 그 구간에서 빠졌다.
+            ⚠️ 순서 중요: 입력칸 바로 아래에 둔다. 프리셋 버튼(조작)이 금액과 그 의미 사이를
+            가로막으면, 숫자를 보고 "그래서 이게 뭔데"에 답이 늦어져 이탈한다. */}
+        {budgetAmount() > 0 && (
+          <div className="mt-2 rounded-xl bg-card border border-border p-3 space-y-1.5">
+            <p className="text-[13px] text-foreground tabular-nums font-bold">
+              ≈ {krwToAll(budgetAmount(), fxRates)}
+            </p>
+            {/* 환율 기준 시점 명시 — 근사치라는 걸 밝혀야 나중에 "환율 다르잖아" 소리를 안 듣는다.
+                날짜는 언어별 형식으로 표기(일본·중국어에 "Aug 11, 2026"은 어색). */}
+            <p className="text-[11px] text-muted-foreground/70">
+              {t(
+                `환율 ${fxAsOf} 기준 · 참고용 근사치`,
+                `Approx. rates as of ${fxAsOf}`,
+                `${fxAsOf} 時点のレート・目安`,
+                `汇率参考 ${fxAsOf} · 仅供参考`,
+                `匯率參考 ${fxAsOf} · 僅供參考`
+              )}
+            </p>
+            <p className="text-[12px] text-muted-foreground leading-relaxed break-keep">
+              <span className="text-money font-bold">✓</span> {budgetTier(budgetAmount())}
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-4 gap-1.5 mt-2">
           {BUDGET_PRESETS.map((preset) => (
             <button
@@ -654,16 +730,6 @@ export function ForeignRequestForm({
             {t("초기화", "Clear", "クリア", "清除")}
           </button>
         </div>
-        <p className="text-[12px] text-muted-foreground mt-1.5">
-          {t("₩ 기준. 예산에 맞춰 최선의 자리를 잡아드려요", "In ₩. We'll get you the best table for your budget", "₩基準。予算に合わせて最善の席を確保", "以₩计。按预算帮你订最好的位置")}
-          {(() => {
-            const code = CURRENCY_BY_LANG[lang];
-            const amount = budgetAmount();
-            if (!code || amount <= 0) return null;
-            const converted = krwTo(amount, code);
-            return converted ? <span className="text-muted-foreground"> (≈ {converted})</span> : null;
-          })()}
-        </p>
       </section>
 
       {/* 클럽 (선택) */}
@@ -671,7 +737,7 @@ export function ForeignRequestForm({
         <div className="flex items-center justify-between mb-2">
           {label(<Search className="w-4 h-4 text-money" />, t("가고싶은 클럽", "Clubs you want", "行きたいクラブ", "想去的夜店"))}
           <span className="text-[12px] text-muted-foreground font-bold">
-            {t("최대 5개 선택 가능", "up to 5", "最大5つ", "最多5家")}
+            {t("최대 3개 선택 가능", "up to 3", "最大3つ", "最多3家", "最多3家")}
           </span>
         </div>
         {selectedClubIds.length > 0 && (
