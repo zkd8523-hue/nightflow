@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { type Lang, makeT } from "@/lib/i18n";
 
 // "한국 클럽 나이 제한 / 여권 필요한가 / 외국인 입장되나" 검색 대응.
@@ -134,10 +135,12 @@ export function ClubEntryRulesPage({ lang }: { lang: Lang }) {
   return (
     <div className="min-h-screen bg-background text-foreground pb-28 pb-safe">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="guide" lang={lang} meta={{ guide: "entry_rules" }} />
 
       <div className="max-w-lg mx-auto px-4 py-8 space-y-8">
         <nav className="flex items-center gap-1.5 text-[12px] text-muted-foreground flex-wrap">
-          <Link href={`/${lang}`} className="hover:text-foreground">NightFlow</Link>
+          <Link data-nf-track="breadcrumb_home" href={`/${lang}`} className="hover:text-foreground">NightFlow</Link>
           <span>/</span>
           <span className="text-foreground font-bold">
             {t("입장 규정", "Entry rules", "入場ルール", "入场规定", "入場規定")}
@@ -208,13 +211,13 @@ export function ClubEntryRulesPage({ lang }: { lang: Lang }) {
         </section>
 
         <nav className="flex flex-wrap gap-2">
-          <Link href={`/${lang}/dress-code`} className="px-3 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold hover:text-brand-amber">
+          <Link data-nf-track="guide_dress_code" href={`/${lang}/dress-code`} className="px-3 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold hover:text-brand-amber">
             {t("드레스코드", "Dress code", "ドレスコード", "着装要求", "服裝規定")}
           </Link>
-          <Link href={`/${lang}/club-prices`} className="px-3 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold hover:text-brand-amber">
+          <Link data-nf-track="guide_prices" href={`/${lang}/club-prices`} className="px-3 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold hover:text-brand-amber">
             {t("입장료", "Entry fees", "入場料", "入场费", "入場費")}
           </Link>
-          <Link href={`/${lang}/club-hours`} className="px-3 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold hover:text-brand-amber">
+          <Link data-nf-track="guide_hours" href={`/${lang}/club-hours`} className="px-3 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold hover:text-brand-amber">
             {t("영업시간", "Opening hours", "営業時間", "营业时间", "營業時間")}
           </Link>
           <Link href={`/${lang}/faq`} className="px-3 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold hover:text-brand-amber">
@@ -224,7 +227,7 @@ export function ClubEntryRulesPage({ lang }: { lang: Lang }) {
       </div>
 
       <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
-        <Link href={`/flags/new?lang=${lang}`} className="flex items-center justify-center w-full max-w-lg mx-auto py-3.5 rounded-2xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
+        <Link data-nf-track="book_cta" href={`/flags/new?lang=${lang}`} className="flex items-center justify-center w-full max-w-lg mx-auto py-3.5 rounded-2xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
           🍾 {t("나플로 예약하기", "Book with NightFlow", "NightFlowで予約", "用 NightFlow 预订", "用 NightFlow 預訂")}
         </Link>
       </div>

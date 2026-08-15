@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { createClient } from "@/lib/supabase/server";
 import { type Lang, makeT } from "@/lib/i18n";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
@@ -156,10 +157,12 @@ export async function ClubPricesPage({ lang }: { lang: Lang }) {
     // 하단 sticky 예약바에 가리지 않도록 여백 확보 (pb-safe: 아이폰 홈 인디케이터)
     <div className="min-h-screen bg-background text-foreground pb-28 pb-safe">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="guide" lang={lang} meta={{ guide: "prices" }} />
 
       <div className="max-w-lg mx-auto px-4 py-8 space-y-8">
         <nav className="flex items-center gap-1.5 text-[12px] text-muted-foreground flex-wrap">
-          <Link href={`/${lang}`} className="hover:text-foreground">NightFlow</Link>
+          <Link data-nf-track="breadcrumb_home" href={`/${lang}`} className="hover:text-foreground">NightFlow</Link>
           <span>/</span>
           <span className="text-foreground font-bold">
             {t("클럽 가격", "Club prices", "クラブ料金", "夜店价格", "夜店價格")}
@@ -232,7 +235,7 @@ export async function ClubPricesPage({ lang }: { lang: Lang }) {
                       <li key={club.name} className="flex items-start justify-between gap-3 text-[13px]">
                         {slug && areaSlug ? (
                           <Link
-                            href={`/${lang}/clubs/${areaSlug}/${slug}`}
+                            data-nf-track="club_detail" href={`/${lang}/clubs/${areaSlug}/${slug}`}
                             className="font-bold text-foreground hover:text-brand-amber transition-colors shrink-0"
                           >
                             {nameEn}
@@ -250,7 +253,7 @@ export async function ClubPricesPage({ lang }: { lang: Lang }) {
 
                 {areaSlug && (
                   <Link
-                    href={`/${lang}/clubs/${areaSlug}`}
+                    data-nf-track="area_list" href={`/${lang}/clubs/${areaSlug}`}
                     className="inline-block text-[12px] text-brand-amber underline underline-offset-2"
                   >
                     {t("전체 보기", "See all", "すべて見る", "查看全部", "查看全部")} →
@@ -309,7 +312,7 @@ export async function ClubPricesPage({ lang }: { lang: Lang }) {
       {/* 예약 CTA — 클럽 상세 페이지와 동일한 하단 sticky 패턴 */}
       <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
         <Link
-          href={`/flags/new?lang=${lang}`}
+          data-nf-track="book_cta" href={`/flags/new?lang=${lang}`}
           className="flex items-center justify-center w-full max-w-lg mx-auto py-3.5 rounded-2xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
         >
           🍾 {t("나플로 예약하기", "Book with NightFlow", "NightFlowで予約", "用 NightFlow 预订", "用 NightFlow 預訂")}

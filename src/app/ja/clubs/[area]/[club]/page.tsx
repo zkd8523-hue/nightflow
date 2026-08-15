@@ -9,6 +9,7 @@ import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
 import { clubFeatureLabels } from "@/lib/clubs/tagLabelsI18n";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 // 일본어판 클럽 개별 페이지 — /en/clubs/[area]/[club] 과 완전히 동일한 구조를 복제.
 // (이 사이트의 기존 관례: /ja, /zh, /zh-tw 지역 페이지도 공용 컴포넌트로 추상화하지 않고
@@ -254,12 +255,20 @@ export default async function JaClubDetailPage({
     <div className="min-h-screen bg-background text-foreground pb-28 pb-safe">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
+      {/* SEO 유입 계측 — 이 페이지들은 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker
+        kind="club"
+        lang="ja"
+        meta={{ club_id: club.id, club_name: club.name, area: club.area }}
+      />
+
       <header className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between bg-background/95 backdrop-blur-sm border-b border-border">
-        <Link href="/ja" className="flex items-center gap-1 -ml-1 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors">
+        <Link href="/ja" data-nf-track="header_home" className="flex items-center gap-1 -ml-1 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors">
           <ChevronLeft className="w-4 h-4" />
           <span className="text-[15px] font-black tracking-tight">NightFlow</span>
         </Link>
         <Link href={`/ja/clubs/${area}`}
+          data-nf-track="header_more_area"
           className="px-3.5 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold text-foreground hover:text-brand-amber transition-colors">
           {areaJa}の他のクラブ
         </Link>
@@ -267,9 +276,9 @@ export default async function JaClubDetailPage({
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
         <nav className="flex items-center gap-1.5 text-[12px] text-muted-foreground flex-wrap">
-          <Link href="/ja/clubs" className="hover:text-foreground">ソウルのクラブ</Link>
+          <Link href="/ja/clubs" data-nf-track="breadcrumb_index" className="hover:text-foreground">ソウルのクラブ</Link>
           <span>/</span>
-          <Link href={`/ja/clubs/${area}`} className="hover:text-foreground">{areaJa}</Link>
+          <Link href={`/ja/clubs/${area}`} data-nf-track="breadcrumb_area" className="hover:text-foreground">{areaJa}</Link>
           <span>/</span>
           <span className="text-foreground font-bold">{name}</span>
         </nav>
@@ -280,7 +289,7 @@ export default async function JaClubDetailPage({
             {areaJa}（ソウル）のナイトクラブ{club.name !== name && <> ・ {club.name}</>}
           </p>
           {club.google_rating != null && (
-            <a href={googleUrl} target="_blank" rel="noopener noreferrer"
+            <a href={googleUrl} target="_blank" rel="noopener noreferrer" data-nf-track="outbound_google_rating"
               className="inline-flex items-center gap-1.5 text-[14px] text-brand-amber">
               <Star className="w-4 h-4 fill-current" />
               {club.google_rating.toFixed(1)}
@@ -335,7 +344,7 @@ export default async function JaClubDetailPage({
                 </blockquote>
               ))}
             </div>
-            <a href={googleUrl} target="_blank" rel="noopener noreferrer"
+            <a href={googleUrl} target="_blank" rel="noopener noreferrer" data-nf-track="outbound_google_reviews"
               className="inline-flex items-center gap-1 mt-2 text-[12px] text-brand-amber">
               Googleでもっと見る <ExternalLink className="w-3 h-3" />
             </a>
@@ -370,12 +379,13 @@ export default async function JaClubDetailPage({
             <div className="flex flex-wrap gap-2">
               {siblings.map((s) => (
                 <Link key={s.id} href={`/ja/clubs/${area}/${clubSlug(s.name_en!)}`}
+                  data-nf-track="sibling_club"
                   className="px-3 py-1.5 rounded-full bg-muted border border-border text-[13px] font-bold hover:text-brand-amber">
                   {s.name_en!.trim()}
                 </Link>
               ))}
             </div>
-            <Link href={`/ja/clubs/${area}`} className="inline-block mt-3 text-[13px] text-brand-amber underline underline-offset-2">
+            <Link href={`/ja/clubs/${area}`} data-nf-track="see_all_area" className="inline-block mt-3 text-[13px] text-brand-amber underline underline-offset-2">
               {areaJa}のクラブをすべて見る →
             </Link>
           </section>
@@ -385,6 +395,7 @@ export default async function JaClubDetailPage({
       <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
         <div className="flex items-stretch gap-2 w-full max-w-lg mx-auto">
           <Link href={bookHref}
+            data-nf-track="book_cta"
             className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
             🍾 {name}を予約
           </Link>

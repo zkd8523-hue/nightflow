@@ -9,6 +9,7 @@ import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
 import { clubFeatureLabels } from "@/lib/clubs/tagLabelsI18n";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 // 클럽 개별 페이지 — 외국인 롱테일 SEO의 핵심.
 //
@@ -265,15 +266,23 @@ export default async function EnClubDetailPage({
     <div className="min-h-screen bg-background text-foreground pb-28 pb-safe">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
+      {/* SEO 유입 계측 — 이 페이지들은 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker
+        kind="club"
+        lang="en"
+        meta={{ club_id: club.id, club_name: club.name, area: club.area }}
+      />
+
       {/* 상단 헤더 — 클럽 하나만 보고 이탈하지 않게, 홈/다른 클럽으로 돌아갈 진입점을 항상 노출.
           클럽 상세가 시트였을 때는 "닫기"만 하면 원래 목록이었는데, 페이지가 되면서
           브레드크럼(아래)만으론 "여기서 더 둘러볼 수 있다"는 게 눈에 안 띔. */}
       <header className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between bg-background/95 backdrop-blur-sm border-b border-border">
-        <Link href="/en" className="flex items-center gap-1 -ml-1 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors">
+        <Link href="/en" data-nf-track="header_home" className="flex items-center gap-1 -ml-1 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors">
           <ChevronLeft className="w-4 h-4" />
           <span className="text-[15px] font-black tracking-tight">NightFlow</span>
         </Link>
         <Link href={`/en/clubs/${area}`}
+          data-nf-track="header_more_area"
           className="px-3.5 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold text-foreground hover:text-brand-amber transition-colors">
           More {areaEn} clubs
         </Link>
@@ -282,9 +291,9 @@ export default async function EnClubDetailPage({
       <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
         {/* 브레드크럼 — 크롤러 경로이자 유저 탈출구 */}
         <nav className="flex items-center gap-1.5 text-[12px] text-muted-foreground flex-wrap">
-          <Link href="/en/clubs" className="hover:text-foreground">Seoul Clubs</Link>
+          <Link href="/en/clubs" data-nf-track="breadcrumb_index" className="hover:text-foreground">Seoul Clubs</Link>
           <span>/</span>
-          <Link href={`/en/clubs/${area}`} className="hover:text-foreground">{areaEn}</Link>
+          <Link href={`/en/clubs/${area}`} data-nf-track="breadcrumb_area" className="hover:text-foreground">{areaEn}</Link>
           <span>/</span>
           <span className="text-foreground font-bold">{name}</span>
         </nav>
@@ -295,7 +304,7 @@ export default async function EnClubDetailPage({
             Nightclub in {areaEn}, Seoul{club.name !== name && <> · {club.name}</>}
           </p>
           {club.google_rating != null && (
-            <a href={googleUrl} target="_blank" rel="noopener noreferrer"
+            <a href={googleUrl} target="_blank" rel="noopener noreferrer" data-nf-track="outbound_google_rating"
               className="inline-flex items-center gap-1.5 text-[14px] text-brand-amber">
               <Star className="w-4 h-4 fill-current" />
               {club.google_rating.toFixed(1)}
@@ -351,7 +360,7 @@ export default async function EnClubDetailPage({
                 </blockquote>
               ))}
             </div>
-            <a href={googleUrl} target="_blank" rel="noopener noreferrer"
+            <a href={googleUrl} target="_blank" rel="noopener noreferrer" data-nf-track="outbound_google_reviews"
               className="inline-flex items-center gap-1 mt-2 text-[12px] text-brand-amber">
               More reviews on Google <ExternalLink className="w-3 h-3" />
             </a>
@@ -388,12 +397,13 @@ export default async function EnClubDetailPage({
             <div className="flex flex-wrap gap-2">
               {siblings.map((s) => (
                 <Link key={s.id} href={`/en/clubs/${area}/${clubSlug(s.name_en!)}`}
+                  data-nf-track="sibling_club"
                   className="px-3 py-1.5 rounded-full bg-muted border border-border text-[13px] font-bold hover:text-brand-amber">
                   {s.name_en!.trim()}
                 </Link>
               ))}
             </div>
-            <Link href={`/en/clubs/${area}`} className="inline-block mt-3 text-[13px] text-brand-amber underline underline-offset-2">
+            <Link href={`/en/clubs/${area}`} data-nf-track="see_all_area" className="inline-block mt-3 text-[13px] text-brand-amber underline underline-offset-2">
               See all {areaEn} clubs →
             </Link>
           </section>
@@ -404,6 +414,7 @@ export default async function EnClubDetailPage({
       <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
         <div className="flex items-stretch gap-2 w-full max-w-lg mx-auto">
           <Link href={bookHref}
+            data-nf-track="book_cta"
             className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
             🍾 Book {name}
           </Link>

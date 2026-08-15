@@ -189,6 +189,13 @@ export const trackForeignEvent = (
     | 'foreign_request_submitted'
     | 'foreign_club_saved'
     | 'foreign_saved_club_added'
+    // SEO 정적 페이지 (클럽 개별 328p / 실용정보 16p) — ForeignPageTracker가 발동
+    | 'foreign_club_page_view'
+    | 'foreign_club_page_scroll'
+    | 'foreign_club_page_click'
+    | 'foreign_guide_page_view'
+    | 'foreign_guide_page_scroll'
+    | 'foreign_guide_page_click'
     // 외국어 홈 진입 (Admin 인사이트가 이 이름들로 집계)
     | 'en_home_view'
     | 'ja_home_view'
@@ -199,6 +206,9 @@ export const trackForeignEvent = (
     club_id?: string;
     club_name?: string;
     source?: string;
+    target?: string;
+    scroll_depth?: number;
+    path?: string;
     [key: string]: unknown;
   } = {},
 ) => {
