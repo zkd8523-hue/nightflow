@@ -363,9 +363,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
   // 가고싶은 클럽 — "오늘/이 깃발에서" 가고싶은 클럽(그날 한정). 지역 섹션 바로 아래 인라인 메인
   // 스텝으로 노출(Migration 504, puzzles.preferred_club_ids). 프로필의 "자주가는 클럽"(user_pinned_clubs,
   // 영구 취향)과는 다른 개념이라 서로 프리필/저장하지 않음 — 매 깃발마다 빈 상태로 새로 시작.
+  // 필수 섹션으로 전환(최소 2개) — 스킵 불가.
   const [preferredClubs, setPreferredClubs] = useState<PreferredClubItem[]>([]);
-  // "특정 클럽 없어요 · 추천받을래요" — 선택 사항이라 명시적으로 끌 수 있게. 누르면 선택 비우고 섹션 접음.
-  const [noClubPreference, setNoClubPreference] = useState(false);
   // 퍼즐 소개: 비어 있으면 자동 채움. 사용자가 수동 입력 시 자동 채움 중단.
   // draft에는 저장하지 않으므로 신규 진입 시에는 항상 false에서 시작.
   const [notesEverEdited, setNotesEverEdited] = useState(!!puzzle?.notes);
@@ -713,6 +712,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
     }
     if (!effectiveIsRecruiting && budgetAmount < 500000) {
       return fail('budget_total', t('예산은 50만원 이상이어야 해요', 'Minimum budget is ₩500,000'));
+    }
+    if (!isEditMode && !shareMode && !effectiveIsRecruiting && preferredClubs.length < 2) {
+      return fail('preferred_clubs_min', t('원하는 클럽을 두 개 이상 지정해주세요.', 'Please pick at least two clubs.'));
     }
     if (effectiveIsRecruiting && effectiveCurrentCount > effectiveTargetCount) {
       return fail('headcount_overflow', t('일행 인원이 모집 인원을 초과합니다', 'Your group exceeds the target headcount'));
@@ -1174,42 +1176,20 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
         </div>
       </section>
 
-      {/* 가고싶은 클럽 (선택, 최대 3) — 지역 바로 다음. 지정하면 그 클럽 파트너 MD에게 직접 매칭 푸시(Migration 504).
+      {/* 가고싶은 클럽 (필수, 최소 2·최대 3) — 지역 바로 다음. 지정하면 그 클럽 파트너 MD에게 직접 매칭 푸시(Migration 504).
           파티/파티원 모집·MD 직통 파티에는 미노출 — 깃발(인원 확정)에서만 의미 있는 매칭 신호. */}
       {!isEditMode && !shareMode && !isRecruitingParty && (
         <section className="space-y-3">
           <div className="flex items-center gap-2 text-foreground font-bold">
             <Search className="w-4 h-4 text-money" />
             <span>{t("제안받고 싶은 클럽 고르기", "Choose clubs you want offers from")}</span>
-            <span className="text-[11px] font-bold text-muted-foreground">{t("(선택)", "(optional)")}</span>
+            <span className="text-[11px] font-bold text-muted-foreground">{t("(최소 2개)", "(min. 2)")}</span>
           </div>
           <PreferredClubsPicker
             value={preferredClubs}
-            onChange={(items) => {
-              setPreferredClubs(items);
-              if (items.length > 0) setNoClubPreference(false);
-            }}
+            onChange={setPreferredClubs}
             max={3}
             area={area}
-            footerAction={
-              <button
-                type="button"
-                onClick={() => {
-                  setPreferredClubs([]);
-                  setNoClubPreference((v) => !v);
-                }}
-                className={`shrink-0 px-4 h-11 rounded-xl border font-bold text-[13px] transition-colors whitespace-nowrap flex items-center justify-center gap-1.5 ${
-                  noClubPreference
-                    ? "bg-inverse border-transparent text-inverse-foreground"
-                    : "bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                {noClubPreference && <Check className="w-3.5 h-3.5" />}
-                {noClubPreference
-                  ? t("최대한 다양한 오퍼를 받아요", "Getting the widest variety of offers")
-                  : t("넘어가기", "Skip")}
-              </button>
-            }
           />
         </section>
       )}

@@ -13,6 +13,7 @@ import { ForeignClubDetailPanel, type ForeignClubDetail } from "@/components/clu
 import type { ClubLite, PreferredClubItem } from "@/types/database";
 
 const MAX_DEFAULT = 3;
+const MIN_DEFAULT = 2;
 const SEOUL_AREAS = ["강남", "홍대", "이태원"];
 const BROWSE_STEP = 10;
 // 이태원 추천순 상위 고정 큐레이션 — ForeignRequestForm과 동일(구글 리뷰수 기준 알고리즘이 장소 오매칭 등으로
@@ -53,8 +54,6 @@ interface Props {
   max?: number;
   /** 상위(PuzzleForm)의 지역 선택 — 지정되면 그 지역 클럽만 캐러셀에 노출. "서울 어디든"/미선택은 서울 3권역. */
   area?: string;
-  /** 검색창 옆(좌우 분할)에 얹을 액션 — 예: "상관없어요" 버튼 */
-  footerAction?: React.ReactNode;
 }
 
 /**
@@ -64,7 +63,7 @@ interface Props {
  * 현재 유일한 사용처: PuzzleForm의 "제안받고 싶은 클럽"(깃발 한정, puzzles.preferred_club_ids) —
  * 프로필의 "자주가는 클럽"(user_pinned_clubs, 영구)과는 다른 개념이니 재사용 시 주의.
  */
-export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT, area, footerAction }: Props) {
+export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT, area }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ClubLite[]>([]);
   const [searching, setSearching] = useState(false);
@@ -207,8 +206,9 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT, area,
       toast(`최대 ${max}개까지 선택할 수 있어요`);
       return;
     }
-    onChange([...value, { kind: "club", club }]);
-    toast.success("선택됐어요");
+    const next = [...value, { kind: "club" as const, club }];
+    onChange(next);
+    toast.success(next.length < MIN_DEFAULT ? "선택됐어요! 하나를 더 골라주세요" : "선택됐어요");
     setQuery("");
     setResults([]);
   }
@@ -356,21 +356,18 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT, area,
         </div>
       )}
 
-      {/* 검색 — footerAction 있으면 좌우 분할(검색 / 상관없어요 등). 최대치 채워도 안 숨김(토글로 해제 가능해야 함) */}
+      {/* 검색 — 최대치 채워도 안 숨김(토글로 해제 가능해야 함) */}
       <div>
-          <div className="flex items-stretch gap-2">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                maxLength={40}
-                placeholder="클럽 이름으로 검색"
-                className="w-full h-11 bg-background border border-border rounded-xl pl-9 pr-3 text-[14px] text-foreground placeholder-neutral-600 focus:outline-none focus:border-border"
-              />
-            </div>
-            {footerAction}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              maxLength={40}
+              placeholder="클럽 이름으로 검색"
+              className="w-full h-11 bg-background border border-border rounded-xl pl-9 pr-3 text-[14px] text-foreground placeholder-neutral-600 focus:outline-none focus:border-border"
+            />
           </div>
 
           {searching && <p className="mt-2 text-[12px] text-muted-foreground">검색 중...</p>}
