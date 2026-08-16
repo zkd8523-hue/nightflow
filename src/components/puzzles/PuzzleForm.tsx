@@ -381,6 +381,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
         area !== initialArea ||
         budgetAmount !== initialBudget ||
         notes.trim() !== initialNotes.trim() ||
+        leaderComment.trim() !== (puzzle?.leader_comment ?? "").trim() ||
         totalPeople !== initialTotalPeople ||
         targetMale !== initialFlag.male ||
         targetFemale !== initialFlag.female ||
