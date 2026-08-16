@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { PublicProfileView } from "./PublicProfileView";
 
 type ClubLite = {
@@ -22,6 +23,7 @@ interface Props {
  * MY(/profile)가 클라이언트 페이지라 서버 fetch를 쓸 수 없어 이 래퍼가 필요하다.
  */
 export function MyProfileSection({ userId }: Props) {
+  const { user: currentUser } = useCurrentUser();
   const [state, setState] = useState<{
     profile: Parameters<typeof PublicProfileView>[0]["profile"];
     reviewCount: number;
@@ -30,6 +32,17 @@ export function MyProfileSection({ userId }: Props) {
     partnerReviews: NonNullable<Parameters<typeof PublicProfileView>[0]["partnerReviews"]>;
     partyReputation: NonNullable<Parameters<typeof PublicProfileView>[0]["partyReputation"]>;
   } | null>(null);
+
+  const profileRefreshKey = currentUser
+    ? [
+        currentUser.updated_at,
+        currentUser.display_name,
+        currentUser.profile_image,
+        currentUser.bio,
+        currentUser.preferred_music_genres?.join(",") ?? "",
+        currentUser.preferred_areas?.join(",") ?? "",
+      ].join("|")
+    : userId;
 
   useEffect(() => {
     let cancelled = false;
@@ -110,7 +123,7 @@ export function MyProfileSection({ userId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, profileRefreshKey]);
 
   if (!state) {
     // 로드 전 자리 유지 — 아래 MY 내용이 위로 튀었다가 밀리는 것 방지

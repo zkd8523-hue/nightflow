@@ -99,7 +99,7 @@ export function PublicProfileView({
   embedded = false,
 }: Props) {
   const router = useRouter();
-  const { user } = useCurrentUser();
+  const { user, refetch } = useCurrentUser();
   const [bio, setBio] = useState(profile.bio);
   const [genres, setGenres] = useState<string[]>(
     profile.preferred_music_genres ?? []
@@ -197,6 +197,7 @@ export function PublicProfileView({
         .eq("id", user.id);
       if (updateError) throw updateError;
 
+      await refetch();
       setProfileImage(publicUrl);
       toast.success("프로필 사진이 변경되었습니다");
       router.refresh();

@@ -78,7 +78,7 @@ export function ProfileEditSheet({
   const showMusic = showAll || section === "music";
   const showArea = showAll || section === "area";
   const showClub = showAll || section === "club";
-  const { user } = useCurrentUser();
+  const { user, refetch } = useCurrentUser();
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [profileImage, setProfileImage] = useState<string | null>(
     initial.profileImage
@@ -98,18 +98,23 @@ export function ProfileEditSheet({
   const [clubResults, setClubResults] = useState<PinnedClubLite[]>([]);
   const [searching, setSearching] = useState(false);
 
+  // 부모가 initial 을 인라인 객체로 넘기므로 리렌더마다 참조가 바뀐다.
+  // 의존성에 initial 을 넣으면 입력 중인 값이 계속 초기화되므로 open 전환 시에만 실행.
+  const initialRef = useRef(initial);
+  initialRef.current = initial;
+
   useEffect(() => {
-    if (open) {
-      setDisplayName(initial.displayName);
-      setProfileImage(initial.profileImage);
-      setBio(initial.bio);
-      setGenres(initial.genres);
-      setAreas(initial.areas);
-      setFavClubs(initial.pinnedClubs);
-      setClubQuery("");
-      setClubResults([]);
-    }
-  }, [open, initial]);
+    if (!open) return;
+    const snapshot = initialRef.current;
+    setDisplayName(snapshot.displayName);
+    setProfileImage(snapshot.profileImage);
+    setBio(snapshot.bio);
+    setGenres(snapshot.genres);
+    setAreas(snapshot.areas);
+    setFavClubs(snapshot.pinnedClubs);
+    setClubQuery("");
+    setClubResults([]);
+  }, [open]);
 
   // 프로필 사진 업로드
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -151,6 +156,8 @@ export function ProfileEditSheet({
         .eq("id", user.id);
       if (updateError) throw updateError;
 
+      await refetch();
+
       setProfileImage(publicUrl);
       toast.success("프로필 사진이 변경되었습니다");
     } catch {
@@ -173,6 +180,7 @@ export function ProfileEditSheet({
       toast.error("삭제 실패");
       return;
     }
+    await refetch();
     setProfileImage(null);
     toast.success("기본 이미지로 변경되었습니다");
   }
@@ -326,15 +334,32 @@ export function ProfileEditSheet({
     if (showArea) userUpdate.preferred_areas = areas;
 
     if (Object.keys(userUpdate).length > 0) {
-      const { error: userErr } = await supabase
+      // .select() 로 갱신된 행을 돌려받는다. RLS 로 막히면 에러가 아니라 0행이
+      // 돌아오므로, 이게 없으면 저장 실패를 성공으로 오인한다.
+      const { data: updated, error: userErr } = await supabase
         .from("users")
         .update(userUpdate)
-        .eq("id", user.id);
+        .eq("id", user.id)
+        .select("id");
 
       if (userErr) {
         setSaving(false);
-        toast.error("프로필 저장에 실패했습니다");
-        console.error(userErr);
+        console.error("[ProfileEditSheet] users update 실패:", userErr);
+        toast.error(
+          userErr.message
+            ? `프로필 저장 실패: ${userErr.message}`
+            : "프로필 저장에 실패했습니다"
+        );
+        return;
+      }
+
+      if (!updated || updated.length === 0) {
+        setSaving(false);
+        console.error(
+          "[ProfileEditSheet] users update 0행 — 세션 만료 또는 RLS 차단",
+          { userId: user.id, userUpdate }
+        );
+        toast.error("로그인이 만료된 것 같아요. 새로고침 후 다시 시도해주세요");
         return;
       }
     }
@@ -348,8 +373,12 @@ export function ProfileEditSheet({
 
       if (delErr) {
         setSaving(false);
-        toast.error("선호 클럽 저장에 실패했습니다");
-        console.error(delErr);
+        console.error("[ProfileEditSheet] pinned_clubs delete 실패:", delErr);
+        toast.error(
+          delErr.message
+            ? `선호 클럽 저장 실패: ${delErr.message}`
+            : "선호 클럽 저장에 실패했습니다"
+        );
         return;
       }
 
@@ -364,12 +393,18 @@ export function ProfileEditSheet({
           .insert(rows);
         if (insErr) {
           setSaving(false);
-          toast.error("선호 클럽 저장에 실패했습니다");
-          console.error(insErr);
+          console.error("[ProfileEditSheet] pinned_clubs insert 실패:", insErr);
+          toast.error(
+            insErr.message
+              ? `선호 클럽 저장 실패: ${insErr.message}`
+              : "선호 클럽 저장에 실패했습니다"
+          );
           return;
         }
       }
     }
+
+    await refetch();
 
     setSaving(false);
     toast.success("프로필이 저장되었습니다");
@@ -497,7 +532,7 @@ export function ProfileEditSheet({
                 placeholder="자기소개를 입력해주세요"
                 rows={3}
                 className="w-full bg-background border border-border rounded-xl px-3 pt-2.5 pb-7 text-[15px] text-foreground placeholder-neutral-600 resize-none focus:outline-none focus:border-border"
-                maxLength={MAX_BIO_LENGTH + 50}
+                maxLength={MAX_BIO_LENGTH}
               />
               <span
                 className={`pointer-events-none absolute bottom-2.5 right-3 text-[12px] tabular-nums ${
