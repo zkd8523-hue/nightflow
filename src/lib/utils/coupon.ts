@@ -180,11 +180,12 @@ export function isCouponDeadlineNear(endsAtISO: string, nowMs: number = Date.now
 /**
  * 유저 노출용 쿠폰 필터. clubs.is_test 마킹이 빠진 운영자 테스트 클럽이
  * 홈·목록에 그대로 뜨는 걸 막는다 (ClubBenefitSection의 HIDDEN_PATTERN과 동일 기준).
- * 비프로덕션에서는 확인을 위해 그대로 둔다.
+ *
+ * ⚠️ 환경 분기를 두지 않는다. NEXT_PUBLIC_VERCEL_ENV가 주입되지 않으면
+ *    undefined가 되어 필터가 통째로 스킵되는 사고가 있었다.
  */
 export function excludeTestClubCoupons<T extends { club?: { name?: string | null } | null }>(
   rows: T[]
 ): T[] {
-  if (process.env.NEXT_PUBLIC_VERCEL_ENV !== "production") return rows;
   return rows.filter((r) => !/운영자/.test(r.club?.name ?? ""));
 }
