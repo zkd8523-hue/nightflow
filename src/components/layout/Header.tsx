@@ -327,15 +327,8 @@ export function Header({
                   <span className="text-[12px] font-bold text-brand-amber">승인 대기 중</span>
                 </Link>
               )}
-              {!compact && user.role === "user" && user.md_status !== "pending" && pathname !== "/start" && !pathname?.startsWith("/auctions/") && !pathname?.startsWith("/flags/") && !pathname?.startsWith("/messages") && !pathname?.startsWith("/u/") && !pathname?.startsWith("/profile") && (
-                <Link
-                  href="/start"
-                  className="h-9 px-3.5 flex items-center rounded-lg border border-border bg-transparent hover:bg-muted transition-colors"
-                  aria-label="예약하기"
-                >
-                  <span className="text-sm font-black text-foreground whitespace-nowrap">예약하기</span>
-                </Link>
-              )}
+              {/* 헤더 "예약하기"(/start) 제거 — 깃발 종료로 /start가 파티 단독이 되면서
+                  전역 헤더에 상시 노출할 만큼의 진입점이 아니게 됨. 파티는 홈 섹션에서 진입. */}
               <button
                 onClick={() => setMenuOpen(true)}
                 className="relative w-11 h-11 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
