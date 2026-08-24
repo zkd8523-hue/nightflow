@@ -297,7 +297,7 @@ export function Header({
                 NightFlow
               </Link>
               <p className="text-[13px] text-muted-foreground font-medium tracking-tight whitespace-nowrap">
-                밤이 더 밝아진다, 나플
+                클럽 프리패스·프리드링크 혜택 한눈에
               </p>
             </>
           )}
