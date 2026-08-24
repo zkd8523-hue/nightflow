@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { CouponList } from "@/components/coupon/CouponList";
-import { benefitTypeLabel } from "@/lib/utils/coupon";
+import { benefitTypeLabel, excludeTestClubCoupons } from "@/lib/utils/coupon";
 import { hideTestData } from "@/lib/utils/testData";
 import type { CouponIssue } from "@/types/database";
 
@@ -54,7 +54,7 @@ export default async function CouponsIndexPage() {
     "clubs"
   );
 
-  const visible = (coupons ?? []) as unknown as CouponIssue[];
+  const visible = excludeTestClubCoupons((coupons ?? []) as unknown as CouponIssue[]);
 
   return (
     <div className="container mx-auto max-w-3xl px-4 pt-4 pb-8 mb-20">

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Clock, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { benefitTypeLabel, couponDisplayName, formatCouponCountdown, formatCouponRemaining, isCouponDeadlineNear, splitDiscount } from "@/lib/utils/coupon";
+import { benefitTypeLabel, couponDisplayName, formatCouponCountdown, formatCouponRemaining, isCouponDeadlineNear, splitDiscount, excludeTestClubCoupons } from "@/lib/utils/coupon";
 import { hideTestData } from "@/lib/utils/testData";
 import type { CouponIssue } from "@/types/database";
 
@@ -34,7 +34,7 @@ export function CouponHomeStrip() {
           .limit(MAX_CARDS),
         "clubs"
       );
-      if (!cancelled) setCoupons((data ?? []) as unknown as CouponIssue[]);
+      if (!cancelled) setCoupons(excludeTestClubCoupons((data ?? []) as unknown as CouponIssue[]));
     })();
     return () => { cancelled = true; };
   }, [supabase]);
@@ -74,7 +74,8 @@ export function CouponHomeStrip() {
 function CouponHomeCard({ coupon, now }: { coupon: CouponIssue; now: number }) {
   const { label, emoji } = benefitTypeLabel(coupon.benefit_type);
   const display = couponDisplayName(coupon.benefit_type, coupon.benefit_detail);
-  const thumb = coupon.thumbnail_url || coupon.club?.thumbnail_url || null;
+  const [thumbError, setThumbError] = useState(false);
+  const thumb = !thumbError && (coupon.thumbnail_url || coupon.club?.thumbnail_url || null);
   const soldOut = coupon.status === "sold_out";
   const near = isCouponDeadlineNear(coupon.redeem_ends_at, now);
   const discount = splitDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend);
@@ -86,7 +87,14 @@ function CouponHomeCard({ coupon, now }: { coupon: CouponIssue; now: number }) {
     >
       <div className="relative w-full h-24 bg-muted">
         {thumb ? (
-          <Image src={thumb} alt={coupon.club?.name ?? label} fill sizes="160px" className="object-cover" />
+          <Image
+            src={thumb}
+            alt={coupon.club?.name ?? label}
+            fill
+            sizes="160px"
+            className="object-cover"
+            onError={() => setThumbError(true)}
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[24px]">{emoji}</div>
         )}

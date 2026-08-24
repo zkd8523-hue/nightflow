@@ -176,3 +176,15 @@ export function isCouponDeadlineNear(endsAtISO: string, nowMs: number = Date.now
   return dayKey(end) === dayKey(now) || dayKey(end) === dayKey(tomorrow);
 }
 
+
+/**
+ * 유저 노출용 쿠폰 필터. clubs.is_test 마킹이 빠진 운영자 테스트 클럽이
+ * 홈·목록에 그대로 뜨는 걸 막는다 (ClubBenefitSection의 HIDDEN_PATTERN과 동일 기준).
+ * 비프로덕션에서는 확인을 위해 그대로 둔다.
+ */
+export function excludeTestClubCoupons<T extends { club?: { name?: string | null } | null }>(
+  rows: T[]
+): T[] {
+  if (process.env.NEXT_PUBLIC_VERCEL_ENV !== "production") return rows;
+  return rows.filter((r) => !/운영자/.test(r.club?.name ?? ""));
+}
