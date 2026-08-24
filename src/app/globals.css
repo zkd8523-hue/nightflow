@@ -389,6 +389,25 @@
   }
 }
 
+/* ── 쿠폰 사용 화면 워터마크 (Migration 539) ── */
+/* 정적 스크린샷으로 위조하지 못하게 유저명+claim id를 대각선으로 흐르게 함 */
+@keyframes coupon-watermark-scroll {
+  from {
+    transform: translateX(0) rotate(-8deg);
+  }
+  to {
+    transform: translateX(-33%) rotate(-8deg);
+  }
+}
+
+.animate-coupon-watermark {
+  animation: coupon-watermark-scroll 8s linear infinite;
+  transform: translateX(0) rotate(-8deg);
+  position: absolute;
+  left: -20%;
+  top: 45%;
+}
+
 /* ── LIVE 영상: WebView/브라우저 기본 재생버튼·컨트롤 오버레이 완전 제거 ── */
 /* 캐러셀 썸네일(정지) + 뷰어 시작 전 프레임에 뜨는 "싸구려 재생버튼" 방지 */
 video::-webkit-media-controls,

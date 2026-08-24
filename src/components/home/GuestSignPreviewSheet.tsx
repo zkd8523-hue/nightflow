@@ -36,7 +36,6 @@ export function GuestSignPreviewSheet({ open, onOpenChange }: Props) {
         </SheetHeader>
         <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-8 pb-8 space-y-5">
           <div className="space-y-1">
-            <p className="text-[12px] text-brand-amber font-black tracking-wider">PREVIEW</p>
             <h2 className="text-[22px] font-black text-foreground tracking-tight">
               내 게스트 광고판이 됩니다
               <span className="text-[13px] font-bold text-muted-foreground ml-1.5">(1클럽 1파트너 · 선착순)</span>

@@ -17,6 +17,7 @@ const PROTECTED_PREFIXES = ["/md/apply", "/admin", "/bids", "/my-wins", "/profil
 const MD_DASHBOARD_PREFIXES = [
   "/md/auctions",
   "/md/clubs",
+  "/md/coupons",
   "/md/credits",
   "/md/dashboard",
   "/md/floor-plan",

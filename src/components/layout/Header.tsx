@@ -43,6 +43,7 @@ import {
   Headset,
   Globe,
   Megaphone,
+  Ticket,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
@@ -537,6 +538,17 @@ export function Header({
                         <span className="text-[15px] font-bold">파트너 대시보드</span>
                       </Link>
                     )}
+
+                    <Link
+                      href="/my-coupons"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                    >
+                      <span className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
+                        <Ticket className="w-[18px] h-[18px] text-brand-amber" />
+                      </span>
+                      <span className="text-[15px] font-bold">내 쿠폰함</span>
+                    </Link>
 
                     <Link
                       href="/favorites"

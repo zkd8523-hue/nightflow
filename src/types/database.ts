@@ -134,6 +134,8 @@ export interface User {
   app_feedback_prompt_seen: boolean;
   /** 파트너 조각 가이드(ShareOnboardingSheet) 노출 완료 여부 (계정당 1회). Migration 523 */
   share_guide_seen: boolean;
+  /** 쿠폰 가이드(CouponOnboardingSheet) 1회 노출 여부. Migration 545 */
+  coupon_guide_seen?: boolean;
   /** 조각 가이드 "한 달간 보지 않기" 만료 시각. NULL이면 제한 없음. Migration 525 */
   share_guide_snoozed_until: string | null;
   /** 파트너 크레딧 가이드(OfferCreditGuideSheet) 노출 완료 여부 (깃발 상세 첫 진입 1회). Migration 523 */
@@ -1303,6 +1305,93 @@ export interface DailyHotdeal {
 }
 
 export type HotdealTableZone = 'bar' | 'bar_aisle' | 'sub_main' | 'main' | 'prime';
+
+// ============================================================================
+// 파트너 쿠폰 (Migration 539) — 발행(issue) / 보유(claim) / 사용(redeem) 3단
+//   QR 없이 유저 화면 직접 사용 처리. 혜택 어휘는 게스트 간판과 공유
+//   (benefit_type 6종 필수 1개 + benefit_tags 추가 태그, md_benefit_presets 공유).
+// ============================================================================
+export type CouponBenefitType =
+  | 'free_entry'
+  | 'free_drink'
+  | 'free_pass'
+  | 'liquor_set'
+  | 'table_discount'
+  | 'etc';
+
+export type CouponIssueStatus = 'active' | 'sold_out' | 'cancelled' | 'expired';
+export type CouponClaimStatus = 'active' | 'redeemed' | 'expired' | 'revoked';
+export type CouponKind = 'free' | 'pass';
+export type CouponDiscountType = 'flat' | 'percent';
+
+export interface CouponIssue {
+  id: string;
+  club_id: string;
+  md_id: string;
+  benefit_type: CouponBenefitType;
+  benefit_tags: string[];
+  title: string;
+  benefit_detail: string | null;
+  conditions: string | null;
+  thumbnail_url: string | null;
+  total_count: number | null;
+  claimed_count: number;
+  redeemed_count: number;
+  starts_at: string;
+  redeem_ends_at: string;
+  status: CouponIssueStatus;
+  /** 할인 (Migration 540). 발행 후 수정 불가. flat이면 discount_amount는 원 단위. */
+  discount_type: CouponDiscountType | null;
+  discount_amount: number | null;
+  min_spend: number | null;
+  /** 자주 쓰는 세팅으로 고정. 지난 쿠폰 목록 상단. Migration 546 */
+  is_favorite?: boolean;
+  /** 나플패스 확장 자리. 이번 단계에서는 'free'만 사용, 결제 로직 없음. */
+  kind: CouponKind;
+  price_credits: number | null;
+  created_at: string;
+  updated_at: string;
+  // joined
+  club?: Pick<Club, 'id' | 'name' | 'area' | 'thumbnail_url'>;
+  md?: { id: string; display_name: string | null; profile_image: string | null };
+}
+
+export interface CouponClaim {
+  id: string;
+  issue_id: string;
+  user_id: string;
+  club_id: string;
+  benefit_type: CouponBenefitType;
+  title_snapshot: string;
+  claimed_at: string;
+  expires_at: string;
+  redeemed_at: string | null;
+  redeem_nonce: string | null;
+  redeem_color: number | null;
+  status: CouponClaimStatus;
+  reminded_at: string | null;
+  admin_voided_at: string | null;
+  created_at: string;
+  // joined
+  issue?: Pick<CouponIssue, 'id' | 'title' | 'thumbnail_url' | 'club_id'>;
+  club?: Pick<Club, 'id' | 'name' | 'area' | 'thumbnail_url'>;
+}
+
+export interface CouponTemplate {
+  id: string;
+  md_id: string;
+  name: string;
+  club_id: string | null;
+  benefit_type: CouponBenefitType;
+  benefit_tags: string[];
+  title: string | null;
+  benefit_detail: string | null;
+  conditions: string | null;
+  total_count: number | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
 
 // ============================================================================
 // 클럽 변경 이력 (Migration 245) — 파트너 MD/admin 의 clubs.tags / operating_hours 변경 자동 로깅

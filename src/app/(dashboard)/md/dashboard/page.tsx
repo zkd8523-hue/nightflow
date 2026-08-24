@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { MDDashboard } from "@/components/md/MDDashboard";
 
-import type { User, Auction, Club, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan } from "@/types/database";
+import type { User, Auction, Club, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan, CouponIssue } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -285,6 +285,14 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
     const shareOptions = (shareOptionRows ?? []) as ShareOption[];
     const shareWeekdayPlans = (shareWeekdayPlanRows ?? []) as ShareWeekdayPlan[];
 
+    // 내 쿠폰 발행 목록 (Migration 539) — 쿠폰 인라인 영역용
+    const { data: myCouponRows } = await supabase
+        .from("coupon_issues")
+        .select("*, club:clubs(id, name, area, thumbnail_url)")
+        .eq("md_id", userId)
+        .order("created_at", { ascending: false });
+    const myCoupons = (myCouponRows ?? []) as unknown as CouponIssue[];
+
     // 테스트 모드일 때 경매가 하나도 없으면 샘플 하나 추가 (상태 확인용)
     const displayAuctions = (testMode && (!auctions || auctions.length === 0)) ? [
         {
@@ -330,6 +338,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 shareSlotThisWeekISO={thisWeekISO}
                 shareOptions={shareOptions}
                 shareWeekdayPlans={shareWeekdayPlans}
+                initialCoupons={myCoupons}
             />
         </div>
     );

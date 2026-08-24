@@ -70,7 +70,7 @@ export function BottomNav() {
   // 찜 자리를 채팅으로 대체 (플래그 OFF면 찜 유지)
   const tabs = [
     { label: "홈", icon: Home, href: "/" },
-    { label: "주변", icon: Map, href: "/clubs" },
+    { label: "클럽지도", icon: Map, href: "/clubs" },
     { label: "LIVE", icon: WagleIcon, href: "/chat" },
     offerChatOn
       ? { label: "채팅", icon: MessageCircle, href: "/messages" }

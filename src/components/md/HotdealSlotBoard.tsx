@@ -58,14 +58,16 @@ const DOW_FULL_LABELS: Record<HotdealDow, string> = {
   mon: "월요일", tue: "화요일", wed: "수요일", thu: "목요일",
   fri: "금요일", sat: "토요일", sun: "일요일",
 };
+// 이 텍스트는 유저 카드 상단 앰버 띠에 그대로 노출된다.
+// 그래서 예시도 "띠에 뜰 법한 홍보 한 줄" 모양으로 쓴다(혜택 칩과 역할이 다르다).
 const DOW_PLACEHOLDERS: Record<HotdealDow, string> = {
-  mon: "예: 여성 무료입장 / 입장료 할인",
-  tue: "예: 프리드링크 1잔",
-  wed: "예: 단체 4인 샴페인 증정",
-  thu: "예: 졸업생 무료 / 입구컷 X",
-  fri: "예: 1시 이전 무료입장",
-  sat: "예: 테이블 할인 / VIP 우선",
-  sun: "예: 프리드링크 / 새벽 4시 입장",
+  mon: "홍보문구 (선택)",
+  tue: "예: (화) 여성 프리드링크 1잔",
+  wed: "예: (수) 단체 4인 샴페인",
+  thu: "예: (목) 대학생 무료입장",
+  fri: "예: (금) 남성 12시전 무료",
+  sat: "예: (토) 여성 선착순 20명",
+  sun: "예: (일) 새벽 4시까지 입장",
 };
 
 function isBeforeOpen(weekStartISO: string): boolean {
@@ -360,7 +362,7 @@ export function HotdealSlotBoard({
     if (!mySlotForWeek) return 0;
     let n = 0;
     for (const k of DOW_KEYS) {
-      if (normalizeDowSlots(mySlotForWeek.benefits_by_dow[k]).some((s) => s.text.trim().length > 0)) n++;
+      if (normalizeDowSlots(mySlotForWeek.benefits_by_dow[k]).some((s) => s.text.trim().length > 0 || (s.benefits?.length ?? 0) > 0)) n++;
     }
     return n;
   }, [mySlotForWeek]);
@@ -479,30 +481,6 @@ export function HotdealSlotBoard({
     }
   };
 
-  const handleReturnThisWeek = async () => {
-    if (!mySlotForWeek || busy) return;
-    if (!window.confirm("이번 주 게스트 간판을 반납할까요?\n반납하면 다른 파트너가 이 자리를 차지할 수 있어요.")) return;
-    setBusy(true);
-    try {
-      const { data, error } = await supabase.rpc("release_hotdeal_slot", {
-        p_slot_id: mySlotForWeek.id,
-      });
-      if (error) throw error;
-      const result = data as { success: boolean; error?: string };
-      if (!result?.success) {
-        toast.error(result?.error || "반납 실패");
-        return;
-      }
-      setClientMySlots((prev) => (prev ?? []).filter((s) => s.id !== mySlotForWeek.id));
-      toast.success("게스트 간판을 반납했어요");
-      router.refresh();
-    } catch (err) {
-      console.error(err);
-      toast.error("요청 실패");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleReleaseNextWeek = async () => {
     if (!myNextWeekSlot || busy) return;
@@ -549,14 +527,27 @@ export function HotdealSlotBoard({
               <p className="text-[14px] text-foreground font-black leading-tight">
                 {formatWeekRange(thisWeekISO)}
               </p>
-              <button
-                type="button"
-                onClick={() => setPreviewOpen(true)}
-                className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
-              >
-                <span className="text-[12px]">ⓘ</span>
-                이용방법
-              </button>
+              {/* 다음 주 선점 — 주 행동(혜택 등록)에 시선을 양보하도록 텍스트 링크로.
+                  이미 선점한 경우는 아래 카드에 "다음주 설정/해제"로 남는다. */}
+              {mySlotForWeek && !myNextWeekSlot && (
+                thisWeekDaysSet >= MIN_DAYS_FOR_NEXT_WEEK ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={handleClaimNextWeek}
+                    className="ml-auto shrink-0 text-[11px] font-bold text-brand-amber underline underline-offset-2 hover:opacity-80 disabled:opacity-40"
+                  >
+                    다음 주도 미리 선점
+                  </button>
+                ) : thisWeekDaysSet > 0 ? (
+                  <span
+                    className="ml-auto shrink-0 text-[11px] font-bold text-muted-foreground/70"
+                    title={`이번 주 혜택을 ${MIN_DAYS_FOR_NEXT_WEEK}일 이상 입력하면 다음 주도 미리 잡을 수 있어요`}
+                  >
+                    다음 주 선점 {thisWeekDaysSet}/{MIN_DAYS_FOR_NEXT_WEEK}일
+                  </span>
+                ) : null
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-2 shrink-0">
@@ -568,9 +559,8 @@ export function HotdealSlotBoard({
 
         {/* 4단계 시각 가이드 (사용자가 닫을 수 있음) */}
         {/* 다음 주 미리 선점 — 혜택 편집보다 위에 노출 */}
-        {mySlotForWeek && (
+        {mySlotForWeek && myNextWeekSlot && (
           <div className="bg-muted/60 rounded-2xl p-4 mb-4">
-            {myNextWeekSlot ? (
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-[12.5px] font-black text-money">✓ 다음 주도 선점됨</p>
@@ -600,42 +590,6 @@ export function HotdealSlotBoard({
                   </button>
                 </div>
               </div>
-            ) : thisWeekDaysSet >= MIN_DAYS_FOR_NEXT_WEEK ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={handleClaimNextWeek}
-                className="w-full h-11 rounded-xl bg-amber-500 text-black text-[12.5px] font-black hover:bg-amber-400 disabled:opacity-40 inline-flex items-center justify-center gap-1.5"
-              >
-                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "📌"}
-                다음 주도 미리 선점 (지금 혜택 그대로)
-              </button>
-            ) : (
-              <div>
-                <button
-                  type="button"
-                  disabled
-                  className="w-full h-11 rounded-xl bg-muted text-muted-foreground text-[12.5px] font-black cursor-not-allowed"
-                >
-                  다음 주 미리 선점 (현재 {thisWeekDaysSet}/{MIN_DAYS_FOR_NEXT_WEEK}일)
-                </button>
-                <p className="text-[10.5px] text-muted-foreground mt-1.5 leading-snug">
-                  이번 주 혜택을 {MIN_DAYS_FOR_NEXT_WEEK}일 이상 입력하면 다음 주 자리도 미리 잡을 수 있어요
-                </p>
-              </div>
-            )}
-
-            {/* 이번 주 차지한 간판 반납 (작은 회색, 우측 정렬) */}
-            <div className="flex justify-end mt-2.5">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={handleReturnThisWeek}
-                className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-background/60 text-muted-foreground hover:text-red-400 disabled:opacity-40 transition-colors"
-              >
-                이번 주 간판 반납
-              </button>
-            </div>
           </div>
         )}
 
@@ -644,7 +598,6 @@ export function HotdealSlotBoard({
           <MyClaimedSection
             key={editSlot.id}
             slot={editSlot}
-            club={clubs.find((c) => c.id === editSlot.club_id)}
             busy={busy}
             onRelease={() => handleRelease(editSlot.id)}
             onChanged={() => { router.refresh(); setReloadKey((k) => k + 1); }}
@@ -731,7 +684,6 @@ export function HotdealSlotBoard({
 
 function MyClaimedSection({
   slot,
-  club,
   busy,
   onRelease,
   onChanged,
@@ -740,7 +692,6 @@ function MyClaimedSection({
   onRemovePreset,
 }: {
   slot: MySlot;
-  club?: ClubLite;
   busy: boolean;
   onRelease: () => void;
   onChanged: () => void;
@@ -868,7 +819,7 @@ function MyClaimedSection({
     const prevSaved = savedSlotsFor(dow);
     // 텍스트 없는 빈 슬롯 제거 (단, until이 있는 중간 슬롯은 유지)
     let cleaned = drafts[dow].filter((s, i, arr) =>
-      s.text.trim().length > 0 || (i < arr.length - 1 && s.until !== null)
+      s.text.trim().length > 0 || (s.benefits?.length ?? 0) > 0 || (i < arr.length - 1 && s.until !== null)
     );
     if (cleaned.length > 0) {
       cleaned = cleaned.map((s) => ({ ...s, text: s.text.trim() }));
@@ -906,9 +857,9 @@ function MyClaimedSection({
   return (
     <div className="bg-muted/60 rounded-2xl p-4 mb-4 space-y-3">
       <div>
-        <p className="text-foreground text-[15px] font-black">게스트 혜택 등록하기</p>
+        <p className="text-foreground text-[19px] font-black tracking-tight">게스트 혜택 등록</p>
         <p className="text-[11px] text-muted-foreground mt-0.5">
-          {club?.name ?? "클럽"} · {formatWeekRange(slot.week_start)}
+          혜택을 등록시 상위노출 + 더 많은 게스트를 모을 수 있어요
         </p>
         <p className="text-[11px] text-muted-foreground mt-1 inline-flex items-center gap-1">
           <Clock className="w-3 h-3 text-brand-amber" />
@@ -925,7 +876,7 @@ function MyClaimedSection({
           const isPast = dowISO < todayISO;
           const slots = drafts[dow];
           const hasTimeSetup = slots.length > 1 || (slots.length === 1 && slots[0].until !== null);
-          const hasAnyText = slots.some((s) => s.text.trim().length > 0);
+          const hasAnyText = slots.some((s) => s.text.trim().length > 0 || (s.benefits?.length ?? 0) > 0);
           const savedExists = savedSlotsFor(dow).length > 0;
           // 항상 최소 1개 슬롯이 렌더링되도록 displaySlots 사용
           const displaySlots: HotdealTimeSlot[] = slots.length > 0 ? slots : [{ until: null, text: "" }];
@@ -945,12 +896,25 @@ function MyClaimedSection({
               >
                 {/* 요일 헤더 */}
                 <div className={`flex items-center gap-2 mb-1.5 ${dowIndex > 0 ? "pt-2.5 border-t border-border/50" : ""}`}>
-                  <span className={`text-[13px] font-black ${isPast ? "text-muted-foreground" : "text-foreground"}`}>
+                  {/* 등록 여부는 요일 글자 색으로만 구분한다 (체크 뱃지는 빈 요일에
+                      빈 원이 남아 지저분했다) */}
+                  <span
+                    className={`text-[13px] font-black ${
+                      isPast
+                        ? "text-muted-foreground"
+                        : savedExists
+                          ? "text-brand-amber"
+                          : "text-foreground"
+                    }`}
+                  >
                     {DOW_LABELS[dow]}
                   </span>
-                  <span className={`text-[11px] ${isPast ? "text-muted-foreground" : "text-muted-foreground"}`}>
+                  <span className="text-[11px] text-muted-foreground">
                     {formatMd(d)}
                   </span>
+                  {!isPast && !savedExists && (
+                    <span className="text-[10px] text-muted-foreground/70">미등록</span>
+                  )}
                   {isPast && (
                     <span className="text-[10px] text-muted-foreground ml-auto">지난 요일</span>
                   )}
@@ -974,7 +938,7 @@ function MyClaimedSection({
                         setSavingDow(dow);
                         try {
                           let cleaned = nextSlots.filter((s, i, arr) =>
-                            s.text.trim().length > 0 || (i < arr.length - 1 && s.until !== null)
+                            s.text.trim().length > 0 || (s.benefits?.length ?? 0) > 0 || (i < arr.length - 1 && s.until !== null)
                           );
                           if (cleaned.length > 0) cleaned = cleaned.map((s) => ({ ...s, text: s.text.trim() }));
                           const { data, error } = await supabase.rpc("update_hotdeal_benefit", { p_slot_id: slot.id, p_dow: dow, p_slots: cleaned.length > 0 ? cleaned : null });
@@ -1082,7 +1046,7 @@ function MyClaimedSection({
                                     setSavingDow(nextDow);
                                     try {
                                       let cleaned = copied.filter((s, i, arr) =>
-                                        s.text.trim().length > 0 || (i < arr.length - 1 && s.until !== null)
+                                        s.text.trim().length > 0 || (s.benefits?.length ?? 0) > 0 || (i < arr.length - 1 && s.until !== null)
                                       );
                                       if (cleaned.length > 0) cleaned = cleaned.map((s) => ({ ...s, text: s.text.trim() }));
                                       const { data, error } = await supabase.rpc("update_hotdeal_benefit", { p_slot_id: slot.id, p_dow: nextDow, p_slots: cleaned.length > 0 ? cleaned : null });

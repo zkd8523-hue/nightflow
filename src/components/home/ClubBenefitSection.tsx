@@ -204,17 +204,25 @@ export function ClubBenefitSection() {
           >
             {/* 혜택 띠 + 이미지를 하나의 테두리로 감싸 카드 경계를 명확히 함 (라이트에서 흰 로고가 배경과 붙어 보이는 문제 방지) */}
             <div className="rounded-md border border-border overflow-hidden">
-              {/* 혜택 띠 (이미지 위 별도 영역) */}
-              {item.benefit_text && (
-                <div className="bg-amber-500 px-2.5 pt-1.5 pb-1 border-b border-black/20">
-                  <span
-                    className="block whitespace-pre-line text-black text-[13px] tracking-tight text-center leading-[1.1] line-clamp-2"
-                    style={{ fontFamily: "var(--font-display-kr)" }}
-                  >
-                    {item.benefit_text}
-                  </span>
-                </div>
-              )}
+              {/* 혜택 띠 (이미지 위 별도 영역).
+                  MD가 문구를 안 쓰고 칩만 고른 경우도 있으므로, 텍스트가 없으면
+                  칩 라벨을 이어붙여 띠를 만든다("무료입장 · 프리드링크"). */}
+              {(() => {
+                const bannerText =
+                  item.benefit_text?.trim() ||
+                  item.benefit_tags.slice(0, 2).map((t) => benefitLabel(t).label).join(" · ");
+                if (!bannerText) return null;
+                return (
+                  <div className="bg-amber-500 px-2.5 pt-1.5 pb-1 border-b border-black/20">
+                    <span
+                      className="block whitespace-pre-line text-black text-[13px] tracking-tight text-center leading-[1.1] line-clamp-2"
+                      style={{ fontFamily: "var(--font-display-kr)" }}
+                    >
+                      {bannerText}
+                    </span>
+                  </div>
+                );
+              })()}
 
               {/* 이미지 */}
               <div className="relative w-full aspect-[4/3] bg-card">

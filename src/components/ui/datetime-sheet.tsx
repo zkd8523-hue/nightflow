@@ -37,6 +37,8 @@ interface DateTimeSheetProps {
   dateOptions?: { label: string; value: string; minTime?: string; maxTime?: string; defaultTime?: string }[];
   /** 시트 상단에 표시할 넛지 배너 (제목 ↔ 캘린더 사이) */
   hint?: React.ReactNode;
+  /** 시간 입력란 위 라벨. 기본 "입장 시간" — 쿠폰 마감 등 다른 맥락에서 교체 */
+  timeLabel?: string;
 }
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -66,6 +68,7 @@ export function DateTimeSheet({
   fixedDate,
   dateOptions,
   hint,
+  timeLabel = "입장 시간",
 }: DateTimeSheetProps) {
   const isTimeOnly = mode === "time-only";
   const isDate2 = mode === "date-2";
@@ -238,7 +241,7 @@ export function DateTimeSheet({
             <div className="mt-4">
               <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-bold uppercase mb-2">
                 <Clock className="w-3.5 h-3.5" />
-                입장 시간
+                {timeLabel}
               </div>
 
               {(() => {

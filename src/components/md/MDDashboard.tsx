@@ -22,7 +22,11 @@ const ShareSlotBoard = dynamic(
   () => import("./ShareSlotBoard").then((m) => m.ShareSlotBoard),
   { loading: () => <div className="animate-pulse bg-muted/50 h-40 rounded-xl" /> }
 );
-import type { Auction, User, Club, PuzzleOffer, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan } from "@/types/database";
+import type { Auction, User, Club, PuzzleOffer, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan, CouponIssue } from "@/types/database";
+import { CouponManager } from "@/components/md/CouponManager";
+import { CouponOnboardingSheet } from "@/components/md/CouponOnboardingSheet";
+import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
+import { GuestSignPreviewSheet } from "@/components/home/GuestSignPreviewSheet";
 import { ShareOptionManager } from "@/components/md/ShareOptionManager";
 import { ShareWeekdayPlanBoard } from "@/components/md/ShareWeekdayPlanBoard";
 import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
@@ -33,6 +37,8 @@ import { toast } from "sonner";
 import { getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
 
 import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { markGuideSeen } from "@/lib/utils/guideFlag";
 import { CreditHistory } from "@/components/md/CreditHistory";
 import { DateGroup } from "@/components/ui/DateGroup";
 import dayjs from "dayjs";
@@ -132,6 +138,8 @@ interface MDDashboardProps {
     shareSlotThisWeekISO?: string;
     shareOptions?: ShareOption[];
     shareWeekdayPlans?: ShareWeekdayPlan[];
+    /** 내 쿠폰 발행 목록 (Migration 539) — 쿠폰 인라인 영역용 */
+    initialCoupons?: CouponIssue[];
 }
 
 export function MDDashboard({
@@ -152,6 +160,7 @@ export function MDDashboard({
     shareSlotThisWeekISO,
     shareOptions = [],
     shareWeekdayPlans = [],
+    initialCoupons = [],
 }: MDDashboardProps) {
     const [auctions, setAuctions] = useState<Auction[]>(initialAuctions);
     const [clubs, setClubs] = useState<Club[]>(initialClubs);
@@ -191,7 +200,7 @@ export function MDDashboard({
     const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(() =>
         initialSection ? initialSection === "guestsign" : guestSignUnclaimedThisWeek
     );
-    const [shareInlineOpen, setShareInlineOpen] = useState(false);
+    const [shareInlineOpen, setShareInlineOpen] = useState(() => initialSection === "share");
     // 가이드 시트의 "세팅 바로가기" — 파티 섹션이 접혀 있으면 ShareLiveToggleList가
     // 마운트되지 않아 이벤트를 들을 수 없다. 부모가 먼저 펼쳐준다.
     useEffect(() => {
@@ -207,6 +216,18 @@ export function MDDashboard({
         window.addEventListener("nightflow:open-share-setup", handler);
         return () => window.removeEventListener("nightflow:open-share-setup", handler);
     }, [shareInlineOpen]);
+    const [couponInlineOpen, setCouponInlineOpen] = useState(() => initialSection === "coupon");
+    // 신규 도구 인지용 반짝임 — 가이드를 아직 안 본 파트너에게만, 한 번 열면 꺼진다
+    const [couponOpened, setCouponOpened] = useState(false);
+    // 도구별 이용방법 — 도구 버튼 옆 ⓘ로 직접 연다
+    const [guestSignGuideOpen, setGuestSignGuideOpen] = useState(false);
+    const [shareGuideOpen, setShareGuideOpen] = useState(false);
+    const [couponGuideOpen, setCouponGuideOpen] = useState(false);
+    // ⚠️ user는 SSR props라 가이드를 닫아도 이 값이 안 바뀐다.
+    //    클라이언트 캐시를 함께 보고 둘 중 하나라도 "봤음"이면 끈다.
+    const { user: liveUser } = useCurrentUser();
+    const guideSeen = Boolean(user.coupon_guide_seen || liveUser?.coupon_guide_seen);
+    const couponIsNew = !guideSeen && !couponOpened;
     const supabase = createClient();
 
     // 낙관적 슬롯 상태 — claim 즉시 세팅 영역 표시 (router.refresh() 대기 안 함)
@@ -568,6 +589,7 @@ export function MDDashboard({
             <div className="px-4 mt-5 relative">
                 <div className="border border-border rounded-xl p-2 pt-4 space-y-2">
                     {/* 게스트 간판 — 전체 너비 한 줄 */}
+                    <div className="relative">
                     <button
                         type="button"
                     onClick={(e) => {
@@ -575,6 +597,7 @@ export function MDDashboard({
                         e.stopPropagation();
                         setGuestSignInlineOpen((v) => !v);
                         setShareInlineOpen(false);
+                        setCouponInlineOpen(false);
                     }}
                     className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
                         guestSignInlineOpen ? "border-amber-500" : "border-border"
@@ -584,7 +607,10 @@ export function MDDashboard({
                     <span className="text-[14px] font-black text-foreground">게스트 간판</span>
                     <span className="text-[12px] font-bold text-muted-foreground">매주 월 18시 오픈</span>
                 </button>
+                <GuideHint onClick={() => setGuestSignGuideOpen(true)} />
+                </div>
                 {/* 파티 — 핫딜 버튼 제거로 전체 폭 */}
+                <div className="relative">
                 <button
                     type="button"
                     onClick={(e) => {
@@ -592,6 +618,7 @@ export function MDDashboard({
                         e.stopPropagation();
                         setShareInlineOpen((v) => !v);
                         setGuestSignInlineOpen(false);
+                        setCouponInlineOpen(false);
                     }}
                     className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
                         shareInlineOpen ? "border-green-500" : "border-border"
@@ -602,6 +629,40 @@ export function MDDashboard({
                     {/* 파티 운영권도 게스트 간판과 같은 주 단위 선점(Migration 514) */}
                     <span className="text-[12px] font-bold text-muted-foreground">매주 월 18시 오픈</span>
                 </button>
+                <GuideHint onClick={() => setShareGuideOpen(true)} />
+                </div>
+                {/* 쿠폰 — 단발성 발행, 아래 별도 한 줄 (핫딜 칸을 건드리지 않고 신설) */}
+                <div className="relative">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCouponInlineOpen((v) => !v);
+                        setCouponOpened(true);
+                        if (!guideSeen) markGuideSeen("coupon_guide_seen", user.id);
+                        setGuestSignInlineOpen(false);
+                        setShareInlineOpen(false);
+                    }}
+                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
+                        couponInlineOpen
+                            ? "border-amber-500"
+                            : couponIsNew
+                              ? "border-amber-500/50 animate-guest-glow"
+                              : "border-border"
+                    }`}
+                >
+                    <span className="text-[18px] leading-none">🎟️</span>
+                    <span className="text-[14px] font-black text-foreground">쿠폰</span>
+                    <span className="text-[12px] font-bold text-muted-foreground">무료입장·프리드링크 발행</span>
+                </button>
+                <GuideHint onClick={() => setCouponGuideOpen(true)} />
+                {couponIsNew && (
+                    <span className="animate-new-badge absolute -top-1.5 -right-1 z-10 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-black tracking-wide pointer-events-none">
+                        NEW
+                    </span>
+                )}
+                </div>
                 </div>
                 <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 bg-background text-[12px] font-black text-muted-foreground whitespace-nowrap">
                     파트너 도구
@@ -635,6 +696,21 @@ export function MDDashboard({
                         {/* Migration 505: 템플릿 요일별 On/Off */}
                         <ShareLiveToggleList mdId={user.id} clubs={clubs} />
 
+                    </div>
+                </div>
+            )}
+
+            {/* 쿠폰 인라인 영역 — 단발성 발행 (Migration 539) */}
+            {couponInlineOpen && (
+                <div className="px-2 mt-3">
+                    <div className="bg-card border border-amber-500/30 rounded-2xl p-3">
+                        <CouponManager
+                            clubs={guestSignClubs}
+                            initialCoupons={initialCoupons}
+                            mdId={user.id}
+                            defaultClubId={defaultClubId}
+                            embedded
+                        />
                     </div>
                 </div>
             )}
@@ -1065,6 +1141,16 @@ export function MDDashboard({
                     </div>
                 </SheetContent>
             </Sheet>
+        {/* 도구별 이용방법 — 각 가이드를 그대로 재사용 */}
+        {guestSignGuideOpen && (
+            <GuestSignPreviewSheet open onOpenChange={(v) => { if (!v) setGuestSignGuideOpen(false); }} />
+        )}
+        {shareGuideOpen && (
+            <ShareOnboardingSheet manualOpen onManualClose={() => setShareGuideOpen(false)} />
+        )}
+        {couponGuideOpen && (
+            <CouponOnboardingSheet manualOpen onManualClose={() => setCouponGuideOpen(false)} />
+        )}
         </div>
     );
 }
@@ -1300,5 +1386,20 @@ function EmptyState({ label, description }: { label: string, description?: React
                 </Button>
             </Link>
         </div>
+    );
+}
+
+/** 도구 버튼 우측의 ⓘ 이용방법. 버튼 안에 중첩하면 클릭이 새므로 형제로 절대배치한다. */
+function GuideHint({ onClick }: { onClick: () => void }) {
+    return (
+        <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); }}
+            aria-label="이용방법"
+            className="absolute right-3 top-1/2 -translate-y-1/2 h-7 px-2 rounded-full text-[11px] font-bold text-muted-foreground hover:text-foreground inline-flex items-center gap-0.5"
+        >
+            <span className="text-[12px]">ⓘ</span>
+            이용방법
+        </button>
     );
 }

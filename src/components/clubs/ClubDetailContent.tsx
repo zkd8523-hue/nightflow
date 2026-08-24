@@ -47,6 +47,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction, HotdealDow, HotdealTimeSlot, Puzzle } from "@/types/database";
 import { GUEST_SIGN_BENEFIT_PRESETS, benefitLabel } from "@/lib/utils/hotdeal";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
+import { ClubCouponBar } from "@/components/coupon/ClubCouponBar";
 
 function trackGuestSignClick(
   slotId: string | undefined,
@@ -568,6 +569,9 @@ export function ClubDetailContent({
               </div>
             </div>
           )}
+
+          {/* 쿠폰 띠 — 배민식 띠+시트. 활성 쿠폰 없으면 자체적으로 렌더 안 함 (Migration 539) */}
+          <ClubCouponBar clubId={club.id} />
 
           {clubAddress && (
             <button

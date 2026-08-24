@@ -687,6 +687,19 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
     setCreateOpen(true);
   };
 
+  /** 세팅 시트를 열면서 카톡 붙여넣기 영역까지 바로 펼친다 (빈 상태 안내에서 진입) */
+  const openCreateWithPromo = () => {
+    if (templates.length >= MAX_TEMPLATES) {
+      toast.error(`템플릿은 최대 ${MAX_TEMPLATES}개까지예요`);
+      return;
+    }
+    setCreateForm({ ...emptyTemplateForm(), club_id: clubs[0]?.id ?? "" });
+    setCreateFolderOpen(false);
+    resetPromo();
+    setPromoOpen(true);
+    setCreateOpen(true);
+  };
+
   /** 붙여넣기 관련 상태 초기화 — 시트를 닫거나 다시 열 때 이전 결과가 남으면 안 된다 */
   const resetPromo = () => {
     setPromoOpen(false);
@@ -1052,6 +1065,33 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   // 운영권을 하나라도 가진 클럽이 있는지 — 1회성 등록 CTA 노출 조건
   const hasAnySlot = Array.from(slotStatus.values()).some((s) => s.is_mine);
 
+  /** 헤더의 "다음 주도 미리 선점" 대상 — 내가 이번 주를 운영 중이고 다음 주가 비어 있는 클럽.
+   *  (이미 다음 주를 잡았거나 남이 잡은 클럽은 대상이 아니다) */
+  const nextWeekTarget = (() => {
+    const mine = Array.from(slotStatus.values()).filter((x) => x.is_mine);
+    // 이미 잡아둔 게 있으면 그 상태를 먼저 — 해제 경로가 여기밖에 없다
+    const claimed = mine.find((x) => x.next_is_mine);
+    if (claimed) {
+      return {
+        club_id: claimed.club_id,
+        daysSet: claimed.days_set ?? 0,
+        canClaim: false,
+        claimed: true,
+        slotId: claimed.next_slot_id,
+      };
+    }
+    const s = mine.find((x) => !x.next_holder_id);
+    if (!s) return null;
+    const daysSet = s.days_set ?? 0;
+    return {
+      club_id: s.club_id,
+      daysSet,
+      canClaim: daysSet >= MIN_DOWS_FOR_NEXT_WEEK,
+      claimed: false,
+      slotId: null as string | null,
+    };
+  })();
+
   // 일괄 토글 — 켤 수 있는 것(필수값 있고 운영권 보유)만 대상으로 한다
   // 지금 보고 있는 폴더만 대상 — "평일" 탭에서 누른 모두 켜기가 주말 조각까지
   // 켜면 폴더를 나눈 의미가 없다.
@@ -1077,21 +1117,60 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-[15px] font-black text-foreground">내 파티</span>
+        <span className="text-[15px] font-black text-foreground">내 조각</span>
         <span className="text-[12px] text-muted-foreground font-semibold">{templates.length}/{MAX_TEMPLATES}</span>
-        <button
-          type="button"
-          onClick={() => setGuideOpen(true)}
-          className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
-        >
-          <span className="text-[12px]">ⓘ</span>
-          이용방법
-        </button>
         {/* 세팅 추가는 하단 주 CTA에만 둔다 — 헤더에 또 두면 같은 버튼이 두 번이다 */}
+        {/* 다음 주 선점 — 게스트 간판과 같은 자리·같은 모양(밑줄 텍스트).
+            카드로 두면 주 행동(세팅)보다 눈에 띄어서 헤더로 뺐다. */}
+        {nextWeekTarget && (
+          nextWeekTarget.claimed ? (
+            <button
+              type="button"
+              disabled={claiming === nextWeekTarget.club_id || !nextWeekTarget.slotId}
+              onClick={() => nextWeekTarget.slotId && releaseNextWeek(nextWeekTarget.slotId, nextWeekTarget.club_id)}
+              className="ml-auto shrink-0 text-[11px] font-bold text-money underline underline-offset-2 hover:text-red-400 disabled:opacity-40 transition-colors"
+              title="누르면 다음 주 선점을 해제해요"
+            >
+              ✓ 다음 주도 선점됨
+            </button>
+          ) : nextWeekTarget.canClaim ? (
+            <button
+              type="button"
+              disabled={claiming === nextWeekTarget.club_id}
+              onClick={() => claimNextWeek(nextWeekTarget.club_id)}
+              className="ml-auto shrink-0 text-[11px] font-bold text-brand-amber underline underline-offset-2 hover:opacity-80 disabled:opacity-40"
+            >
+              {claiming === nextWeekTarget.club_id ? "잡는 중" : "다음 주도 미리 선점"}
+            </button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="ml-auto shrink-0 text-[11px] font-bold text-muted-foreground/70 underline underline-offset-2 hover:text-foreground transition-colors"
+                >
+                  다음 주도 미리 선점
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-muted border-border max-w-[260px]">
+                <div className="px-2 py-1.5">
+                  <p className="text-[12.5px] font-bold text-foreground leading-snug">
+                    조각을 {MIN_DOWS_FOR_NEXT_WEEK}일 이상 등록하면
+                    <br />
+                    다음주도 미리 잡을 수 있어요
+                  </p>
+                  <p className="text-[11px] text-muted-foreground font-semibold mt-1">
+                    현재 {nextWeekTarget.daysSet}일 등록됨
+                  </p>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        )}
         <button
           type="button"
           onClick={() => setFolderManagerOpen(true)}
-          className="ml-auto h-7 px-3 rounded-full bg-muted text-muted-foreground text-[12px] font-black inline-flex items-center gap-1 hover:text-foreground active:scale-95 transition"
+          className={`${nextWeekTarget ? "" : "ml-auto "}h-7 px-3 rounded-full bg-muted text-muted-foreground text-[12px] font-black inline-flex items-center gap-1 hover:text-foreground active:scale-95 transition`}
         >
           <FolderCog className="w-3.5 h-3.5" /> 폴더
         </button>
@@ -1143,56 +1222,6 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
         );
       })}
 
-      {/* 다음 주 자리 — 안 잡으면 다음 주 날짜는 발행에서 통째로 건너뛴다.
-          게스트 간판의 "다음 주도 미리 선점"과 같은 리듬(월 18시 오픈, 주당 1자리). */}
-      {Array.from(slotStatus.values()).map((s) => {
-        if (!s.is_mine) return null;
-        const canClaim = (s.days_set ?? 0) >= MIN_DOWS_FOR_NEXT_WEEK;
-        return (
-          <div key={`next-${s.club_id}`} className="rounded-xl border border-border bg-card px-3.5 py-2.5 flex items-center gap-2">
-            <div className="min-w-0 flex-1">
-              {s.next_is_mine ? (
-                <>
-                  <p className="text-[12.5px] font-black text-money">✓ 다음 주도 차지함</p>
-                  <p className="text-[10.5px] text-muted-foreground font-semibold mt-0.5">
-                    {s.club_name} · 다음 주 파티까지 자동으로 올라가요
-                  </p>
-                </>
-              ) : s.next_holder_id ? (
-                <>
-                  <p className="text-[12.5px] font-black text-foreground">다음 주는 다른 파트너가 잡았어요</p>
-                  <p className="text-[10.5px] text-muted-foreground font-semibold mt-0.5">
-                    {s.club_name} · {s.next_holder_name ?? "다른 파트너"}
-                  </p>
-                </>
-              ) : (
-                <p className="text-[10.5px] text-muted-foreground font-semibold">
-                  {MIN_DOWS_FOR_NEXT_WEEK}일 이상 등록하면 다음주도 미리 잡을 수 있어요
-                </p>
-              )}
-            </div>
-            {s.next_is_mine ? (
-              <button
-                type="button"
-                disabled={claiming === s.club_id || !s.next_slot_id}
-                onClick={() => s.next_slot_id && releaseNextWeek(s.next_slot_id, s.club_id)}
-                className="shrink-0 h-8 px-3 rounded-full bg-muted text-muted-foreground text-[11.5px] font-bold hover:text-red-400 disabled:opacity-40 transition-colors"
-              >
-                해제
-              </button>
-            ) : !s.next_holder_id ? (
-              <button
-                type="button"
-                disabled={claiming === s.club_id || !canClaim}
-                onClick={() => claimNextWeek(s.club_id)}
-                className="shrink-0 h-8 px-3 rounded-full bg-amber-500 text-black text-[12px] font-black active:scale-95 transition disabled:opacity-40"
-              >
-                {claiming === s.club_id ? "잡는 중" : "다음 주도 차지하기"}
-              </button>
-            ) : null}
-          </div>
-        );
-      })}
 
       {/* 분류 필터 — 개수와 무관하게 한 줄에 균등 분할. 오른쪽 폴더 버튼에서 순서·삭제 */}
       {!loading && filterTabs.length > 1 && (
@@ -1325,9 +1354,15 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       {loading ? (
         <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
       ) : templates.length === 0 ? (
-        <p className="text-center text-muted-foreground text-[12.5px] py-6">
-          자주 쓰는 세팅을 만들어두면 요일만 골라 계속 자동으로 올릴 수 있어요.
-        </p>
+        <div className="text-center py-6">
+          <button
+            type="button"
+            onClick={openCreateWithPromo}
+            className="text-muted-foreground hover:text-foreground text-[12.5px] underline underline-offset-2 transition-colors"
+          >
+            카톡에 올리던 문구로 바로 생성할 수 있어요
+          </button>
+        </div>
       ) : (
         <div className="rounded-xl border border-border divide-y divide-border">
           {visibleTemplates.map((t, idx) => {
@@ -1860,7 +1895,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
         onClick={openCreate}
         className="w-full h-12 flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl active:scale-[0.98] transition-transform"
       >
-        <span className="text-[18px] leading-none">+</span> 세팅 추가
+        <span className="text-[18px] leading-none">+</span> 조각 세팅하기
       </button>
       {hasAnySlot && (
         <Link

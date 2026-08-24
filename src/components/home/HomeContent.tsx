@@ -23,6 +23,7 @@ import { HomePuzzleCarousel } from "@/components/home/HomePuzzleCarousel";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { ShotCarousel } from "@/components/chat/ShotCarousel";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
+import { CouponHomeStrip } from "@/components/home/CouponHomeStrip";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
 import { ServiceUpdateSheet } from "@/components/home/ServiceUpdateSheet";
@@ -910,6 +911,10 @@ export function HomeContent({
                 <GuestSignMdCta />
               </div>
             )}
+            {/* 쿠폰 스트립 — 활성 쿠폰 0건이면 자체적으로 렌더 안 함 (Migration 539) */}
+            <div className="mt-3">
+              <CouponHomeStrip />
+            </div>
           </div>
 
           {/* ── LIVE — 고정헤더 바로 아래 (핵심: 실시간 클럽 분위기).

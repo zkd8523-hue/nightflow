@@ -18,7 +18,8 @@ export type GuideFlag =
   | "chat_update_v1_seen"
   | "price_range_onboarding_v1_seen"
   | "share_guide_seen"
-  | "md_onboarding_areas_seen";
+  | "md_onboarding_areas_seen"
+  | "coupon_guide_seen";
 
 const localKey = (flag: GuideFlag, userId: string) => `nf_guide:${flag}:${userId}`;
 

@@ -96,6 +96,9 @@ export default function MainLayout({
   // 고객 문의 채팅도 자체 헤더로 풀스크린 (Migration 337)
   const isContact = pathname === "/contact";
 
+  // 쿠폰 사용 화면도 풀스크린 — 워터마크·실시간 시계로 전체화면 몰입감이 위조 방지의 핵심 (Migration 539)
+  const isCouponRedeem = !!pathname && /^\/my-coupons\/.+\/use$/.test(pathname);
+
   // Vision은 풀스크린 매니페스토 — 헤더/푸터/바텀네비 없이 단독 노출
   const isVisionPage = pathname === "/vision";
 
@@ -105,10 +108,10 @@ export default function MainLayout({
   // useChatComposerStore로 네비를 숨겨 키보드와 겹치지 않게 한다.
   const isChatRoom = isMessageDetail || isPartyChat || isDmRoom || isContact;
 
-  // 헤더/푸터를 숨기는 풀스크린 모드 (클럽지도 + Vision + iframe 임베드 + 외국인 트랙 + 채팅방)
-  const isChromeless = isClubMapView || isVisionPage || isEmbedded || isForeigner || isChatRoom;
-  // 바텀네비는 채팅방에서도 노출 (지도/Vision/임베드/외국인 트랙에서만 숨김)
-  const hideBottomNav = isClubMapView || isVisionPage || isEmbedded || isForeigner;
+  // 헤더/푸터를 숨기는 풀스크린 모드 (클럽지도 + Vision + iframe 임베드 + 외국인 트랙 + 채팅방 + 쿠폰 사용화면)
+  const isChromeless = isClubMapView || isVisionPage || isEmbedded || isForeigner || isChatRoom || isCouponRedeem;
+  // 바텀네비는 채팅방에서도 노출 (지도/Vision/임베드/외국인 트랙/쿠폰 사용화면에서만 숨김)
+  const hideBottomNav = isClubMapView || isVisionPage || isEmbedded || isForeigner || isCouponRedeem;
 
   return (
     <PullToRefresh onRefresh={handleRefresh} disabled={isChatPage}>
