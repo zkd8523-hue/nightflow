@@ -11,12 +11,9 @@ import { MDAuctionCard } from "./MDAuctionCard";
 import { AcceptedPuzzleVisitCard } from "./AcceptedPuzzleVisitCard";
 import { AreaOnboardingSheet } from "./AreaOnboardingSheet";
 import dynamic from "next/dynamic";
-// 핫딜/게스트간판 매니저는 각각 1000줄 규모 + 토글 시에만 렌더되는 인라인 영역이라
+// 게스트간판 매니저는 1000줄 규모 + 토글 시에만 렌더되는 인라인 영역이라
 // next/dynamic 으로 분리 — MD 대시보드 진입 시 초기 번들에서 제외, 토글 시점에 로드.
-const HotdealNowManager = dynamic(
-  () => import("./HotdealNowManager").then((m) => m.HotdealNowManager),
-  { loading: () => <div className="animate-pulse bg-muted/50 h-40 rounded-xl" /> }
-);
+// (HotdealNowManager는 핫딜 폐기로 제거)
 const HotdealSlotBoard = dynamic(
   () => import("./HotdealSlotBoard").then((m) => m.HotdealSlotBoard),
   { loading: () => <div className="animate-pulse bg-muted/50 h-40 rounded-xl" /> }
@@ -25,7 +22,7 @@ const ShareSlotBoard = dynamic(
   () => import("./ShareSlotBoard").then((m) => m.ShareSlotBoard),
   { loading: () => <div className="animate-pulse bg-muted/50 h-40 rounded-xl" /> }
 );
-import type { Auction, User, Club, PuzzleOffer, DailyHotdeal, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan } from "@/types/database";
+import type { Auction, User, Club, PuzzleOffer, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan } from "@/types/database";
 import { ShareOptionManager } from "@/components/md/ShareOptionManager";
 import { ShareWeekdayPlanBoard } from "@/components/md/ShareWeekdayPlanBoard";
 import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
@@ -71,13 +68,6 @@ interface MDPuzzleOffer extends PuzzleOffer {
     club?: Pick<import("@/types/database").Club, "id" | "name" | "area" | "drink_menu_url" | "drink_menu_urls" | "drink_menu_updated_at"> | null;
 }
 
-interface HotdealClubLite {
-    id: string;
-    name: string;
-    area: string | null;
-    thumbnail_url: string | null;
-    floor_plan_url: string | null;
-}
 
 interface GuestSignClubLite {
     id: string;
@@ -132,8 +122,6 @@ interface MDDashboardProps {
     initialPuzzleOffers?: MDPuzzleOffer[];
     /** leader_chat_started_at 오퍼 중 MD 본인이 이미 답장한 오퍼 id 목록 */
     mdRepliedOfferIds?: string[];
-    hotdealClubs?: HotdealClubLite[];
-    initialMyHotdeals?: DailyHotdeal[];
     guestSignClubs?: GuestSignClubLite[];
     guestSignSlots?: GuestSignSlot[];
     guestSignMySlots?: GuestSignMySlot[];
@@ -154,8 +142,6 @@ export function MDDashboard({
     initialTopBids = {},
     initialPuzzleOffers = [],
     mdRepliedOfferIds = [],
-    hotdealClubs = [],
-    initialMyHotdeals = [],
     guestSignClubs = [],
     guestSignSlots = [],
     guestSignMySlots = [],
@@ -187,8 +173,7 @@ export function MDDashboard({
     const [openOfferDetailsId, setOpenOfferDetailsId] = useState<string | null>(null);
     // prop은 서버 스냅샷이라 markSeen 후에도 갱신 안 됨 → 로컬 상태로 "봤음"을 즉시 반영해 재노출 차단
     const [areaOnboardingSeen, setAreaOnboardingSeen] = useState(user.md_onboarding_areas_seen);
-    const [hotdealSheetOpen, setHotdealSheetOpen] = useState(false);
-    const [hotdealInlineOpen, setHotdealInlineOpen] = useState(false);
+    // 핫딜 Sheet/인라인 state 제거 — 핫딜(daily_hotdeals) 폐기
     // 홈 CTA(?section=guestsign / share)로 진입 시 해당 탭을 열어준다.
     const [guestSignSheetOpen, setGuestSignSheetOpen] = useState(false);
     // 소속 클럽의 이번 주 게스트 간판이 비어있는지(=차지 안 됐고, 차지 가능한 클럽이 있는지).
@@ -574,7 +559,6 @@ export function MDDashboard({
                         e.preventDefault();
                         e.stopPropagation();
                         setGuestSignInlineOpen((v) => !v);
-                        setHotdealInlineOpen(false);
                         setShareInlineOpen(false);
                     }}
                     className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
@@ -582,64 +566,34 @@ export function MDDashboard({
                     }`}
                 >
                     <span className="text-[18px] leading-none">🎫</span>
-                    <span className="text-[12px] font-black text-foreground">게스트 간판</span>
-                    <span className="text-[12px] font-bold text-muted-foreground">(매주 월 18시 오픈)</span>
+                    <span className="text-[14px] font-black text-foreground">게스트 간판</span>
+                    <span className="text-[12px] font-bold text-muted-foreground">매주 월 18시 오픈</span>
                 </button>
-                {/* 파티 | 핫딜 — 반반 */}
-                <div className="grid grid-cols-2 gap-2">
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setShareInlineOpen((v) => !v);
-                            setGuestSignInlineOpen(false);
-                            setHotdealInlineOpen(false);
-                        }}
-                        className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
-                            shareInlineOpen ? "border-green-500" : "border-border"
-                        }`}
-                    >
-                        <span className="text-[20px] leading-none">🎉</span>
-                        <span className="text-[12px] font-black text-foreground">파티(조각)</span>
-                        {/* 파티 운영권도 게스트 간판과 같은 주 단위 선점(Migration 514) */}
-                        <span className="text-[10.5px] font-bold text-muted-foreground leading-none">(매주 월 18시 오픈)</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setHotdealInlineOpen((v) => !v);
-                            setGuestSignInlineOpen(false);
-                            setShareInlineOpen(false);
-                        }}
-                        className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
-                            hotdealInlineOpen ? "border-amber-500" : "border-border"
-                        }`}
-                    >
-                        <span className="text-[20px] leading-none">🔥</span>
-                        <span className="text-[12px] font-black text-foreground">핫딜</span>
-                    </button>
-                </div>
+                {/* 파티 — 핫딜 버튼 제거로 전체 폭 */}
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShareInlineOpen((v) => !v);
+                        setGuestSignInlineOpen(false);
+                    }}
+                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
+                        shareInlineOpen ? "border-green-500" : "border-border"
+                    }`}
+                >
+                    <span className="text-[18px] leading-none">🎉</span>
+                    <span className="text-[14px] font-black text-foreground">파티(조각)</span>
+                    {/* 파티 운영권도 게스트 간판과 같은 주 단위 선점(Migration 514) */}
+                    <span className="text-[12px] font-bold text-muted-foreground">매주 월 18시 오픈</span>
+                </button>
                 </div>
                 <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 bg-background text-[12px] font-black text-muted-foreground whitespace-nowrap">
                     파트너 도구
                 </span>
             </div>
 
-            {/* Hot Deal 인라인 등록 영역 */}
-            {hotdealInlineOpen && (
-                <div className="px-4 mt-3">
-                    <div className="bg-card border border-amber-500/30 rounded-2xl p-4">
-                        <HotdealNowManager
-                            clubs={hotdealClubs}
-                            initialMyHotdeals={initialMyHotdeals}
-                            embedded
-                        />
-                    </div>
-                </div>
-            )}
+            {/* Hot Deal 인라인 등록 영역 제거 — 핫딜(daily_hotdeals) 폐기 */}
 
             {/* 게스트 간판 인라인 영역 */}
             {guestSignInlineOpen && guestSignThisWeekISO && guestSignNextWeekISO && (
@@ -1068,25 +1022,7 @@ export function MDDashboard({
                 />
             )}
 
-            {/* Hot Deal 등록 Sheet (페이지 이동 없이 대시보드 내에서 열림) */}
-            <Sheet open={hotdealSheetOpen} onOpenChange={setHotdealSheetOpen}>
-                <SheetContent
-                    side="bottom"
-                    className="bg-background border-border rounded-t-3xl !h-[92vh] !max-h-[92vh] !gap-0 !p-0 !flex !flex-col"
-                    showCloseButton
-                >
-                    <SheetHeader className="sr-only">
-                        <SheetTitle>Hot Deal 등록</SheetTitle>
-                    </SheetHeader>
-                    <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-6 pb-12">
-                        <HotdealNowManager
-                            clubs={hotdealClubs}
-                            initialMyHotdeals={initialMyHotdeals}
-                            embedded
-                        />
-                    </div>
-                </SheetContent>
-            </Sheet>
+            {/* Hot Deal 등록 Sheet 제거 — 핫딜(daily_hotdeals) 폐기 */}
 
             {/* 게스트 간판 Sheet */}
             <Sheet open={guestSignSheetOpen} onOpenChange={setGuestSignSheetOpen}>

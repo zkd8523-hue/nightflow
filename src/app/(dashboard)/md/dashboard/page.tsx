@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { MDDashboard } from "@/components/md/MDDashboard";
 
-import type { User, Auction, Club, DailyHotdeal, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan } from "@/types/database";
+import type { User, Auction, Club, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -156,7 +156,6 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
     const [
         { data: auctions },
         { data: puzzleOffers, error: puzzleOffersError },
-        { data: myHotdeals },
         { data: slotRows },
         { data: mySlotRows },
         { data: shareSlotRows },
@@ -177,13 +176,6 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
             .eq("md_id", userId)
             .in("status", ["pending", "accepted"])
             .order("created_at", { ascending: false }),
-        supabase
-            .from("daily_hotdeals")
-            .select("*, club:clubs(id, name, area, thumbnail_url)")
-            .eq("md_id", userId)
-            .neq("status", "expired")
-            .order("created_at", { ascending: false })
-            .limit(20),
         slotClubIds.length
             ? supabase
                   .from("weekly_hotdeal_slots")
@@ -317,8 +309,6 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 initialTopBids={topBids}
                 initialPuzzleOffers={puzzleOffers || []}
                 mdRepliedOfferIds={mdRepliedOfferIds}
-                hotdealClubs={hotdealClubs}
-                initialMyHotdeals={(myHotdeals ?? []) as unknown as DailyHotdeal[]}
                 guestSignClubs={hotdealClubs.map((c) => ({
                     id: c.id,
                     name: c.name,

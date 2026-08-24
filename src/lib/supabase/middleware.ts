@@ -21,14 +21,14 @@ const MD_DASHBOARD_PREFIXES = [
   "/md/dashboard",
   "/md/floor-plan",
   "/md/hotdeal",
-  "/md/hotdeal-now",
   "/md/settings",
   "/md/share-slots",
   "/md/transactions",
   "/md/vip",
 ];
 
-// "/md/hotdeal"이 "/md/hotdeal-now"를 삼키지 않도록 정확 일치 또는 하위 경로만 매칭
+// 접두사가 다른 경로를 삼키지 않도록 정확 일치 또는 하위 경로만 매칭
+// ("/md/hotdeal" = 게스트 간판. 핫딜 폐기로 "/md/hotdeal-now"는 제거됨)
 const isMdDashboardPath = (pathname: string) =>
   MD_DASHBOARD_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)

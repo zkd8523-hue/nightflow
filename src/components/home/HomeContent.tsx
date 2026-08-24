@@ -22,9 +22,7 @@ import { getPublicIncludes } from "@/lib/utils/liquor";
 import { HomePuzzleCarousel } from "@/components/home/HomePuzzleCarousel";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { ShotCarousel } from "@/components/chat/ShotCarousel";
-import { HotdealHomeSection } from "@/components/home/HotdealHomeSection";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
-import { HotdealMdCta } from "@/components/home/HotdealMdCta";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
 import { PartyOnboardingSheet } from "@/components/home/PartyOnboardingSheet";
@@ -1126,17 +1124,8 @@ export function HomeContent({
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>
 
-        {/* HOT DEAL 섹션 + 이하 전체 배경 */}
-        {/* pb는 <main>의 pb-16(BottomNav 가림 방지)과 별개로, 섹션 끝과 푸터 사이 최소 간격만. */}
-        <div className="-mx-4 px-4 pt-3 pb-6 bg-section-alt">
-          <HotdealHomeSection />
-          {/* MD 전용 행동 유도 CTA */}
-          {isMdOrAdmin && (
-            <div className="mt-3">
-              <HotdealMdCta />
-            </div>
-          )}
-        </div>
+        {/* 🔥 Hot Deal Tonight 섹션 + MD 유도 CTA 제거 — 핫딜(daily_hotdeals) 폐기.
+            게스트 간판("오늘 어디갈래?" = ClubBenefitSection)은 홈 최상단에 그대로 유지된다. */}
 
         {/* MD 파트너 승인 축하 Sheet, 깃발 CTA Sheet는 풀 모드와 공유 */}
         {renderHomeSheets()}

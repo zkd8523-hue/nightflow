@@ -27,7 +27,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/`, lastModified: now, changeFrequency: "hourly", priority: 1.0 },
     { url: `${BASE_URL}/clubs`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
-    { url: `${BASE_URL}/hotdeal`, lastModified: now, changeFrequency: "hourly", priority: 0.9 },
     ...SHARE_AREAS.map((area) => ({
       url: `${BASE_URL}/share/${encodeURIComponent(area)}`,
       lastModified: now,
@@ -143,7 +142,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const nowIso = new Date().toISOString();
     // 테스트/운영자 데이터는 sitemap에서 제외 — 검색엔진 색인 오염 방지.
     // 클럽: is_test=false / 깃발: leader(users).is_test=false (club_id 없으므로 leader 기준)
-    const [auctionsRes, clubsRes, puzzlesRes, hotdealsRes, mdsRes] = await Promise.all([
+    const [auctionsRes, clubsRes, puzzlesRes, mdsRes] = await Promise.all([
       supabase
         .from("auctions")
         .select("id, updated_at, status, club:clubs!inner(is_test)")
@@ -169,13 +168,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq("public_user_profiles.is_test", false)
         .eq("status", "open")
         .gt("expires_at", new Date().toISOString())
-        .order("updated_at", { ascending: false })
-        .limit(500),
-      supabase
-        .from("daily_hotdeals")
-        .select("id, updated_at, ends_at, club:clubs!inner(is_test)")
-        .eq("clubs.is_test", false)
-        .gt("ends_at", nowIso)
         .order("updated_at", { ascending: false })
         .limit(500),
       // 승인 파트너 공개 프로필 — 검색 유입용. 테스트 계정 제외.
@@ -236,12 +228,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    const hotdealRoutes: MetadataRoute.Sitemap = (hotdealsRes.data ?? []).map((h) => ({
-      url: `${BASE_URL}/hotdeal/${h.id}`,
-      lastModified: h.updated_at ? new Date(h.updated_at) : now,
-      changeFrequency: "hourly" as const,
-      priority: 0.8,
-    }));
+    // hotdealRoutes 제거 — /hotdeal 라우트 폐기(색인된 URL이 404가 되지 않도록 sitemap에서도 제외)
 
     const mdRoutes: MetadataRoute.Sitemap = (mdsRes.data ?? [])
       .filter((m) => m.id)
@@ -258,7 +245,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...clubRoutes,
       ...enClubRoutes,
       ...puzzleRoutes,
-      ...hotdealRoutes,
       ...mdRoutes,
     ];
   } catch {

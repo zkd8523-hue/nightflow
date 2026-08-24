@@ -50,7 +50,7 @@ export function ClubBenefitSection() {
     (async () => {
       const thisWeekISO = getActiveWeekStartISO();
 
-      const [slotsRes, clubsRes, hotdealsRes, favoritesRes] = await Promise.all([
+      const [slotsRes, clubsRes, favoritesRes] = await Promise.all([
         supabase
           .from("weekly_hotdeal_slots")
           .select("club_id, benefits_by_dow, expires_at")
@@ -59,12 +59,6 @@ export function ClubBenefitSection() {
           .from("clubs")
           .select("id, name, area, thumbnail_url, operating_hours, tags, seed_favorite_count, club_partners(md_id)")
           .is("deleted_at", null),
-        // Hot Deal Now에 노출되는 클럽은 제외하기 위해 핫딜도 조회
-        supabase
-          .from("daily_hotdeals")
-          .select("club_id")
-          .eq("status", "active")
-          .gt("ends_at", new Date().toISOString()),
         // 클럽별 좋아요(찜) 카운트 — 실제 row + seed_favorite_count 합산
         supabase
           .from("user_favorite_clubs")
@@ -90,13 +84,6 @@ export function ClubBenefitSection() {
         }
       }
 
-      // Hot Deal Now에 노출되는 클럽 ID 집합
-      // - 활성 핫딜이 1개 이상이면 Hot Deal Now는 "핫딜 있는 클럽만" 보임 → 그 클럽들 제외
-      // - 핫딜이 0개면 Hot Deal Now는 폴백으로 "MD 카운트 상위" 노출 → 상위 3개 정도를 제외
-      const activeHotdealClubIds = new Set(
-        ((hotdealsRes.data ?? []) as Array<{ club_id: string }>).map((d) => d.club_id)
-      );
-
       type ClubRow = {
         id: string;
         name: string;
@@ -119,39 +106,9 @@ export function ClubBenefitSection() {
       }
       const filtered = SHOW_TEST_CLUBS ? rows : rows.filter((c) => !HIDDEN_PATTERN.test(c.name));
 
-      // Hot Deal Tonight가 점유하는 클럽 결정
-      let hotdealOccupied: Set<string>;
-      if (activeHotdealClubIds.size > 0) {
-        hotdealOccupied = activeHotdealClubIds;
-      } else {
-        // 폴백 분기: 핫딜 0개일 때 Hot Deal Tonight은
-        //   "게스트 간판(오늘 혜택) 없는 클럽 우선(MD desc) → 간판 클럽 후순위" 로
-        //   최대 MAX_CARDS개 노출 (HotdealHomeSection 폴백과 동일 정렬).
-        //   그 클럽들을 여기서 제외해 두 섹션 중복을 막는다.
-        //   (간판 클럽은 아래 remaining에서 어차피 제외 면제되므로 실질 영향 없음)
-        const fallbackOrder = [...filtered].sort((a, b) => {
-          const at = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(a.name) ? 1 : 0;
-          const bt = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(b.name) ? 1 : 0;
-          if (at !== bt) return bt - at;
-          const ab = slotMap.has(a.id) ? 1 : 0; // 게스트 간판 클럽은 후순위
-          const bb = slotMap.has(b.id) ? 1 : 0;
-          if (ab !== bb) return ab - bb;
-          const ma = a.club_partners?.length ?? 0;
-          const mb = b.club_partners?.length ?? 0;
-          if (mb !== ma) return mb - ma;
-          return a.name.localeCompare(b.name);
-        });
-        hotdealOccupied = new Set(fallbackOrder.slice(0, MAX_CARDS).map((c) => c.id));
-      }
-
-      // Hot Deal Tonight 점유 클럽 제외. 단:
-      //  - 게스트 간판(오늘 혜택) 클럽은 무조건 노출 (제외 면제 → 항상 우선노출)
-      //  - 비프로덕션 테스트 클럽도 면제 → 두 섹션 모두 노출
-      const remaining = filtered.filter((c) => {
-        if (slotMap.has(c.id)) return true;
-        if (SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(c.name)) return true;
-        return !hotdealOccupied.has(c.id);
-      });
+      // Hot Deal Tonight 중복 제거 로직 제거 — 핫딜(daily_hotdeals) 폐기로 점유 클럽 개념이 사라짐.
+      // 이제 모든 클럽이 "오늘 어디갈래?" 후보가 된다.
+      const remaining = filtered;
 
       // 셔플 헬퍼 (Fisher-Yates) — 그룹 내 순서를 새로고침마다 랜덤화
       const shuffle = <T,>(arr: T[]): T[] => {
@@ -223,19 +180,16 @@ export function ClubBenefitSection() {
 
   return (
     <section className="space-y-2">
-      <div className="flex items-baseline justify-between px-1">
+      <Link href="/clubs?view=list" className="flex items-baseline justify-between px-1">
         <h2 className="text-[18px] font-black text-foreground flex items-center gap-1.5 tracking-tight">
           <span className="text-[18px]">🥂</span>
           오늘 어디갈래?
         </h2>
-        <Link
-          href="/clubs?view=list"
-          className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
-        >
+        <span className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5">
           더보기
           <ChevronRight className="w-3 h-3" />
-        </Link>
-      </div>
+        </span>
+      </Link>
 
       <div
         data-no-pull-refresh

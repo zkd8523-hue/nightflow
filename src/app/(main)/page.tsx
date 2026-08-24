@@ -21,13 +21,12 @@ export default async function HomePage() {
 
   const nowIso = new Date().toISOString();
 
-  // 서로 독립적인 5개 SSR 쿼리를 병렬 실행 — 직렬 await(5 RTT) → 1 RTT 로 단축.
+  // 서로 독립적인 4개 SSR 쿼리를 병렬 실행 — 직렬 await(4 RTT) → 1 RTT 로 단축.
   // offerCount 만 puzzles 결과에 의존하므로 이 그룹 이후 순차 처리.
   const [
     { data: shareAuctions },
     { data: legacyAuctions },
     { data: rawClubs },
-    { data: ssrHotdeals },
     { data: puzzlesRaw },
   ] = await Promise.all([
     // 조각(share) 매물 조회 — 메인 카탈로그 기본
@@ -76,18 +75,6 @@ export default async function HomePage() {
         .is("deleted_at", null)
         .order("name"),
       ""
-    ),
-    // SEO용: 오늘 진행 중인 핫딜 SSR 로드 (sr-only 본문에만 사용)
-    // hideTestData(clubs): 프로덕션에서만 테스트 클럽 핫딜 제외
-    hideTestData(
-      supabase
-        .from("daily_hotdeals")
-        .select("id, title, price, original_price, club:clubs!inner(name, area)")
-        .eq("status", "active")
-        .gt("ends_at", nowIso)
-        .order("ends_at", { ascending: true })
-        .limit(20),
-      "clubs"
     ),
     // 오픈/검토중 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
     // expires_at > now() 가드를 selecting에도 적용 — cron 지연/실패 시 만료된 검토중이 무기한 노출되는 문제 차단
@@ -161,9 +148,6 @@ export default async function HomePage() {
   });
   const ssrActiveCount = activeAuctions.length;
   const ssrPuzzleCount = puzzles.length;
-  const ssrHotdealCount = (ssrHotdeals ?? []).length;
-  const formatPrice = (n: number | null | undefined) =>
-    n ? `${Math.round(n / 10000)}만원` : "";
 
   return (
     <div className="container mx-auto max-w-lg px-4 pt-2 pb-4">
@@ -184,31 +168,9 @@ export default async function HomePage() {
         <h2>지금 나플에서 진행 중인 클럽 예약</h2>
         <p>
           현재 나플에는 클럽 테이블 예약 {ssrActiveCount}건,
-          파티(합석) 일행 모집 {ssrPuzzleCount}건, 오늘의 클럽 핫딜·무료입장 {ssrHotdealCount}건이
-          등록되어 있습니다.
+          파티(합석) 일행 모집 {ssrPuzzleCount}건이 등록되어 있습니다.
         </p>
-        {ssrHotdealCount > 0 && (
-          <>
-            <h2>오늘 어디갈래? - 진행 중인 클럽 핫딜</h2>
-            <ul>
-              {(ssrHotdeals ?? []).slice(0, 20).map((h) => {
-                const club = h.club as unknown as { name?: string; area?: string | null } | null;
-                const area = club?.area ?? "";
-                const clubName = club?.name ?? "";
-                const areaPrefix = area ? `${area} ` : "";
-                const priceLabel = formatPrice(h.price);
-                const originalLabel = formatPrice(h.original_price);
-                return (
-                  <li key={h.id}>
-                    {areaPrefix}{clubName} 핫딜 - {h.title ?? ""}
-                    {priceLabel ? ` ${priceLabel}` : ""}
-                    {originalLabel ? ` (정가 ${originalLabel})` : ""}
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
+        {/* 핫딜 SEO 목록 제거 — 핫딜(daily_hotdeals) 폐기 */}
         <h2>나플에서 만날 수 있는 클럽</h2>
         <ul>
           {ssrClubList.map((label, i) => (
