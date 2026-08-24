@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Ticket } from "lucide-react";
 import { trackEvent } from "@/lib/analytics/events";
 import { isInAppBrowser } from "@/lib/utils/browser";
 
@@ -70,21 +69,12 @@ export function ServiceUpdateSheet({ show }: { show: boolean }) {
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-1">
-          <div className="flex gap-3 bg-amber-500/[0.07] border border-amber-500/40 rounded-2xl p-4">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
-              <Ticket className="w-5 h-5 text-brand-amber" />
-            </div>
-            <div className="flex-1 min-w-0 self-center">
-              <p className="text-[13px] text-muted-foreground font-medium leading-relaxed break-keep">
-                <span className="text-foreground/90 font-semibold">
-                  프리패스, 무료입장, 프리드링크와 할인 쿠폰
-                </span>{" "}
-                중심으로 변경되며 일행을 모아 함께 가는 파티는 계속 이용하실 수 있어요.
-              </p>
-            </div>
-          </div>
-        </div>
+        <p className="mt-1 text-[14px] text-muted-foreground font-medium leading-relaxed break-keep">
+          <span className="text-foreground/90 font-semibold">
+            프리패스, 무료입장, 프리드링크와 할인 쿠폰
+          </span>{" "}
+          중심으로 변경되며 일행을 모아 함께 가는 파티는 계속 이용하실 수 있어요.
+        </p>
 
         <Link
           href="/clubs"
