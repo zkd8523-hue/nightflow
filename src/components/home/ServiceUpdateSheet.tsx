@@ -63,7 +63,7 @@ export function ServiceUpdateSheet({ show }: { show: boolean }) {
       >
         <SheetHeader className="px-0">
           <SheetTitle className="text-[20px] font-black text-foreground text-left tracking-tight">
-            나플이 더 단순해졌어요
+            깃발 서비스가 종료됐어요
           </SheetTitle>
           <SheetDescription className="sr-only">
             깃발 서비스 종료 및 혜택·쿠폰 중심 개편 안내
@@ -75,11 +75,7 @@ export function ServiceUpdateSheet({ show }: { show: boolean }) {
             <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
               <Ticket className="w-5 h-5 text-brand-amber" />
             </div>
-            <div className="flex-1 min-w-0 space-y-1.5">
-              <h3 className="text-[15px] font-black text-foreground flex items-center gap-1.5">
-                <span aria-hidden>🏳️</span>
-                깃발 서비스가 종료됐어요
-              </h3>
+            <div className="flex-1 min-w-0 self-center">
               <p className="text-[13px] text-muted-foreground font-medium leading-relaxed break-keep">
                 <span className="text-foreground/90 font-semibold">
                   프리패스, 무료입장, 프리드링크와 할인 쿠폰
