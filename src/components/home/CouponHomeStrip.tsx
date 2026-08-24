@@ -31,10 +31,11 @@ export function CouponHomeStrip() {
           .in("status", ["active", "sold_out"])
           .gt("redeem_ends_at", new Date().toISOString())
           .order("redeem_ends_at", { ascending: true })
-          .limit(MAX_CARDS),
+          .limit(MAX_CARDS * 3),
         "clubs"
       );
-      if (!cancelled) setCoupons(excludeTestClubCoupons((data ?? []) as unknown as CouponIssue[]));
+      const filtered = excludeTestClubCoupons((data ?? []) as unknown as CouponIssue[]).slice(0, MAX_CARDS);
+      if (!cancelled) setCoupons(filtered);
     })();
     return () => { cancelled = true; };
   }, [supabase]);
