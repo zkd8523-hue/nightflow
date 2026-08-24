@@ -64,8 +64,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     : `${name} - ${area ? `${area} ` : ""}클럽 MD·파트너 | 테이블 예약`;
 
   const description = clubNames
-    ? `${name} - ${clubNames}${area ? ` (${area})` : ""} 클럽 MD. 나이트플로우 공식 파트너로 테이블·게스트 문의를 받습니다. 원하는 예산으로 깃발 꽂으면 조건을 제안받을 수 있어요.`
-    : `${name} - ${area ? `${area} ` : ""}클럽 MD. 나이트플로우 공식 파트너로 테이블·게스트 문의를 받습니다. 원하는 예산으로 깃발 꽂으면 조건을 제안받을 수 있어요.`;
+    ? `${name} - ${clubNames}${area ? ` (${area})` : ""} 클럽 MD. 나이트플로우 공식 파트너로 테이블·게스트 문의를 받습니다. 이번 주 무료입장·프리드링크 게스트 간판 혜택을 확인하고 바로 문의하세요.`
+    : `${name} - ${area ? `${area} ` : ""}클럽 MD. 나이트플로우 공식 파트너로 테이블·게스트 문의를 받습니다. 이번 주 무료입장·프리드링크 게스트 간판 혜택을 확인하고 바로 문의하세요.`;
 
   const url = `https://nightflow.kr/u/${userId}`;
 

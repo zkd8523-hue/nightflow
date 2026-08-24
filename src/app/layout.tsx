@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     template: "%s | 나플",
   },
   description:
-    "강남·홍대·이태원 클럽 테이블 예약, 깃발 꽂고 여러 클럽 조건 비교, 무료입장 게스트·영업시간·주대 정보 한 곳에. 나플 | 나이트플로우.",
+    "강남·홍대·이태원 클럽 테이블 가격·주대·영업시간부터 무료입장·프리드링크 게스트 간판, 파티(합석) 일행 모집까지 한 곳에. 나플 | 나이트플로우.",
   applicationName: "나플",
   keywords: [
     // 브랜드 (3)
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     "클럽 지도",
     // 핵심 기능 (7)
     "클럽 테이블 예약",
-    "클럽 깃발",
+    "클럽 무료입장 게스트",
     "클럽 파티",
     "클럽 무료입장",
     "클럽 게스트",
@@ -90,7 +90,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "나플 | 나이트플로우 - 강남·홍대·이태원 클럽 정보",
     description:
-      "강남·홍대·이태원 클럽 테이블 예약, 깃발 꽂고 여러 클럽 조건 비교, 무료입장 게스트·영업시간·주대 정보 한 곳에.",
+      "강남·홍대·이태원 클럽 정보와 무료입장·프리드링크 게스트 간판, 파티(합석)까지 한 곳에.",
     url: "https://nightflow.kr",
     siteName: "나플",
     locale: "ko_KR",
@@ -108,7 +108,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "나플 | 나이트플로우 - 강남·홍대·이태원 클럽 정보",
     description:
-      "강남·홍대·이태원 클럽 테이블 예약, 깃발 꽂고 여러 클럽 조건 비교, 무료입장 게스트·영업시간·주대 정보 한 곳에.",
+      "강남·홍대·이태원 클럽 정보와 무료입장·프리드링크 게스트 간판, 파티(합석)까지 한 곳에.",
     images: ["/og-image.png"],
   },
   robots: {

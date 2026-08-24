@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${headName} - 클럽 테이블 가격·예약`,
-    description: `${headName}${descAliases} 테이블 가격·주대·영업시간·드레스코드 확인. 깃발 꽂으면 여러 클럽 MD가 조건 제안, 무료입장 게스트까지 나플에서 한 번에.`,
+    description: `${headName}${descAliases} 테이블 가격·주대·영업시간·드레스코드 확인. 무료입장·프리드링크 게스트 간판 혜택까지 나플에서 한 번에.`,
     keywords: [
       club.name,
       ...aliases,
@@ -69,7 +69,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     alternates: { canonical: `https://nightflow.kr/clubs/${id}` },
     openGraph: {
       title: `${headName} - 클럽 테이블 가격·예약·무료입장`,
-      description: `${headName}${descAliases} 테이블 가격·주대·영업시간 확인, 깃발 꽂고 여러 클럽 조건 비교, 무료입장 게스트까지.`,
+      description: `${headName}${descAliases} 테이블 가격·주대·영업시간 확인, 무료입장·프리드링크 게스트 간판 혜택까지.`,
       url: `https://nightflow.kr/clubs/${id}`,
       type: "website",
       images: [{ url: "/og-image.png", width: 1200, height: 630 }],

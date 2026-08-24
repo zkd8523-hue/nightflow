@@ -5,12 +5,12 @@ import { ArrowLeft, Instagram, Sparkles, ArrowRight } from "lucide-react";
 export const metadata: Metadata = {
   title: "소개 - 강남·홍대 클럽 테이블 예약",
   description:
-    "나플은 전국 인기 클럽 테이블을 실시간 경매로 예약하는 서비스. 강남·홍대 클럽 파트너가 잔여 테이블을 올리면 회원이 입찰로 가격을 정해 예약합니다. 미션은 \"밤을 더 아름답게\".",
+    "나플은 강남·홍대·이태원 클럽 정보와 무료입장·프리드링크 게스트 간판, 파티(합석)를 한곳에 모은 클럽 플랫폼. 밤에 어디로 갈지 고르는 시간을 줄이는 게 목표입니다. 미션은 \"밤을 더 아름답게\".",
   alternates: { canonical: "https://nightflow.kr/vision" },
   openGraph: {
     title: "소개 - 강남·홍대 클럽 테이블 예약",
     description:
-      "나플은 전국 인기 클럽 테이블을 실시간 경매로 예약하는 서비스. 미션은 \"밤을 더 아름답게\".",
+      "나플은 클럽 정보·무료입장 게스트 간판·파티를 한곳에 모은 플랫폼. 미션은 \"밤을 더 아름답게\".",
     url: "https://nightflow.kr/vision",
     type: "website",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],

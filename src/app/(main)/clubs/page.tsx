@@ -13,12 +13,12 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: "전국 클럽 가이드 - 강남·홍대·이태원 클럽 정보 한눈에",
   description:
-    "우리나라 클럽 정보를 한눈에. 강남·홍대·이태원·부산·광주·대구 인기 클럽을 둘러보고, 예약 가능한 곳은 깃발로 바로 잡으세요.",
+    "우리나라 클럽 정보를 한눈에. 강남·홍대·이태원·부산·광주·대구 인기 클럽의 테이블 가격·주대·영업시간과 이번 주 무료입장·프리드링크 게스트 간판을 비교해보세요.",
   alternates: { canonical: "https://nightflow.kr/clubs" },
   openGraph: {
     title: "전국 클럽 가이드 - 강남·홍대·이태원 클럽 정보 한눈에",
     description:
-      "전국 인기 클럽 정보를 한눈에 비교. 마음에 드는 클럽은 깃발 한 번으로 예약.",
+      "전국 인기 클럽의 가격·영업시간·게스트 간판 혜택을 한눈에 비교. 나플.",
     url: "https://nightflow.kr/clubs",
     type: "website",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],

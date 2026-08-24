@@ -13,7 +13,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "나플 FAQ - 자주 묻는 질문 (나이트플로우)",
   description:
-    "나플 이용 가이드. 나플이 뭔지, 클럽 게스트·무료입장이 뭔지, 입찰 방법, 낙찰 후 파트너 연락 절차, 노쇼 정책, 본인인증 등 자주 묻는 질문을 한 곳에서 확인하세요.",
+    "나플 이용 가이드. 나플이 뭔지, 클럽 게스트·무료입장·프리드링크가 뭔지, 게스트 명단 등록 방법, 파티(합석) 이용법, 노쇼 정책, 본인인증 등 자주 묻는 질문을 한 곳에서 확인하세요.",
   alternates: { canonical: "https://nightflow.kr/faq" },
 };
 
@@ -22,11 +22,11 @@ export const metadata: Metadata = {
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
     q: "나플이 뭔가요?",
-    a: "나플은 나이트플로우(NightFlow)의 줄임말입니다. 강남·홍대 클럽 파트너가 잔여 테이블을 올리면, 회원들이 입찰로 가격을 정해서 예약하는 서비스예요.",
+    a: "나플은 나이트플로우(NightFlow)의 줄임말입니다. 강남·홍대·이태원 클럽의 테이블 가격·주대·영업시간 정보와 무료입장·프리드링크 게스트 간판 혜택을 모아 보여주고, 같이 갈 일행을 모으는 파티(합석)까지 한 곳에서 해결하는 클럽 플랫폼이에요.",
   },
   {
-    q: "퍼즐(클럽 파티)이 뭔가요?",
-    a: "퍼즐은 나이트플로우의 일행 모집 기능입니다. 흔히 '클럽 파티', '클럽 합석'이라고 부르는 기능으로, 같은 클럽에 갈 일행을 모집하거나 합류할 수 있습니다.",
+    q: "클럽 파티(합석)가 뭔가요?",
+    a: "파티는 나이트플로우의 일행 모집 기능입니다. 흔히 '클럽 파티', '클럽 합석'이라고 부르는 기능으로, 같은 클럽에 갈 일행을 모집하거나 이미 모집 중인 파티에 합류할 수 있습니다.",
   },
   {
     q: "클럽 게스트 / 무료입장이 뭔가요?",
@@ -38,7 +38,7 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   },
   {
     q: "클럽 부킹이 뭔가요?",
-    a: "클럽 부킹은 전통적인 한국 클럽 문화로 파트너가 테이블에 합석할 사람을 안내해주는 방식을 말합니다. 나플에서는 부킹 대신 테이블 경매·파티(합석)·게스트 간판 등 더 투명한 방식으로 같은 목적(테이블·일행 매칭)을 해결합니다.",
+    a: "클럽 부킹은 전통적인 한국 클럽 문화로 파트너가 테이블에 합석할 사람을 안내해주는 방식을 말합니다. 나플에서는 부킹 대신 게스트 간판(무료입장·프리드링크), 파티(합석), 테이블 예약 등 더 투명한 방식으로 같은 목적(테이블·일행 매칭)을 해결합니다.",
   },
   {
     q: "여성무료는 어떻게 받나요?",
@@ -98,7 +98,9 @@ export default function FAQPage() {
                                     <strong className="text-foreground">나플</strong>은 <strong className="text-foreground">나이트플로우(NightFlow)</strong>의 줄임말입니다.
                                 </p>
                                 <p className="mt-2">
-                                    강남·홍대 클럽 파트너가 잔여 테이블을 올리면, 회원들이 입찰로 가격을 정해서 예약하는 서비스예요.
+                                    강남·홍대·이태원 클럽의 테이블 가격·주대·영업시간 정보와 무료입장·프리드링크
+                                    게스트 간판 혜택을 모아 보여주고, 같이 갈 일행을 모으는 파티(합석)까지
+                                    한 곳에서 해결하는 클럽 플랫폼이에요.
                                     "나플에서 잡는다"처럼 편하게 부르시면 됩니다.
                                 </p>
                             </AccordionContent>
@@ -106,17 +108,17 @@ export default function FAQPage() {
 
                         <AccordionItem value="item-0a" className="border border-border rounded-xl px-6 bg-card/30">
                             <AccordionTrigger className="text-foreground font-bold hover:no-underline">
-                                퍼즐(클럽 파티)이 뭔가요?
+                                클럽 파티(합석)가 뭔가요?
                             </AccordionTrigger>
                             <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>
-                                    <strong className="text-foreground">퍼즐</strong>은 나이트플로우의 일행 모집 기능입니다.
+                                    <strong className="text-foreground">파티</strong>는 나이트플로우의 일행 모집 기능입니다.
                                     흔히 <strong className="text-foreground">"클럽 파티"</strong>,{" "}
                                     <strong className="text-foreground">"클럽 합석"</strong>이라고 부르는 그 기능이에요.
                                 </p>
                                 <p className="mt-2">
                                     인원이 부족할 때 같은 클럽에 갈 일행을 모집하거나, 다른 사람이
-                                    모집 중인 퍼즐에 합류할 수 있습니다. 강남 클럽 파티, 홍대 클럽
+                                    모집 중인 파티에 합류할 수 있습니다. 강남 클럽 파티, 홍대 클럽
                                     합석을 안전하게 찾는 가장 빠른 방법입니다.
                                 </p>
                             </AccordionContent>
@@ -173,9 +175,9 @@ export default function FAQPage() {
                                     파트너가 테이블에 합석할 사람을 안내해주는 방식을 말합니다.
                                 </p>
                                 <p className="mt-2">
-                                    나플에서는 부킹 대신 <strong className="text-foreground">테이블 경매</strong>,{" "}
+                                    나플에서는 부킹 대신 <strong className="text-foreground">게스트 간판(무료입장·프리드링크)</strong>,{" "}
                                     <strong className="text-foreground">파티(합석)</strong>,{" "}
-                                    <strong className="text-foreground">게스트 간판</strong> 등 더 투명한 방식으로
+                                    <strong className="text-foreground">테이블 예약</strong> 등 더 투명한 방식으로
                                     같은 목적(테이블·일행 매칭)을 해결합니다.
                                 </p>
                             </AccordionContent>
