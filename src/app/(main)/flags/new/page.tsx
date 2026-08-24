@@ -100,18 +100,13 @@ export default async function PuzzleNewPage({
     redirect(`/flags/new?${params.toString()}`);
   }
 
+  // 한국어 트랙은 깃발 신규 생성 중단 — UI에서 진입점을 모두 제거했으므로 직접 URL 접근도 홈으로 보낸다.
+  // 외국어 트랙(en/ja/zh)은 깃발(컨시어지 신청)이 유일한 예약 수단이라 그대로 통과시킨다.
+  if (!isForeigner) redirect("/");
+
   // 외국인(컨시어지)은 로그인 없이 접근 — 익명 신청 허용(Mig 489). 이메일/WhatsApp만으로 신청.
   // 배경: 로그인 벽에서 80% 이탈(login_view 93 → 로그인 클릭 19). 외국인은 카카오 없고,
   //       소셜 로그인 강제 자체가 마찰 → 컨시어지 폼을 로그인 없이 열어줌.
-  // 한국인(비로그인)만 로그인 후 깃발 등록으로 복귀(redirect 보존).
-  if (!user && !isForeigner) {
-    const koParams = new URLSearchParams();
-    if (area) koParams.set("area", area);
-    const koReturn = koParams.toString() ? `/flags/new?${koParams.toString()}` : "/flags/new";
-    redirect(`/login?redirect=${encodeURIComponent(koReturn)}`);
-  }
-
-  if (profile?.role === "md") redirect("/?tab=puzzle");
 
   // 외국인 컨시어지 폼용 클럽 목록 (강남·홍대·이태원, 썸네일 있는 것 — /en 클럽과 동일 필터).
   // ClubsClient(/en/clubs)와 동일한 전체 필드 — "Browse clubs" 팝업의 클럽상세 시트에서 재사용.

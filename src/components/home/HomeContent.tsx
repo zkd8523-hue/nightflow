@@ -25,6 +25,7 @@ import { ShotCarousel } from "@/components/chat/ShotCarousel";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
+import { ServiceUpdateSheet } from "@/components/home/ServiceUpdateSheet";
 import { PartyOnboardingSheet } from "@/components/home/PartyOnboardingSheet";
 import { OfferCreditGuideSheet } from "@/components/md/OfferCreditGuideSheet";
 
@@ -658,6 +659,8 @@ export function HomeContent({
       {/* 깃발 사용법 온보딩 — 비로그인 첫 방문 시 1회 자동 노출 (localStorage) */}
       {/* 자동 노출 비활성화 — 깃발 신규 진입점 숨김 */}
       <FlagOnboardingSheet autoShow={false} />
+      {/* 개편 공지(깃발 종료 + 혜택 중심 전환) — 로그인 유저 1회 */}
+      <ServiceUpdateSheet show={!!user} />
       {/* 최근 매치 깃발 모달 */}
       <Sheet open={showMatchedModal} onOpenChange={setShowMatchedModal}>
         <SheetContent
