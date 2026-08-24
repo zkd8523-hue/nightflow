@@ -176,20 +176,19 @@ export default async function ClubsIndexPage() {
             const restAliases = Array.from(
               new Set([...staticAliases, ...dbAliases])
             ).filter((a) => a && a !== name && a !== primary);
-            // 보조 별칭에 지역 prefix 안 붙은 것만 "강남 에이스" 같은 조합 추가
-            const aliasesWithArea = area
-              ? restAliases.flatMap((a) =>
-                  a.startsWith(area) ? [a] : [a, `${area} ${a}`]
-                )
-              : restAliases;
+            // 목록에는 대표 별칭 3개만. 예전엔 여기서 지역명까지 조합해(`이태원 데이앤나잇`)
+            // 별칭을 2배로 불렸는데, 98개 클럽이 쌓이니 본문의 60%가 오타 변형 나열이 되어
+            // 구글이 /clubs를 "크롤링됨-색인 안 됨"으로 떨궜다(키워드 스터핑 판정).
+            // 오타·변형 검색어 커버리지는 클럽 개별 페이지(/clubs/[id])가 담당한다.
+            const aliasesShown = restAliases.slice(0, 3);
             // head: "강남 에이스(Club Ace)" / 메인 별칭 없으면 "강남 Club Ace"
             const areaPrefix = area ? `${area} ` : "";
             const head = primary
               ? `${areaPrefix}${primary}(${name})`
               : `${areaPrefix}${name}`;
             const aliasText =
-              aliasesWithArea.length > 0
-                ? ` (${aliasesWithArea.join(", ")})`
+              aliasesShown.length > 0
+                ? ` (${aliasesShown.join(", ")})`
                 : "";
             return (
               <li key={id}>
