@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Ticket, PartyPopper, Flag } from "lucide-react";
+import { Ticket } from "lucide-react";
 import { trackEvent } from "@/lib/analytics/events";
 import { isInAppBrowser } from "@/lib/utils/browser";
 
@@ -66,54 +66,25 @@ export function ServiceUpdateSheet({ show }: { show: boolean }) {
             나플이 더 단순해졌어요
           </SheetTitle>
           <SheetDescription className="sr-only">
-            깃발 서비스 종료 및 게스트 간판 중심 개편 안내
+            깃발 서비스 종료 및 혜택·쿠폰 중심 개편 안내
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-3 mt-1">
-          {/* 종료 안내 — 기존 유저 안심이 먼저 */}
-          <div className="flex gap-3 bg-muted/60 border border-border rounded-2xl p-3.5">
-            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
-              <Flag className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[14.5px] font-black text-foreground mb-0.5">
-                깃발 서비스가 종료됐어요
-              </h3>
-              <p className="text-[12.5px] text-muted-foreground font-medium leading-relaxed break-keep">
-                이미 진행 중인 깃발과 받은 오퍼는 그대로 마무리돼요.
-                알림과 채팅으로 계속 확인하실 수 있어요.
-              </p>
-            </div>
-          </div>
-
-          {/* 새 방향 — 지금 뭘 하면 되는지 */}
-          <div className="flex gap-3 bg-amber-500/[0.07] border border-amber-500/40 rounded-2xl p-3.5">
+        <div className="mt-1">
+          <div className="flex gap-3 bg-amber-500/[0.07] border border-amber-500/40 rounded-2xl p-4">
             <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
               <Ticket className="w-5 h-5 text-brand-amber" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[14.5px] font-black text-foreground mb-0.5">
-                이제 혜택을 바로 확인하세요
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <h3 className="text-[15px] font-black text-foreground flex items-center gap-1.5">
+                <span aria-hidden>🏳️</span>
+                깃발 서비스가 종료됐어요
               </h3>
-              <p className="text-[12.5px] text-muted-foreground font-medium leading-relaxed break-keep">
-                기다릴 필요 없이 <span className="text-foreground/90 font-semibold">무료입장·프리드링크</span> 혜택을
-                홈에서 바로 보고 가고 싶은 클럽을 고르면 돼요.
-              </p>
-            </div>
-          </div>
-
-          {/* 파티는 그대로 — 없어졌다고 오해하지 않도록 */}
-          <div className="flex gap-3 bg-muted/60 border border-border rounded-2xl p-3.5">
-            <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
-              <PartyPopper className="w-5 h-5 text-money" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[14.5px] font-black text-foreground mb-0.5">
-                파티는 그대로예요
-              </h3>
-              <p className="text-[12.5px] text-muted-foreground font-medium leading-relaxed break-keep">
-                일행을 모아 함께 가는 파티는 계속 이용하실 수 있어요.
+              <p className="text-[13px] text-muted-foreground font-medium leading-relaxed break-keep">
+                <span className="text-foreground/90 font-semibold">
+                  프리패스, 무료입장, 프리드링크와 할인 쿠폰
+                </span>{" "}
+                중심으로 변경되며 일행을 모아 함께 가는 파티는 계속 이용하실 수 있어요.
               </p>
             </div>
           </div>
