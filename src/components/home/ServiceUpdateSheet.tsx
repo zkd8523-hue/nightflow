@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { trackEvent } from "@/lib/analytics/events";
 import { isInAppBrowser } from "@/lib/utils/browser";
@@ -76,8 +75,8 @@ export function ServiceUpdateSheet({ show }: { show: boolean }) {
           중심으로 변경되며 일행을 모아 함께 가는 파티는 계속 이용하실 수 있어요.
         </p>
 
-        <Link
-          href="/clubs"
+        <button
+          type="button"
           onClick={() => {
             trackEvent("service_update_popup_cta");
             markSeen();
@@ -85,8 +84,8 @@ export function ServiceUpdateSheet({ show }: { show: boolean }) {
           }}
           className="mt-5 flex items-center justify-center w-full h-12 bg-inverse text-inverse-foreground rounded-2xl font-black text-[15px] active:scale-[0.98] transition-transform"
         >
-          오늘의 혜택 보러가기
-        </Link>
+          확인
+        </button>
       </SheetContent>
     </Sheet>
   );
