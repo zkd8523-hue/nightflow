@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -13,9 +13,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
-import { usePreferredClubMeta } from "@/hooks/usePreferredClubMeta";
 import { MyProfileSection } from "@/components/profile/MyProfileSection";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import { getDDayLabel } from "@/lib/utils/format";
@@ -45,8 +44,7 @@ export default function ProfilePage() {
   const [flagOffersSeen, setFlagOffersSeen] = useState<Record<string, number>>({});
   // 합류(참여)한 조각 — 내가 만든 게 아니라 puzzle_members로 들어간 조각
   const [joinedShares, setJoinedShares] = useState<Puzzle[]>([]);
-  // MD 대시보드 '내 오퍼'와 동일한 깃발/조각 탭
-  const [myTab, setMyTab] = useState<"flag" | "share">("flag");
+  // 깃발/조각 탭 → 깃발 탭 제거로 파티만 노출 (myTab state 삭제)
 
   useEffect(() => {
     if (!user) return;
@@ -140,16 +138,12 @@ export default function ProfilePage() {
     if (succeededIds.length > 0) toast.success(`${succeededIds.length}개 정리했습니다`);
   };
 
-  // 깃발(인원 확정) / 조각(파티원 모집) 분리
-  const flagsOnly = myFlags.filter((f) => !f.is_recruiting_party);
+  // 깃발 탭 제거 — 파티(조각)만 노출. flagsOnly/cleanableFlagIds/탭 자동선택 로직 삭제.
   const sharesOnly = myFlags.filter((f) => f.is_recruiting_party);
-  // 제안받고 싶은 클럽(Migration 504) 칩 — PuzzleList/HomePuzzleCarousel과 공용 훅
-  const { preferredClubNames } = usePreferredClubMeta(myFlags, "user");
   // 진행중(open/selecting) 판별 — 카드에 오퍼 현황/상태 뱃지 분기용
   const isActiveStatus = (s: string) => s === "open" || s === "selecting";
   // 취소/만료된 항목만 정리 대상 (매칭완료는 기록 보존을 위해 제외)
   const isCleanable = (s: string) => s === "cancelled" || s === "expired";
-  const cleanableFlagIds = flagsOnly.filter((f) => isCleanable(f.status)).map((f) => f.id);
   const cleanableShareIds = sharesOnly.filter((f) => isCleanable(f.status)).map((f) => f.id);
 
   // 내 조각(내가 만든 것 + 합류한 것) 통합
@@ -157,16 +151,6 @@ export default function ProfilePage() {
     ...sharesOnly.map((flag) => ({ flag, joined: false })),
     ...joinedShares.map((flag) => ({ flag, joined: true })),
   ];
-
-  // 탭이 되면서 한쪽만 보이므로, 첫 로드 때 내용이 있는 탭을 연다.
-  // (조각만 있는 유저가 "깃발이 없어요"만 보고 조각이 사라졌다고 오해하는 것 방지)
-  const tabAutoPicked = useRef(false);
-  useEffect(() => {
-    if (tabAutoPicked.current) return;
-    if (flagsOnly.length === 0 && allShares.length === 0) return;
-    tabAutoPicked.current = true;
-    if (flagsOnly.length === 0) setMyTab("share");
-  }, [flagsOnly.length, allShares.length]);
 
   // 로딩 타임아웃: 5초 후 강제 해제
   const [timedOut, setTimedOut] = useState(false);
@@ -235,82 +219,8 @@ export default function ProfilePage() {
         {/* 내 깃발/파티 — MD 대시보드 '내 오퍼'와 동일한 탭 구조.
             카드는 홈과 동일하게 페이지 배경 위에 올림(패널 없음) */}
         <div className="mb-6">
-          <Tabs value={myTab} onValueChange={(v) => setMyTab(v as "flag" | "share")} className="w-full">
-            <TabsList className="w-full bg-card border border-border/50 h-11 p-1 rounded-xl mb-3">
-              <TabsTrigger value="flag" className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]">
-                ⛳ 깃발 {flagsOnly.length > 0 && <span className="ml-0.5 text-brand-amber">{flagsOnly.length}</span>}
-              </TabsTrigger>
-              <TabsTrigger value="share" className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]">
-                🎉 파티 {allShares.length > 0 && <span className="ml-0.5 text-money">{allShares.length}</span>}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="flag" className="m-0">
-          {cleanableFlagIds.length > 0 && (
-            <div className="flex justify-end mb-2">
-              <button
-                type="button"
-                onClick={() => handleBulkCleanup(cleanableFlagIds)}
-                className="text-[12px] font-bold text-muted-foreground hover:text-foreground/80 transition-colors"
-              >
-                취소·만료 {cleanableFlagIds.length}개 정리
-              </button>
-            </div>
-          )}
-
-          {flagsOnly.length > 0 ? (
-            <div className="flex flex-col gap-3">
-              {/* 모든 내 깃발 — 홈과 동일한 카드. 진행중은 오퍼 현황 노출, 종료는 상태 뱃지+삭제 */}
-              {flagsOnly.map((flag, i) => {
-                const active = isActiveStatus(flag.status);
-                const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-muted-foreground" };
-                const offers = active ? (flagOfferCounts[flag.id] ?? 0) : 0;
-                const newOffers = Math.max(0, offers - (flagOffersSeen[flag.id] ?? 0));
-                // 날짜가 바뀌는 첫 카드 위에만 날짜 헤더 (홈 목록과 동일 스타일)
-                const showDateHeader = i === 0 || flagsOnly[i - 1].event_date !== flag.event_date;
-                return (
-                  <div key={flag.id} className={`relative ${active ? "" : "opacity-70"}`}>
-                    {showDateHeader && flag.event_date && (() => {
-                      const d = new Date(flag.event_date + "T00:00:00");
-                      const days = ["일","월","화","수","목","금","토"];
-                      const dday = getDDayLabel(flag.event_date);
-                      return (
-                        <div className="flex items-center gap-2.5 px-1 pt-1 pb-0 mb-1.5">
-                          <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
-                          <h3 className="text-[16px] font-black text-foreground tracking-tight whitespace-nowrap">
-                            {`${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`}
-                          </h3>
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-brand-amber" : "bg-muted text-muted-foreground"}`}>{dday}</span>
-                        </div>
-                      );
-                    })()}
-                    {newOffers > 0 && (
-                      <span className="pointer-events-none absolute -top-2 -right-1.5 z-10 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black leading-none tracking-tight shadow-md shadow-rose-900/40">
-                        NEW +{newOffers}
-                      </span>
-                    )}
-                    <PuzzleCard
-                      puzzle={flag}
-                      userRole="user"
-                      isLeader
-                      offerCount={offers}
-                      hideNewBadge
-                      preferredClubNames={preferredClubNames}
-                      myFlagStatus={active ? undefined : st}
-                      onEdit={active ? () => router.push(`/flags/${flag.id}/edit`) : undefined}
-                      onHide={() => handleHideFlag(flag.id)}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-6">
-              <p className="text-[13px] text-muted-foreground">아직 꽂은 깃발이 없어요</p>
-            </div>
-          )}
-            </TabsContent>
-
+          {/* ⛳ 깃발 탭 제거 — 파티 목록만 노출 (탭 UI 없음) */}
+          <Tabs value="share" className="w-full">
             <TabsContent value="share" className="m-0">
           {cleanableShareIds.length > 0 && (
             <div className="flex justify-end mb-2">

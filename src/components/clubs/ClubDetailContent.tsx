@@ -269,7 +269,8 @@ export function ClubDetailContent({
   const ctaHref = user ? flagHref : `/login?${loginQuery}`;
   // 게스트 간판 MD가 있으면 본문에 이미 클럽 맥락 1순위 CTA(연락)가 있으므로
   // 지역 깃발 CTA는 숨겨 전환 충돌을 막는다. 없을 때만 노출.
-  const showFlagCta = !guestSignSlot && !hideShareList;
+  // 한국어 트랙은 깃발 신규 진입점 숨김 — 외국어 트랙(isForeigner)은 깃발이 유일한 전환 수단이라 유지.
+  const showFlagCta = isForeigner && !guestSignSlot && !hideShareList;
 
   return (
     <div className="container mx-auto max-w-lg px-4 pt-4 pb-40">

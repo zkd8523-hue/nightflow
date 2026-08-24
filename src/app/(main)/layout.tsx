@@ -9,7 +9,6 @@ import { SelectingFlagAlertSheet } from "@/components/puzzles/SelectingFlagAlert
 import { VisitConfirmTrigger } from "@/components/puzzles/VisitConfirmTrigger";
 import { PartyReviewTrigger } from "@/components/puzzles/PartyReviewTrigger";
 import { NewOffersAlertSheet } from "@/components/puzzles/NewOffersAlertSheet";
-import { FlagCreatedInstallSheet } from "@/components/puzzles/FlagCreatedInstallSheet";
 import { InAppBrowserBanner } from "@/components/common/InAppBrowserBanner";
 import { PriceRangeOnboardingSheet } from "@/components/md/PriceRangeOnboardingSheet";
 import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
@@ -128,7 +127,7 @@ export default function MainLayout({
             과거 수집분(puzzle_cancellation_surveys)은 /admin/puzzles?tab=surveys 에서 계속 조회 가능. */}
         <VisitConfirmTrigger />
         <PartyReviewTrigger />
-        <FlagCreatedInstallSheet />
+        {/* 깃발 생성 직후 앱설치 유도 — 깃발 신규 생성 경로가 막혀 트리거되지 않으므로 마운트 해제 */}
         <PriceRangeOnboardingSheet />
         {/* 파티 가이드 — 홈에서는 "지금 잡을 수 있는 자리가 있을 때"만 (계정당 1회) */}
         <ShareOnboardingSheet onlyWhenSlotOpen />

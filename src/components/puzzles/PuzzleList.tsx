@@ -670,17 +670,17 @@ export function PuzzleList({
         <div ref={listEndRef} aria-hidden className="h-px w-full" />
       )}
 
-      {/* Floating CTA 버튼 (MD 제외) — 빈 상태/리스트 끝 도달 시 숨김 */}
-      {userRole !== "md" && filteredPuzzles.length > 0 && (
+      {/* Floating CTA 버튼 (MD 제외) — 빈 상태/리스트 끝 도달 시 숨김. 깃발 분기는 제거(shareMode만 노출) */}
+      {shareMode && userRole !== "md" && filteredPuzzles.length > 0 && (
         <Link
-          href={shareMode ? (userRole ? "/shares/new" : "/login?redirect=/shares/new") : (userRole ? "/flags/new" : "/login?redirect=/flags/new")}
+          href={userRole ? "/shares/new" : "/login?redirect=/shares/new"}
           onClick={() => trackEvent("puzzle_cta_click", { source: "list_float" })}
           className={`fixed bottom-24 right-4 flex items-center gap-2 bg-inverse hover:opacity-90 text-inverse-foreground rounded-full pl-4 pr-3 py-3 shadow-lg z-40 border-2 border-black transition-opacity duration-200 ${
             listEndVisible ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >
           <span className="text-black text-sm font-semibold whitespace-nowrap">
-            {shareMode ? "파티 올리기" : "깃발꽂기"}
+            파티 올리기
           </span>
           <Plus className="w-5 h-5 text-black" />
         </Link>

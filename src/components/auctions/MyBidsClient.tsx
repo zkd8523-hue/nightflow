@@ -15,15 +15,11 @@ import { FallbackOfferCard } from "./FallbackOfferCard";
 import { ReportMDButton } from "./ReportMDButton";
 import { useMyBidsRealtime, type AuctionUpdate } from "@/hooks/useMyBidsRealtime";
 import { isAuctionActive, isAuctionExpired } from "@/lib/utils/auction";
-import { normalizeProfileImage } from "@/lib/utils/image";
 import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import type { Auction, Puzzle, PublicUserProfile } from "@/types/database";
-import { MDContactCard } from "@/components/puzzles/MDContactCard";
-import { CopyAcceptedMessageButton } from "@/components/puzzles/CopyAcceptedMessageButton";
 import {
   Gavel,
   Clock,
-  Trophy,
   MapPin,
   Calendar,
   ChevronRight,
@@ -169,15 +165,15 @@ export function MyBidsClient({
     [reportedAuctionIds]
   );
 
-  const [puzzles] = useState<PuzzleWithAcceptedOffer[]>(initialPuzzles);
+  // puzzles state 제거 — 깃발 탭 삭제로 미사용 (initialPuzzles prop은 호환 위해 유지)
 
   const hasInitialUrgentWon = initialWonAuctions.some(a => a.status === "won" && !a.fallback_offered_to);
+  // 깃발 탭 제거 — ?tab=puzzle 로 들어와도 낙찰/종료로 보낸다(보이지 않는 탭 착지 방지).
   const defaultTab =
-    initialTab === "puzzle" ? "puzzle" :
     initialTab === "ended" ? "ended" :
     initialTab === "active" ? "active" :
     hasInitialUrgentWon ? "ended" :
-    "puzzle";
+    "ended";
 
   const fetchBids = useCallback(async () => {
     const supabase = createClient();
@@ -513,13 +509,8 @@ export function MyBidsClient({
         </header>
 
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="w-full bg-card rounded-xl p-1 border border-border grid grid-cols-3">
-            <TabsTrigger
-              value="puzzle"
-              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white text-muted-foreground"
-            >
-              ⛳ 깃발{puzzles.length > 0 && ` (${puzzles.length})`}
-            </TabsTrigger>
+          {/* ⛳ 깃발 탭 제거 — 얼리버드 / 낙찰·종료 2탭 */}
+          <TabsList className="w-full bg-card rounded-xl p-1 border border-border grid grid-cols-2">
             <TabsTrigger
               value="active"
               className="rounded-lg text-[12px] font-bold data-[state=active]:bg-inverse data-[state=active]:text-inverse-foreground text-muted-foreground"
@@ -620,17 +611,7 @@ export function MyBidsClient({
             </div>
           </TabsContent>
           {/* 퍼즐 탭 */}
-          <TabsContent value="puzzle" className="mt-4">
-            <div className="space-y-3">
-              {puzzles.length === 0 ? (
-                <EmptyPuzzle />
-              ) : (
-                puzzles.map((puzzle) => (
-                  <MyPuzzleCard key={puzzle.id} puzzle={puzzle} userId={userId} />
-                ))
-              )}
-            </div>
-          </TabsContent>
+          {/* ⛳ 깃발 탭 콘텐츠 제거 — 깃발 신규 진입점 숨김 */}
         </Tabs>
       </div>
     </div>
@@ -777,152 +758,6 @@ function WonAuctionCard({
   );
 }
 
-function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; userId: string }) {
-  const isLeader = puzzle.leader_id === userId;
-  const isOpen = puzzle.status === "open";
-  const isAccepted = puzzle.status === "accepted";
-  const confirmedBudget = puzzle.current_count * puzzle.budget_per_person;
-  const acceptedOffer = puzzle.accepted_offer ?? null;
-  const acceptedMd = acceptedOffer?.md ?? null;
-
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr + "T00:00:00");
-    const m = d.getMonth() + 1;
-    const day = d.getDate();
-    const days = ["일", "월", "화", "수", "목", "금", "토"];
-    return `${m}/${day} ${days[d.getDay()]}`;
-  };
-
-  const statusLabel: Record<string, string> = {
-    open: "🟢 제안 받는중",
-    matched: "✅ 성사 (인원마감)",
-    accepted: "성사됨",
-    cancelled: "↩️ 취소됨",
-    expired: "❌ 매칭 실패",
-  };
-
-  const statusColorClass: Record<string, string> = {
-    open: "text-money",
-    matched: "text-brand-amber",
-    accepted: "text-brand-amber",
-    cancelled: "text-muted-foreground",
-    expired: "text-red-400",
-  };
-
-  const isTerminal = ["expired", "cancelled", "matched"].includes(puzzle.status);
-
-  // 성사된 leader puzzle은 amber 카드로 강조 + MD 연락처 인라인 노출
-  if (isAccepted && isLeader && acceptedMd) {
-    return (
-      <Card className="bg-amber-500/10 border-amber-500/30 p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-brand-amber" />
-            <span className="text-[14px] font-black text-brand-amber">성사됨</span>
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="text-[11px] text-muted-foreground">
-              {formatDate(puzzle.event_date)} · {puzzle.area}
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
-            </span>
-          </div>
-        </div>
-
-        {acceptedOffer && (
-          <div className="space-y-1.5 pb-2 border-b border-amber-500/20">
-            <p className="text-[14px] font-bold text-foreground">
-              {acceptedOffer.club?.name || "클럽"}
-            </p>
-            <p className="text-[13px] text-foreground/80">
-              💰 {acceptedOffer.proposed_price.toLocaleString()}원
-            </p>
-            {acceptedOffer.includes.length > 0 && (
-              <div className="flex flex-wrap gap-1 w-full">
-                {acceptedOffer.includes.map((inc) => (
-                  <span key={inc} className="text-[11px] px-2 py-0.5 rounded-full bg-green-500/20 text-money break-words max-w-full">
-                    {inc}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="flex items-center gap-2.5">
-          <div className="relative w-9 h-9 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden">
-            <span className="absolute inset-0 flex items-center justify-center font-black text-muted-foreground text-[13px]">
-              {(acceptedMd.display_name || "M").substring(0, 1)}
-            </span>
-            {acceptedMd.profile_image && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={normalizeProfileImage(acceptedMd.profile_image)!}
-                alt={acceptedMd.display_name || "파트너"}
-                className="relative w-full h-full object-cover"
-                onError={(e) => { e.currentTarget.style.display = "none"; }}
-              />
-            )}
-          </div>
-          <div>
-            <p className="text-foreground font-bold text-[13px]">{acceptedMd.display_name || "파트너"}</p>
-            <p className="text-[10px] text-muted-foreground">NightFlow 인증 파트너</p>
-          </div>
-        </div>
-
-        <CopyAcceptedMessageButton puzzle={puzzle} offer={acceptedOffer} />
-
-        <MDContactCard md={acceptedMd} />
-
-        <Link
-          href={`/flags/${puzzle.id}`}
-          className="flex items-center justify-end text-[11px] text-muted-foreground hover:text-foreground/80 transition-colors pt-1"
-        >
-          상세 / 관리 →
-        </Link>
-      </Card>
-    );
-  }
-
-  return (
-    <Link href={`/flags/${puzzle.id}`}>
-      <Card className={`bg-card border-border p-4 space-y-2 ${isTerminal ? "opacity-70" : ""}`}>
-        <div className="flex items-start justify-between">
-          <span className="text-[14px] font-black text-foreground">
-            {formatDate(puzzle.event_date)} · {puzzle.area}
-          </span>
-          <div className="flex flex-col items-end gap-0.5">
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-brand-amber">
-              {isLeader ? "대표자" : "참여중"}
-            </span>
-            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-              {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between text-[13px]">
-          <span className="text-muted-foreground">
-            {puzzle.current_count}/{puzzle.target_count}명 · 확정 {confirmedBudget.toLocaleString()}원
-          </span>
-          <span
-            className={`font-black ${isTerminal ? "text-[13px]" : ""} ${
-              statusColorClass[puzzle.status] || "text-muted-foreground"
-            }`}
-          >
-            {statusLabel[puzzle.status] || puzzle.status}
-          </span>
-        </div>
-        <div className="flex justify-end">
-          <span className="text-[12px] text-muted-foreground">
-            {isTerminal ? "[결과 보기]" : isLeader ? "[관리]" : "[보기]"} →
-          </span>
-        </div>
-      </Card>
-    </Link>
-  );
-}
-
 function EmptyChat() {
   return (
     <div className="py-24 text-center space-y-4">
@@ -978,20 +813,4 @@ function EmptyEnded() {
   );
 }
 
-function EmptyPuzzle() {
-  return (
-    <div className="py-24 text-center space-y-4">
-      <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mx-auto">
-        <span className="text-3xl">🎉</span>
-      </div>
-      <p className="text-muted-foreground font-medium">
-        참여 중인 깃발이 없습니다.
-      </p>
-      <Link href="/?tab=puzzle">
-        <Button variant="link" className="text-muted-foreground font-bold underline">
-          깃발 둘러보기
-        </Button>
-      </Link>
-    </div>
-  );
-}
+// EmptyPuzzle 제거 — 깃발 탭 삭제. "깃발 둘러보기"(/?tab=puzzle)는 탭이 없어져 빈 화면으로 가던 깨진 링크였음.

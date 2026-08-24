@@ -20,7 +20,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { DateFilterCalendar } from "./filters/DateFilterCalendar";
 import { PriceRangeFilter } from "./filters/PriceRangeFilter";
 import { ClubRequestCTA } from "./ClubRequestCTA";
-import { FlagPlantCTA } from "./FlagPlantCTA";
 import { type NbiFilter, type SeatFilter, NBI_BANDS } from "@/lib/utils/puzzleFilters";
 import {
   PRICE_MIN,
@@ -217,15 +216,6 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const hasActiveFilter = isAreaActive || isDateActive || isPriceActive;
   const hasAdvanceFilter = isDateActive || isPriceActive;
 
-  // 깃발 꽂기 링크용 날짜 (선택된 dateFilter에서 추출)
-  const flagDateParam = useMemo(() => {
-    if (dateFilter === "all") return "";
-    const baseline = dayjs(getClubEventDate());
-    if (dateFilter === "this_weekend") return baseline.day(6).format("YYYY-MM-DD");
-    if (dateFilter === "next_weekend") return baseline.day(6).add(1, "week").format("YYYY-MM-DD");
-    return dateFilter;
-  }, [dateFilter]);
-
   const resetAdvanceFilters = () => {
     setDateFilter("all");
     setPriceRange([PRICE_MIN, PRICE_MAX]);
@@ -235,11 +225,12 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const instantEnabled = isInstantEnabled();
 
   // 경매가 있는 탭을 기본으로 선택 (instant off일 때 today 후보 제외)
+  // 깃발 탭 버튼 제거로 기본 폴백도 "share"로 변경 (puzzle로 두면 보이지 않는 탭에 착지함)
   const [tab, setTabRaw] = useState<"today" | "advance" | "puzzle" | "share">(() => {
     if (initialTab && (initialTab !== "today" || instantEnabled)) return initialTab;
     if (instantEnabled && todayAuctions.length > 0) return "today";
     if (advanceAuctions.length > 0) return "advance";
-    return "puzzle";
+    return "share";
   });
 
   const setTab = (t: "today" | "advance" | "puzzle" | "share") => {
@@ -323,16 +314,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         )}
         <div data-no-pull-refresh className="overflow-x-auto scrollbar-hide flex-1 min-w-0 touch-pan-x touch-pan-y touch-pan-y">
           <div className="flex gap-2 w-max pr-4 items-end">
-            <button
-              onClick={() => setTab("puzzle")}
-              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "puzzle"
-                ? "bg-amber-500 text-black"
-                : "bg-muted text-muted-foreground hover:bg-muted hover:text-white"
-                }`}
-            >
-              <span className="text-[18px] leading-none">🚩</span> 깃발
-            </button>
-
+            {/* 🚩 깃발 탭 버튼 제거 — 깃발 신규 진입점 숨김. tab==="puzzle" 렌더 분기는 유지(?tab=puzzle 직접 진입 대비) */}
             {canShowShareTab && (
               <button
                 onClick={() => setTab("share")}
@@ -542,25 +524,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 초기화
               </button>
             </div>
-            {advanceAuctions.length === 0 && dateFilter !== "all" ? (
-              <Link href={flagDateParam ? `/flags/new?date=${flagDateParam}` : "/flags/new"} onClick={() => setFilterSheetOpen(false)} className="block">
-                <button className="w-full bg-amber-500 text-black rounded-2xl flex flex-col items-center justify-center gap-1 py-3 px-4">
-                  <span className="text-[11px] font-medium opacity-70 text-center leading-tight">
-                    이 날 경매가 없나요? 괜찮아요!
-                  </span>
-                  <span className="text-[14px] font-black text-center leading-tight">
-                    깃발 꽂고 시크릿오퍼 받기 ⛳
-                  </span>
-                </button>
-              </Link>
-            ) : (
-              <button
-                onClick={() => setFilterSheetOpen(false)}
-                className="w-full h-16 bg-inverse text-inverse-foreground font-black text-[14px] rounded-2xl"
-              >
-                {advanceAuctions.length}건 보기
-              </button>
-            )}
+            {/* 깃발 꽂기 CTA 제거 — 결과 0건이어도 그냥 필터 닫기 버튼으로 통일 */}
+            <button
+              onClick={() => setFilterSheetOpen(false)}
+              className="w-full h-16 bg-inverse text-inverse-foreground font-black text-[14px] rounded-2xl"
+            >
+              {advanceAuctions.length}건 보기
+            </button>
           </div>
         </SheetContent>
       </Sheet>
@@ -835,14 +805,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               })
           )}
 
-          {/* 리스트 끝: 유저는 깃발 꽂기 유도, MD는 기존 클럽 요청 (클럽 상세에서는 floating CTA가 대체) */}
-          {filteredShareAuctions.length > 0 && !hideShareEmptyState && (
+          {/* 리스트 끝: MD는 기존 클럽 요청 CTA. 유저 대상 깃발 꽂기 유도는 제거(깃발 신규 진입점 숨김) */}
+          {filteredShareAuctions.length > 0 && !hideShareEmptyState && userRole === "md" && (
             <div className="pt-2">
-              {userRole === "md" ? (
-                <ClubRequestCTA variant="list-end" defaultArea={effectiveShareArea} />
-              ) : (
-                <FlagPlantCTA variant="list-end" isLoggedIn={!!currentUserId} />
-              )}
+              <ClubRequestCTA variant="list-end" defaultArea={effectiveShareArea} />
             </div>
           )}
 

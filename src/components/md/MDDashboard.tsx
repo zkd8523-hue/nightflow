@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MDAuctionCard } from "./MDAuctionCard";
@@ -212,14 +212,7 @@ export function MDDashboard({
     // 낙관적 슬롯 상태 — claim 즉시 세팅 영역 표시 (router.refresh() 대기 안 함)
     const [localShareSlots, setLocalShareSlots] = useState(shareSlots);
     const [planBoardResetKey, setPlanBoardResetKey] = useState(0);
-    // "all" = 아무 탭도 선택 안 한 기본 상태(깃발+조각 전체). 같은 탭을 다시 누르면 "all"로 돌아감.
-    // ?tab=share/flag 로 들어오면 그 탭이 켜진 채 시작 (조각 상세 → "대시보드로 이동" 등)
-    const initialPuzzleTab = ((): "flag" | "share" | "all" => {
-        if (typeof window === "undefined") return "all";
-        const t = new URLSearchParams(window.location.search).get("tab");
-        return t === "share" || t === "flag" ? t : "all";
-    })();
-    const [activePuzzleTab, setActivePuzzleTab] = useState<"flag" | "share" | "all">(initialPuzzleTab);
+    // 깃발 탭 제거 — "내 오퍼"는 이제 파티(조각) 오퍼만 항상 노출한다(탭 토글 없음).
     // MD 직통 조각(내 조각) — host_is_md 퍼즐. 조각 인라인 "내 조각" 목록용.
     // Migration 505: D-7 자동 발행이 붙으면서 세팅당 하루 1건씩 쌓이므로
     // event_date >= 오늘로 잘라 "진행 중"만 남긴다(과거는 별도 지난 조각으로).
@@ -320,8 +313,10 @@ export function MDDashboard({
       ).size;
     }
 
-    // 관심 지역 온보딩: 승인된 MD가 아직 시트를 안 봤고 구독도 0건이면 노출
+    // 관심 지역 온보딩(깃발 지역 구독 안내) — 깃발 신규 생성 중단으로 비활성화.
+    // "새 깃발이 꽂히면 알림"을 약속하는 시트라 지금 노출하면 빈 약속이 된다.
     useEffect(() => {
+        return;
         if (user.role !== "md" && user.role !== "admin") return;
         if (user.md_status !== "approved") return;
         if (areaOnboardingSeen) return;
@@ -463,13 +458,10 @@ export function MDDashboard({
         return a.event_date.localeCompare(b.event_date);
     });
 
-    // 내 오퍼 탭: 깃발 / 조각 분리
-    const flagOffers = initialPuzzleOffers.filter((o) => !o.puzzle?.is_recruiting_party);
+    // 내 오퍼: 깃발 탭 제거로 파티(조각) 오퍼만 항상 노출
     const shareOffers = initialPuzzleOffers.filter((o) => !!o.puzzle?.is_recruiting_party);
-    // "all"(미선택) 상태에서는 리스트를 아예 노출하지 않음 — 깃발/조각 중 하나를 골라야 목록이 뜬다.
-    const tabOffers = activePuzzleTab === "share" ? shareOffers : activePuzzleTab === "flag" ? flagOffers : [];
     // 거래 확정 카드(위 섹션)로 빠진 것 제외 — 날짜 헤더 그룹핑용으로 목록을 한 번만 계산
-    const visibleOffers = tabOffers.filter(o =>
+    const visibleOffers = shareOffers.filter(o =>
         !(o.status === "accepted" && o.puzzle?.event_date && o.puzzle.event_date < new Date().toISOString().split("T")[0] && !o.visit_marked_at)
     );
     const mdRepliedOfferIdSet = useMemo(() => new Set(mdRepliedOfferIds), [mdRepliedOfferIds]);
@@ -609,7 +601,7 @@ export function MDDashboard({
                         }`}
                     >
                         <span className="text-[20px] leading-none">🎉</span>
-                        <span className="text-[12px] font-black text-foreground">파티</span>
+                        <span className="text-[12px] font-black text-foreground">파티(조각)</span>
                         {/* 파티 운영권도 게스트 간판과 같은 주 단위 선점(Migration 514) */}
                         <span className="text-[10.5px] font-bold text-muted-foreground leading-none">(매주 월 18시 오픈)</span>
                     </button>
@@ -678,32 +670,10 @@ export function MDDashboard({
                 </div>
             )}
 
-            {/* 내 오퍼 (받은 오퍼) — 위 파티 등록과 구분 */}
+            {/* 내 오퍼 (받은 오퍼) — 위 파티 등록과 구분. 깃발 탭 제거로 파티 오퍼만 항상 노출(탭 UI 없음) */}
             <div className="px-4 mt-5">
                 <p className="text-[13px] font-black text-muted-foreground mb-2 px-1 text-center">내 오퍼</p>
-                <Tabs value={activePuzzleTab} className="w-full">
-                    <div className="flex items-center gap-2">
-                        <TabsList className="flex-1 bg-card border border-border/50 h-11 p-1 rounded-xl">
-                            {/* Radix Tabs는 controlled 상태에서 같은 값 재클릭 시 onValueChange를 호출하지 않으므로
-                                (useControllableState가 동일값 변경을 무시함), 토글-오프는 onClick으로 직접 처리 */}
-                            <TabsTrigger
-                                value="flag"
-                                onClick={() => setActivePuzzleTab((prev) => (prev === "flag" ? "all" : "flag"))}
-                                className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]"
-                            >
-                                ⛳ 깃발 {flagOffers.length > 0 && <span className="ml-0.5 text-brand-amber">{flagOffers.length}</span>}
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="share"
-                                onClick={() => setActivePuzzleTab((prev) => (prev === "share" ? "all" : "share"))}
-                                className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]"
-                            >
-                                🎉 파티 {shareOffers.length > 0 && <span className="ml-0.5 text-money">{shareOffers.length}</span>}
-                            </TabsTrigger>
-                        </TabsList>
-
-                    </div>
-
+                <Tabs value="share" className="w-full">
                     <div className="mt-4">
                         {/* 오늘특가: 진행중 instant + 하단 종료 instant (탭이 노출될 때만 렌더) */}
                         {showTodayTab && (
@@ -738,12 +708,12 @@ export function MDDashboard({
                             )}
                         </TabsContent>
 
-                        {/* 퍼즐 오퍼 */}
-                        <TabsContent value={activePuzzleTab} className="space-y-3 m-0">
+                        {/* 퍼즐 오퍼(파티) */}
+                        <TabsContent value="share" className="space-y-3 m-0">
                             {/* 거래 확정 — 이벤트 지난 accepted 오퍼 (확정 안된 것 + 응답 대기 + 응답 차례) */}
                             {(() => {
                                 const today = new Date().toISOString().split("T")[0];
-                                const pendingVisit = tabOffers.filter(o =>
+                                const pendingVisit = shareOffers.filter(o =>
                                     o.status === "accepted" &&
                                     o.puzzle?.event_date &&
                                     o.puzzle.event_date < today &&
@@ -988,22 +958,20 @@ export function MDDashboard({
                                         </div>
                                     );
                                 })
-                            ) : activePuzzleTab === "all" ? null : tabOffers.length === 0 ? (
+                            ) : shareOffers.length === 0 ? (
                                 <div className="py-16 text-center space-y-4 bg-card/30 rounded-3xl border border-dashed border-border/50">
                                     <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mx-auto text-3xl">
                                         📨
                                     </div>
                                     <p className="text-muted-foreground font-medium text-sm">
-                                        {activePuzzleTab === "share" ? "보낸 파티 오퍼가 없습니다" : "보낸 깃발 오퍼가 없습니다"}
+                                        보낸 파티 오퍼가 없습니다
                                     </p>
                                     <p className="text-muted-foreground text-xs px-10 leading-relaxed">
-                                        {activePuzzleTab === "share"
-                                            ? <>홈 파티 탭에서 유저들이 올린 파티를 확인하고<br/>오퍼를 보내보세요</>
-                                            : <>홈에서 유저들이 꽂은 깃발을 확인하고<br/>오퍼를 보내보세요</>}
+                                        홈 파티 탭에서 유저들이 올린 파티를 확인하고<br/>오퍼를 보내보세요
                                     </p>
-                                    <Link href={activePuzzleTab === "share" ? "/?tab=share" : "/?tab=puzzle"}>
+                                    <Link href="/?tab=share">
                                         <Button className="rounded-full bg-inverse text-inverse-foreground font-black hover:opacity-90 h-10 px-6 mt-2">
-                                            <span className="mr-1">{activePuzzleTab === "share" ? "🎉" : "⛳"}</span>
+                                            <span className="mr-1">🎉</span>
                                             둘러보기
                                         </Button>
                                     </Link>

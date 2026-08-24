@@ -27,12 +27,8 @@ const USER_CATEGORIES: { key: PushCategory; label: string; desc: string }[] = [
   },
 ];
 
+// "새 깃발 알람"(notify_new_puzzle) 카테고리는 제거 — 깃발 신규 생성 중단.
 const MD_CATEGORIES: { key: PushCategory; label: string; desc: string }[] = [
-  {
-    key: "notify_new_puzzle",
-    label: "새 깃발 알람",
-    desc: "지역 선택",
-  },
   {
     key: "notify_offer_response",
     label: "오퍼 응답",

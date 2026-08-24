@@ -12,7 +12,6 @@ import { CheckCircle2, X, PartyPopper, ChevronRight, ArrowDown } from "lucide-re
 import type { Auction, Puzzle } from "@/types/database";
 import { ClubStrip } from "@/components/home/ClubStrip";
 import { isAuctionExpired } from "@/lib/utils/auction";
-import { matchesArea } from "@/lib/utils/area";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import { isInstantEnabled } from "@/lib/features";
@@ -275,15 +274,14 @@ export function HomeContent({
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   // 조각 섹션 전용 지역 필터 — 깃발(selectedArea)과 독립적으로 움직임
   const [selectedShareArea, setSelectedShareArea] = useState<string | null>(null);
-  // 섹션 헤더 옆 날짜 — 각 캐러셀이 스크롤에 맞춰 "현재 맨 앞 카드 날짜"를 올려준다.
-  const [puzzleHeaderDate, setPuzzleHeaderDate] = useState<string | null>(null);
+  // 섹션 헤더 옆 날짜 — 캐러셀이 스크롤에 맞춰 "현재 맨 앞 카드 날짜"를 올려준다. (깃발 캐러셀 제거로 puzzleHeaderDate는 삭제)
   const [shareHeaderDate, setShareHeaderDate] = useState<string | null>(null);
   // 가이드는 항상 닫힘 상태로 시작. "ⓘ 깃발 이용 방법" 버튼으로만 펼침.
   const [showGuide, setShowGuide] = useState(false);
   // 가이드 모드는 단일 (full만) — 시크릿오퍼는 PUZZLE_ONBOARDING_STEPS 2단계에 통합됨
   const [guideMode, setGuideMode] = useState<"full">("full");
-  // 첫 방문 시 캐러셀 위 인라인 가이드 (Tip 박스 자리). 닫으면 영구 숨김.
-  const [showTopGuide, setShowTopGuide] = useState(false);
+  // 첫 방문 시 캐러셀 위 인라인 가이드 — 깃발 캐러셀 제거로 항상 false 고정 (닫기 로직 없음)
+  const showTopGuide = false;
   /** 더보기 화면의 "이용방법" — 첫 방문 모달을 수동으로 연다 */
   const [flagGuideOpen, setFlagGuideOpen] = useState(false);
 
@@ -382,11 +380,6 @@ export function HomeContent({
   }, [supabase]);
 
   // 첫 방문 시 가이드 자동 표시 제거 — 사용자가 "ⓘ 이용방법" 버튼을 직접 눌렀을 때만 노출
-
-  const dismissTopGuide = () => {
-    setShowTopGuide(false);
-    try { localStorage.setItem(FLAG_CTA_SHOWN_KEY, "1"); } catch {}
-  };
 
   const instantEnabled = isInstantEnabled();
   const advanceCount = activeAuctions.filter(a => a.listing_type === 'auction').length;
@@ -493,8 +486,7 @@ export function HomeContent({
 
   // 차단한 사용자 ID 집합 (Apple Guideline 1.2 — 차단 시 피드 즉시 제거)
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
-  // MD/Admin이 이미 오퍼한 깃발 ID — 캐러셀 정렬에서 "미제안 우선" 판정용 (MD만 fetch)
-  const [myOfferedPuzzleIds, setMyOfferedPuzzleIds] = useState<Set<string>>(new Set());
+  // myOfferedPuzzleIds(MD 오퍼한 깃발 ID) 제거 — 깃발 캐러셀 "미제안 우선" 정렬 자체가 삭제됨
 
   // 유저 관심/입찰/차단 병렬 fetch (Promise.all 로 RTT 절감)
   useEffect(() => {
@@ -502,12 +494,11 @@ export function HomeContent({
       setUserInterestedSet(new Set());
       setUserBidMap(new Map());
       setBlockedUserIds(new Set());
-      setMyOfferedPuzzleIds(new Set());
       return;
     }
     const auctionIds = auctions.active.map(a => a.id);
     const fetchAll = async () => {
-      const [interestsResult, bidsResult, blocksResult, offersResult] = await Promise.all([
+      const [interestsResult, bidsResult, blocksResult] = await Promise.all([
         supabase.from("chat_interests").select("auction_id").eq("user_id", user.id),
         auctionIds.length > 0
           ? supabase
@@ -518,14 +509,6 @@ export function HomeContent({
               .order("bid_amount", { ascending: false })
           : Promise.resolve({ data: [] as { auction_id: string; bid_amount: number }[] }),
         supabase.from("user_blocks").select("blocked_id").eq("blocker_id", user.id),
-        // MD/Admin만 오퍼 조회 — 캐러셀 "미제안 우선" 정렬용
-        isMdOrAdminUser
-          ? supabase
-              .from("puzzle_offers")
-              .select("puzzle_id")
-              .eq("md_id", user.id)
-              .in("status", ["pending", "accepted"])
-          : Promise.resolve({ data: [] as { puzzle_id: string }[] }),
       ]);
       if (interestsResult.data) {
         setUserInterestedSet(new Set(interestsResult.data.map((d: { auction_id: string }) => d.auction_id)));
@@ -540,12 +523,9 @@ export function HomeContent({
       if (blocksResult.data) {
         setBlockedUserIds(new Set(blocksResult.data.map((d: { blocked_id: string }) => d.blocked_id)));
       }
-      if (offersResult.data) {
-        setMyOfferedPuzzleIds(new Set(offersResult.data.map((d: { puzzle_id: string }) => d.puzzle_id)));
-      }
     };
     fetchAll();
-  }, [user, auctions.active, supabase, isMdOrAdminUser]);
+  }, [user, auctions.active, supabase]);
 
   // 차단한 사용자의 경매/퍼즐 필터링
   const visibleAuctions = useMemo(() => {
@@ -573,8 +553,7 @@ export function HomeContent({
   // 홈 캐러셀은 항상 전체 노출 (지역 필터 없음 — 더보기에서 바꾼 selectedArea 영향 안 받음).
   // 지역 탐색은 더보기(AuctionList)가 자체 selectedArea로 담당.
   const areaFilteredPuzzles = visiblePuzzles;
-  // 깃발(인원 확정) vs 조각(파티원 모집) 분리 — 각각 별도 캐러셀로 노출.
-  const flagPuzzles = useMemo(() => areaFilteredPuzzles.filter((p) => !p.is_recruiting_party), [areaFilteredPuzzles]);
+  // flagPuzzles(깃발 전용 필터) 제거 — 깃발 캐러셀 자체가 홈에서 빠짐. 파티(조각)만 남음.
   const sharePuzzles = useMemo(() => {
     let shares = areaFilteredPuzzles.filter((p) => p.is_recruiting_party);
     // 홈(캐러셀)은 임박한 것만 — D-7 주간 배치(Migration 505)로 상시 조각이 최대 7일치
@@ -627,49 +606,7 @@ export function HomeContent({
   //   1~2번 칸: NEW(6시간 이내) 우선 → 이벤트 날짜 가까운 순  ← 신규 깃발 발견 보장
   //   3번 칸  : 오퍼 최다 1개                                ← "꽂으면 제안 온다" 소셜 프루프
   // MD/Admin만 각 후보군 안에서 tie-break 추가:
-  //   내 지역∧미제안(0) > 타 지역∧미제안(1) > 내가 이미 오퍼함(2)
-  //   내 지역 판정은 user.area(배열) 중 하나라도 matchesArea면 true → "서울 어디든" 깃발도 잡힘.
-  // 로그아웃 MD도 1~2번 칸에서 신규를 놓치지 않음(오퍼순에 밀리지 않으므로).
-  const CAROUSEL_SLOTS = 3;
-  const CAROUSEL_NEW_SLOTS = 2;
-  const carouselPuzzles = useMemo(() => {
-    const now = Date.now();
-    const byEventDate = (a: Puzzle, b: Puzzle) =>
-      new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
-    const isNew = (p: Puzzle) =>
-      now - new Date(p.created_at).getTime() < 6 * 60 * 60 * 1000;
-
-    // MD/Admin 전용 tie-break. 그 외 시청자에게는 항상 0 → 규칙이 완전히 동일해짐.
-    const myAreas = user?.area ?? [];
-    const isMyArea = (p: Puzzle) =>
-      myAreas.length > 0 && myAreas.some((a) => matchesArea(p.area, a));
-    const tier = (p: Puzzle) => {
-      if (myOfferedPuzzleIds.has(p.id)) return 2;
-      return isMyArea(p) ? 0 : 1;
-    };
-    const byMdTier = (a: Puzzle, b: Puzzle) =>
-      isMdOrAdminUser ? tier(a) - tier(b) : 0;
-
-    // ── 1~2번 칸: NEW 그룹 먼저, 모자라면 나머지로 채움 (둘 다 tier → 날짜순) ──
-    const rank = (group: Puzzle[]) =>
-      [...group].sort((a, b) => byMdTier(a, b) || byEventDate(a, b));
-    const front = [
-      ...rank(flagPuzzles.filter(isNew)),
-      ...rank(flagPuzzles.filter((p) => !isNew(p))),
-    ].slice(0, CAROUSEL_NEW_SLOTS);
-
-    // ── 3번 칸: 앞 칸에 뽑히지 않은 것 중 오퍼 최다 1개 ──
-    // 오퍼가 전부 0이면 비교값이 동률 → tier/날짜순 폴백으로 자연스럽게 다음 카드가 들어옴.
-    const frontIds = new Set(front.map((p) => p.id));
-    const [topOffer] = flagPuzzles
-      .filter((p) => !frontIds.has(p.id))
-      .sort((a, b) => {
-        const diff = (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
-        return diff || byMdTier(a, b) || byEventDate(a, b);
-      });
-
-    return (topOffer ? [...front, topOffer] : front).slice(0, CAROUSEL_SLOTS);
-  }, [flagPuzzles, puzzleOfferCounts, isMdOrAdminUser, user?.area, myOfferedPuzzleIds]);
+  // 깃발 캐러셀 3칸 선발 알고리즘(carouselPuzzles) 제거 — 깃발 캐러셀 자체가 홈에서 빠짐.
 
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)
   useEffect(() => {
@@ -721,7 +658,8 @@ export function HomeContent({
   const renderHomeSheets = () => (
     <>
       {/* 깃발 사용법 온보딩 — 비로그인 첫 방문 시 1회 자동 노출 (localStorage) */}
-      <FlagOnboardingSheet autoShow={!user} />
+      {/* 자동 노출 비활성화 — 깃발 신규 진입점 숨김 */}
+      <FlagOnboardingSheet autoShow={false} />
       {/* 최근 매치 깃발 모달 */}
       <Sheet open={showMatchedModal} onOpenChange={setShowMatchedModal}>
         <SheetContent
@@ -819,16 +757,7 @@ export function HomeContent({
                   <span className="text-brand-amber">30만원치 더</span> 받았어요
                 </p>
               </div>
-              <div className="text-center space-y-1.5">
-                <Link
-                  href={user ? "/flags/new" : "/login?redirect=/flags/new"}
-                  onClick={() => setShowMatchedModal(false)}
-                  className="flex flex-col items-center justify-center w-full h-12 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black rounded-2xl shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all leading-tight"
-                >
-                  <span className="font-black text-[15px]">⛳ 나도 깃발꽂기</span>
-                  <span className="text-[10px] font-bold text-black/55 mt-0.5">&nbsp;모든 서비스 무료</span>
-                </Link>
-              </div>
+              {/* 깃발 신규 생성 CTA 제거 — 매치 쇼케이스는 계속 노출되지만 진입점은 없음 */}
             </div>
           )}
         </SheetContent>
@@ -902,7 +831,6 @@ export function HomeContent({
   if (!isDetailMode) {
     const detailHref = (tab: string) => `/?tab=${tab}&detail=1`;
     const isMdOrAdmin = user?.role === "md" || user?.role === "admin";
-    const newFlagHref = user ? "/flags/new" : "/login?redirect=/flags/new";
     const newShareHref = user ? "/shares/new" : "/login?redirect=/shares/new";
 
     // 탭별 Tip 콘텐츠 (풀 화면과 일관)
@@ -972,6 +900,17 @@ export function HomeContent({
     return (
       <>
         <div className="flex flex-col">
+          {/* ── 오늘 어디갈래? — 홈 최상단 고정 배치 ── */}
+          <div className="-mx-4 px-4 pb-4">
+            <ClubBenefitSection />
+            {/* MD 전용 게스트 간판 행동 유도 CTA — 일반 유저에겐 null이라 래퍼도 렌더 안 함 */}
+            {isMdOrAdmin && (
+              <div className="mt-3">
+                <GuestSignMdCta />
+              </div>
+            )}
+          </div>
+
           {/* ── LIVE — 고정헤더 바로 아래 (핵심: 실시간 클럽 분위기).
                  LIVE 없으면 ShotCarousel이 null 반환 → 섹션·여백 모두 안 보임 (mb 없음) ── */}
           {/* ⚠️ 여기에 음수 margin을 주면 LIVE가 없을 때(ShotCarousel이 null)
@@ -1151,92 +1090,15 @@ export function HomeContent({
                       </div>
                     ))}
                   </div>
-                  {currentTab === "puzzle" && !isMdOrAdmin && (
-                    <div className="flex justify-end mt-3">
-                      <Link
-                        href={user ? "/flags/new" : "/login?redirect=/flags/new"}
-                        onClick={dismissGuide}
-                        className="inline-flex items-center gap-1 h-9 px-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.97] text-black font-black text-[13px] rounded-full transition-all"
-                      >
-                        🚩 바로가기
-                      </Link>
-                    </div>
-                  )}
+                  {/* 깃발 "🚩 바로가기" CTA 제거 — 깃발 신규 진입점 숨김 */}
                 </div>
               )}
             </section>
           )}
 
-          {/* ── 깃발 섹션 헤더 한 줄: 버튼 + 날짜 + 더보기 ── */}
-          {/* mt: 바로 위 LIVE 캐러셀의 구분선과 배지가 너무 붙어 보여서 여백 추가 */}
-          <div className="mt-0.5">
-            {renderSectionRow({ icon: "🚩", label: "깃발", detailTab: "puzzle", dateLabel: puzzleHeaderDate, count: flagPuzzles.length })}
-          </div>
+          {/* 🚩 깃발 섹션(헤더+인라인 가이드+캐러셀) 제거 — 깃발 신규 진입점 숨김 */}
 
-          {/* 첫 진입 인라인 가이드 — 깃발 캐러셀 위 (한번 닫으면 영구 숨김) */}
-          {showTopGuide && (
-            <div className="bg-card border border-border rounded-3xl p-4 relative mt-4 mb-4">
-              <button
-                onClick={dismissTopGuide}
-                aria-label="가이드 닫기"
-                className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors z-10"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-              <div className="flex flex-col gap-2">
-                {compactSteps.map((step, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-muted/60 border border-border rounded-2xl p-3 flex flex-row items-center gap-3"
-                  >
-                    <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
-                      {step.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-[14.5px] font-black text-foreground mb-0.5 break-keep">{step.title}</h3>
-                      <p className={`text-[12px] text-muted-foreground font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
-                        {step.desc.split("\n").map((line, lineIdx, arr) => {
-                          const parts = line.split(/(\*\*[^*]+\*\*)/g);
-                          return (
-                            <span key={lineIdx}>
-                              {parts.map((part, pIdx) =>
-                                /^\*\*[^*]+\*\*$/.test(part) ? (
-                                  <span key={pIdx} className="text-foreground/90 font-semibold">
-                                    {part.slice(2, -2)}
-                                  </span>
-                                ) : (
-                                  <span key={pIdx}>{part}</span>
-                                )
-                              )}
-                              {lineIdx < arr.length - 1 && "\n"}
-                            </span>
-                          );
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 깃발 캐러셀 (항상 노출) */}
-          <div className="mb-2">
-            <HomePuzzleCarousel
-              puzzles={carouselPuzzles}
-              totalCount={flagPuzzles.length}
-              offerCounts={puzzleOfferCounts}
-              userRole={user?.role as "user" | "md" | "admin" | undefined}
-              detailHref={detailHref("puzzle")}
-              newFlagHref={newFlagHref}
-              showFlagCTA
-              isAreaFiltered={!!selectedArea}
-              onClearAreaFilter={() => setSelectedArea(null)}
-              onActiveDateChange={setPuzzleHeaderDate}
-            />
-          </div>
-
-          {/* ── 파티 섹션 — order-2로 팁박스 아래 배치 (깃발 → 팁박스 → 파티) ── */}
+          {/* ── 파티 섹션 — order-2로 팁박스 아래 배치 ── */}
           <div className="order-2 flex flex-col">
           {showShareTab && (
             <>
@@ -1264,20 +1126,11 @@ export function HomeContent({
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>
 
-        {/* 오늘 어디갈래? + HOT DEAL 섹션 + 이하 전체 배경 */}
+        {/* HOT DEAL 섹션 + 이하 전체 배경 */}
         {/* pb는 <main>의 pb-16(BottomNav 가림 방지)과 별개로, 섹션 끝과 푸터 사이 최소 간격만. */}
         <div className="-mx-4 px-4 pt-3 pb-6 bg-section-alt">
-          <ClubBenefitSection />
-          {/* MD 전용 게스트 간판 행동 유도 CTA — 일반 유저에겐 null이라 래퍼도 렌더 안 함 */}
-          {isMdOrAdmin && (
-            <div className="mt-3">
-              <GuestSignMdCta />
-            </div>
-          )}
-          <div className="mt-6">
-            <HotdealHomeSection />
-          </div>
-          {/* MD 전용 행동 유도 CTA (오늘 어디갈래? ↔ Hot Deal Tonight 사이) */}
+          <HotdealHomeSection />
+          {/* MD 전용 행동 유도 CTA */}
           {isMdOrAdmin && (
             <div className="mt-3">
               <HotdealMdCta />
@@ -1516,17 +1369,7 @@ export function HomeContent({
                       </div>
                     ))}
                   </div>
-                  {currentTab === "puzzle" && !isMdOrAdmin && (
-                    <div className="flex justify-end mt-3">
-                      <Link
-                        href={user ? "/flags/new" : "/login?redirect=/flags/new"}
-                        onClick={dismissGuide}
-                        className="inline-flex items-center gap-1 h-9 px-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.97] text-black font-black text-[13px] rounded-full transition-all"
-                      >
-                        🚩 바로가기
-                      </Link>
-                    </div>
-                  )}
+                  {/* 깃발 "🚩 바로가기" CTA 제거 — 깃발 신규 진입점 숨김 */}
                   {currentTab === "share" && !isMdOrAdmin && (
                     <div className="flex justify-end mt-3">
                       <Link
@@ -1569,29 +1412,17 @@ export function HomeContent({
         })()}
 
 
-        {!isLoading && !(currentTab === "puzzle" && puzzles.length === 0) && currentTab !== "share" && (currentTab === "puzzle" || !user) && (auctions.active.length > 0 || currentTab === "puzzle") && (
+        {/* 깃발 "⛳ 깃발꽂기" 대형 CTA 제거 — 비로그인 로그인 유도만 남김 */}
+        {!isLoading && !user && currentTab !== "share" && currentTab !== "puzzle" && auctions.active.length > 0 && (
           <div className="text-center -mt-20 pb-3 relative z-10">
             <p className="text-[14.5px] text-foreground/90 font-semibold mb-1">
-              {currentTab === "puzzle"
-                ? "최고의 테이블을 잡으세요."
-                : "3초만에 로그인하고 입찰하기"}
+              3초만에 로그인하고 입찰하기
             </p>
-            <Link href={currentTab === "puzzle" ? (user ? "/flags/new" : "/login?redirect=/flags/new") : "/login"}>
-              <Button
-                className={
-                  currentTab === "puzzle"
-                    ? "h-10 px-8 bg-amber-500 text-black font-bold text-sm rounded-full hover:bg-amber-400"
-                    : "h-10 px-8 bg-inverse text-inverse-foreground font-bold text-sm rounded-full hover:opacity-90"
-                }
-              >
-                {currentTab === "puzzle" ? "⛳ 깃발꽂기" : "로그인"}
+            <Link href="/login">
+              <Button className="h-10 px-8 bg-inverse text-inverse-foreground font-bold text-sm rounded-full hover:opacity-90">
+                로그인
               </Button>
             </Link>
-            {currentTab === "puzzle" && (
-              <p className="text-[10px] text-muted-foreground mt-2">
-                모든 서비스 무료
-              </p>
-            )}
           </div>
         )}
       </div>

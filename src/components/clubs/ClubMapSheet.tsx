@@ -2,7 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import Image from "next/image";
-import { Flag } from "lucide-react";
+import { Ticket } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { getOpeningStatus } from "@/lib/clubs/openingStatus";
 
@@ -219,7 +219,7 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
               <DetailCard
                 key={c.id}
                 club={c}
-                flagCount={activeCountMap[c.id] || 0}
+                listingCount={activeCountMap[c.id] || 0}
                 hotdealText={hotdealMap[c.id]}
                 isSelected={selectedClubId === c.id}
                 onCardClick={onCardClick}
@@ -236,14 +236,14 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
 /** 카드 클릭 = 지도 panTo (탐색 흐름 유지). "상세 보기" = 시트 모달 (지도 안 끊김). */
 function DetailCard({
   club,
-  flagCount,
+  listingCount,
   hotdealText,
   isSelected,
   onCardClick,
   onDetailClick,
 }: {
   club: ClubItem;
-  flagCount: number;
+  listingCount: number;
   hotdealText?: string;
   isSelected: boolean;
   onCardClick: (clubId: string) => void;
@@ -334,12 +334,13 @@ function DetailCard({
           )}
         </div>
 
-        {/* Line 4: 깃발 (있을 때만) */}
-        {flagCount > 0 && (
+        {/* Line 4: 진행 중 매물 수 (있을 때만).
+            ⚠️ 이 값은 auctions(경매·조각) 카운트이지 깃발(puzzles) 개수가 아니다 — 과거 "깃발 N" 라벨은 오표기였음. */}
+        {listingCount > 0 && (
           <div className="flex items-center gap-1.5 pt-0.5">
             <span className="inline-flex items-center gap-1 bg-amber-500/15 text-brand-amber text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              <Flag className="w-3 h-3" />
-              깃발 {flagCount}
+              <Ticket className="w-3 h-3" />
+              매물 {listingCount}
             </span>
           </div>
         )}

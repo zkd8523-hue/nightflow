@@ -410,7 +410,7 @@ export function MessageRoom({
       const n = (count ?? 0) + 1; // 이번이 n번째 대화
       const label = puzzleInfo.isRecruitingParty ? "파티" : "깃발";
       if (n > 5) {
-        toast.error("한 깃발에서는 최대 5팀과 대화할 수 있어요.");
+        toast.error(`한 ${label}에서는 최대 5팀과 대화할 수 있어요.`);
         return false;
       }
       const confirmMsg =
@@ -463,7 +463,7 @@ export function MessageRoom({
     }
     setSending(false);
     return true;
-  }, [input, media, sending, readOnly, mdBlocked, mdFirstReply, myRole, iHaveSent, puzzleId, offerId, me, addLocalMessage, editingId, updateLocalMessage]);
+  }, [input, media, sending, readOnly, mdBlocked, mdFirstReply, myRole, iHaveSent, puzzleId, offerId, me, addLocalMessage, editingId, updateLocalMessage, puzzleInfo.isRecruitingParty]);
 
   // 진입 게이트 오픈: 방장이 아직 대화 안 건 채팅방에 들어오면 자동 표시(1회).
   useEffect(() => {
@@ -989,7 +989,7 @@ export function MessageRoom({
               ? "이미 여러 곳과 상담 중이에요"
               : "마지막 한 팀이에요";
         const body = blocked
-          ? "이 깃발에서는 최대 5팀과 대화할 수 있어요."
+          ? `이 ${puzzleInfo.isRecruitingParty ? "파티" : "깃발"}에서는 최대 5팀과 대화할 수 있어요.`
           : n <= 3
             ? "확인하면 '안녕하세요!'로 대화가 시작돼요."
             : n === 4

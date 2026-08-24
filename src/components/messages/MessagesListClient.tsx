@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -45,11 +45,6 @@ function chatListTime(iso: string): string {
 function previewText(content: string | null | undefined, fallback: string): string {
   if (!content) return fallback;
   return contactCardPreview(content) ?? content;
-}
-
-// 종료된 대화(만료/거절/철회)는 읽을 수 없으므로 미읽음 집계에서 제외
-function isClosedStatus(status: string): boolean {
-  return status === "expired" || status === "rejected" || status === "withdrawn";
 }
 
 // DM이 시작된 파티 헤더 라벨 — 깃발/파티 헤더와 같은 톤(날짜 · 지역 · 예산)
@@ -156,76 +151,12 @@ export function MessagesListClient() {
     reloadParty();
   }
 
-  const handleDeleteChat = async (offerId: string) => {
-    if (typeof window !== "undefined" &&
-        !window.confirm("이 종료된 대화를 삭제할까요?\n삭제하면 목록에서 사라집니다.")) return;
-    const { data, error } = await createClient().rpc("hide_offer_chat", { p_offer_id: offerId });
-    if (error || !data?.success) {
-      toast.error(data?.error || "삭제에 실패했습니다");
-      return;
-    }
-    reload();
-  };
+  // handleDeleteChat/handleDeleteAllClosed·groups·shareGroups(깃발 1:1 오퍼 채팅 그룹핑) 제거 — 깃발 탭 UI가 없어져 미사용.
+  // chats/loading/reload(useOfferChats)는 빈 상태 판정과 나가기 갱신에 계속 쓰여 유지.
 
-  // 종료된 채팅 모아서 한 번에 삭제
-  const [deletingAll, setDeletingAll] = useState(false);
-  const handleDeleteAllClosed = async (offerIds: string[]) => {
-    if (deletingAll || offerIds.length === 0) return;
-    if (typeof window !== "undefined" &&
-        !window.confirm(`종료된 대화 ${offerIds.length}개를 모두 삭제할까요?`)) return;
-    setDeletingAll(true);
-    const supabase = createClient();
-    const results = await Promise.all(
-      offerIds.map((id) => supabase.rpc("hide_offer_chat", { p_offer_id: id }))
-    );
-    setDeletingAll(false);
-    const failed = results.filter((r) => r.error || !r.data?.success).length;
-    if (failed > 0) toast.error(`${failed}개는 삭제하지 못했어요`);
-    else toast.success("종료된 대화를 모두 삭제했어요");
-    reload();
-  };
-
-  // 깃발(puzzle)별 그룹 — 그룹은 최근 활동순, 그룹 내부도 최근순(RPC가 정렬해 옴)
-  const groups = useMemo(() => {
-    const map = new Map<string, typeof chats>();
-    for (const c of chats) {
-      const arr = map.get(c.puzzle_id);
-      if (arr) arr.push(c);
-      else map.set(c.puzzle_id, [c]);
-    }
-    // 이벤트 날짜 임박순(빠른 날짜 먼저). 같은 날짜면 최근 대화순.
-    return Array.from(map.values()).sort((a, b) => {
-      const d = new Date(a[0].event_date).getTime() - new Date(b[0].event_date).getTime();
-      if (d !== 0) return d;
-      return new Date(b[0].last_at).getTime() - new Date(a[0].last_at).getTime();
-    });
-  }, [chats]);
-
-  // 깃발 / 조각 섹션 분리 (is_recruiting_party 기준)
-  const sections = useMemo(() => [
-    { key: "flag", label: "🚩 깃발", items: groups.filter((g) => !g[0].is_recruiting_party) },
-    { key: "share", label: "🎉 파티", items: groups.filter((g) => g[0].is_recruiting_party) },
-  ], [groups]);
-
-  // 탭 순서·기본값: 메시지(1) → 조각(2) → 깃발(3), 진입 시 항상 메시지
-  const [tab, setTab] = useState<"flag" | "share" | "dm">("dm");
-  const activeSection = sections.find((s) => s.key === tab)!;
+  // 탭 순서·기본값: 메시지(1) → 파티(2). 깃발 탭 제거. 진입 시 항상 메시지
+  const [tab, setTab] = useState<"share" | "dm">("dm");
   const didAutoSelect = useRef(false);
-
-  // 깃발 탭: 진행 중인 대화만 위에 깃발별로 묶어 보여주고,
-  // 종료(만료/거절/철회)된 대화는 맨 아래 "종료된 채팅" 드롭다운으로 몰아둔다.
-  const [closedOpen, setClosedOpen] = useState(false);
-  const flagOpenGroups = useMemo(
-    () =>
-      sections[0].items
-        .map((g) => g.filter((c) => !isClosedStatus(c.offer_status)))
-        .filter((g) => g.length > 0),
-    [sections]
-  );
-  const flagClosedChats = useMemo(
-    () => sections[0].items.flatMap((g) => g.filter((c) => isClosedStatus(c.offer_status))),
-    [sections]
-  );
 
   // 메시지(DM) 탭: 파티에서 시작된 대화는 그 파티별로 묶고(Migration 535 context_puzzle_id),
   // 파티가 이미 매칭/종료됐으면 "지난 대화"로 내려 접어둔다. 파티 무관 DM은 그대로 개별 표시.
@@ -276,26 +207,15 @@ export function MessagesListClient() {
     () => partyRooms.reduce((sum, r) => sum + unreadCountOf(r), 0),
     [partyRooms]
   );
-  const flagUnread = useMemo(
-    () =>
-      sections[0].items.reduce(
-        (sum, g) =>
-          sum +
-          g.reduce((s, c) => s + (isClosedStatus(c.offer_status) ? 0 : unreadCountOf(c)), 0),
-        0
-      ),
-    [sections]
-  );
 
   // 메시지가 비어 있어도 다른 탭으로 튀지 않는다(기본 탭 고정).
-  // 단, 깃발/조각에 안 읽은 대화가 있으면 그쪽을 1회 먼저 보여준다.
+  // 단, 파티에 안 읽은 대화가 있으면 그쪽을 1회 먼저 보여준다. (깃발 탭 제거로 깃발 분기 삭제)
   useEffect(() => {
     if (didAutoSelect.current || loading || partyLoading) return;
     didAutoSelect.current = true;
     if (dmThreads.length > 0) return; // 메시지가 있으면 그대로 메시지 탭
     if (shareUnread > 0) setTab("share");
-    else if (flagUnread > 0) setTab("flag");
-  }, [loading, partyLoading, shareUnread, flagUnread, dmThreads]);
+  }, [loading, partyLoading, shareUnread, dmThreads]);
 
   // 플래그 OFF면 기능 자체가 없음 → 홈으로
   useEffect(() => {
@@ -317,9 +237,9 @@ export function MessagesListClient() {
           </button>
           <h1 className="text-[16px] font-black text-foreground">나의 채팅</h1>
         </header>
+        {/* 🚩 깃발 탭 제거 — 메시지 / 파티 2탭 구조. 기존 깃발 오퍼 대화는 /flags/[id] 상세에서 계속 접근 가능 */}
         {user && (
-          <div className="grid grid-cols-3 gap-1 p-1 mx-4 mb-2 bg-card rounded-full">
-            {/* 1번 메시지(DM) — 항상 노출 (메시지/파티/깃발 3채널 구조) */}
+          <div className="grid grid-cols-2 gap-1 p-1 mx-4 mb-2 bg-card rounded-full">
             <button
               onClick={() => { didAutoSelect.current = true; setTab("dm"); }}
               className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "dm" ? "bg-white/10 text-foreground" : "text-muted-foreground"}`}
@@ -334,33 +254,18 @@ export function MessagesListClient() {
                   안읽음은 Migration 484부터 개수로 표시. */}
               <UnreadBadge count={dmUnread} />
             </button>
-            {/* 2번 파티 → 3번 깃발 (sections는 flag,share 순이라 역순 렌더) */}
-            {[...sections].reverse().map((s) => {
-              const isShare = s.key === "share";
-              // 조각 탭 = 파티 단체방만(1:1 제거), 깃발 탭 = 1:1 오퍼 채팅
-              const count = isShare ? partyRooms.length : s.items.length;
-              const unreadTotal = isShare ? shareUnread : flagUnread;
-              const active = tab === s.key;
-              const name = s.key === "flag" ? "🚩 깃발" : "🎉 파티";
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => {
-                    didAutoSelect.current = true;
-                    setTab(s.key as "flag" | "share");
-                  }}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${active ? "bg-white/10 text-foreground" : "text-muted-foreground"}`}
-                >
-                  <span>{name}</span>
-                  {count > 0 && (
-                    <span className={`text-[11px] ${active ? "text-foreground/80" : "text-muted-foreground"}`}>
-                      {count}
-                    </span>
-                  )}
-                  <UnreadBadge count={unreadTotal} />
-                </button>
-              );
-            })}
+            <button
+              onClick={() => { didAutoSelect.current = true; setTab("share"); }}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "share" ? "bg-white/10 text-foreground" : "text-muted-foreground"}`}
+            >
+              <span>🎉 파티</span>
+              {partyRooms.length > 0 && (
+                <span className={`text-[11px] ${tab === "share" ? "text-foreground/80" : "text-muted-foreground"}`}>
+                  {partyRooms.length}
+                </span>
+              )}
+              <UnreadBadge count={shareUnread} />
+            </button>
           </div>
         )}
       </div>
@@ -373,7 +278,7 @@ export function MessagesListClient() {
         <div className="text-center mt-20 px-8">
           <p className="text-[14px] text-muted-foreground font-bold">아직 대화가 없어요</p>
           <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
-            깃발 상세에서 마음에 드는 오퍼에 <br />“대화하기”를 눌러 시작해보세요
+            파티에 참여하면 단체 채팅방에서 <br />파트너와 대화를 시작할 수 있어요
           </p>
         </div>
       ) : tab === "dm" ? (
@@ -429,8 +334,6 @@ export function MessagesListClient() {
         )
       ) : tab === "share" && partyRooms.length === 0 ? (
         <p className="text-center text-[13px] text-muted-foreground mt-16">파티 대화가 없어요</p>
-      ) : tab === "flag" && activeSection.items.length === 0 ? (
-        <p className="text-center text-[13px] text-muted-foreground mt-16">깃발 대화가 없어요</p>
       ) : (
         <div>
           {/* 파티 탭: 단체채팅방(파티) — 깃발과 동일한 헤더+행 구조 */}
@@ -487,149 +390,8 @@ export function MessagesListClient() {
               </div>
             );
           })}
-          {/* 깃발 탭만 1:1 오퍼 채팅 그룹 노출 (파티는 단체방으로 통합) — 진행 중만 */}
-          {tab === "flag" && flagOpenGroups.map((group) => {
-            const head = group[0];
-            const budgetText = head.budget ? ` · ${Math.round(head.budget / 10000)}만원` : "";
-            const isMatched = group.some((c) => c.offer_status === "accepted");
-            return (
-              <div key={head.puzzle_id} className="mb-1">
-                {/* 깃발 헤더 — 매칭된 깃발은 녹색 강조 */}
-                <Link
-                  href={`/flags/${head.puzzle_id}`}
-                  className="flex items-center justify-between gap-2 px-4 py-2.5 bg-card/40 active:bg-card"
-                >
-                  <p className="text-[13px] font-bold text-foreground/80 truncate">
-                    {formatDate(head.event_date)} · {head.area}{budgetText}
-                  </p>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {isMatched && (
-                      <span className="inline-flex items-center gap-0.5 text-[11px] px-2 py-0.5 rounded-full bg-inverse text-inverse-foreground font-bold">
-                        <Check className="w-3 h-3" />
-                        매칭됨
-                      </span>
-                    )}
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </Link>
-                {/* 이 깃발의 대화들 (종료된 건 아래 "종료된 채팅"으로 빠짐) */}
-                <ul className="divide-y divide-neutral-900">
-                  {group.map((c) => (
-                    <li key={c.offer_id}>
-                      <Link
-                        href={`/messages/${c.offer_id}`}
-                        onClick={suppressIfLongPress}
-                        onContextMenu={(e) => { e.preventDefault(); setLeaveTarget({ kind: "offer", offerId: c.offer_id, myRole: c.my_role, label: `${formatDate(head.event_date)} · ${head.area}` }); }}
-                        onPointerDown={() => startPress({ kind: "offer", offerId: c.offer_id, myRole: c.my_role, label: `${formatDate(head.event_date)} · ${head.area}` })}
-                        onPointerUp={cancelPress}
-                        onPointerLeave={cancelPress}
-                        className="flex items-center gap-3 px-4 py-3.5 active:bg-card/60"
-                      >
-                        <div className="relative w-11 h-11 rounded-full overflow-hidden bg-muted shrink-0">
-                          {c.counterpart_image ? (
-                            <Image src={c.counterpart_image} alt="" fill className="object-cover" sizes="44px" />
-                          ) : (
-                            <div className="w-full h-full grid place-items-center text-[14px] font-bold text-muted-foreground">
-                              {(c.counterpart_name ?? "?").slice(0, 1)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[14px] font-bold text-foreground truncate">
-                            {c.counterpart_name ?? (c.my_role === "leader" ? "파트너" : "방장")}
-                          </p>
-                          <p className={`text-[13px] truncate mt-0.5 ${unreadCountOf(c) > 0 ? "text-foreground/90 font-semibold" : "text-muted-foreground"}`}>
-                            {previewText(c.last_content, "사진")}
-                          </p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1 shrink-0">
-                          <span className="text-[11px] text-muted-foreground">{chatListTime(c.last_at)}</span>
-                          <UnreadBadge count={unreadCountOf(c)} />
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-
-          {/* 종료된 채팅 — 맨 아래 접힌 드롭다운 하나로 묶음 */}
-          {tab === "flag" && flagClosedChats.length > 0 && (
-            <div className="mt-2 border-t border-border">
-              <button
-                onClick={() => setClosedOpen((v) => !v)}
-                className="w-full flex items-center justify-between gap-2 px-4 py-3.5 active:bg-card/60"
-              >
-                <span className="text-[13px] font-bold text-muted-foreground">
-                  종료된 채팅 {flagClosedChats.length}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground transition-transform ${closedOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-              {closedOpen && (
-                <>
-                  <ul className="divide-y divide-neutral-900">
-                    {flagClosedChats.map((c) => {
-                      const budgetText = c.budget ? ` · ${Math.round(c.budget / 10000)}만원` : "";
-                      return (
-                        <li key={c.offer_id}>
-                          <Link
-                            href={`/messages/${c.offer_id}`}
-                            className="flex items-center gap-3 px-4 py-3.5 opacity-50 active:bg-card/60"
-                          >
-                            <div className="relative w-11 h-11 rounded-full overflow-hidden bg-muted shrink-0">
-                              {c.counterpart_image ? (
-                                <Image src={c.counterpart_image} alt="" fill className="object-cover" sizes="44px" />
-                              ) : (
-                                <div className="w-full h-full grid place-items-center text-[14px] font-bold text-muted-foreground">
-                                  {(c.counterpart_name ?? "?").slice(0, 1)}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-[14px] font-bold text-foreground truncate">
-                                  {c.counterpart_name ?? (c.my_role === "leader" ? "파트너" : "방장")}
-                                </p>
-                                <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold">종료</span>
-                              </div>
-                              {/* 깃발별 그룹이 없어졌으니 어떤 깃발이었는지 여기서 표시 */}
-                              <p className="text-[12px] text-muted-foreground truncate mt-0.5">
-                                {formatDate(c.event_date)} · {c.area}{budgetText}
-                              </p>
-                            </div>
-                            <div className="flex flex-col items-end gap-1 shrink-0">
-                              <span className="text-[11px] text-muted-foreground">{chatListTime(c.last_at)}</span>
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleDeleteChat(c.offer_id);
-                                }}
-                                className="p-0.5 text-muted-foreground hover:text-red-400 transition-colors"
-                                aria-label="삭제"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <button
-                    onClick={() => handleDeleteAllClosed(flagClosedChats.map((c) => c.offer_id))}
-                    disabled={deletingAll}
-                    className="w-full py-3.5 text-[13px] font-bold text-muted-foreground hover:text-red-400 transition-colors disabled:opacity-50"
-                  >
-                    {deletingAll ? "삭제하는 중…" : "종료된 채팅 전체 삭제"}
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+          {/* 🚩 깃발 탭 렌더(1:1 오퍼 채팅 그룹 + 종료된 채팅) 제거 — 탭 UI 자체를 없앰.
+              기존 깃발 대화는 /flags/[id] 상세를 거쳐 /messages/[offerId]로 계속 접근 가능. */}
         </div>
       )}
 

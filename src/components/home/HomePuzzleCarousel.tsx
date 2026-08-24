@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRef, useState, useEffect, useMemo } from "react";
-import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
 import { ClubDirectCard, groupPuzzlesByClub } from "@/components/puzzles/ClubDirectCard";
@@ -176,13 +175,13 @@ export function HomePuzzleCarousel({
             {shareMode ? "파티가 모이면 클럽에서 테이블을 제안해요" : "예산·인원·날짜만 정하면 파트너들이 시크릿오퍼를 보내요"}
           </p>
         </div>
-        {/* 파티 등록은 유저 전용 — MD/Admin에겐 CTA 숨김 */}
-        {!(shareMode && (userRole === "md" || userRole === "admin")) && (
+        {/* 파티 등록은 유저 전용 — MD/Admin에겐 CTA 숨김. 깃발 신규 생성 CTA는 제거(shareMode에서만 노출) */}
+        {shareMode && !(userRole === "md" || userRole === "admin") && (
           <Link
             href={newFlagHref}
-            className={`inline-flex items-center gap-1 px-4 py-2 rounded-full text-black text-[13px] font-black active:scale-95 transition ${shareMode ? "bg-green-500 hover:bg-green-400" : "bg-amber-500"}`}
+            className="inline-flex items-center gap-1 px-4 py-2 rounded-full text-black text-[13px] font-black active:scale-95 transition bg-green-500 hover:bg-green-400"
           >
-            {shareMode ? "🎉 파티 올리기" : "⛳ 깃발 꽂기"}
+            🎉 파티 올리기
           </Link>
         )}
       </div>
@@ -247,33 +246,20 @@ export function HomePuzzleCarousel({
                 <p className="text-[10px] text-foreground/80 mt-0.5">등록 무료</p>
               </div>
             </div>
-          ) : (
-          /* MD/Admin 깃발: 끝 슬라이드를 "더보기 >" 카드로. 깃발꽂기 CTA는 노출하지 않음. */
-          <Link
-            href={detailHref}
-            className="flex-shrink-0 w-[64%] max-w-[280px] snap-start snap-always flex items-center justify-center group"
-            aria-label="깃발 더보기"
-          >
-            <div className="text-center w-full mt-8">
-              <div className="inline-flex items-center gap-1 text-[15px] font-black text-foreground/80 group-hover:text-foreground transition-colors">
-                더보기
-                <ChevronRight className="w-4 h-4" />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">{totalCount ?? puzzles.length}개 보러가기</p>
-            </div>
-          </Link>
-          )
+          ) : null
+          /* MD/Admin 깃발: "더보기" 슬라이드 제거 — 깃발 신규 진입점 숨김 */
         ) : (
           <>
-            {showFlagCTA && (
+            {/* 깃발 신규 생성 CTA 제거 — shareMode(파티)일 때만 노출 */}
+            {showFlagCTA && shareMode && (
               <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
                 <div className="text-center w-full mt-8">
                   <p className="text-[14.5px] text-foreground/90 font-semibold mb-0.5">
-                    {shareMode ? "파티원과 함께 놀아요!" : "최고의 테이블을 잡으세요."}
+                    파티원과 함께 놀아요!
                   </p>
                   <Link href={newFlagHref}>
-                    <Button className={`h-12 pl-7 pr-9 text-black font-black text-[15px] rounded-full ${shareMode ? "bg-green-500 hover:bg-green-400" : "bg-amber-500 hover:bg-amber-400"}`}>
-                      {shareMode ? "🎉 파티 올리기" : "⛳ 깃발꽂기"}
+                    <Button className="h-12 pl-7 pr-9 text-black font-black text-[15px] rounded-full bg-green-500 hover:bg-green-400">
+                      🎉 파티 올리기
                     </Button>
                   </Link>
                   <p className="text-[10px] text-foreground/80 mt-0.5">모든 서비스 무료</p>

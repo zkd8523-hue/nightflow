@@ -981,7 +981,7 @@ export function PuzzleDetailClient({
               className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 space-y-2"
             >
               <div className="flex items-center gap-2">
-                <span className="text-[15px] font-black text-red-300">{t("🚩 취소된 깃발입니다", "🚩 This request was cancelled")}</span>
+                <span className="text-[15px] font-black text-red-300">{t(isRecruitingParty ? "🎉 취소된 파티입니다" : "🚩 취소된 깃발입니다", "🚩 This request was cancelled")}</span>
               </div>
               {puzzle.cancelled_reason ? (
                 <>
@@ -994,7 +994,12 @@ export function PuzzleDetailClient({
                 </>
               ) : (
                 <p className="text-[13px] text-foreground/80 leading-relaxed">
-                  {t("이 깃발은 더 이상 진행되지 않습니다. 새로운 깃발을 등록해 주세요.", "This request is no longer active. Please make a new one.")}
+                  {t(
+                    isRecruitingParty
+                      ? "이 파티는 더 이상 진행되지 않습니다. 새로운 파티를 등록해 주세요."
+                      : "이 깃발은 더 이상 진행되지 않습니다.",
+                    "This request is no longer active."
+                  )}
                 </p>
               )}
               {puzzle.cancelled_at && (
