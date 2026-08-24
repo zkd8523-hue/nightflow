@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Minus, Loader2, ChevronRight, Trash2, FolderCog } from "lucide-react";
+import { Plus, Minus, Loader2, Trash2, FolderCog } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -18,6 +18,13 @@ import { EXTRAS_OPTIONS } from "@/lib/constants/liquor";
 import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
 import { isRedDay } from "@/lib/utils/holidays";
 import type { AuctionTemplate, Club } from "@/types/database";
+import type { ParsedPromoRow } from "@/lib/utils/promoParse";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const MAX_TEMPLATES = 9;
 // 1인 가격 상한(만원). total_budget이 integer 컬럼이라 정원까지 곱하면 21억을 넘길 수 있다
@@ -45,6 +52,9 @@ interface Props {
 }
 
 type TemplateFormState = { club_id: string; category: string; name: string; total_seats: number; price_man: string; includes: string[]; md_comment: string };
+/** 카톡 문구 파싱 결과 검토용 행 — selected/key/price_man_low_original은 화면 전용, DB로 안 나간다.
+ *  price_man_low_original: 범위 칩("6만"/"9만")을 오가도 원래 낮은 값을 잃지 않게 보관 */
+type ReviewRow = ParsedPromoRow & { key: string; selected: boolean; price_man_low_original: number };
 /**
  * DB 제약 위반 메시지를 사람이 읽을 수 있는 문장으로. 원문(new row for relation ...)이
  * 그대로 토스트에 뜨면 MD는 무엇을 고쳐야 하는지 알 수 없다.
@@ -108,6 +118,8 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   const [folderManagerOpen, setFolderManagerOpen] = useState(false);
   /** ⓘ 이용방법 — 첫 안내와 같은 팝업을 그대로 연다 */
   const [guideOpen, setGuideOpen] = useState(false);
+  /** 자리 차지 직후 자동으로 띄운 가이드인지 — 확인 시 세팅 추가로 이어줄지 가른다 */
+  const [guideToSetup, setGuideToSetup] = useState(false);
   const [folderDropKey, setFolderDropKey] = useState<string | null>(null);
   /** 지금 끌고 있는 폴더 이름 — 필터 줄과 폴더 관리가 함께 쓴다 */
   const [folderDrag, setFolderDrag] = useState<string | null>(null);
@@ -242,7 +254,15 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       toast.error(data?.error || "자리 선점에 실패했어요");
       return;
     }
-    toast.success("이번 주 이 클럽 파티 자리를 잡았어요");
+    // 자리만 잡고 세팅을 안 하면 발행이 0건이다 — 차지 직후가 세팅을 시작시킬 타이밍.
+    // 이미 세팅이 있는 MD에게는 방해가 되므로 템플릿이 하나도 없을 때만 가이드를 띄운다.
+    if (templates.length === 0) {
+      toast.success("자리를 잡았어요 · 이제 파티를 세팅해주세요");
+      setGuideToSetup(true);
+      setGuideOpen(true);
+    } else {
+      toast.success("이번 주 이 클럽 파티 자리를 잡았어요");
+    }
     await fetchSlots();
   };
 
@@ -284,6 +304,24 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
     fetchSlots();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mdId]);
+
+  // 레이아웃에 붙은 가이드 시트(자동 노출 / ?shareGuide=full)의 "세팅 바로가기" →
+  // 이 컴포넌트의 세팅 추가 시트를 연다. 컴포넌트 경계를 넘으므로 이벤트로 잇는다.
+  //
+  // 두 경로를 모두 받아야 한다:
+  //  (a) 섹션이 이미 열려 있던 경우 — 이벤트를 직접 받는다
+  //  (b) 섹션이 접혀 있던 경우 — 부모가 펼치면서 이 컴포넌트가 지금 막 마운트된다.
+  //      그 사이 이벤트는 이미 지나갔으므로, 부모가 남겨둔 플래그를 보고 연다.
+  useEffect(() => {
+    const handler = () => openCreate();
+    window.addEventListener("nightflow:open-share-setup", handler);
+    if (typeof window !== "undefined" && window.sessionStorage.getItem("nightflow:pending-share-setup")) {
+      window.sessionStorage.removeItem("nightflow:pending-share-setup");
+      setTimeout(openCreate, 150);
+    }
+    return () => window.removeEventListener("nightflow:open-share-setup", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templates.length, clubs]);
 
   // ── 요일 반복 규칙 편집 ────────────────────────────────────────────────
   // live_dows는 "매주 이 요일마다"라는 반복 규칙이다. 한 번 정하면 다음 주에 다시
@@ -445,13 +483,11 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   };
 
   // ── ⋯ 액션 시트: 수정 / 복제 / 삭제 / 전부 끄기 ──────────────────────
-  const [actionTarget, setActionTarget] = useState<AuctionTemplate | null>(null);
   const [editTarget, setEditTarget] = useState<AuctionTemplate | null>(null);
   const [editForm, setEditForm] = useState({ name: "", total_seats: 6, price_man: "", includes: [] as string[], md_comment: "" });
   const [editBusy, setEditBusy] = useState(false);
 
   const openEdit = (t: AuctionTemplate) => {
-    setActionTarget(null);
     setEditTarget(t);
     setEditForm({
       name: t.name,
@@ -496,7 +532,6 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   };
 
   const handleDuplicate = async (t: AuctionTemplate) => {
-    setActionTarget(null);
     if (templates.length >= MAX_TEMPLATES) {
       toast.error(`템플릿은 최대 ${MAX_TEMPLATES}개까지예요`);
       return;
@@ -529,16 +564,62 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   };
 
   const handleDelete = async (t: AuctionTemplate) => {
-    setActionTarget(null);
-    if (!window.confirm(`"${t.name}" 세팅을 삭제할까요? 이미 발행된 파티는 그대로 남아요.`)) return;
+    if (!window.confirm(`"${t.name}" 세팅을 삭제할까요? 예정된 파티도 함께 내려가요.`)) return;
+    // 먼저 예정 발행분을 내린다. FK가 ON DELETE SET NULL이라 템플릿만 지우면
+    // 이미 올라간 파티가 유저 화면에 그대로 남는다(참여자 있는 건은 서버가 남김 — Migration 509).
+    const { data: unpub } = await supabase.rpc("unpublish_my_share_template", { p_template_id: t.id });
     const { error } = await supabase.from("auction_templates").delete().eq("id", t.id);
     if (error) { toast.error("삭제에 실패했어요"); return; }
     setTemplates((prev) => prev.filter((x) => x.id !== t.id));
-    toast.success("삭제했어요");
+    const kept = unpub?.kept ?? 0;
+    toast.success(kept > 0 ? `삭제했어요 · 참여자가 있는 파티 ${kept}건은 남겨뒀어요` : "삭제했어요");
+  };
+
+  // ── 일괄 삭제 ────────────────────────────────────────────────────────
+  // 카톡 문구로 한번에 여러 개를 만들다 보면 지우는 것도 한번에 해야 한다.
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [deletePicked, setDeletePicked] = useState<Set<string>>(new Set());
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const exitDeleteMode = () => {
+    setDeleteMode(false);
+    setDeletePicked(new Set());
+  };
+
+  const toggleDeletePick = (id: string) => {
+    setDeletePicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...deletePicked];
+    if (ids.length === 0) return;
+    if (!window.confirm(`세팅 ${ids.length}개를 삭제할까요? 예정된 파티도 함께 내려가요.`)) return;
+
+    setDeleteBusy(true);
+    // 템플릿만 지우면 이미 올라간 파티가 남는다(FK가 ON DELETE SET NULL) — 발행분부터 내린다
+    let kept = 0;
+    for (const id of ids) {
+      const { data } = await supabase.rpc("unpublish_my_share_template", { p_template_id: id });
+      kept += data?.kept ?? 0;
+    }
+    const { error } = await supabase.from("auction_templates").delete().in("id", ids);
+    setDeleteBusy(false);
+    if (error) { toast.error("삭제에 실패했어요"); return; }
+
+    setTemplates((prev) => prev.filter((x) => !deletePicked.has(x.id)));
+    toast.success(
+      kept > 0
+        ? `${ids.length}개를 삭제했어요 · 참여자가 있는 파티 ${kept}건은 남겨뒀어요`
+        : `${ids.length}개를 삭제했어요`
+    );
+    exitDeleteMode();
   };
 
   const handleTurnOffAll = async (t: AuctionTemplate) => {
-    setActionTarget(null);
     const { error } = await supabase
       .from("auction_templates")
       .update({ is_live: false, live_dows: [] })
@@ -587,6 +668,13 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
   const [createForm, setCreateForm] = useState<TemplateFormState>(emptyTemplateForm());
   const [createBusy, setCreateBusy] = useState(false);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  // 카톡 홍보문구 붙여넣기 — 생성 시트 상단 접힌 영역
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [promoText, setPromoText] = useState("");
+  const [promoBusy, setPromoBusy] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  /** null이면 기존 단일 폼 모드. 2개 이상 인식됐을 때만 검토 목록으로 전환된다 */
+  const [promoRows, setPromoRows] = useState<ReviewRow[] | null>(null);
 
   const openCreate = () => {
     if (templates.length >= MAX_TEMPLATES) {
@@ -595,7 +683,125 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
     }
     setCreateForm({ ...emptyTemplateForm(), club_id: clubs[0]?.id ?? "" });
     setCreateFolderOpen(false);
+    resetPromo();
     setCreateOpen(true);
+  };
+
+  /** 붙여넣기 관련 상태 초기화 — 시트를 닫거나 다시 열 때 이전 결과가 남으면 안 된다 */
+  const resetPromo = () => {
+    setPromoOpen(false);
+    setPromoText("");
+    setPromoBusy(false);
+    setPromoError(null);
+    setPromoRows(null);
+  };
+
+  /** 남은 템플릿 자리 */
+  const remainingSlots = Math.max(0, MAX_TEMPLATES - templates.length);
+
+  /** 카톡 문구 분석 → 1개면 기존 폼에 채우고, 2개 이상이면 검토 목록으로 전환 */
+  const analyzePromo = async () => {
+    const text = promoText.trim();
+    if (!text) { toast.error("문구를 붙여넣어 주세요"); return; }
+    setPromoBusy(true);
+    setPromoError(null);
+    try {
+      const res = await fetch("/api/md/parse-promo", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      const rows: ParsedPromoRow[] = Array.isArray(data?.rows) ? data.rows : [];
+
+      if (rows.length === 0) {
+        setPromoError("자동 인식에 실패했어요 — 아래에 직접 입력해주세요");
+        setPromoOpen(false);
+        return;
+      }
+
+      if (rows.length === 1) {
+        // 단일 등급 — 기존 폼을 그대로 채운다
+        const r = rows[0];
+        setCreateForm((f) => ({
+          ...f,
+          name: r.name,
+          total_seats: r.total_seats,
+          price_man: String(r.price_man),
+          category: r.category ?? f.category,
+          includes: r.includes,
+          md_comment: r.md_comment ?? "",
+        }));
+        setPromoRows(null);
+        setPromoOpen(false);
+        toast.success("문구를 읽었어요 · 확인 후 만들어주세요");
+        return;
+      }
+
+      // 2개 이상 — 남은 자리만큼만 기본 체크
+      setPromoRows(
+        rows.map((r, i) => ({
+          ...r,
+          key: `${r.name}-${i}`,
+          selected: i < remainingSlots,
+          price_man_low_original: r.price_man,
+        }))
+      );
+      setPromoOpen(false);
+    } catch {
+      setPromoError("분석에 실패했어요 — 아래에 직접 입력해주세요");
+      setPromoOpen(false);
+    } finally {
+      setPromoBusy(false);
+    }
+  };
+
+  /** 검토 목록에서 선택된 행들을 한번에 생성.
+   *  개수 검사 트리거(BEFORE INSERT) 상대라 Promise.all은 자기들끼리 레이스가 난다 → 순차 루프. */
+  const savePromoRows = async () => {
+    if (!promoRows) return;
+    if (!createForm.club_id) { toast.error("클럽을 선택해주세요"); return; }
+    const picked = promoRows.filter((r) => r.selected);
+    if (picked.length === 0) { toast.error("만들 파티를 골라주세요"); return; }
+    if (picked.length > remainingSlots) {
+      toast.error(`자리가 ${remainingSlots}개 남았어요`);
+      return;
+    }
+
+    setCreateBusy(true);
+    const created: AuctionTemplate[] = [];
+    let failure: string | null = null;
+
+    for (const r of picked) {
+      const { data, error } = await supabase
+        .from("auction_templates")
+        .insert({
+          md_id: mdId,
+          name: r.name,
+          club_id: createForm.club_id,
+          category: r.category?.trim() || null,
+          total_seats: r.total_seats,
+          price_per_seat: r.price_man * 10000,
+          includes: r.includes,
+          md_comment: r.md_comment?.trim() || null,
+          listing_type: "share",
+        })
+        .select("*, club:clubs(id, name, area)")
+        .single();
+      if (error) { failure = readableDbError(error.message, "저장에 실패했어요"); break; }
+      created.push(data as AuctionTemplate);
+    }
+
+    setCreateBusy(false);
+    if (created.length > 0) setTemplates((prev) => [...prev, ...created]);
+
+    if (failure) {
+      toast.error(created.length > 0 ? `${created.length}개만 만들었어요 · ${failure}` : failure);
+      return;
+    }
+    toast.success(`템플릿 ${created.length}개를 만들었어요. 요일을 골라 켜주세요`);
+    setCreateOpen(false);
+    resetPromo();
   };
 
   const saveCreate = async () => {
@@ -881,17 +1087,11 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
           <span className="text-[12px]">ⓘ</span>
           이용방법
         </button>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="ml-auto h-7 px-3 rounded-full bg-inverse text-inverse-foreground text-[12px] font-black inline-flex items-center gap-1 active:scale-95 transition-transform disabled:opacity-40"
-        >
-          <Plus className="w-3.5 h-3.5" /> 파티 설정
-        </button>
+        {/* 세팅 추가는 하단 주 CTA에만 둔다 — 헤더에 또 두면 같은 버튼이 두 번이다 */}
         <button
           type="button"
           onClick={() => setFolderManagerOpen(true)}
-          className="h-7 px-3 rounded-full bg-muted text-muted-foreground text-[12px] font-black inline-flex items-center gap-1 hover:text-foreground active:scale-95 transition"
+          className="ml-auto h-7 px-3 rounded-full bg-muted text-muted-foreground text-[12px] font-black inline-flex items-center gap-1 hover:text-foreground active:scale-95 transition"
         >
           <FolderCog className="w-3.5 h-3.5" /> 폴더
         </button>
@@ -910,22 +1110,19 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
           >
             <div className="min-w-0 flex-1">
               <p className="text-[12.5px] font-black text-foreground truncate">{s.club_name}</p>
-              <p className="text-[11px] text-muted-foreground font-semibold">
-                {s.holder_id ? (
-                  <>
-                    이번 주는{" "}
-                    <Link
-                      href={`/u/${s.holder_id}`}
-                      className="text-foreground font-bold underline underline-offset-2 hover:text-brand-amber transition-colors"
-                    >
-                      {s.holder_name ?? "다른 파트너"}
-                    </Link>
-                    가 운영 중이에요
-                  </>
-                ) : (
-                  "이번 주 자리가 비어 있어요 — 먼저 잡으면 이 클럽 파티를 올릴 수 있어요"
-                )}
-              </p>
+              {/* 자리가 비었을 때는 버튼만으로 충분하다 — 설명 줄은 두지 않는다 */}
+              {s.holder_id && (
+                <p className="text-[11px] text-muted-foreground font-semibold">
+                  이번 주는{" "}
+                  <Link
+                    href={`/u/${s.holder_id}`}
+                    className="text-foreground font-bold underline underline-offset-2 hover:text-brand-amber transition-colors"
+                  >
+                    {s.holder_name ?? "다른 파트너"}
+                  </Link>
+                  가 운영 중이에요
+                </p>
+              )}
               {s.holder_id && nextOpenLabel && (
                 <p className="text-[10.5px] text-brand-amber font-bold mt-0.5">
                   {nextOpenLabel} 선착순 오픈
@@ -939,7 +1136,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                 onClick={() => claimSlot(s.club_id)}
                 className="shrink-0 h-8 px-3 rounded-full bg-amber-500 text-black text-[12px] font-black active:scale-95 transition disabled:opacity-40"
               >
-                {claiming === s.club_id ? "잡는 중" : "자리 잡기"}
+                {claiming === s.club_id ? "모으는 중" : "조각 모으기"}
               </button>
             )}
           </div>
@@ -969,12 +1166,9 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                   </p>
                 </>
               ) : (
-                <>
-                  <p className="text-[12.5px] font-black text-foreground">{s.club_name} · 다음 주 자리는 아직 비어 있어요</p>
-                  <p className="text-[10.5px] text-muted-foreground font-semibold mt-0.5">
-                    {MIN_DOWS_FOR_NEXT_WEEK}일 이상 등록하면 다음주도 미리 잡을 수 있어요
-                  </p>
-                </>
+                <p className="text-[10.5px] text-muted-foreground font-semibold">
+                  {MIN_DOWS_FOR_NEXT_WEEK}일 이상 등록하면 다음주도 미리 잡을 수 있어요
+                </p>
               )}
             </div>
             {s.next_is_mine ? (
@@ -1069,18 +1263,63 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
         </div>
       )}
 
-      {/* 일괄 토글 — 템플릿이 여러 개면 하나씩 켜는 게 번거롭다 */}
-      {!loading && bulkTargets.length > 1 && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            disabled={bulkBusy}
-            onClick={toggleAll}
-            className="h-7 px-3 rounded-full bg-muted text-muted-foreground text-[11.5px] font-black hover:text-foreground disabled:opacity-40 transition-colors"
-          >
-            {bulkBusy ? "적용 중…" : allOn ? "모두 끄기" : "모두 켜기"}
-          </button>
-        </div>
+      {/* 일괄 토글 — 템플릿이 여러 개면 하나씩 켜는 게 번거롭다.
+          삭제 모드일 때는 같은 자리에 선택/삭제 액션 바가 대신 들어온다. */}
+      {!loading && templates.length > 0 && (
+        deleteMode ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={exitDeleteMode}
+              className="h-7 px-3 rounded-full bg-muted text-muted-foreground text-[11.5px] font-black hover:text-foreground transition-colors"
+            >
+              취소
+            </button>
+            <span className="text-[11.5px] font-bold text-muted-foreground">
+              {deletePicked.size}개 선택
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setDeletePicked((prev) =>
+                  prev.size === templates.length ? new Set() : new Set(templates.map((t) => t.id))
+                )
+              }
+              className="ml-auto h-7 px-3 rounded-full bg-muted text-muted-foreground text-[11.5px] font-black hover:text-foreground transition-colors"
+            >
+              {deletePicked.size === templates.length ? "전체 해제" : "전체 선택"}
+            </button>
+            <button
+              type="button"
+              disabled={deleteBusy || deletePicked.size === 0}
+              onClick={handleBulkDelete}
+              className="h-7 px-3 rounded-full bg-red-500 text-white text-[11.5px] font-black disabled:opacity-40 active:scale-95 transition"
+            >
+              {deleteBusy ? "삭제 중…" : `${deletePicked.size}개 삭제`}
+            </button>
+          </div>
+        ) : (
+          <div className="flex justify-end items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteMode(true)}
+              aria-label="여러 개 삭제"
+              className="w-7 h-7 rounded-full bg-muted text-muted-foreground flex items-center justify-center hover:text-red-400 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+            {bulkTargets.length > 1 && (
+              <button
+                type="button"
+                disabled={bulkBusy}
+                onClick={toggleAll}
+                className="h-7 px-3 rounded-full bg-muted text-muted-foreground text-[11.5px] font-black hover:text-foreground disabled:opacity-40 transition-colors"
+              >
+                {bulkBusy ? "적용 중…" : allOn ? "모두 끄기" : "모두 켜기"}
+              </button>
+            )}
+          </div>
+        )
       )}
 
       {loading ? (
@@ -1104,14 +1343,17 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
             return (
               <div
                 key={t.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, idx)}
-                onDragOver={(e) => handleDragOver(e, idx)}
-                onDrop={(e) => handleDrop(e, idx)}
+                draggable={!deleteMode}
+                onDragStart={(e) => !deleteMode && handleDragStart(e, idx)}
+                onDragOver={(e) => !deleteMode && handleDragOver(e, idx)}
+                onDrop={(e) => !deleteMode && handleDrop(e, idx)}
                 onDragEnd={handleDragEnd}
+                onClick={deleteMode ? () => toggleDeletePick(t.id) : undefined}
                 className={`relative bg-card px-3.5 py-3 space-y-2 transition-opacity ${
                   !t.is_live ? "opacity-70" : ""
-                } ${dragIndex === idx ? "opacity-30" : ""}`}
+                } ${dragIndex === idx ? "opacity-30" : ""} ${
+                  deleteMode ? "cursor-pointer" : ""
+                } ${deleteMode && !deletePicked.has(t.id) ? "opacity-50" : ""}`}
               >
                 {/* 삽입선 — 어느 행 사이로 들어가는지 명확히 */}
                 {overIndex === idx && insertAbove && (
@@ -1121,6 +1363,15 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                   <span className="pointer-events-none absolute left-2 right-2 -bottom-[1px] h-[2px] rounded-full bg-amber-500" />
                 )}
                 <div className="flex items-center gap-2">
+                  {deleteMode && (
+                    <span
+                      className={`w-[18px] h-[18px] rounded-full border-2 shrink-0 flex items-center justify-center ${
+                        deletePicked.has(t.id) ? "bg-red-500 border-red-500" : "border-muted-foreground"
+                      }`}
+                    >
+                      {deletePicked.has(t.id) && <span className="text-white text-[11px] font-black leading-none">✓</span>}
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <p className="text-[14px] font-black text-foreground truncate">{t.name}</p>
@@ -1138,14 +1389,58 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                       </span>
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setActionTarget(t)}
-                    className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0"
-                    aria-label="더보기"
-                  >
-                    ⋯
-                  </button>
+                  {!deleteMode && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0"
+                        aria-label="더보기"
+                      >
+                        ⋯
+                      </button>
+                    </DropdownMenuTrigger>
+                    {/* 바텀 시트가 아니라 ⋯ 바로 아래 드롭다운 — 목록을 보면서 바로 고를 수 있다 */}
+                    <DropdownMenuContent align="end" className="bg-muted border-border min-w-[180px]">
+                      <DropdownMenuItem
+                        onClick={() => openEdit(t)}
+                        className="text-foreground focus:text-foreground focus:bg-card font-bold text-[13.5px]"
+                      >
+                        세팅 수정
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setCategoryDraft(t.category ?? "");
+                          setNewFolderOpen(false);
+                          setCategoryTarget(t);
+                        }}
+                        className="text-foreground focus:text-foreground focus:bg-card font-bold text-[13.5px] flex items-center justify-between"
+                      >
+                        분류하기
+                        <span className="text-[11px] text-muted-foreground font-semibold">
+                          {t.category ?? "미분류"}
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDuplicate(t)}
+                        disabled={templates.length >= MAX_TEMPLATES}
+                        className="text-foreground focus:text-foreground focus:bg-card font-bold text-[13.5px] flex items-center justify-between"
+                      >
+                        복제
+                        <span className="text-[11px] text-muted-foreground">
+                          {templates.length}/{MAX_TEMPLATES}
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(t)}
+                        className="text-red-400 focus:text-red-400 focus:bg-red-500/10 font-bold text-[13.5px]"
+                      >
+                        삭제
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  )}
+                  {!deleteMode && (
                   <button
                     type="button"
                     role="switch"
@@ -1153,15 +1448,16 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                     disabled={disabled}
                     onClick={() => toggleMaster(t)}
                     className={`w-10 h-[23px] rounded-full relative shrink-0 transition-colors disabled:opacity-40 ${
-                      t.is_live ? "bg-amber-500" : "bg-muted"
+                      t.is_live ? "bg-white" : "bg-muted"
                     }`}
                   >
                     <span
-                      className={`absolute top-[3px] left-[3px] w-[17px] h-[17px] rounded-full bg-white transition-transform ${
-                        t.is_live ? "translate-x-[17px]" : ""
+                      className={`absolute top-[3px] left-[3px] w-[17px] h-[17px] rounded-full transition-transform ${
+                        t.is_live ? "translate-x-[17px] bg-black" : "bg-white"
                       }`}
                     />
                   </button>
+                  )}
                 </div>
 
                 {missingRequired(t) && (
@@ -1188,7 +1484,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                               passed
                                 ? "bg-muted/50"
                                 : on
-                                  ? "bg-amber-500"
+                                  ? "bg-white"
                                   : "bg-muted"
                             } ${
                               // 토·일·공휴일은 달력처럼 빨간 글씨 (지나간 날은 회색이 우선)
@@ -1227,7 +1523,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                             disabled={disabled}
                             onClick={() => setDows(t, active ? [] : [...preset.dows], { keepLive: true })}
                             className={`h-6 px-2.5 rounded-full text-[10.5px] font-bold transition-colors disabled:opacity-40 ${
-                              active ? "bg-amber-500 text-black" : "bg-muted text-muted-foreground hover:text-foreground"
+                              active ? "bg-white text-black" : "bg-muted text-muted-foreground hover:text-foreground"
                             }`}
                           >
                             {preset.label}
@@ -1276,49 +1572,22 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
       )}
 
       {/* ⋯ 액션 시트 */}
-      <Sheet open={!!actionTarget} onOpenChange={(v) => { if (!v) setActionTarget(null); }}>
-        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-8">
-          <SheetHeader className="text-left pb-1">
-            <SheetTitle className="text-foreground text-base">{actionTarget?.name}</SheetTitle>
-            <SheetDescription className="sr-only">세팅 관리</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-1 pt-2">
-            <button type="button" onClick={() => actionTarget && openEdit(actionTarget)}
-              className="w-full text-left px-2 py-3 text-[14.5px] font-bold text-foreground flex items-center justify-between">
-              세팅 수정 <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const t = actionTarget;
-                if (!t) return;
-                setActionTarget(null);
-                setCategoryDraft(t.category ?? "");
-                setNewFolderOpen(false);
-                setCategoryTarget(t);
-              }}
-              className="w-full text-left px-2 py-3 text-[14.5px] font-bold text-foreground flex items-center justify-between"
-            >
-              분류하기
-              <span className="text-[11px] text-muted-foreground font-semibold">
-                {actionTarget?.category ?? "미분류"}
-              </span>
-            </button>
-            <button type="button" onClick={() => actionTarget && handleDuplicate(actionTarget)}
-              disabled={templates.length >= MAX_TEMPLATES}
-              className="w-full text-left px-2 py-3 text-[14.5px] font-bold text-foreground flex items-center justify-between disabled:opacity-40">
-              복제 <span className="text-[11px] text-muted-foreground">{templates.length}/{MAX_TEMPLATES}</span>
-            </button>
-            <button type="button" onClick={() => actionTarget && handleDelete(actionTarget)}
-              className="w-full text-left px-2 py-3 text-[14.5px] font-bold text-red-400">
-              삭제
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* 분류하기 시트 */}
-      {guideOpen && <ShareOnboardingSheet manualOpen onManualClose={() => setGuideOpen(false)} />}
+      {guideOpen && (
+        <ShareOnboardingSheet
+          manualOpen
+          onManualClose={() => setGuideOpen(false)}
+          // 자리를 막 잡아서 자동으로 띄운 경우에만 세팅 추가로 이어준다.
+          // (헤더 "이용방법"으로 직접 연 경우는 그냥 닫히기만 해야 한다)
+          onConfirm={
+            guideToSetup
+              // 가이드 시트가 닫히는 프레임에 바로 열면 Radix가 두 번째 시트를 삼킨다 → 한 틱 미룬다
+              ? () => { setGuideToSetup(false); setTimeout(openCreate, 250); }
+              : undefined
+          }
+        />
+      )}
 
       {/* 폴더 관리 — 순서·이름·삭제. 꾹 누르기는 모바일에서 잘 안 잡혀 버튼으로 뺐다 */}
       <Sheet open={folderManagerOpen} onOpenChange={(v) => { if (!v) { setFolderManagerOpen(false); setManagerNewFolder(""); setManagerTarget(null); } }}>
@@ -1383,7 +1652,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                   renameFolder(managerTarget, next);
                   if (next && next !== managerTarget) setManagerTarget(next);
                 }}
-                onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                onKeyDown={(e) => { if (e.nativeEvent.isComposing) return; if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                 className="flex-1 bg-muted border-transparent h-10 text-foreground font-black text-[13.5px]"
               />
               <button type="button"
@@ -1400,6 +1669,9 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
               value={managerNewFolder}
               onChange={(e) => setManagerNewFolder(e.target.value)}
               onKeyDown={(e) => {
+                // 한글 IME 조합 확정 Enter는 무시 — 안 그러면 "주말" 입력이
+                // "주"/"말" 두 번으로 갈려 폴더가 두 개 생긴다
+                if (e.nativeEvent.isComposing) return;
                 if (e.key !== "Enter") return;
                 e.preventDefault();
                 confirmNewFolder(managerNewFolder, setManagerNewFolder, () => {});
@@ -1451,7 +1723,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
               <Input autoFocus placeholder="폴더 이름 (예: 금요일 전용)"
                 value={categoryDraft}
                 onChange={(e) => setCategoryDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmNewFolder(categoryDraft, setCategoryDraft, setNewFolderOpen); } }}
+                onKeyDown={(e) => { if (e.nativeEvent.isComposing) return; if (e.key === "Enter") { e.preventDefault(); confirmNewFolder(categoryDraft, setCategoryDraft, setNewFolderOpen); } }}
                 className="bg-card border-border h-11 text-foreground font-bold" />
               <button type="button"
                 onClick={() => confirmNewFolder(categoryDraft, setCategoryDraft, setNewFolderOpen)}
@@ -1580,28 +1852,90 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
         <p className="text-right text-[10.5px] text-muted-foreground pr-1 -mt-1">꾹 눌러서 순서 변경 · 폴더로 끌면 분류</p>
       )}
 
-      {/* 1회성 등록 — 상시로 안 돌리는 급한 자리.
-          운영권이 없으면 등록이 트리거에서 막히므로 버튼 자체를 내린다(비활성 안내도 두지 않음). */}
+      {/* 주 CTA는 "세팅 추가" — 상시 세팅이 주 흐름이고 1회성은 예외 케이스다.
+          1회성은 없애지 않고 아래 텍스트 링크로 남긴다(운영권이 없으면 등록이
+          트리거에서 막히므로 그때는 링크 자체를 내린다). */}
+      <button
+        type="button"
+        onClick={openCreate}
+        className="w-full h-12 flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl active:scale-[0.98] transition-transform"
+      >
+        <span className="text-[18px] leading-none">+</span> 세팅 추가
+      </button>
       {hasAnySlot && (
         <Link
           href="/md/auctions/new"
-          className="w-full h-12 flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl active:scale-[0.98] transition-transform"
+          className="block text-center text-[11.5px] font-bold text-muted-foreground hover:text-foreground underline underline-offset-2"
         >
-          <span className="text-[18px] leading-none">+</span> 새 파티 등록
-          <span className="text-[11px] font-bold opacity-70 ml-0.5">1회성</span>
+          하루만 올릴 파티 등록하기
         </Link>
       )}
 
       {/* + 템플릿: 새 세팅 만들기 */}
-      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
+      <Sheet open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) resetPromo(); }}>
         <SheetContent side="bottom" showCloseButton={false}
           className="bg-card border-border rounded-t-3xl px-5 pb-8 pt-4 max-h-[92vh] overflow-y-auto">
           <div className="max-w-sm mx-auto w-full space-y-5">
             <SheetHeader className="p-0 mb-1">
               <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-3" />
-              <SheetTitle className="text-foreground text-base font-bold text-center">새 템플릿</SheetTitle>
+              <SheetTitle className="text-foreground text-base font-bold text-center">파티(조각) 세팅</SheetTitle>
               <SheetDescription className="sr-only">상시 파티 템플릿 추가</SheetDescription>
             </SheetHeader>
+
+            {/* 카톡 홍보문구 붙여넣기 — 단톡방에 이미 쓰는 문구를 그대로 읽어 채운다.
+                1개 인식 → 아래 폼에 채움 / 2개 이상 → 검토 목록 모드로 전환 */}
+            {!promoRows && (
+              <div className="space-y-2">
+                {!promoOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => { setPromoOpen(true); setPromoError(null); }}
+                    className="w-full px-3.5 py-3 rounded-xl bg-amber-500 text-black flex items-center gap-2.5 active:scale-[0.99] transition"
+                  >
+                    <span className="text-[20px] leading-none shrink-0">📋</span>
+                    <span className="min-w-0 flex-1 text-left">
+                      <span className="block text-[13.5px] font-black leading-tight">카톡 문구로 한번에 채우기</span>
+                      <span className="block text-[11px] font-bold opacity-70 leading-tight mt-0.5">
+                        단톡방에 올리던 문구 그대로 붙여넣으면 끝
+                      </span>
+                    </span>
+                    <span className="text-[11px] font-black shrink-0">▼</span>
+                  </button>
+                ) : (
+                  <div className="rounded-lg border border-border bg-background p-3 space-y-2">
+                    <textarea
+                      value={promoText}
+                      onChange={(e) => setPromoText(e.target.value)}
+                      maxLength={2000}
+                      rows={6}
+                      autoFocus
+                      placeholder={"단톡방에 올리는 문구를 그대로 붙여넣으세요\n\n예)\n토요일 조각!\n일반자리 엔6~9\n준메인 엔12~15"}
+                      className="w-full bg-card border border-border rounded-lg p-2.5 text-[12.5px] text-foreground font-medium leading-relaxed focus:outline-none resize-none"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setPromoOpen(false); setPromoText(""); }}
+                        className="h-9 px-3 rounded-lg bg-muted text-[12px] font-bold text-muted-foreground active:scale-95 transition"
+                      >
+                        닫기
+                      </button>
+                      <button
+                        type="button"
+                        onClick={analyzePromo}
+                        disabled={promoBusy || !promoText.trim()}
+                        className="flex-1 h-9 rounded-lg bg-amber-500 text-black text-[12.5px] font-black flex items-center justify-center active:scale-95 transition disabled:opacity-40"
+                      >
+                        {promoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : "분석하기"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {promoError && (
+                  <p className="text-[11px] text-red-400 font-bold">{promoError}</p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <p className="text-[12px] text-muted-foreground font-medium">클럽</p>
@@ -1622,6 +1956,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
               </div>
             </div>
 
+            {!promoRows && (<>
             <div className="space-y-2">
               <p className="text-[12px] text-muted-foreground font-medium">분류 (선택)</p>
               <div className="flex flex-wrap gap-2">
@@ -1647,7 +1982,7 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                   <Input autoFocus placeholder="폴더 이름 (예: 금요일 전용)"
                     value={createForm.category}
                     onChange={(e) => setCreateForm((f) => ({ ...f, category: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmNewFolder(createForm.category, (v) => setCreateForm((f) => ({ ...f, category: v })), setCreateFolderOpen); } }}
+                    onKeyDown={(e) => { if (e.nativeEvent.isComposing) return; if (e.key === "Enter") { e.preventDefault(); confirmNewFolder(createForm.category, (v) => setCreateForm((f) => ({ ...f, category: v })), setCreateFolderOpen); } }}
                     className="bg-card border-border h-10 text-foreground font-bold text-[13px]" />
                   <button type="button"
                     onClick={() => confirmNewFolder(createForm.category, (v) => setCreateForm((f) => ({ ...f, category: v })), setCreateFolderOpen)}
@@ -1712,15 +2047,126 @@ export function ShareLiveToggleList({ mdId, clubs }: Props) {
                 ))}
               </div>
             </div>
+            </>)}
+
+            {/* 검토 목록 모드 — 2개 이상 인식됐을 때. 기존 폼 대신 이 목록이 보인다 */}
+            {promoRows && (() => {
+              const selected = promoRows.filter((r) => r.selected).length;
+              const over = selected > remainingSlots;
+              const patch = (key: string, next: Partial<ReviewRow>) =>
+                setPromoRows((rows) => rows?.map((r) => (r.key === key ? { ...r, ...next } : r)) ?? null);
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[12px] font-black text-foreground">인식된 파티 {promoRows.length}개</p>
+                    <p className={`text-[11.5px] font-bold ${over ? "text-red-400" : "text-muted-foreground"}`}>
+                      {over ? `${remainingSlots}개까지만 가능` : `${remainingSlots}개 더 세팅 가능`}
+                    </p>
+                  </div>
+                  {promoRows.length > remainingSlots && (
+                    <p className="text-[11px] text-muted-foreground font-semibold">
+                      자리가 {remainingSlots}개 남아서 {remainingSlots}개까지만 만들 수 있어요
+                    </p>
+                  )}
+
+                  {promoRows.map((r) => (
+                    <div
+                      key={r.key}
+                      className={`rounded-xl border bg-background p-3 space-y-2.5 transition-all ${
+                        r.selected ? "border-white" : "border-border opacity-40"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => patch(r.key, { selected: !r.selected })}
+                        className="w-full flex items-center gap-2"
+                      >
+                        <span className="text-[13px] font-black text-foreground truncate">{r.name}</span>
+                        <span className="ml-auto text-[11.5px] font-bold text-muted-foreground shrink-0">
+                          {r.total_seats}명 · {r.price_man}만원
+                        </span>
+                      </button>
+
+                      {r.selected && (
+                        <>
+                          <Input
+                            value={r.name}
+                            onChange={(e) => patch(r.key, { name: e.target.value.slice(0, 20) })}
+                            className="bg-card border-border h-9 text-foreground font-bold text-[13px]"
+                          />
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <button type="button"
+                                onClick={() => patch(r.key, { total_seats: Math.max(2, r.total_seats - 1) })}
+                                className="w-8 h-8 rounded-lg bg-muted text-foreground font-black active:scale-95 transition">−</button>
+                              <span className="w-9 text-center text-[13px] font-black text-foreground tabular-nums">{r.total_seats}</span>
+                              <button type="button"
+                                onClick={() => patch(r.key, { total_seats: Math.min(20, r.total_seats + 1) })}
+                                className="w-8 h-8 rounded-lg bg-muted text-foreground font-black active:scale-95 transition">+</button>
+                              <span className="text-[11px] text-muted-foreground font-bold">명</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 ml-auto">
+                              <Input
+                                value={String(r.price_man)}
+                                onChange={(e) => {
+                                  const v = e.target.value.replace(/[^0-9]/g, "").slice(0, 4);
+                                  patch(r.key, { price_man: Number(v) || 0 });
+                                }}
+                                inputMode="numeric"
+                                className="bg-card border-border h-8 w-20 text-right text-foreground font-black text-[13px]"
+                              />
+                              <span className="text-[11px] text-muted-foreground font-bold">만원</span>
+                            </div>
+                          </div>
+                          {/* 범위로 인식된 경우 — 낮은 값이 기본, 한 번 탭해서 높은 값으로 */}
+                          {r.price_man_high !== null && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10.5px] text-muted-foreground font-bold">범위로 적혀 있어요</span>
+                              {[r.price_man_low_original, r.price_man_high].map((v) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  onClick={() => patch(r.key, { price_man: v })}
+                                  className={`h-6 px-2.5 rounded-full text-[10.5px] font-bold transition-colors ${
+                                    r.price_man === v ? "bg-white text-black" : "bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  {v}만
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setPromoRows(null)}
+                    className="text-[11.5px] font-bold text-muted-foreground underline underline-offset-2"
+                  >
+                    ← 직접 입력으로
+                  </button>
+                </div>
+              );
+            })()}
 
             <p className="text-[10.5px] text-muted-foreground leading-snug">
               만들고 나서 요일 탭에서 켜야 실제로 발행돼요.
             </p>
 
-            <Button type="button" onClick={saveCreate} disabled={createBusy}
-              className="w-full h-12 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 disabled:opacity-40">
-              {createBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : "만들기"}
-            </Button>
+            {promoRows ? (
+              <Button type="button" onClick={savePromoRows} disabled={createBusy}
+                className="w-full h-12 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 disabled:opacity-40">
+                {createBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : `${promoRows.filter((r) => r.selected).length}개 만들기`}
+              </Button>
+            ) : (
+              <Button type="button" onClick={saveCreate} disabled={createBusy}
+                className="w-full h-12 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 disabled:opacity-40">
+                {createBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : "만들기"}
+              </Button>
+            )}
           </div>
         </SheetContent>
       </Sheet>

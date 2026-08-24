@@ -906,9 +906,9 @@ function MyClaimedSection({
   return (
     <div className="bg-muted/60 rounded-2xl p-4 mb-4 space-y-3">
       <div>
-        <p className="text-foreground text-[15px] font-black">{club?.name ?? "클럽"}</p>
+        <p className="text-foreground text-[15px] font-black">게스트 혜택 등록하기</p>
         <p className="text-[11px] text-muted-foreground mt-0.5">
-          내 게스트 간판 · {formatWeekRange(slot.week_start)}
+          {club?.name ?? "클럽"} · {formatWeekRange(slot.week_start)}
         </p>
         <p className="text-[11px] text-muted-foreground mt-1 inline-flex items-center gap-1">
           <Clock className="w-3 h-3 text-brand-amber" />

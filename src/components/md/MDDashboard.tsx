@@ -192,6 +192,21 @@ export function MDDashboard({
         initialSection ? initialSection === "guestsign" : guestSignUnclaimedThisWeek
     );
     const [shareInlineOpen, setShareInlineOpen] = useState(false);
+    // 가이드 시트의 "세팅 바로가기" — 파티 섹션이 접혀 있으면 ShareLiveToggleList가
+    // 마운트되지 않아 이벤트를 들을 수 없다. 부모가 먼저 펼쳐준다.
+    useEffect(() => {
+        const handler = () => {
+            // 섹션이 접혀 있었다면 자식이 지금 막 마운트되므로 이 이벤트를 놓친다.
+            // 플래그를 남겨 자식이 마운트 직후 스스로 열게 한다.
+            if (!shareInlineOpen) {
+                try { window.sessionStorage.setItem("nightflow:pending-share-setup", "1"); } catch { /* noop */ }
+            }
+            setShareInlineOpen(true);
+            setGuestSignInlineOpen(false);
+        };
+        window.addEventListener("nightflow:open-share-setup", handler);
+        return () => window.removeEventListener("nightflow:open-share-setup", handler);
+    }, [shareInlineOpen]);
     const supabase = createClient();
 
     // 낙관적 슬롯 상태 — claim 즉시 세팅 영역 표시 (router.refresh() 대기 안 함)

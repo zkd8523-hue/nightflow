@@ -27,11 +27,14 @@ export function ShareOnboardingSheet({
   onlyWhenSlotOpen = false,
   manualOpen = false,
   onManualClose,
+  onConfirm,
 }: {
   onlyWhenSlotOpen?: boolean;
   /** "ⓘ 이용방법"처럼 직접 열 때 — 티저를 건너뛰고 전체 가이드를 바로 연다 */
   manualOpen?: boolean;
   onManualClose?: () => void;
+  /** 확인을 누르면 곧바로 세팅 추가로 이어준다 — 안내만 보고 끝나면 발행이 0건이다 */
+  onConfirm?: () => void;
 } = {}) {
   const { user, isLoading, refetch } = useCurrentUser();
   const [teaserOpen, setTeaserOpen] = useState(false);
@@ -41,16 +44,21 @@ export function ShareOnboardingSheet({
 
   useEffect(() => {
     if (manualOpen) { setOpen(true); return; }
-    // 로컬 확인용: ?shareGuide=1 이면 조건 무시하고 바로 띄운다(프로덕션 제외)
+    // 로컬 확인용(프로덕션 제외): 조건을 무시하고 바로 띄운다.
+    //   ?shareGuide=1     → 1단계 티저
+    //   ?shareGuide=full  → 2단계 전체 가이드 (자리 차지 직후에 뜨는 그 화면)
     if (
       process.env.NEXT_PUBLIC_VERCEL_ENV !== "production" &&
-      typeof window !== "undefined" &&
-      new URLSearchParams(window.location.search).get("shareGuide") === "1"
+      typeof window !== "undefined"
     ) {
-      setTeaserOpen(true);
-      return;
+      const flag = new URLSearchParams(window.location.search).get("shareGuide");
+      if (flag === "full") { setOpen(true); return; }
+      if (flag === "1") { setTeaserOpen(true); return; }
     }
     if (isLoading || !user || !isMd) return;
+    // 다른 시트/모달이 이미 열려 있으면 끼어들지 않는다.
+    // (예: "세팅 추가" 시트에서 카톡 문구를 검토 중인데 이 티저가 덮어써서 튕기는 것처럼 보였다)
+    if (typeof document !== "undefined" && document.querySelector("[data-radix-dialog-content],[data-slot=sheet-content],[role=dialog]")) return;
     if (user.share_guide_seen) return;
     if (user.share_guide_snoozed_until && new Date(user.share_guide_snoozed_until) > new Date()) return;
     // 서버 기록이 실패한 기기에서도 "봤음"·"한 달간 보지 않기"가 유지되게 (guideFlag 참고)
@@ -74,6 +82,15 @@ export function ShareOnboardingSheet({
   // best-effort: DB 쓰기가 실패해도 사용자를 시트에 가두지 않는다.
   const dismiss = async () => {
     setOpen(false);
+    if (onConfirm) {
+      onConfirm();
+    } else if (!manualOpen) {
+      // manualOpen = ⓘ이용방법으로 직접 열어본 경우 → 닫히기만 해야 한다
+      // 레이아웃에 붙은 인스턴스는 세팅 시트 상태에 닿을 수 없다 →
+      // ShareLiveToggleList가 듣고 있는 이벤트로 대신 연다.
+      // (닫히는 프레임에 바로 열면 Radix가 두 번째 시트를 삼키므로 한 틱 미룬다)
+      setTimeout(() => window.dispatchEvent(new Event("nightflow:open-share-setup")), 250);
+    }
     // 직접 열어본 것은 "안내를 봤다"로 기록하지 않는다
     if (manualOpen) { onManualClose?.(); return; }
     if (!user) return;
@@ -139,7 +156,7 @@ export function ShareOnboardingSheet({
       >
         <SheetHeader className="text-left p-0 gap-0 mb-4">
           <SheetTitle className="text-foreground text-[19px] font-black tracking-tight leading-tight">
-            <span className="text-brand-amber text-[23px]">파티</span>, 나플에서는 이렇게! 🎉
+            <span className="text-brand-amber text-[23px]">조각</span>, 나플에서는 이렇게! 🎉
           </SheetTitle>
         </SheetHeader>
 
@@ -180,8 +197,8 @@ export function ShareOnboardingSheet({
                 </p>
               </div>
               <span className="text-muted-foreground text-[15px]">⋯</span>
-              <span className="w-10 h-[23px] rounded-full bg-amber-500 relative shrink-0">
-                <span className="absolute top-[3px] left-[20px] w-[17px] h-[17px] rounded-full bg-white" />
+              <span className="w-10 h-[23px] rounded-full bg-white relative shrink-0">
+                <span className="absolute top-[3px] left-[20px] w-[17px] h-[17px] rounded-full bg-black" />
               </span>
             </div>
             <div className="flex gap-1">
@@ -192,7 +209,7 @@ export function ShareOnboardingSheet({
                 <span
                   key={x.d}
                   className={`flex-1 h-8 rounded-lg text-[12px] font-black flex items-center justify-center ${
-                    x.on ? "bg-amber-500 text-black" : "bg-muted text-muted-foreground"
+                    x.on ? "bg-white text-black" : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {x.d}
@@ -201,6 +218,9 @@ export function ShareOnboardingSheet({
             </div>
           </div>
         </div>
+        <p className="text-[11px] text-brand-amber font-bold mt-1.5">
+          📋 기존 카톡 문구를 붙여넣을 수 있어요!
+        </p>
 
         <p className="text-center text-brand-amber text-[13px] my-1.5">↓</p>
 
@@ -256,10 +276,6 @@ export function ShareOnboardingSheet({
             </span>
           </div>
         </div>
-        <p className="text-[11px] text-muted-foreground font-semibold mt-1.5">
-          같은 클럽 파티는 한 장으로 묶여서 노출돼요
-        </p>
-
         <p className="text-center text-brand-amber text-[13px] my-1.5">↓</p>
 
         {/* 4. 채팅 */}
@@ -276,9 +292,9 @@ export function ShareOnboardingSheet({
         <button
           type="button"
           onClick={dismiss}
-          className="w-full h-12 mt-4 rounded-xl bg-amber-500 text-black font-black text-[14px] active:scale-95 transition-transform"
+          className="w-full h-12 shrink-0 mt-4 rounded-xl bg-amber-500 text-black font-black text-[14px] active:scale-95 transition-transform"
         >
-          {manualOpen ? "확인" : "좋아요! 시작할게요"}
+          {manualOpen && !onConfirm ? "확인" : "세팅 바로가기"}
         </button>
       </SheetContent>
     </Sheet>
