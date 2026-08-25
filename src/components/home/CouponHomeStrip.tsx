@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Clock, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { benefitTypeLabel, couponDisplayName, formatCouponCountdown, formatCouponRemaining, isCouponDeadlineNear, splitDiscount, excludeTestClubCoupons } from "@/lib/utils/coupon";
+import { benefitTypeLabel, couponDisplayName, formatCouponTimer, formatCouponRemaining, splitDiscount, excludeTestClubCoupons } from "@/lib/utils/coupon";
 import { hideTestData } from "@/lib/utils/testData";
 import type { CouponIssue } from "@/types/database";
 
@@ -40,8 +40,9 @@ export function CouponHomeStrip() {
     return () => { cancelled = true; };
   }, [supabase]);
 
+  // 초 단위 갱신 — 카운트다운의 초가 실제로 줄어들어야 마감 압박이 전달된다
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 60_000);
+    const t = setInterval(() => setNow(Date.now()), 1_000);
     return () => clearInterval(t);
   }, []);
 
@@ -78,8 +79,16 @@ function CouponHomeCard({ coupon, now }: { coupon: CouponIssue; now: number }) {
   const [thumbError, setThumbError] = useState(false);
   const thumb = !thumbError && (coupon.thumbnail_url || coupon.club?.thumbnail_url || null);
   const soldOut = coupon.status === "sold_out";
-  const near = isCouponDeadlineNear(coupon.redeem_ends_at, now);
   const discount = splitDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend);
+  // 재고와 마감은 서로 다른 압박이라 택일하지 않고 같이 보여준다.
+  // (기존엔 마감이 임박하면 재고가 가려져, 정작 급할 때 "몇 장 남았는지"를 알 수 없었다)
+  const left =
+    coupon.total_count == null ? null : Math.max(0, coupon.total_count - coupon.claimed_count);
+  const lowStock = left !== null && left > 0 && left <= 5;
+  // 마감 24시간 이내 = 빨강(오늘 안에 끝), 그 외 = 파랑.
+  // 항상 빨간 뱃지는 "급하다"는 신호가 아니라 그냥 배경색이 된다.
+  const msLeft = new Date(coupon.redeem_ends_at).getTime() - now;
+  const urgent = msLeft > 0 && msLeft <= 24 * 60 * 60 * 1000;
 
   return (
     <Link
@@ -100,7 +109,7 @@ function CouponHomeCard({ coupon, now }: { coupon: CouponIssue; now: number }) {
           <div className="w-full h-full flex items-center justify-center text-[24px]">{emoji}</div>
         )}
       </div>
-      <div className="p-2.5 space-y-0.5">
+      <div className="px-2.5 py-2 space-y-0.5">
         {/* 1줄: 할인 금액 또는 혜택명 */}
         {discount ? (
           <p className="text-[15px] font-black leading-tight truncate">
@@ -114,28 +123,41 @@ function CouponHomeCard({ coupon, now }: { coupon: CouponIssue; now: number }) {
         )}
 
         {/* 2줄: 부가 설명. 할인이면 조건, 아니면 혜택 부연 — 없어도 자리를 비워 높이를 맞춘다 */}
-        <p className="text-[11px] font-bold text-muted-foreground truncate min-h-[16px]">
+        <p className="text-[11px] font-bold text-muted-foreground truncate leading-tight min-h-[14px]">
           {discount
             ? (discount.condition ?? display.name)
             : (coupon.club?.area ?? "")}
         </p>
 
         {/* 3줄: 클럽명 — 항상 같은 자리, 같은 색 */}
-        <p className="text-[11px] font-bold text-foreground truncate pt-1">
+        <p className="text-[11px] font-bold text-foreground truncate leading-tight">
           {coupon.club?.name ?? ""}
         </p>
 
-        {/* 4줄: 남은 시간 */}
-        <div className={`flex items-center gap-0.5 text-[10px] font-bold ${soldOut ? "text-muted-foreground" : "text-brand-amber"}`}>
-          {near && <Clock className="w-2.5 h-2.5 shrink-0" />}
-          <span className="truncate">
-            {soldOut
-              ? "소진됨"
-              : near
-                ? formatCouponCountdown(coupon.redeem_ends_at, now)
-                : formatCouponRemaining(coupon.claimed_count, coupon.total_count)}
-          </span>
-        </div>
+        {/* 4줄: 남은 수량 + 마감 타이머 */}
+        {soldOut ? (
+          <div className="flex items-center gap-0.5 text-[10px] font-bold text-muted-foreground">
+            <span className="truncate">소진됨</span>
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            {/* 타임딜 뱃지 — 초까지 흐르는 카운트다운 */}
+            <span
+              className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-white text-[10px] font-black tabular-nums leading-none ${
+                urgent ? "bg-red-500" : "bg-blue-500"
+              }`}
+            >
+              {formatCouponTimer(coupon.redeem_ends_at, now)}
+            </span>
+            {left !== null && (
+              <p
+                className={`truncate text-[10px] font-black ${lowStock ? "text-red-400" : "text-brand-amber"}`}
+              >
+                {formatCouponRemaining(coupon.claimed_count, coupon.total_count)}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </Link>
   );

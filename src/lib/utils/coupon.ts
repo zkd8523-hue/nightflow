@@ -70,6 +70,26 @@ export function formatCouponStock(claimed: number, total: number | null): string
  * 유저는 "몇 장 남았나"가 궁금하다. "1/20"을 그대로 보여주면 1장 남은 것으로
  * 정반대로 읽히므로 남은 개수를 명시한다.
  */
+/**
+ * 타임딜형 카운트다운 — "D-1 08:34:25" / 당일이면 "08:34:25".
+ * formatCouponCountdown("내일 새벽 5시까지")과 달리 초 단위로 줄어드는 게 보여
+ * 마감이 실제로 다가온다는 압박을 준다. 1초마다 다시 그려야 의미가 있으므로
+ * 호출부에서 nowMs를 초 단위로 갱신해 넘긴다.
+ */
+export function formatCouponTimer(endsAtISO: string, nowMs: number = Date.now()): string {
+  const diff = new Date(endsAtISO).getTime() - nowMs;
+  if (diff <= 0) return "종료됨";
+
+  const totalSec = Math.floor(diff / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hh = Math.floor((totalSec % 86400) / 3600);
+  const mm = Math.floor((totalSec % 3600) / 60);
+  const ss = totalSec % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const clock = `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+  return days > 0 ? `D-${days} ${clock}` : clock;
+}
+
 export function formatCouponRemaining(claimed: number, total: number | null): string {
   if (total == null) return "수량 무제한";
   const left = Math.max(0, total - claimed);

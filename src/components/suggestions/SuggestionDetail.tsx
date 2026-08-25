@@ -11,7 +11,6 @@ import { useSuggestion } from "@/hooks/useSuggestions";
 import { SuggestionComments } from "@/components/suggestions/SuggestionComments";
 import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
 import { formatRelativeTime } from "@/lib/utils/format";
-import { suggestionCategoryLabel } from "@/lib/suggestions/categories";
 
 export function SuggestionDetail({ id }: { id: string }) {
   const router = useRouter();
@@ -140,11 +139,6 @@ export function SuggestionDetail({ id }: { id: string }) {
             </div>
           )}
 
-          {suggestionCategoryLabel(suggestion.category) && (
-            <span className="inline-block mb-2 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/12 text-brand-amber border border-amber-500/25">
-              {suggestionCategoryLabel(suggestion.category)}
-            </span>
-          )}
           <h2 className="text-[17px] font-black text-foreground leading-snug break-words">
             {suggestion.title}
           </h2>

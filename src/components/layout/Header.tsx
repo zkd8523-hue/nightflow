@@ -298,7 +298,7 @@ export function Header({
                 NightFlow
               </Link>
               <p className="text-[13px] text-muted-foreground font-medium tracking-tight whitespace-nowrap">
-                클럽 프리패스·프리드링크 혜택 한눈에
+                클럽의 모든 혜택을 한손에
               </p>
             </>
           )}
@@ -316,7 +316,7 @@ export function Header({
                   className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-inverse hover:opacity-90 transition-colors shadow-sm"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5 text-inverse-foreground" />
-                  <span className="text-[12px] font-black text-inverse-foreground whitespace-nowrap">파트너 대시보드</span>
+                  <span className="text-[12px] font-black text-inverse-foreground whitespace-nowrap">파트너</span>
                 </Link>
               )}
               {!compact && user.md_status === "pending" && (
@@ -594,7 +594,7 @@ export function Header({
                       <span className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
                         <Megaphone className="w-[18px] h-[18px] text-brand-amber" />
                       </span>
-                      <span className="text-[15px] font-bold">자유게시판</span>
+                      <span className="text-[15px] font-bold">건의게시판</span>
                     </Link>
 
                     <div className="h-px bg-muted/50 my-2" />
@@ -693,7 +693,7 @@ export function Header({
                     <span className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
                       <Megaphone className="w-[18px] h-[18px] text-brand-amber" />
                     </span>
-                    <span className="text-[15px] font-bold">자유게시판</span>
+                    <span className="text-[15px] font-bold">건의게시판</span>
                   </Link>
                 </nav>
               </SheetContent>

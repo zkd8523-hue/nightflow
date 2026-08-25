@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowLeft, ImagePlus, Loader2, Lock, Play, X } from "lucide-react";
 import { toast } from "sonner";
@@ -11,7 +11,7 @@ import {
   uploadSuggestionMedia,
   SUGGESTION_MEDIA_MAX_COUNT,
 } from "@/lib/utils/uploadSuggestionMedia";
-import { SUGGESTION_CATEGORIES, type SuggestionCategory } from "@/lib/suggestions/categories";
+import { type SuggestionCategory } from "@/lib/suggestions/categories";
 import type { ChatMediaItem, Suggestion } from "@/types/database";
 
 const TITLE_MAX = 60;
@@ -24,21 +24,16 @@ interface Props {
 
 export function SuggestionForm({ suggestion }: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, isLoading } = useCurrentUser();
   const isEdit = !!suggestion;
 
-  // 등록 모드: board 필터에서 넘어온 ?category= 를 초기 선택값으로 (유효값만)
-  const queryCategory = searchParams.get("category");
-  const initialCategory: SuggestionCategory =
-    (suggestion?.category as SuggestionCategory) ??
-    (SUGGESTION_CATEGORIES.some((c) => c.value === queryCategory)
-      ? (queryCategory as SuggestionCategory)
-      : "free");
+  // 카테고리 선택 제거 — 게시판이 "건의" 하나로 좁혀졌다. 새 글은 nightflow(건의)로
+  // 고정하고, 기존 글을 수정할 때는 원래 값을 그대로 보존한다(분류 데이터는 남겨둔다).
+  const category: SuggestionCategory =
+    (suggestion?.category as SuggestionCategory) ?? "nightflow";
 
   const [title, setTitle] = useState(suggestion?.title ?? "");
   const [content, setContent] = useState(suggestion?.content ?? "");
-  const [category, setCategory] = useState<SuggestionCategory>(initialCategory);
   const [isPrivate, setIsPrivate] = useState(suggestion?.is_private ?? false);
   const [media, setMedia] = useState<ChatMediaItem[]>(suggestion?.media ?? []);
   const [uploading, setUploading] = useState(false);
@@ -96,7 +91,7 @@ export function SuggestionForm({ suggestion }: Props) {
       content: content.trim(),
       category,
       // 관리자만 보기는 나플 건의에만 — 클럽 문화·문제 제보는 항상 공개
-      is_private: category === "nightflow" ? isPrivate : false,
+      is_private: isPrivate,
       media,
     };
 
@@ -146,32 +141,6 @@ export function SuggestionForm({ suggestion }: Props) {
           </h1>
         </div>
 
-        {/* 카테고리 */}
-        <label className="block text-[13px] font-bold text-foreground mb-2">카테고리</label>
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {SUGGESTION_CATEGORIES.map((c) => {
-            const active = category === c.value;
-            return (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => setCategory(c.value)}
-                disabled={submitted}
-                className={`flex flex-col items-center gap-0.5 py-2.5 rounded-xl border text-center transition-all active:scale-[0.98] disabled:opacity-60 ${
-                  active
-                    ? "bg-amber-500/15 border-amber-500/50 ring-1 ring-amber-500/30"
-                    : "bg-card border-border hover:bg-muted"
-                }`}
-              >
-                <span className="text-[18px] leading-none">{c.emoji}</span>
-                <span className={`text-[11.5px] font-bold ${active ? "text-brand-amber" : "text-foreground/80"}`}>
-                  {c.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
         {/* 제목 */}
         <label className="block text-[13px] font-bold text-foreground mb-2">제목</label>
         <input
@@ -193,10 +162,7 @@ export function SuggestionForm({ suggestion }: Props) {
           onChange={(e) => setContent(e.target.value)}
           maxLength={CONTENT_MAX}
           rows={8}
-          placeholder={
-            SUGGESTION_CATEGORIES.find((c) => c.value === category)?.contentPlaceholder ??
-            "자유롭게 적어주세요"
-          }
+          placeholder="어떤 점이 불편했는지, 어떻게 바뀌면 좋을지 적어주세요"
           disabled={submitted}
           className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground text-[15px] placeholder:text-muted-foreground focus:outline-none focus:border-border resize-none disabled:opacity-60"
         />
@@ -275,8 +241,7 @@ export function SuggestionForm({ suggestion }: Props) {
           </p>
         )}
 
-        {/* 관리자만 보기 — 나플 건의에만 (클럽 문화·문제는 공개 토론이 목적) */}
-        {category === "nightflow" && (
+        {/* 관리자만 보기 — 게시판 전체가 건의로 좁혀져 카테고리 조건 없이 항상 노출 */}
         <div className="mt-5 bg-card border border-border rounded-xl p-4">
           <div className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2 text-[14px] font-bold text-foreground">
@@ -307,7 +272,6 @@ export function SuggestionForm({ suggestion }: Props) {
               : "다른 회원도 볼 수 있고, 공감과 댓글을 남길 수 있습니다."}
           </p>
         </div>
-        )}
 
         {/* 제출 */}
         <button

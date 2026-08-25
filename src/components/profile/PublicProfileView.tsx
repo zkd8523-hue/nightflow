@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, ChevronRight, Instagram, MessageCircle, Star } from "lucide-react";
+import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, ChevronRight, Instagram, MessageCircle, Star, Ticket } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { MUSIC_GENRE_MAP } from "@/lib/users/musicGenres";
@@ -157,6 +157,26 @@ export function PublicProfileView({
   const verifyRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  // 쿠폰함 배지 — 아직 안 쓴 + 기한이 남은 장수 (MyCouponList의 "사용 가능" 기준과 동일)
+  const [usableCoupons, setUsableCoupons] = useState(0);
+
+  useEffect(() => {
+    if (!isMe) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return;
+      const { count } = await supabase
+        .from("coupon_claims")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", auth.user.id)
+        .eq("status", "active")
+        .gt("expires_at", new Date().toISOString());
+      if (!cancelled) setUsableCoupons(count ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, [isMe]);
 
   // 상단 프로필 이미지를 눌러 바로 사진 변경
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -361,6 +381,18 @@ export function PublicProfileView({
               <h1 className="min-w-0 text-xl font-black leading-tight break-words tracking-tight">
                 {displayName}
               </h1>
+              {/* 편집은 자주 하는 행동이 아니다 — 카드 아래 큰 버튼으로 두면
+                  쿠폰함 같은 실제 목적지와 무게가 같아 보인다. 고치는 대상(이름) 옆
+                  아이콘으로 줄인다. */}
+              {isMe && (
+                <button
+                  onClick={() => setEditSection("all")}
+                  aria-label="프로필 편집"
+                  className="shrink-0 w-7 h-7 rounded-full bg-muted/70 text-muted-foreground hover:text-foreground hover:bg-muted grid place-items-center active:scale-95 transition-all"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
             {/* MD 소속 클럽 한 줄 라벨 */}
             {profile.md_status === "approved" && partnerClubs.length > 0 && (
@@ -552,15 +584,22 @@ export function PublicProfileView({
         </div>
         </div>
 
-        {/* 본인이면 프로필 편집 버튼 (프로필 카드 밖, 별도 버튼) */}
+        {/* 쿠폰함 진입 — 그동안 헤더 메뉴 안에만 있어 받은 쿠폰을 잊어버리기 쉬웠다.
+            남은 장수를 같이 보여줘야 "쓸 게 있나" 열어볼 이유가 생긴다. */}
         {isMe && (
-          <button
-            onClick={() => setEditSection("all")}
-            className="mt-4 w-full h-11 rounded-xl bg-muted text-[14px] font-bold hover:bg-muted/70 transition-colors flex items-center justify-center gap-1.5"
+          <Link
+            href="/my-coupons"
+            className="mt-4 w-full h-11 rounded-xl bg-muted text-[14px] font-bold hover:bg-muted/70 transition-colors flex items-center gap-2 px-3.5"
           >
-            <Pencil className="w-3.5 h-3.5" />
-            프로필 편집
-          </button>
+            <Ticket className="w-4 h-4 text-brand-amber shrink-0" />
+            <span>내 쿠폰함</span>
+            {usableCoupons > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-brand-amber text-[11px] font-black leading-none">
+                {usableCoupons}
+              </span>
+            )}
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 ml-auto" />
+          </Link>
         )}
       </div>
 

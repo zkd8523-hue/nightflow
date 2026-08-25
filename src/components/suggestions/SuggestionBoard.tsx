@@ -1,30 +1,23 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { SuggestionCard } from "@/components/suggestions/SuggestionCard";
-import { SUGGESTION_CATEGORIES, type SuggestionCategory } from "@/lib/suggestions/categories";
 
 export function SuggestionBoard() {
   const router = useRouter();
   const { user } = useCurrentUser();
-  const [filter, setFilter] = useState<SuggestionCategory | "all">("all");
-  const { suggestions, loading, toggleLike } = useSuggestions(
-    user?.id,
-    filter === "all" ? undefined : filter
-  );
+  // 카테고리 구분 제거 — 게시판 목적이 "건의" 하나로 좁혀져 분류가 의미를 잃었다.
+  const { suggestions, loading, toggleLike } = useSuggestions(user?.id);
 
   function goLogin(next: string) {
     router.push(`/login?redirect=${encodeURIComponent(next)}`);
   }
 
   function handleWrite() {
-    // 지금 보고 있는 카테고리 필터를 새 글 폼에 그대로 이어준다
-    const q = filter === "all" ? "" : `?category=${filter}`;
-    const next = `/suggestions/new${q}`;
+    const next = "/suggestions/new";
     if (!user) {
       goLogin(next);
       return;
@@ -44,21 +37,10 @@ export function SuggestionBoard() {
           >
             <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
-          <h1 className="text-xl font-black text-foreground">자유게시판</h1>
+          <h1 className="text-xl font-black text-foreground">건의게시판</h1>
         </div>
 
-        {/* 카테고리 필터 */}
-        <div className="flex gap-2 mt-3 mb-5 overflow-x-auto scrollbar-hide -mx-4 px-4">
-          <FilterChip label="전체" active={filter === "all"} onClick={() => setFilter("all")} />
-          {SUGGESTION_CATEGORIES.map((c) => (
-            <FilterChip
-              key={c.value}
-              label={`${c.emoji} ${c.label}`}
-              active={filter === c.value}
-              onClick={() => setFilter(c.value)}
-            />
-          ))}
-        </div>
+        <div className="mb-5" />
 
         {/* 목록 (항상 최신순) */}
         {loading ? (
@@ -67,16 +49,10 @@ export function SuggestionBoard() {
           </div>
         ) : suggestions.length === 0 ? (
           <div className="py-16 text-center">
-            <div className="text-[32px] leading-none mb-3">
-              {filter === "all"
-                ? "📝"
-                : SUGGESTION_CATEGORIES.find((c) => c.value === filter)?.emoji}
-            </div>
+            <div className="text-[32px] leading-none mb-3">📝</div>
             <p className="text-[14px] font-bold text-foreground">아직 글이 없어요</p>
             <p className="text-[12px] text-muted-foreground mt-1">
-              {filter === "all"
-                ? "첫 이야기를 남겨보세요"
-                : `${SUGGESTION_CATEGORIES.find((c) => c.value === filter)?.label}에 첫 글을 남겨보세요`}
+              첫 건의를 남겨보세요
             </p>
             <button
               onClick={handleWrite}
@@ -113,18 +89,3 @@ export function SuggestionBoard() {
   );
 }
 
-function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`shrink-0 h-8 px-3 rounded-full text-[12.5px] font-bold whitespace-nowrap transition-colors active:scale-95 ${
-        active
-          ? "bg-amber-500 text-black"
-          : "bg-card text-muted-foreground border border-border hover:bg-muted"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
