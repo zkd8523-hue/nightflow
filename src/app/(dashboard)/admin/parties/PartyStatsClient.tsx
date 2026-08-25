@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import Link from "next/link";
-import { Download, PartyPopper, UserPlus, Handshake, AlertTriangle } from "lucide-react";
+import { Download, PartyPopper, UserPlus, Handshake, AlertTriangle, ChevronDown } from "lucide-react";
 import type { PartyOverview, PartyWeeklyRow, PartyByClubRow, PartyOfferRow } from "./types";
+import { ClubMembersPanel } from "./ClubMembersPanel";
 
 function StatCard({
   label,
@@ -92,6 +93,7 @@ export function PartyStatsClient({
   offers: PartyOfferRow[];
 }) {
   const [onlyWaste, setOnlyWaste] = useState(false);
+  const [expandedClubId, setExpandedClubId] = useState<string | null>(null);
 
   const clubRows = useMemo(
     () => (onlyWaste ? byClub.filter((r) => (r.with_joiner ?? 0) === 0) : byClub),
@@ -318,30 +320,57 @@ export function PartyStatsClient({
               </tr>
             </thead>
             <tbody>
-              {clubRows.map((r, i) => (
-                <tr key={r.club_id ?? `noclub-${i}`} className="border-b border-border/50">
-                  <td className="py-2.5 pr-3 font-bold">
-                    {r.club_name ?? <span className="text-muted-foreground">클럽 미지정</span>}
-                  </td>
-                  <td className="py-2.5 pr-3 text-muted-foreground text-xs">{r.area}</td>
-                  <td className="py-2.5 pr-3 text-right font-bold">{r.published}</td>
-                  <td className="py-2.5 pr-3 text-right text-muted-foreground">
-                    {r.auto_published}
-                  </td>
-                  <td className="py-2.5 pr-3 text-right font-bold">{r.with_joiner}</td>
-                  <td
-                    className={`py-2.5 pr-3 text-right font-bold ${
-                      (r.join_rate ?? 0) > 0 ? "text-green-500" : "text-red-500"
-                    }`}
-                  >
-                    {r.join_rate ?? 0}%
-                  </td>
-                  <td className="py-2.5 pr-3 text-right">{r.matched}</td>
-                  <td className="py-2.5 text-right text-muted-foreground text-xs">
-                    {r.avg_budget ? `${Math.round(r.avg_budget / 10000)}만` : "-"}
-                  </td>
-                </tr>
-              ))}
+              {clubRows.map((r, i) => {
+                const rowKey = r.club_id ?? `noclub-${i}`;
+                const isExpanded = r.club_id != null && expandedClubId === r.club_id;
+                return (
+                  <React.Fragment key={rowKey}>
+                    <tr
+                      onClick={() => r.club_id && setExpandedClubId(isExpanded ? null : r.club_id)}
+                      className={`border-b border-border/50 ${
+                        r.club_id ? "cursor-pointer hover:bg-muted/10" : ""
+                      }`}
+                    >
+                      <td className="py-2.5 pr-3 font-bold">
+                        <span className="flex items-center gap-1">
+                          {r.club_id && (
+                            <ChevronDown
+                              className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${
+                                isExpanded ? "rotate-180" : ""
+                              }`}
+                            />
+                          )}
+                          {r.club_name ?? <span className="text-muted-foreground">클럽 미지정</span>}
+                        </span>
+                      </td>
+                      <td className="py-2.5 pr-3 text-muted-foreground text-xs">{r.area}</td>
+                      <td className="py-2.5 pr-3 text-right font-bold">{r.published}</td>
+                      <td className="py-2.5 pr-3 text-right text-muted-foreground">
+                        {r.auto_published}
+                      </td>
+                      <td className="py-2.5 pr-3 text-right font-bold">{r.with_joiner}</td>
+                      <td
+                        className={`py-2.5 pr-3 text-right font-bold ${
+                          (r.join_rate ?? 0) > 0 ? "text-green-500" : "text-red-500"
+                        }`}
+                      >
+                        {r.join_rate ?? 0}%
+                      </td>
+                      <td className="py-2.5 pr-3 text-right">{r.matched}</td>
+                      <td className="py-2.5 text-right text-muted-foreground text-xs">
+                        {r.avg_budget ? `${Math.round(r.avg_budget / 10000)}만` : "-"}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="border-b border-border/50">
+                        <td colSpan={8} className="bg-muted/5">
+                          <ClubMembersPanel clubId={r.club_id!} />
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

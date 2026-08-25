@@ -60,3 +60,16 @@ export interface PartyOfferRow {
   parties_with_offer: number;
   mds_offering: number;
 }
+
+// admin_get_club_party_members RPC (Migration 556) 반환 행.
+export interface ClubPartyMemberRow {
+  puzzle_id: string;
+  puzzle_status: string;
+  puzzle_created_at: string;
+  user_id: string;
+  display_name: string;
+  member_status: "참여중" | "나감" | "추방됨";
+  reason: string | null;
+  event_at: string;
+  is_leader: boolean;
+}
