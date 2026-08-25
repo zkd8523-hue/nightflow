@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft, Heart, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Search, X, ArrowLeft, Heart, SlidersHorizontal } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, ClubAreaChips, type ClubFilters } from "./ClubFilterChips";
 import { ClubMap } from "./ClubMap";
@@ -355,41 +355,24 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               </span>
             )}
           </button>
-          {/* 세그먼트 스위치 — 리스트/지도 양쪽 표시, 현재 상태 하이라이트 */}
-          <div
-            role="tablist"
-            aria-label="보기 방식"
-            className="flex items-center h-9 rounded-full bg-card p-0.5 flex-shrink-0"
+          {/* "주변" — 리스트/지도 세그먼트를 대체한 단일 토글.
+              누르면 내 위치 중심 지도로, 다시 누르면 리스트로 돌아온다. */}
+          <button
+            type="button"
+            aria-pressed={view === "map"}
+            onClick={() => changeView(view === "map" ? "list" : "map")}
+            // 컨테이너가 bg-card라 같은 토큰을 쓰면 배경이 겹쳐 "눌리는 것"으로 안 보인다.
+            // 다크에선 --muted와 --border가 둘 다 #262626이라 대비가 거의 없으므로,
+            // 테마 무관하게 밝아지는 흰색 반투명 레이어로 띄운다.
+            className={`flex items-center justify-center gap-1.5 px-4 h-9 rounded-full text-[13px] font-black transition-all flex-shrink-0 border active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+              view === "map"
+                ? "bg-inverse text-inverse-foreground border-transparent shadow-md"
+                : "bg-muted text-foreground border-border hover:bg-muted/70 dark:bg-white/10 dark:border-white/20 dark:hover:bg-white/[0.18] shadow-sm"
+            }`}
           >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={view === "list"}
-              onClick={() => changeView("list")}
-              className={`flex items-center justify-center gap-1 px-3 h-8 rounded-full text-[12px] font-black transition ${
-                view === "list"
-                  ? "bg-inverse text-inverse-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              리스트
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={view === "map"}
-              onClick={() => changeView("map")}
-              className={`flex items-center justify-center gap-1 px-3 h-8 rounded-full text-[12px] font-black transition ${
-                view === "map"
-                  ? "bg-inverse text-inverse-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <MapIcon className="w-3.5 h-3.5" />
-              지도
-            </button>
-          </div>
+            <MapPin className="w-4 h-4" />
+            주변
+          </button>
         </div>
         {/* 지역 필터는 항상 표시 (1차 필터) */}
         <ClubAreaChips value={filters} onChange={setFilters} />
@@ -406,6 +389,8 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
           unmappedCount={filtered.length - mappableCount}
           activeAreas={filters.areas}
           onDetailOpenChange={setMapDetailOpen}
+          // "주변"으로 들어온 진입이므로 내 위치를 바로 잡는다
+          autoLocate
         />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 space-y-3">

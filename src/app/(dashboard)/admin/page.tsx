@@ -21,6 +21,8 @@ import {
   Wine,
   Globe,
   Landmark,
+  Ticket,
+  PartyPopper,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -393,6 +395,24 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-amber-500/10",
       badge: null,
       href: "/admin/party-reviews",
+    },
+    {
+      label: "쿠폰 통계",
+      value: "퍼널 분석",
+      icon: Ticket,
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10",
+      badge: "발행→받음→사용",
+      href: "/admin/coupons",
+    },
+    {
+      label: "파티 통계",
+      value: "퍼널 분석",
+      icon: PartyPopper,
+      color: "text-purple-400",
+      bgColor: "bg-purple-500/10",
+      badge: "발행→참여→성사",
+      href: "/admin/parties",
     },
     {
       label: "이탈·전환 인사이트",

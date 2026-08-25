@@ -37,6 +37,9 @@ interface Props {
   lockCenter?: boolean;
   /** 클럽 상세 모달 열림/닫힘 알림 — 부모가 검색바 숨김 처리 */
   onDetailOpenChange?: (open: boolean) => void;
+  /** "주변" 진입처럼 사용자가 명시적으로 내 위치를 원한 경우.
+   *  권한이 아직 없어도 1회 요청한다 (기본 자동이동은 granted일 때만 동작). */
+  autoLocate?: boolean;
 }
 
 declare global {
@@ -88,7 +91,7 @@ function loadKakaoSdk(): Promise<void> {
   return sdkPromise;
 }
 
-export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter, unmappedCount = 0, activeAreas = [], lockCenter = false, onDetailOpenChange }: Props) {
+export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter, unmappedCount = 0, activeAreas = [], lockCenter = false, onDetailOpenChange, autoLocate = false }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]);
@@ -243,6 +246,12 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
   useEffect(() => {
     if (status !== "ready") return;
     if (lockCenter) return;
+    // "주변"으로 들어온 경우: 사용자가 내 위치를 명시적으로 원한 것이므로
+    // 권한 상태를 따지지 않고 바로 요청한다 (미허용이면 브라우저 팝업).
+    if (autoLocate) {
+      handleLocate({ silent: true });
+      return;
+    }
     if (typeof navigator === "undefined" || !navigator.permissions) return;
     navigator.permissions
       .query({ name: "geolocation" as PermissionName })
@@ -252,7 +261,7 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
         }
       })
       .catch(() => { /* permissions API 미지원 브라우저는 무시 */ });
-  }, [status, handleLocate, lockCenter]);
+  }, [status, handleLocate, lockCenter, autoLocate]);
 
   // ClubList에서 검색·필터가 적용된 clubs를 받음
   // 좌표 있는 클럽만 → 혜택(게스트 간판/핫딜) 있는 클럽 → 파트너(MD) 지정된 클럽 순으로 상위 노출.

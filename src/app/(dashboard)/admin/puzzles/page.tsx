@@ -311,6 +311,13 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
           </Link>
           <Flag className="w-5 h-5 text-purple-400" />
           <h1 className="text-[20px] font-black text-foreground">깃발·파티 관리</h1>
+          {/* 집계·퍼널은 별도 페이지. 여기는 개별 건 운영/CS 도구. */}
+          <Link
+            href="/admin/parties"
+            className="ml-auto text-[12px] font-bold text-amber-500 hover:underline shrink-0"
+          >
+            파티 통계 →
+          </Link>
         </div>
 
         {/* 탭 */}
