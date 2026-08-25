@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { ClubPartyMemberRow } from "./types";
 
@@ -61,10 +62,14 @@ export function ClubMembersPanel({ clubId }: { clubId: string }) {
           <div className="flex flex-wrap gap-x-4 gap-y-1.5">
             {members.map((m) => (
               <div key={`${m.user_id}-${m.member_status}`} className="text-xs flex items-center gap-1">
-                <span className="font-bold">
+                <Link
+                  href={`/u/${m.user_id}`}
+                  target="_blank"
+                  className="font-bold hover:underline"
+                >
                   {m.display_name}
                   {m.is_leader && <span className="text-amber-500 ml-0.5">방장</span>}
-                </span>
+                </Link>
                 <span className={STATUS_STYLE[m.member_status]}>{m.member_status}</span>
                 {m.reason && (
                   <span className="text-muted-foreground">({m.reason})</span>
