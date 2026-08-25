@@ -54,7 +54,7 @@ function formatPhone(phone: string): string {
 }
 
 /** 채팅 안에서 탭 가능한 연락처/위치 카드 — 인스타/카톡/전화/지도로 즉시 이동 */
-export function ContactCardMessage({ content }: { content: string }) {
+export function ContactCardMessage({ content, mine }: { content: string; mine?: boolean }) {
   const decoded = decodeContactCard(content);
   if (!decoded) return null;
   const { method, value } = decoded;
@@ -119,20 +119,24 @@ export function ContactCardMessage({ content }: { content: string }) {
       href={config.href}
       target={config.external ? "_blank" : undefined}
       rel={config.external ? "noopener noreferrer" : undefined}
-      className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-card border border-border active:bg-muted transition-colors min-w-[220px]"
+      className={`flex items-center justify-between gap-3 p-3 rounded-2xl transition-colors min-w-[220px] ${
+        mine
+          ? "bg-black/10 active:bg-black/15"
+          : "bg-card border border-border active:bg-muted"
+      }`}
     >
       <div className="flex items-center gap-3 min-w-0">
-        <div className={`w-9 h-9 rounded-full ${config.iconBg} flex items-center justify-center flex-shrink-0`}>
-          <Icon className={`w-4 h-4 ${config.iconColor}`} />
+        <div className={`w-9 h-9 rounded-full ${mine ? "bg-black/10" : config.iconBg} flex items-center justify-center flex-shrink-0`}>
+          <Icon className={`w-4 h-4 ${mine ? "text-black/70" : config.iconColor}`} />
         </div>
         <div className="min-w-0">
           {config.caption && (
-            <p className="text-[11px] font-bold text-muted-foreground uppercase">{config.caption}</p>
+            <p className={`text-[11px] font-bold uppercase ${mine ? "text-black/50" : "text-muted-foreground"}`}>{config.caption}</p>
           )}
-          <p className="text-[14px] font-bold text-foreground truncate">{config.title}</p>
+          <p className={`text-[14px] font-bold truncate ${mine ? "text-black" : "text-foreground"}`}>{config.title}</p>
         </div>
       </div>
-      <ChevronRight className="w-4 h-4 text-foreground flex-shrink-0" />
+      <ChevronRight className={`w-4 h-4 flex-shrink-0 ${mine ? "text-black" : "text-foreground"}`} />
     </a>
   );
 }

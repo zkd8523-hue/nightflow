@@ -204,14 +204,16 @@ export function ClubDirectCard({
           </SheetTitle>
         </SheetHeader>
         <ClubSharePuzzles puzzles={sheetPuzzles ?? puzzles} hideTitle />
-        <div className="px-4 pb-6">
-          <Link
-            href={isOwner ? "/md/dashboard?tab=share" : `/clubs/${group.clubId}`}
-            className="flex items-center justify-center gap-1 h-11 rounded-xl bg-muted text-muted-foreground text-[13px] font-black active:scale-95 transition-transform"
-          >
-            {isOwner ? "대시보드로 이동" : "클럽 정보 보기"} <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+        {isOwner && (
+          <div className="px-4 pb-6">
+            <Link
+              href="/md/dashboard?tab=share"
+              className="flex items-center justify-center gap-1 h-11 rounded-xl bg-muted text-muted-foreground text-[13px] font-black active:scale-95 transition-transform"
+            >
+              대시보드로 이동 <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
     </>

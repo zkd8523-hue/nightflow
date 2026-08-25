@@ -262,7 +262,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
               disabled={submitting || slotFull}
               className="w-full h-13 bg-inverse hover:opacity-90 text-inverse-foreground font-black text-[15px] rounded-2xl transition-all active:scale-[0.98] disabled:bg-muted disabled:text-muted-foreground"
             >
-              {submitting ? "뭉치는 중..." : "계속하기"}
+              {submitting ? "뭉치는 중..." : "채팅창 입장"}
             </Button>
           </div>
         )}

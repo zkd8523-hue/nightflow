@@ -505,35 +505,6 @@ export function PublicProfileView({
             </div>
         </div>
 
-        {/* 연락처 (유저 opt-in 공개 — contact_public). MD는 상단 핸들로 노출됨 */}
-        {!profile.md_unique_slug && profile.contact_public && (profile.instagram || profile.kakao_open_chat_url) && (
-          <div className="mt-5">
-            <div className="text-[13px] font-bold text-muted-foreground mb-2">연락처</div>
-            <div className="flex flex-wrap gap-2">
-              {profile.instagram && (
-                <a
-                  href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-[13px] font-bold text-foreground hover:bg-muted/60"
-                >
-                  <Instagram className="w-3.5 h-3.5 text-pink-400" />@{profile.instagram.replace(/^@/, "")}
-                </a>
-              )}
-              {profile.kakao_open_chat_url && (
-                <a
-                  href={profile.kakao_open_chat_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-[13px] font-bold text-foreground hover:bg-muted/60"
-                >
-                  💬 카카오 오픈채팅
-                </a>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* 좋아하는 클럽 (값 없어도 뼈대는 항상 노출) */}
         <div className="mt-5">
             <div className="text-[13px] font-bold text-muted-foreground mb-2">
@@ -582,6 +553,48 @@ export function PublicProfileView({
               </button>
             ) : null}
         </div>
+
+        {/* 연락처 — MD는 상시 공개, 일반 유저는 opt-in(contact_public) (public_user_profiles 뷰와 동일 기준).
+            프로필 박스(p-4, rounded-3xl)의 마지막 요소라 좌우/하단을 -1rem으로 밀어붙여
+            카드 아래 모서리가 박스 테두리와 그대로 이어지게 한다. 위쪽은 각지게 둬 구분선처럼 보이게. */}
+        {(profile.role === "md" || profile.contact_public) && (profile.instagram || profile.kakao_open_chat_url) && (
+          <div className="mt-4 -mx-4 -mb-4">
+            <div className="grid grid-cols-2 divide-x divide-border border-t border-border">
+              {profile.instagram && (
+                <a
+                  href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-2 bg-card px-4 py-2.5 active:bg-muted transition-colors rounded-bl-3xl ${!profile.kakao_open_chat_url ? "rounded-br-3xl" : ""}`}
+                >
+                  <div className="w-7 h-7 rounded-full bg-pink-500/15 flex items-center justify-center flex-shrink-0">
+                    <Instagram className="w-4 h-4 text-pink-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-muted-foreground uppercase">인스타그램</p>
+                    <p className="text-[13px] font-bold text-foreground truncate">@{profile.instagram.replace(/^@/, "")}</p>
+                  </div>
+                </a>
+              )}
+              {profile.kakao_open_chat_url && (
+                <a
+                  href={profile.kakao_open_chat_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-2 bg-card px-4 py-2.5 active:bg-muted transition-colors rounded-br-3xl ${!profile.instagram ? "rounded-bl-3xl" : ""}`}
+                >
+                  <div className="w-7 h-7 rounded-full bg-yellow-500/15 flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="w-4 h-4 text-yellow-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-muted-foreground uppercase">카카오</p>
+                    <p className="text-[13px] font-bold text-foreground truncate">오픈채팅</p>
+                  </div>
+                </a>
+              )}
+            </div>
+          </div>
+        )}
         </div>
 
         {/* 쿠폰함 진입 — 그동안 헤더 메뉴 안에만 있어 받은 쿠폰을 잊어버리기 쉬웠다.

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { ChevronRight } from "lucide-react";
 import { normalizeProfileImage } from "@/lib/utils/image";
 import { createClient } from "@/lib/supabase/client";
 import dynamic from "next/dynamic";
@@ -144,42 +145,50 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
           // 정원(4인)만 보여주고, 다 차면 버튼만 "마감"으로 바꾼다.
           const full = p.current_count >= p.target_count;
           const joined = myPuzzleIds.has(p.id);
-          return (
-            <div key={p.id} className={`bg-card px-4 py-3 ${full && !joined ? "opacity-50" : ""}`}>
-              <div className="flex items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[14.5px] font-black text-foreground truncate">
-                    {p.notes || `${p.area} 파티`}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground font-semibold truncate">
-                    {p.target_count}인
-                    {p.includes && p.includes.length > 0 ? ` · ${p.includes.slice(0, 2).join("/")}` : ""} · 인당{" "}
-                    <span className="text-brand-amber font-bold">{p.budget_per_person.toLocaleString()}원</span>
-                  </p>
-                </div>
-                {joined ? (
-                  // 합류 확인 + 단체채팅 재진입 동선 — 이게 없으면 "합류가 된 건가?"에서 멈춘다
-                  <Link
-                    href={`/party/${p.id}`}
-                    className="shrink-0 h-8 px-3.5 rounded-full bg-green-500/15 border border-green-500/30 text-money font-black text-[12px] flex items-center active:scale-95 transition-transform"
-                  >
-                    합류중
-                  </Link>
-                ) : full ? (
-                  <span className="shrink-0 h-8 px-3.5 rounded-full bg-muted text-muted-foreground font-black text-[12px] flex items-center">
-                    마감
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setJoinTarget(p)}
-                    className="shrink-0 h-8 px-3.5 rounded-full bg-green-500 hover:bg-green-400 text-black font-black text-[12px] active:scale-95 transition-transform"
-                  >
-                    합류하기
-                  </button>
-                )}
+          // 행마다 꽉 찬 초록 버튼을 반복하면 도배처럼 보인다 — 행 전체를 클릭 영역으로 삼고
+          // 오른쪽엔 화살표(또는 "합류중"/"마감" 상태 표시)만 둔다.
+          const rowContent = (
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[14.5px] font-black text-foreground truncate">
+                  {p.notes || `${p.area} 파티`}
+                </p>
+                <p className="text-[11px] text-muted-foreground font-semibold truncate">
+                  {p.target_count}인
+                  {p.includes && p.includes.length > 0 ? ` · ${p.includes.slice(0, 2).join("/")}` : ""} · 인당{" "}
+                  <span className="text-brand-amber font-bold">{p.budget_per_person.toLocaleString()}원</span>
+                </p>
               </div>
+              {joined ? (
+                <span className="shrink-0 text-[11px] font-bold text-money">합류중</span>
+              ) : full ? (
+                <span className="shrink-0 text-[11px] font-bold text-muted-foreground">마감</span>
+              ) : null}
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </div>
+          );
+          if (joined) {
+            // 합류 확인 + 단체채팅 재진입 동선 — 이게 없으면 "합류가 된 건가?"에서 멈춘다
+            return (
+              <Link
+                key={p.id}
+                href={`/party/${p.id}`}
+                className="block bg-card px-4 py-3 active:bg-muted transition-colors"
+              >
+                {rowContent}
+              </Link>
+            );
+          }
+          return (
+            <button
+              key={p.id}
+              type="button"
+              disabled={full}
+              onClick={() => setJoinTarget(p)}
+              className={`w-full text-left bg-card px-4 py-3 active:bg-muted transition-colors ${full ? "opacity-50" : ""}`}
+            >
+              {rowContent}
+            </button>
           );
         })}
       </div>

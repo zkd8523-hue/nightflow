@@ -206,7 +206,7 @@ export function DmRoom({ threadId, currentUserId, me, isMd = false, onRequireLog
                     {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                     {m.content && (
                       isContactCardContent(m.content) ? (
-                        <ContactCardMessage content={m.content} />
+                        <ContactCardMessage content={m.content} mine={mine} />
                       ) : (
                         <p className="text-[14px] leading-snug whitespace-pre-wrap break-words">
                           {m.content}

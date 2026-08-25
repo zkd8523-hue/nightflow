@@ -46,6 +46,13 @@ export default async function PartyChatPage({ params }: PageProps) {
   } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/party/${puzzleId}`);
 
+  // 본인 프로필의 연락처 필드 — 연락처 남기기 기능용 (DM·MessageRoom과 동일 패턴)
+  const { data: myContact } = await supabase
+    .from("users")
+    .select("instagram, phone, kakao_open_chat_url, preferred_contact_methods")
+    .eq("id", user.id)
+    .maybeSingle();
+
   const { data: puzzle } = await supabase
     .from("puzzles")
     .select(
@@ -157,7 +164,15 @@ export default async function PartyChatPage({ params }: PageProps) {
   return (
     <PartyChatRoom
       puzzleId={puzzle.id}
-      me={{ id: me.id, display_name: me.display_name, profile_image: me.profile_image }}
+      me={{
+        id: me.id,
+        display_name: me.display_name,
+        profile_image: me.profile_image,
+        instagram: myContact?.instagram,
+        phone: myContact?.phone,
+        kakao_open_chat_url: myContact?.kakao_open_chat_url,
+        preferred_contact_methods: myContact?.preferred_contact_methods,
+      }}
       isLeader={isLeader}
       isMd={isInvitedMd}
       mdConsented={mdConsented}

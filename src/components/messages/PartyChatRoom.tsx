@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
 import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
 import { ChatAttachMenu } from "@/components/chat/ChatAttachMenu";
+import { ContactCardMessage, isContactCardContent } from "@/components/messages/ContactCardMessage";
+import { ContactPickerButton } from "@/components/messages/ContactPickerButton";
 import { SwipeToReply } from "@/components/chat/SwipeToReply";
 import { ChatContentText } from "@/components/chat/ChatContentText";
 import { useComposerNavHide } from "@/hooks/useComposerNavHide";
@@ -17,7 +19,7 @@ import { usePartyMessages } from "@/hooks/usePartyMessages";
 import { usePartyOffers } from "@/hooks/usePartyOffers";
 import { usePartyReactions } from "@/hooks/usePartyReactions";
 import { CHAT_REACTION_EMOJIS, type ChatReactionEmoji } from "@/types/database";
-import type { ChatMediaItem, PartyMessage, PartyParticipant } from "@/types/database";
+import type { ChatMediaItem, ContactMethodType, PartyMessage, PartyParticipant } from "@/types/database";
 
 const MAX_LEN = 500;
 
@@ -25,6 +27,10 @@ interface Me {
   id: string;
   display_name: string | null;
   profile_image: string | null;
+  instagram?: string | null;
+  phone?: string | null;
+  kakao_open_chat_url?: string | null;
+  preferred_contact_methods?: ContactMethodType[] | null;
 }
 
 interface PartyInfo {
@@ -755,11 +761,15 @@ export function PartyChatRoom({
                           {/* 사진 → 텍스트 순서 (와글·DM과 동일) */}
                           {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                           {m.content && (
-                            <ChatContentText
-                              content={m.content}
-                              clubTags={[]}
-                              className="text-[14px] leading-snug whitespace-pre-wrap break-words"
-                            />
+                            isContactCardContent(m.content) ? (
+                              <ContactCardMessage content={m.content} mine />
+                            ) : (
+                              <ChatContentText
+                                content={m.content}
+                                clubTags={[]}
+                                className="text-[14px] leading-snug whitespace-pre-wrap break-words"
+                              />
+                            )
                           )}
                           {renderSharedOffer(m, true)}
                         </div>
@@ -822,11 +832,15 @@ export function PartyChatRoom({
                           {/* 사진 → 텍스트 순서 (와글·DM과 동일) */}
                           {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                           {m.content && (
-                            <ChatContentText
-                              content={m.content}
-                              clubTags={[]}
-                              className="text-[14px] leading-snug whitespace-pre-wrap break-words"
-                            />
+                            isContactCardContent(m.content) ? (
+                              <ContactCardMessage content={m.content} />
+                            ) : (
+                              <ChatContentText
+                                content={m.content}
+                                clubTags={[]}
+                                className="text-[14px] leading-snug whitespace-pre-wrap break-words"
+                              />
+                            )
                           )}
                           {renderSharedOffer(m, false)}
                         </div>
@@ -898,6 +912,10 @@ export function PartyChatRoom({
               </button>
             </div>
           )}
+          {/* 연락처 남기기(인스타/카톡/전화) — DM·오퍼 채팅과 동일 기능 */}
+          <div className="flex gap-2 px-3 pt-2.5 overflow-x-auto no-scrollbar">
+            <ContactPickerButton me={me} isMd={isMd} onSend={(content) => handleSend(content)} />
+          </div>
           {/* 첫 진입 인사말 추천 — 한 번이라도 보내면 사라짐 */}
           {!iHaveSent && (
             <div className="flex gap-2 px-3 pt-2.5 overflow-x-auto no-scrollbar">
