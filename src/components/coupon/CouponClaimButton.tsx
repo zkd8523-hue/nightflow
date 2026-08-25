@@ -58,7 +58,12 @@ export function CouponClaimButton({ issueId, disabled, disabledLabel, existingCl
         toast.error(result?.error || "받기 실패");
         return;
       }
-      toast.success("쿠폰을 받았어요! 내 쿠폰함에서 확인하세요");
+      toast.success("쿠폰을 받았어요! 내 쿠폰함에서 확인하세요", {
+        action: {
+          label: "쿠폰함 바로가기",
+          onClick: () => router.push("/my-coupons"),
+        },
+      });
       if (result.claim_id) {
         setClaimId(result.claim_id);
         onClaimed?.(result.claim_id);

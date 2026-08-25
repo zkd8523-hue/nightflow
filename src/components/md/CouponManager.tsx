@@ -92,6 +92,8 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
   // 서비스 바틀 상세 — 자유텍스트로 두면 MD마다 "2병"/"2 제공"/"2"처럼 표기가 갈려
   // 이름+수량을 구조화 입력으로 받고, 제출 시 "데낄라 2병, 샴페인 1병"으로 합쳐 benefitDetail에 담는다.
   const [bottleItems, setBottleItems] = useState<{ name: string; qty: number }[]>([{ name: "", qty: 1 }]);
+  // 데킬라샷 — 최소구매 조건 없이 잔 수만 정한다 (서비스 바틀과 달리 이름 입력 없음)
+  const [shotQty, setShotQty] = useState(1);
   const [conditions, setConditions] = useState("");
   const [showMore, setShowMore] = useState(false);
 
@@ -165,6 +167,7 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
     setTotalCount("");
     setBenefitDetail("");
     setBottleItems([{ name: "", qty: 1 }]);
+    setShotQty(1);
     setConditions("");
     setShowMore(false);
     setRedeemEndsAtLocal(defaultEndsAt);
@@ -226,7 +229,8 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
       : discountType === "flat" && rawDiscount !== null
         ? rawDiscount * 10000
         : null;
-    if (allowsMinSpend(benefitType) && !minSpendValue) {
+    // "기타"는 자유텍스트 상세설명에 조건을 이미 직접 적을 수 있어 최소구매 조건을 선택사항으로 둔다.
+    if (allowsMinSpend(benefitType) && benefitType !== "etc" && !minSpendValue) {
       toast.error("최소 구매 조건을 입력해주세요");
       return;
     }
@@ -249,7 +253,11 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
         p_benefit_type: benefitType,
         p_redeem_ends_at: dayjs(redeemEndsAtLocal + "+09:00").toISOString(),
         p_total_count: countNum,
-        p_benefit_detail: (benefitType === "service_bottle" ? bottleDetail : benefitDetail.trim()) || null,
+        p_benefit_detail: (
+          benefitType === "service_bottle" ? bottleDetail
+          : benefitType === "tequila_shot" ? `${shotQty}잔`
+          : benefitDetail.trim()
+        ) || null,
         p_conditions: conditions.trim() || null,
         p_thumbnail_url: null,
         p_discount_type: discountType || null,
@@ -323,6 +331,10 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
     setBenefitDetail(coupon.benefit_detail ?? "");
     if (coupon.benefit_type === "service_bottle") {
       setBottleItems(parseBottleDetail(coupon.benefit_detail));
+    }
+    if (coupon.benefit_type === "tequila_shot") {
+      const m = coupon.benefit_detail?.match(/(\d+)/);
+      setShotQty(m ? Math.min(10, Math.max(1, Number(m[1]))) : 1);
     }
     setConditions(coupon.conditions ?? "");
     setShowMore(!!coupon.conditions);
@@ -539,6 +551,29 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
                   className="w-full rounded-xl bg-card border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
                 />
               )}
+              {benefitType === "tequila_shot" && (
+                <div className="flex items-center justify-center rounded-xl bg-card border border-border px-3 h-11">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={busy || shotQty <= 1}
+                      onClick={() => setShotQty((q) => Math.max(1, q - 1))}
+                      className="w-7 h-7 rounded-lg text-foreground font-black text-[15px] disabled:opacity-30 active:scale-95 transition"
+                    >
+                      −
+                    </button>
+                    <span className="w-9 text-center text-sm font-bold text-foreground tabular-nums">{shotQty}잔</span>
+                    <button
+                      type="button"
+                      disabled={busy || shotQty >= 10}
+                      onClick={() => setShotQty((q) => Math.min(10, q + 1))}
+                      className="w-7 h-7 rounded-lg text-foreground font-black text-[15px] disabled:opacity-30 active:scale-95 transition"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* ③ 할인 조건 — 최소구매("5만원/2병 이상 구매시")와 할인값(정액/정률)을 한 섹션으로.
@@ -548,7 +583,7 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
             {allowsMinSpend(benefitType) && (
             <section className="space-y-2">
               <div className="text-foreground font-bold text-[13px]">
-                <span>할인 조건</span>
+                <span>할인 조건{benefitType === "etc" ? " (선택)" : ""}</span>
               </div>
               <div className="flex gap-1.5">
                 <div className="relative flex-1">

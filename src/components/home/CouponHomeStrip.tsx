@@ -130,6 +130,11 @@ function CouponHomeCard({ coupon, now }: { coupon: CouponIssue; now: number }) {
             </span>
             <span className="text-foreground ml-1">쿠폰</span>
           </p>
+        ) : coupon.benefit_type === "tequila_shot" ? (
+          <p className="text-[15px] font-black leading-tight truncate">
+            <span className="text-brand-amber">{display.name.replace(/\s*쿠폰$/, "")}</span>
+            <span className="text-foreground ml-1">쿠폰</span>
+          </p>
         ) : (
           <p className="text-[15px] font-black text-brand-amber leading-tight truncate">
             {display.name}

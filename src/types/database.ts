@@ -1318,6 +1318,7 @@ export type CouponBenefitType =
   | 'liquor_set'
   | 'table_discount'
   | 'service_bottle'
+  | 'tequila_shot'
   | 'etc';
 
 /** min_spend의 단위. krw=원 금액(기본) / bottle=바틀 개수(1~20). Migration 552 */

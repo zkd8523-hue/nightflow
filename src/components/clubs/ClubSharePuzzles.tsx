@@ -77,20 +77,21 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
 
   return (
     <div className={`px-4 ${hideTitle ? "pt-1 pb-5" : "py-5 border-t border-border"}`}>
-      {!hideTitle && (
-        <div className="flex items-baseline gap-2 mb-1">
-          <h2 className="text-[16px] font-black text-foreground">파티</h2>
-          <span className="text-[12px] text-muted-foreground font-semibold">
-            인당 {(minPrice / 10000).toLocaleString()}만~{(maxPrice / 10000).toLocaleString()}만원
-          </span>
-        </div>
-      )}
-      {/* 유저는 "파티"가 뭔지 모른 채 참가 버튼을 만난다 — 설명을 같은 자리에 둔다 */}
-      <div className="flex items-center justify-end mb-2">
+      {/* 유저는 "파티"가 뭔지 모른 채 참가 버튼을 만난다 — 설명을 제목과 같은 행 우측에 둔다.
+          제목이 없는 시트(hideTitle)에서는 버튼만 우측 정렬로 남긴다. */}
+      <div className={`flex items-baseline gap-2 ${hideTitle ? "justify-end mb-2" : "mb-2"}`}>
+        {!hideTitle && (
+          <>
+            <h2 className="text-[16px] font-black text-foreground">🎉 파티</h2>
+            <span className="text-[12px] text-muted-foreground font-semibold">
+              인당 {(minPrice / 10000).toLocaleString()}만~{(maxPrice / 10000).toLocaleString()}만원
+            </span>
+          </>
+        )}
         <button
           type="button"
           onClick={() => setGuideOpen(true)}
-          className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
+          className="ml-auto shrink-0 text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
         >
           <span className="text-[12px]">ⓘ</span>
           파티란?

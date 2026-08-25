@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { benefitTypeLabel, couponDisplayName, REDEEM_COLORS, formatDiscount, formatCouponCountdown } from "@/lib/utils/coupon";
+import { benefitTypeLabel, couponDisplayName, REDEEM_COLORS, formatDiscount, formatCouponCountdown, parseBottleItems } from "@/lib/utils/coupon";
 import type { CouponBenefitType, CouponDiscountType, CouponMinSpendUnit } from "@/types/database";
 
 /**
@@ -354,6 +354,7 @@ function TicketCard({
 }) {
   const discount = formatDiscount(claim.discount_type, claim.discount_amount, claim.min_spend, claim.min_spend_unit);
   const display = couponDisplayName(claim.benefit_type, claim.benefit_detail);
+  const bottleItems = claim.benefit_type === "service_bottle" ? parseBottleItems(claim.benefit_detail) : [];
   const expiresLabel = formatCouponCountdown(claim.expires_at, displayNow);
 
   return (
@@ -372,7 +373,27 @@ function TicketCard({
           → 혜택 라벨을 큰 제목으로 쓰고, 할인이 있을 때만 그 아래 강조한다. */}
       <div className={`px-5 ${claim.club_thumbnail ? "pt-1" : "pt-6"} pb-5 text-center`}>
         <h1 className="text-[26px] font-black text-white leading-tight">
-          <span className="mr-1">{display.emoji}</span>{display.name}
+          <span className="mr-1">{display.emoji}</span>
+          {bottleItems.length > 0 ? (
+            <>
+              <span className="text-amber-400">
+                {bottleItems.map((b, i) => (
+                  <span key={i}>
+                    {i > 0 && " + "}
+                    {b.name} {b.qty}
+                  </span>
+                ))}
+              </span>
+              <span className="ml-1">쿠폰</span>
+            </>
+          ) : claim.benefit_type === "tequila_shot" ? (
+            <>
+              <span className="text-amber-400">{display.name.replace(/\s*쿠폰$/, "")}</span>
+              <span className="ml-1">쿠폰</span>
+            </>
+          ) : (
+            display.name
+          )}
         </h1>
         {discount && (
           <p className="text-[15px] font-black text-amber-400 mt-1.5">{discount}</p>
@@ -384,9 +405,12 @@ function TicketCard({
           </p>
         )}
         {claim.md_name && (
-          <p className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-white/10 border border-white/15">
-            <span className="text-[10px] font-bold text-white/50">발행</span>
-            <span className="text-[14px] font-black text-white">{claim.md_name}</span>
+          <p
+            className="inline-flex items-center gap-1.5 mt-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-400/20 via-amber-300/10 to-amber-400/20 border border-amber-300/40"
+            style={{ boxShadow: "0 0 16px 2px rgba(251, 191, 36, 0.35)" }}
+          >
+            <span className="text-[10px] font-bold text-amber-200/80">발행</span>
+            <span className="text-[14px] font-black text-white drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]">{claim.md_name}</span>
           </p>
         )}
       </div>
@@ -415,9 +439,12 @@ function TicketCard({
             </div>
           </div>
         )}
-        {claim.benefit_detail && claim.benefit_type !== "etc" && (
-          <Row label="혜택 내용" value={claim.benefit_detail} />
-        )}
+        {claim.benefit_detail &&
+          claim.benefit_type !== "etc" &&
+          claim.benefit_type !== "service_bottle" &&
+          claim.benefit_type !== "tequila_shot" && (
+            <Row label="혜택 내용" value={claim.benefit_detail} />
+          )}
         {claim.conditions && (
           <Row label="사용 조건" value={claim.conditions} highlight />
         )}

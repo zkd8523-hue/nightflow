@@ -126,7 +126,7 @@ export function ClubDetailContent({
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(club.thumbnail_url);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const [guestSignCopied, setGuestSignCopied] = useState(false);
+  const [guestSignCopied, setGuestSignCopied] = useState<"guest" | "reserve" | null>(null);
   const [clubTags, setClubTags] = useState<string[]>(club.tags ?? []);
   const [clubName, setClubName] = useState<string>(club.name);
   const [clubNameEn, setClubNameEn] = useState<string>(club.name_en ?? "");
@@ -515,57 +515,83 @@ export function ClubDetailContent({
                     </p>
                   </div>
                 </Link>
-                <div className={`grid gap-2 ${guestSignSlot.md.kakao_open_chat_url ? "grid-cols-2" : "grid-cols-1"}`}>
-                  {guestSignSlot.md.instagram && (
-                    <a
-                      href={`https://instagram.com/${guestSignSlot.md.instagram}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "instagram")}
-                      className="bg-card hover:bg-muted border border-border rounded-md px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
-                    >
-                      <Instagram className="w-4 h-4 text-pink-400 flex-shrink-0" />
-                      <span className="text-foreground text-[12px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
-                    </a>
-                  )}
-                  {guestSignSlot.md.kakao_open_chat_url && (
-                    <a
-                      href={guestSignSlot.md.kakao_open_chat_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "openchat")}
-                      className="bg-card hover:bg-muted border border-border rounded-md px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
-                    >
-                      <MessageCircle className="w-4 h-4 text-[#FEE500] flex-shrink-0" fill="currentColor" />
-                      <span className="text-foreground text-[12px] font-bold truncate">오픈채팅</span>
-                    </a>
+                <div className="space-y-2">
+                  <div className={`grid divide-x divide-border rounded-md border border-border overflow-hidden ${guestSignSlot.md.kakao_open_chat_url ? "grid-cols-2" : "grid-cols-1"}`}>
+                    {guestSignSlot.md.instagram && (
+                      <a
+                        href={`https://instagram.com/${guestSignSlot.md.instagram}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "instagram")}
+                        className="bg-card hover:bg-muted px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
+                      >
+                        <Instagram className="w-4 h-4 text-pink-400 flex-shrink-0" />
+                        <span className="text-foreground text-[12px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
+                      </a>
+                    )}
+                    {guestSignSlot.md.kakao_open_chat_url && (
+                      <a
+                        href={guestSignSlot.md.kakao_open_chat_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "openchat")}
+                        className="bg-card hover:bg-muted px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
+                      >
+                        <MessageCircle className="w-4 h-4 text-[#FEE500] flex-shrink-0" fill="currentColor" />
+                        <span className="text-foreground text-[12px] font-bold truncate">오픈채팅</span>
+                      </a>
+                    )}
+                  </div>
+                  {(guestSignSlot.md.instagram || guestSignSlot.md.kakao_open_chat_url) && (
+                    <div className="grid grid-cols-2 divide-x divide-border rounded-md border border-border overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const benefit = guestSignSlot.today_benefit?.trim();
+                          const message = [
+                            "[나플 게스트 문의] 안녕하세요!",
+                            `${clubName}${benefit ? ` "${benefit}"` : ""} 게스트 가능할까요?`,
+                          ].join("\n");
+                          try {
+                            await navigator.clipboard.writeText(message);
+                            setGuestSignCopied("guest");
+                            toast.success("메시지가 복사됐어요");
+                            trackGuestSignClick(guestSignSlot.slot_id, "copy_message");
+                            setTimeout(() => setGuestSignCopied(null), 2000);
+                          } catch {
+                            toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
+                          }
+                        }}
+                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 bg-card hover:bg-muted text-[12px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.98] transition"
+                      >
+                        {guestSignCopied === "guest" ? <Check className="w-3.5 h-3.5 text-money" /> : <Copy className="w-3.5 h-3.5" />}
+                        {guestSignCopied === "guest" ? "복사됐어요" : "게스트 문의 복사"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const message = [
+                            "[나플 예약 문의] 안녕하세요!",
+                            `${clubName} 테이블 예약 가능할까요?`,
+                          ].join("\n");
+                          try {
+                            await navigator.clipboard.writeText(message);
+                            setGuestSignCopied("reserve");
+                            toast.success("메시지가 복사됐어요");
+                            trackGuestSignClick(guestSignSlot.slot_id, "copy_message");
+                            setTimeout(() => setGuestSignCopied(null), 2000);
+                          } catch {
+                            toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
+                          }
+                        }}
+                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 bg-card hover:bg-muted text-[12px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.98] transition"
+                      >
+                        {guestSignCopied === "reserve" ? <Check className="w-3.5 h-3.5 text-money" /> : <Copy className="w-3.5 h-3.5" />}
+                        {guestSignCopied === "reserve" ? "복사됐어요" : "예약 문의 복사"}
+                      </button>
+                    </div>
                   )}
                 </div>
-                {(guestSignSlot.md.instagram || guestSignSlot.md.kakao_open_chat_url) && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const benefit = guestSignSlot.today_benefit?.trim();
-                      const message = [
-                        "[나플 게스트 문의] 안녕하세요!",
-                        `${clubName}${benefit ? ` "${benefit}"` : ""} 게스트 가능할까요?`,
-                      ].join("\n");
-                      try {
-                        await navigator.clipboard.writeText(message);
-                        setGuestSignCopied(true);
-                        toast.success("메시지가 복사됐어요");
-                        trackGuestSignClick(guestSignSlot.slot_id, "copy_message");
-                        setTimeout(() => setGuestSignCopied(false), 2000);
-                      } catch {
-                        toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
-                      }
-                    }}
-                    className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-md border border-border bg-card text-[12px] font-bold text-foreground/80 hover:text-foreground hover:border-border active:scale-[0.98] transition"
-                  >
-                    {guestSignCopied ? <Check className="w-3.5 h-3.5 text-money" /> : <Copy className="w-3.5 h-3.5" />}
-                    {guestSignCopied ? "복사됐어요. 붙여넣어 보내세요" : "문의 메시지 복사"}
-                  </button>
-                )}
               </div>
             </div>
           )}

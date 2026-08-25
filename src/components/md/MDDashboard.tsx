@@ -654,7 +654,7 @@ export function MDDashboard({
                 >
                     <span className="text-[18px] leading-none shrink-0">🎟️</span>
                     <span className="text-[14px] font-black text-foreground shrink-0">쿠폰</span>
-                    <span className="text-[12px] font-bold text-muted-foreground truncate">무료입장·프리드링크 발행</span>
+                    <span className="text-[12px] font-bold text-muted-foreground truncate">서비스바틀·데킬라샷 등</span>
                 </button>
                 <GuideHint onClick={() => setCouponGuideOpen(true)} />
                 {couponIsNew && (

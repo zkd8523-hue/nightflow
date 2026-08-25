@@ -11,6 +11,7 @@ import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 // 과거 발행분 조회·통계가 깨지지 않도록 CouponBenefitType 값 자체는 유지한다.
 export const COUPON_BENEFIT_PRESETS: { value: CouponBenefitType; label: string; emoji: string }[] = [
   { value: "service_bottle", label: "서비스 바틀", emoji: "🍾" },
+  { value: "tequila_shot", label: "데킬라샷", emoji: "🥃" },
   { value: "table_discount", label: "테이블 할인", emoji: "🥂" },
   { value: "free_entry", label: "무료입장", emoji: "🎟" },
   { value: "free_drink", label: "프리드링크", emoji: "🍸" },
@@ -135,7 +136,8 @@ export function formatDiscount(
   if (type === "percent" && amount != null) discount = `${amount}% 할인`;
   else if (type === "flat" && amount != null) discount = `${formatWonCompact(amount)} 할인`;
 
-  const prefix = minSpend != null ? `${formatMinSpend(minSpend, minSpendUnit)} 이상 ` : "";
+  // 할인이 없으면(서비스 바틀 등) prefix만 남아 "2병 이상"처럼 뚝 끊긴다 — "구매시"를 붙여 문장으로 완성한다.
+  const prefix = minSpend != null ? `${formatMinSpend(minSpend, minSpendUnit)} 이상 ${discount ? "" : "구매시 "}` : "";
   if (!discount && !prefix) return null;
   return `${prefix}${discount}`.trim();
 }
@@ -158,6 +160,10 @@ export function couponDisplayName(
     const items = parseBottleItems(benefitDetail);
     const name = items.length > 0 ? `${items.map((b) => `${b.name} ${b.qty}`).join(" + ")} 쿠폰` : label;
     return { name, emoji };
+  }
+  if (benefitType === "tequila_shot") {
+    const detail = benefitDetail?.trim();
+    return { name: detail ? `데킬라샷 ${detail} 쿠폰` : label, emoji };
   }
   return { name: label, emoji };
 }
@@ -188,6 +194,7 @@ export const NO_DISCOUNT_BENEFITS: CouponBenefitType[] = [
   "free_drink",
   "free_pass",
   "service_bottle",
+  "tequila_shot",
 ];
 
 export function allowsDiscount(type: CouponBenefitType | ""): boolean {
@@ -203,6 +210,7 @@ export const NO_MIN_SPEND_BENEFITS: CouponBenefitType[] = [
   "free_entry",
   "free_drink",
   "free_pass",
+  "tequila_shot",
 ];
 
 export function allowsMinSpend(type: CouponBenefitType | ""): boolean {

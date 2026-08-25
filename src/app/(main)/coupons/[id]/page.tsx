@@ -120,6 +120,11 @@ export default async function CouponDetailPage({ params }: { params: Promise<{ i
               </span>
               <span className="ml-1">쿠폰</span>
             </>
+          ) : coupon.benefit_type === "tequila_shot" ? (
+            <>
+              <span className="text-brand-amber">{display.name.replace(/\s*쿠폰$/, "")}</span>
+              <span className="ml-1">쿠폰</span>
+            </>
           ) : (
             display.name
           )}
