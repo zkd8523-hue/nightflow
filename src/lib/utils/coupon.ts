@@ -8,7 +8,7 @@ import { getClubEventDateFrom } from "@/lib/utils/date";
  */
 export const COUPON_BENEFIT_PRESETS: { value: CouponBenefitType; label: string; emoji: string }[] = [
   { value: "liquor_set", label: "주류 세트 할인", emoji: "🍾" },
-  { value: "table_discount", label: "테이블 할인", emoji: "🪑" },
+  { value: "table_discount", label: "테이블 할인", emoji: "🥂" },
   { value: "free_entry", label: "무료입장", emoji: "🎟" },
   { value: "free_drink", label: "프리드링크", emoji: "🍸" },
   { value: "free_pass", label: "프리패스", emoji: "⚡" },
