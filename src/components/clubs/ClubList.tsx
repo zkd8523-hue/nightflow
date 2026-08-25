@@ -543,6 +543,12 @@ function ClubCard({
 }) {
   const genres = getTagsByGroup(club.tags || [], "genre");
   const metaLine = genres.slice(0, 2).map((g) => `#${g.label}`).join(" · ");
+  // MD가 문구를 안 쓰고 칩만 고른 경우도 있으므로, 텍스트가 없으면
+  // 칩 라벨을 이어붙여 띠를 만든다("무료입장 · 프리드링크").
+  // 홈(ClubBenefitSection)의 배너 폴백과 동일 규칙.
+  const bannerText =
+    benefitText?.trim() ||
+    benefitTags.slice(0, 2).map((t) => benefitLabel(t).label).join(" · ");
 
   return (
     <Link
@@ -567,13 +573,13 @@ function ClubCard({
           <FavoriteButton clubId={club.id} />
         </div>
         {/* 상단 혜택 배지 — 홈(ClubBenefitSection)과 동일 디자인 (폰트·정렬 통일) */}
-        {benefitText && (
+        {bannerText && (
           <div className="absolute top-0 inset-x-0 bg-amber-500 px-2.5 pt-1.5 pb-1">
             <span
               className="block whitespace-pre-line text-black text-[13px] tracking-tight text-center leading-[1.1] line-clamp-2"
               style={{ fontFamily: "var(--font-display-kr)" }}
             >
-              {benefitText}
+              {bannerText}
             </span>
           </div>
         )}
