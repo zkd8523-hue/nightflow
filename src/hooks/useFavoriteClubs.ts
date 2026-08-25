@@ -77,7 +77,8 @@ export function useFavoriteClubs(userId: string | undefined) {
           }
 
           setFavorites((prev) => [data as UserFavoriteClub, ...prev]);
-          toast.success("클럽을 찜했습니다");
+          // 찜의 효용(새 쿠폰 알림)을 이 자리에서 알려준다 — 하트만 눌러선 뭘 해주는지 알 수 없다
+          toast.success("클럽을 찜했어요! 새 쿠폰 나오면 알려드릴게요");
         }
       } catch (error: unknown) {
         logError(error, "toggleFavorite");

@@ -6,7 +6,8 @@ import { ArrowLeft, Clock, ChevronRight, AlertCircle } from "lucide-react";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@/lib/supabase/server";
 import { CouponClaimButton } from "@/components/coupon/CouponClaimButton";
-import { splitDiscount, benefitTypeLabel, couponDisplayName, formatCouponRemaining, formatCouponCountdown } from "@/lib/utils/coupon";
+import { FavoriteButton } from "@/components/auctions/FavoriteButton";
+import { splitDiscount, benefitTypeLabel, couponDisplayName, formatCouponRemaining, formatCouponCountdown, formatMinSpend, parseBottleItems } from "@/lib/utils/coupon";
 import type { CouponIssue } from "@/types/database";
 
 export const revalidate = 30;
@@ -64,7 +65,17 @@ export default async function CouponDetailPage({ params }: { params: Promise<{ i
 
   const { label, emoji } = benefitTypeLabel(coupon.benefit_type);
   const display = couponDisplayName(coupon.benefit_type, coupon.benefit_detail);
-  const discount = splitDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend);
+  const discount = splitDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend, coupon.min_spend_unit);
+  const bottleItems = coupon.benefit_type === "service_bottle" ? parseBottleItems(coupon.benefit_detail) : [];
+  // benefit_detail이 이미 제목(display.name)에 녹아든 타입(etc/service_bottle)은
+  // 아래 별도 문단에서 같은 텍스트를 또 보여주면 중복이라 생략한다.
+  const showBenefitDetailParagraph =
+    coupon.benefit_detail && coupon.benefit_type !== "etc" && coupon.benefit_type !== "service_bottle";
+  // discount가 없어도(서비스 바틀 등) min_spend가 있으면 "N병/N만원 이상 구매시" 조건은 보여줘야 한다.
+  const minSpendCondition =
+    !discount && coupon.min_spend != null
+      ? `${formatMinSpend(coupon.min_spend, coupon.min_spend_unit)} 이상 구매시`
+      : null;
   const isEnded = coupon.status === "expired" || coupon.status === "cancelled" || new Date(coupon.redeem_ends_at) <= new Date();
   const isSoldOut = coupon.status === "sold_out";
   const thumb = coupon.thumbnail_url || coupon.club?.thumbnail_url || null;
@@ -87,11 +98,31 @@ export default async function CouponDetailPage({ params }: { params: Promise<{ i
             {emoji}
           </div>
         )}
+        {coupon.club?.id && (
+          <div className="absolute top-3 right-3">
+            <FavoriteButton clubId={coupon.club.id} variant="overlay" />
+          </div>
+        )}
       </div>
 
       <div className="space-y-1 mb-4">
         <h1 className="text-2xl font-black text-foreground tracking-tight">
-          <span className="mr-1">{display.emoji}</span>{display.name}
+          <span className="mr-1">{display.emoji}</span>
+          {bottleItems.length > 0 ? (
+            <>
+              <span className="text-brand-amber">
+                {bottleItems.map((b, i) => (
+                  <span key={i}>
+                    {i > 0 && " + "}
+                    {b.name} {b.qty}
+                  </span>
+                ))}
+              </span>
+              <span className="ml-1">쿠폰</span>
+            </>
+          ) : (
+            display.name
+          )}
         </h1>
         {discount && (
           <p className="text-[17px] font-black leading-tight">
@@ -103,6 +134,9 @@ export default async function CouponDetailPage({ params }: { params: Promise<{ i
               </span>
             )}
           </p>
+        )}
+        {minSpendCondition && (
+          <p className="text-[13px] font-bold text-muted-foreground">{minSpendCondition}</p>
         )}
         {coupon.club?.id ? (
           <Link
@@ -129,7 +163,7 @@ export default async function CouponDetailPage({ params }: { params: Promise<{ i
         </div>
       )}
 
-      {coupon.benefit_detail && (
+      {showBenefitDetailParagraph && (
         <p className="text-[13px] text-foreground/90 mb-3 leading-relaxed">{coupon.benefit_detail}</p>
       )}
       {coupon.conditions && (

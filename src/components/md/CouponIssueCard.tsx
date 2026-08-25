@@ -27,7 +27,7 @@ const STATUS_LABEL: Record<CouponIssue["status"], { text: string; className: str
 
 export function CouponIssueCard({ coupon, onCancel, onReissue, onToggleFavorite, deleteMode, deletePicked, onTogglePick }: Props) {
   const display = couponDisplayName(coupon.benefit_type, coupon.benefit_detail);
-  const discountLabel = formatDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend);
+  const discountLabel = formatDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend, coupon.min_spend_unit);
   const status = STATUS_LABEL[coupon.status];
   const isLive = coupon.status === "active" || coupon.status === "sold_out";
 

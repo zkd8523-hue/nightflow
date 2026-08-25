@@ -52,7 +52,7 @@ export default async function MDCouponDetailPage({
 
   const { label, emoji } = benefitTypeLabel(coupon.benefit_type);
   const display = couponDisplayName(coupon.benefit_type, coupon.benefit_detail);
-  const discountLabel = formatDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend);
+  const discountLabel = formatDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend, coupon.min_spend_unit);
 
   // 받아간 사람 목록. users 직접 조인은 533/537 RLS 락다운 때문에 빈 결과가 나오므로
   // public_user_profiles 뷰를 별도 조회해 합친다.

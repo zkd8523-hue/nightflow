@@ -599,13 +599,13 @@ export function MDDashboard({
                         setShareInlineOpen(false);
                         setCouponInlineOpen(false);
                     }}
-                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
+                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all px-3 pr-20 ${
                         guestSignInlineOpen ? "border-amber-500" : "border-border"
                     }`}
                 >
-                    <span className="text-[18px] leading-none">🎫</span>
-                    <span className="text-[14px] font-black text-foreground">게스트 간판</span>
-                    <span className="text-[12px] font-bold text-muted-foreground">매주 월 18시 오픈</span>
+                    <span className="text-[18px] leading-none shrink-0">🎫</span>
+                    <span className="text-[14px] font-black text-foreground truncate">게스트 간판</span>
+                    <span className="text-[12px] font-bold text-muted-foreground truncate">매주 월 18시 오픈</span>
                 </button>
                 <GuideHint onClick={() => setGuestSignGuideOpen(true)} />
                 </div>
@@ -620,14 +620,14 @@ export function MDDashboard({
                         setGuestSignInlineOpen(false);
                         setCouponInlineOpen(false);
                     }}
-                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
+                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all px-3 pr-20 ${
                         shareInlineOpen ? "border-green-500" : "border-border"
                     }`}
                 >
-                    <span className="text-[18px] leading-none">🎉</span>
-                    <span className="text-[14px] font-black text-foreground">파티(조각)</span>
+                    <span className="text-[18px] leading-none shrink-0">🎉</span>
+                    <span className="text-[14px] font-black text-foreground truncate">파티(조각)</span>
                     {/* 파티 운영권도 게스트 간판과 같은 주 단위 선점(Migration 514) */}
-                    <span className="text-[12px] font-bold text-muted-foreground">매주 월 18시 오픈</span>
+                    <span className="text-[12px] font-bold text-muted-foreground truncate">매주 월 18시 오픈</span>
                 </button>
                 <GuideHint onClick={() => setShareGuideOpen(true)} />
                 </div>
@@ -644,7 +644,7 @@ export function MDDashboard({
                         setGuestSignInlineOpen(false);
                         setShareInlineOpen(false);
                     }}
-                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
+                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all px-3 pr-20 ${
                         couponInlineOpen
                             ? "border-amber-500"
                             : couponIsNew
@@ -652,9 +652,9 @@ export function MDDashboard({
                               : "border-border"
                     }`}
                 >
-                    <span className="text-[18px] leading-none">🎟️</span>
-                    <span className="text-[14px] font-black text-foreground">쿠폰</span>
-                    <span className="text-[12px] font-bold text-muted-foreground">무료입장·프리드링크 발행</span>
+                    <span className="text-[18px] leading-none shrink-0">🎟️</span>
+                    <span className="text-[14px] font-black text-foreground shrink-0">쿠폰</span>
+                    <span className="text-[12px] font-bold text-muted-foreground truncate">무료입장·프리드링크 발행</span>
                 </button>
                 <GuideHint onClick={() => setCouponGuideOpen(true)} />
                 {couponIsNew && (

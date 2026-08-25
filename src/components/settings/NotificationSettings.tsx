@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
-import { Bell, Phone, Info, Moon, ShieldCheck } from "lucide-react";
+import { Bell, Phone, Info, Moon, ShieldCheck, BellOff } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage, logError } from "@/lib/utils/error";
+import { initPushNotifications } from "@/lib/native/pushNotifications";
 
 // 푸시 카테고리 정의 (역할별)
 type PushCategory =
@@ -18,7 +19,7 @@ const USER_CATEGORIES: { key: PushCategory; label: string; desc: string }[] = [
   {
     key: "notify_offer_arrived",
     label: "오퍼 도착",
-    desc: "내가 꽂은 깃발에 파트너가 오퍼를 보냈을 때",
+    desc: "내가 만든 파티에 파트너가 오퍼를 보냈을 때",
   },
   {
     key: "notify_marketing",
@@ -51,6 +52,47 @@ export function NotificationSettings() {
 
   const isMD = user?.role === "md" || user?.role === "admin";
   const categories = isMD ? MD_CATEGORIES : USER_CATEGORIES;
+
+  // 기기(OS) 알림 권한 상태. 카테고리 토글이 켜져 있어도 OS 권한이 없으면 알림이 안 온다.
+  // 네이티브 앱에서만 판정 가능(웹은 이 API 자체가 없음) → null이면 판정 불가/웹.
+  //  - "denied": 재요청 불가(OS 1회 정책) → 기기 설정으로 안내
+  //  - "prompt": 아직 안 물어봄 → 여기서 바로 켤 수 있게 버튼 제공.
+  //    (로그인 시트에서 "나중에"를 누른 유저의 유일한 복구 경로다)
+  const [osPerm, setOsPerm] = useState<"granted" | "denied" | "prompt" | null>(null);
+  const [grantingPush, setGrantingPush] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { Capacitor } = await import("@capacitor/core");
+      if (!Capacitor.isNativePlatform()) return;
+      const { PushNotifications } = await import("@capacitor/push-notifications");
+      const status = await PushNotifications.checkPermissions();
+      setOsPerm(
+        status.receive === "granted"
+          ? "granted"
+          : status.receive === "denied"
+            ? "denied"
+            : "prompt"
+      );
+    })();
+  }, []);
+
+  const handleEnableOsPush = async () => {
+    if (!user || grantingPush) return;
+    setGrantingPush(true);
+    try {
+      const result = await initPushNotifications(user.id, true);
+      if (result === "granted") {
+        setOsPerm("granted");
+        toast.success("알림이 켜졌어요");
+      } else {
+        // 여기서 거절하면 OS 팝업을 소진한 것 → 이후엔 기기 설정으로만 복구 가능
+        setOsPerm("denied");
+      }
+    } finally {
+      setGrantingPush(false);
+    }
+  };
 
   // 푸시 카테고리 토글 (역할별 다름)
   const [pushPrefs, setPushPrefs] = useState<Record<PushCategory, boolean>>({
@@ -294,6 +336,38 @@ export function NotificationSettings() {
 
   return (
     <>
+      {/* 기기 알림 권한 차단 — OS 설정에서 꺼져 있으면 아래 토글들이 무의미해진다.
+          OS 정책상 앱에서 팝업을 다시 띄울 수 없어 문구로 안내한다.
+          (바로가기 버튼은 capacitor-native-settings 플러그인 필요 = 앱 재빌드) */}
+      {osPerm === "denied" && (
+        <div className="bg-red-500/10 border border-red-500/25 rounded-2xl p-4 mb-4 flex items-start gap-2.5">
+          <BellOff className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          <p className="text-[12.5px] text-foreground/90 leading-relaxed">
+            기기에서 알림이 차단돼 있어요. 설정 &gt; 앱 &gt; 나플 &gt; 알림에서 허용해주세요.
+          </p>
+        </div>
+      )}
+
+      {/* 아직 권한을 안 물어본 상태 — 여기서 바로 켤 수 있게 한다.
+          로그인 시트에서 "나중에"를 누른 유저에게는 이게 유일한 복구 경로다. */}
+      {osPerm === "prompt" && (
+        <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 mb-4 flex items-start gap-2.5">
+          <Bell className="w-4 h-4 text-brand-amber shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[12.5px] text-foreground/90 leading-relaxed mb-2">
+              알림이 아직 꺼져 있어요. 켜두면 찜한 클럽의 새 쿠폰을 바로 알려드려요.
+            </p>
+            <button
+              onClick={handleEnableOsPush}
+              disabled={grantingPush}
+              className="px-3.5 py-2 rounded-lg bg-amber-500 text-black text-[13px] font-black disabled:opacity-50"
+            >
+              {grantingPush ? "여는 중..." : "알림 켜기"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Section: 야간알림 수신 (옵트인) — 사용자 요청으로 최상단 배치 */}
       <div className="bg-card rounded-2xl border border-border p-5 mb-4">
         <div className="flex items-center justify-between mb-1">

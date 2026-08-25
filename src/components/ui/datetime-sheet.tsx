@@ -39,6 +39,8 @@ interface DateTimeSheetProps {
   hint?: React.ReactNode;
   /** 시간 입력란 위 라벨. 기본 "입장 시간" — 쿠폰 마감 등 다른 맥락에서 교체 */
   timeLabel?: string;
+  /** z-[300] 커스텀 모달 안에서 열 때 시트를 그 위로 올린다 (기본 z-50) */
+  elevated?: boolean;
 }
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -69,6 +71,7 @@ export function DateTimeSheet({
   dateOptions,
   hint,
   timeLabel = "입장 시간",
+  elevated = false,
 }: DateTimeSheetProps) {
   const isTimeOnly = mode === "time-only";
   const isDate2 = mode === "date-2";
@@ -174,7 +177,8 @@ export function DateTimeSheet({
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="bg-card border-border rounded-t-3xl px-5 pb-8 pt-4 max-h-[92vh] overflow-y-auto"
+          overlayClassName={elevated ? "z-[400]" : undefined}
+          className={`bg-card border-border rounded-t-3xl px-5 pb-8 pt-4 max-h-[92vh] overflow-y-auto${elevated ? " z-[400]" : ""}`}
         >
          <div className="max-w-sm mx-auto w-full">
           <SheetHeader className="p-0 mb-3">

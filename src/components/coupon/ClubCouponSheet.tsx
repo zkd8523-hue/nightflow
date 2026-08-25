@@ -42,7 +42,7 @@ function CouponTicketRow({ coupon }: { coupon: CouponIssue }) {
   const [claimId, setClaimId] = useState<string | null>(null);
   const { label, emoji } = benefitTypeLabel(coupon.benefit_type);
   const display = couponDisplayName(coupon.benefit_type, coupon.benefit_detail);
-  const discountLabel = formatDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend);
+  const discountLabel = formatDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend, coupon.min_spend_unit);
   const soldOut = coupon.status === "sold_out";
 
   const handleClaim = async () => {

@@ -1317,7 +1317,11 @@ export type CouponBenefitType =
   | 'free_pass'
   | 'liquor_set'
   | 'table_discount'
+  | 'service_bottle'
   | 'etc';
+
+/** min_spend의 단위. krw=원 금액(기본) / bottle=바틀 개수(1~20). Migration 552 */
+export type CouponMinSpendUnit = 'krw' | 'bottle';
 
 export type CouponIssueStatus = 'active' | 'sold_out' | 'cancelled' | 'expired';
 export type CouponClaimStatus = 'active' | 'redeemed' | 'expired' | 'revoked';
@@ -1344,6 +1348,8 @@ export interface CouponIssue {
   discount_type: CouponDiscountType | null;
   discount_amount: number | null;
   min_spend: number | null;
+  /** min_spend의 단위. bottle이면 min_spend는 병 개수. Migration 552 */
+  min_spend_unit: CouponMinSpendUnit;
   /** 자주 쓰는 세팅으로 고정. 지난 쿠폰 목록 상단. Migration 546 */
   is_favorite?: boolean;
   /** 나플패스 확장 자리. 이번 단계에서는 'free'만 사용, 결제 로직 없음. */

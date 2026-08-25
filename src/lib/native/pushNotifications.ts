@@ -2,16 +2,31 @@
 
 import { createClient } from "@/lib/supabase/client";
 
-export async function initPushNotifications(userId: string): Promise<void> {
-  if (typeof window === "undefined") return;
+export type PushInitResult = "granted" | "denied" | "not_native";
+
+/**
+ * @param requestIfNeeded false면 이미 granted인 경우에만 토큰을 재등록하고,
+ *   prompt/denied 상태에서는 OS 팝업을 띄우지 않고 조용히 끝낸다
+ *   (LoginNotifyPromptSheet가 사용자 동의를 받은 뒤에만 true로 호출한다).
+ */
+export async function initPushNotifications(
+  userId: string,
+  requestIfNeeded: boolean = true
+): Promise<PushInitResult> {
+  if (typeof window === "undefined") return "not_native";
 
   const { Capacitor } = await import("@capacitor/core");
-  if (!Capacitor.isNativePlatform()) return;
+  if (!Capacitor.isNativePlatform()) return "not_native";
 
   const { PushNotifications } = await import("@capacitor/push-notifications");
 
-  const permission = await PushNotifications.requestPermissions();
-  if (permission.receive !== "granted") return;
+  const current = await PushNotifications.checkPermissions();
+  let permission = current;
+  if (current.receive !== "granted") {
+    if (!requestIfNeeded) return "denied";
+    permission = await PushNotifications.requestPermissions();
+  }
+  if (permission.receive !== "granted") return "denied";
 
   await PushNotifications.register();
 
@@ -36,6 +51,8 @@ export async function initPushNotifications(userId: string): Promise<void> {
     const url = action.notification.data?.url as string | undefined;
     if (url) window.location.href = url;
   });
+
+  return "granted";
 }
 
 export async function removePushToken(userId: string): Promise<void> {

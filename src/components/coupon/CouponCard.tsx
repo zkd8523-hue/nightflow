@@ -20,7 +20,7 @@ export function CouponCard({ coupon, now, dateLabel }: Props) {
   const countdown = formatCouponCountdown(coupon.redeem_ends_at, now);
   const soldOut = coupon.status === "sold_out";
   const stock = formatCouponRemaining(coupon.claimed_count, coupon.total_count);
-  const discountLabel = formatDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend);
+  const discountLabel = formatDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend, coupon.min_spend_unit);
   const progressPct =
     coupon.total_count != null
       ? Math.min(100, Math.round((coupon.claimed_count / coupon.total_count) * 100))

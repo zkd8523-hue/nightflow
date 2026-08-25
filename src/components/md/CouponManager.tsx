@@ -9,11 +9,11 @@ import dayjs from "dayjs";
 import "dayjs/locale/ko";
 import { createClient } from "@/lib/supabase/client";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
-import { allowsDiscount } from "@/lib/utils/coupon";
+import { allowsDiscount, allowsMinSpend } from "@/lib/utils/coupon";
 import { CouponBenefitPicker } from "@/components/md/CouponBenefitPicker";
 import { CouponIssueCard } from "@/components/md/CouponIssueCard";
 import { CouponOnboardingSheet } from "@/components/md/CouponOnboardingSheet";
-import type { CouponIssue, CouponBenefitType, CouponDiscountType } from "@/types/database";
+import type { CouponIssue, CouponBenefitType, CouponDiscountType, CouponMinSpendUnit } from "@/types/database";
 
 dayjs.locale("ko");
 
@@ -40,6 +40,20 @@ const CONDITION_PRESETS = ["평일만(월~목)", "주말만(금~일)", "여성 �
 const MAX_STOCK = 30;       // 재고 상한 (create_coupon_issue와 동일)
 const MAX_DISCOUNT_MAN = 1000; // 정액 할인 상한 1000만원 (DB CHECK와 동일)
 
+/**
+ * "데낄라 2, 샴페인 1" 같은 표준 포맷을 항목 리스트로 되돌린다 ("다시 발행" 프리필용).
+ * "병"이 붙은 옛 포맷("데낄라 2병")과 그 이전 자유텍스트("샴1")도 최대한 복원한다.
+ */
+function parseBottleDetail(detail: string | null): { name: string; qty: number }[] {
+  const trimmed = detail?.trim();
+  if (!trimmed) return [{ name: "", qty: 1 }];
+  const items = trimmed.split(",").map((part) => {
+    const m = part.trim().match(/^(.+?)\s*(\d+)\s*병?$/);
+    return m ? { name: m[1].trim(), qty: Math.min(20, Math.max(1, Number(m[2]))) } : { name: part.trim(), qty: 1 };
+  }).filter((item) => item.name);
+  return items.length > 0 ? items : [{ name: "", qty: 1 }];
+}
+
 export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded = false }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -60,14 +74,24 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
   const [busy, setBusy] = useState(false);
 
   // 폼 필드
-  const [clubId, setClubId] = useState<string>(defaultClubId ?? clubs[0]?.id ?? "");
-  const [benefitType, setBenefitType] = useState<CouponBenefitType | "">("");
+  // default_club_id가 삭제·탈퇴로 목록에 없는 클럽을 가리키면 select에 매칭되는 option이 없어
+  // 플레이스홀더만 뜨고 선택이 안 되는 것처럼 보인다. 목록에 실제로 있을 때만 기본값으로 쓴다.
+  const [clubId, setClubId] = useState<string>(
+    (defaultClubId && clubs.some((c) => c.id === defaultClubId) ? defaultClubId : clubs[0]?.id) ?? ""
+  );
+  // 서비스 바틀을 기본 선택으로 — 피크타임 MD가 가장 자주 쓰는 혜택
+  const [benefitType, setBenefitType] = useState<CouponBenefitType | "">("service_bottle");
   const [discountType, setDiscountType] = useState<CouponDiscountType | "">("");
   const [discountValue, setDiscountValue] = useState("");  // percent=%, flat=만원
-  const [minSpendMan, setMinSpendMan] = useState("");      // 만원 단위
+  // 최소 구매 조건. unit=krw면 만원 단위, unit=bottle이면 병 개수 그대로
+  const [minSpendValue, setMinSpendValue] = useState("");
+  const [minSpendUnit, setMinSpendUnit] = useState<CouponMinSpendUnit>("bottle");
   // "" = 미선택, "unlimited" = 무제한, 숫자 문자열 = 해당 수량
   const [totalCount, setTotalCount] = useState("");
   const [benefitDetail, setBenefitDetail] = useState("");
+  // 서비스 바틀 상세 — 자유텍스트로 두면 MD마다 "2병"/"2 제공"/"2"처럼 표기가 갈려
+  // 이름+수량을 구조화 입력으로 받고, 제출 시 "데낄라 2병, 샴페인 1병"으로 합쳐 benefitDetail에 담는다.
+  const [bottleItems, setBottleItems] = useState<{ name: string; qty: number }[]>([{ name: "", qty: 1 }]);
   const [conditions, setConditions] = useState("");
   const [showMore, setShowMore] = useState(false);
 
@@ -133,12 +157,14 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
   };
 
   const resetForm = () => {
-    setBenefitType("");
+    setBenefitType("service_bottle");
     setDiscountType("");
     setDiscountValue("");
-    setMinSpendMan("");
+    setMinSpendValue("");
+    setMinSpendUnit("bottle");
     setTotalCount("");
     setBenefitDetail("");
+    setBottleItems([{ name: "", qty: 1 }]);
     setConditions("");
     setShowMore(false);
     setRedeemEndsAtLocal(defaultEndsAt);
@@ -153,11 +179,23 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
     setConditions(next.join(", "));
   };
 
+  // "데낄라 2, 샴페인 1" — 이름 없는 행은 무시. 표기를 "이름 N"으로 고정해
+  // MD마다 "2병"/"2 제공"/"2"처럼 자유텍스트가 갈리는 걸 막는다. 화면 표시는
+  // couponDisplayName()이 이 저장값을 "이름 N + 이름 N 쿠폰"으로 다시 조립한다.
+  const bottleDetail = bottleItems
+    .filter((b) => b.name.trim())
+    .map((b) => `${b.name.trim()} ${b.qty}`)
+    .join(", ");
+
   const handleCreate = async () => {
     if (!clubId || !selectedClub) { toast.error("클럽을 선택해주세요"); return; }
     if (!benefitType) { toast.error("혜택 종류를 선택해주세요"); return; }
     if (benefitType === "etc" && !benefitDetail.trim()) {
       toast.error("기타 혜택은 상세 설명이 필요해요");
+      return;
+    }
+    if (benefitType === "service_bottle" && !bottleDetail) {
+      toast.error("어떤 바틀을 제공하는지 입력해주세요");
       return;
     }
     if (!totalCount) { toast.error("수량을 선택해주세요"); return; }
@@ -188,7 +226,16 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
       : discountType === "flat" && rawDiscount !== null
         ? rawDiscount * 10000
         : null;
-    const minSpend = minSpendMan ? Number(minSpendMan) * 10000 : null;
+    if (allowsMinSpend(benefitType) && !minSpendValue) {
+      toast.error("최소 구매 조건을 입력해주세요");
+      return;
+    }
+    const minSpendNum = minSpendValue ? Number(minSpendValue) : null;
+    if (minSpendUnit === "bottle" && minSpendNum !== null && (minSpendNum < 1 || minSpendNum > 20)) {
+      toast.error("최소 구매 병 수는 1~20 사이로 입력해주세요");
+      return;
+    }
+    const minSpend = minSpendNum === null ? null : minSpendUnit === "bottle" ? minSpendNum : minSpendNum * 10000;
     const redeemEndsAtMs = dayjs(redeemEndsAtLocal + "+09:00").valueOf();
     if (redeemEndsAtMs <= Date.now()) {
       toast.error("사용 마감 시각은 현재 시각 이후여야 해요");
@@ -202,12 +249,13 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
         p_benefit_type: benefitType,
         p_redeem_ends_at: dayjs(redeemEndsAtLocal + "+09:00").toISOString(),
         p_total_count: countNum,
-        p_benefit_detail: benefitDetail.trim() || null,
+        p_benefit_detail: (benefitType === "service_bottle" ? bottleDetail : benefitDetail.trim()) || null,
         p_conditions: conditions.trim() || null,
         p_thumbnail_url: null,
         p_discount_type: discountType || null,
         p_discount_amount: discountAmount,
         p_min_spend: minSpend,
+        p_min_spend_unit: minSpendUnit,
       });
       if (error) {
         toast.error(`발행 실패: ${error.message || error.code || "RPC 오류"}`);
@@ -263,9 +311,19 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
           ? String(coupon.discount_amount / 10000)
           : String(coupon.discount_amount)
     );
-    setMinSpendMan(coupon.min_spend == null ? "" : String(coupon.min_spend / 10000));
+    setMinSpendUnit(coupon.min_spend_unit ?? "krw");
+    setMinSpendValue(
+      coupon.min_spend == null
+        ? ""
+        : coupon.min_spend_unit === "bottle"
+          ? String(coupon.min_spend)
+          : String(coupon.min_spend / 10000)
+    );
     setTotalCount(coupon.total_count ? String(coupon.total_count) : "unlimited");
     setBenefitDetail(coupon.benefit_detail ?? "");
+    if (coupon.benefit_type === "service_bottle") {
+      setBottleItems(parseBottleDetail(coupon.benefit_detail));
+    }
     setConditions(coupon.conditions ?? "");
     setShowMore(!!coupon.conditions);
     setRedeemEndsAtLocal(defaultEndsAt);
@@ -406,11 +464,9 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
         {showForm && (
           <div
             className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-4"
-            onClick={() => { setShowForm(false); resetForm(); }}
           >
           <div
             className="w-full max-w-lg bg-card rounded-3xl px-5 pt-5 pb-6 space-y-5 max-h-[85vh] overflow-y-auto overscroll-contain"
-            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-baseline justify-between">
               <p className="text-[20px] text-foreground font-black tracking-tight">새 쿠폰 발행</p>
@@ -451,7 +507,7 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
               </div>
             </section>
 
-            {/* ② 혜택 종류 + 추가 태그 */}
+            {/* ② 혜택 종류 */}
             <section className="space-y-2">
               <div className="text-foreground font-bold text-[13px]">
                 <span>혜택 종류</span>
@@ -461,12 +517,15 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
                 onBenefitTypeChange={(t) => {
                   setBenefitType(t);
                   if (allowsDiscount(t)) {
-                    // 기본 선택 없음 — 할인은 어디까지나 선택이다
+                    // 정액을 기본 선택으로 — MD가 바로 금액을 입력하면 되게 한다
+                    setDiscountType("flat");
+                    setDiscountValue("");
                   } else {
                     setDiscountType("");
                     setDiscountValue("");
-                    setMinSpendMan("");
                   }
+                  // 병 단위 토글은 서비스 바틀 전용. 서비스 바틀을 고르면 병이 기본, 아니면 만원으로.
+                  setMinSpendUnit(t === "service_bottle" ? "bottle" : "krw");
                 }}
                 disabled={busy}
               />
@@ -482,55 +541,129 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
               )}
             </section>
 
-            {/* ③ 할인 (선택) — 제목은 혜택+할인으로 서버가 자동 생성한다.
-                무료입장·프리드링크·프리패스는 공짜로 주는 것이라 할인 개념이 없어 숨긴다. */}
-            {allowsDiscount(benefitType) && (
+            {/* ③ 할인 조건 — 최소구매("5만원/2병 이상 구매시")와 할인값(정액/정률)을 한 섹션으로.
+                단위(만원/병)를 바꿀 수 있어 "서비스 바틀"처럼 병 개수 조건도 표현한다.
+                정액을 기본 선택으로 둬 MD가 바로 금액을 입력할 수 있게 한다.
+                무료입장·프리드링크·프리패스는 공짜로 주는 것이라 조건/할인 개념이 없어 숨긴다. */}
+            {allowsMinSpend(benefitType) && (
             <section className="space-y-2">
               <div className="text-foreground font-bold text-[13px]">
-                <span>할인 (선택)</span>
+                <span>할인 조건</span>
               </div>
               <div className="flex gap-1.5">
-                {([
-                  { v: "flat", label: "정액 ₩" },
-                  { v: "percent", label: "정률 %" },
-                ] as const).map((o) => (
-                  <button
-                    key={o.v}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => {
-                      if (discountType === o.v) return;
-                      setDiscountType(o.v);
-                      setDiscountValue("");
-                    }}
-                    className={`h-9 px-3.5 rounded-full text-[12px] font-bold border transition-colors ${
-                      discountType === o.v
-                        ? "bg-amber-500 text-black border-amber-500"
-                        : "bg-card text-muted-foreground border-border"
-                    }`}
-                  >
-                    {o.label}
-                  </button>
-                ))}
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={minSpendValue}
+                    onChange={(e) => setMinSpendValue(e.target.value.replace(/[^0-9]/g, ""))}
+                    maxLength={minSpendUnit === "bottle" ? 2 : 5}
+                    className="w-full h-11 rounded-xl bg-card border border-border pl-3 pr-28 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-muted-foreground font-bold pointer-events-none">
+                    {minSpendUnit === "bottle" ? "병 이상 구매시" : "만원 이상 구매시"}
+                  </span>
+                </div>
+                {benefitType === "service_bottle" && (
+                <div className="flex items-center gap-1 shrink-0">
+                  {([
+                    { v: "bottle", label: "병" },
+                    { v: "krw", label: "만원" },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        if (minSpendUnit === o.v) return;
+                        setMinSpendUnit(o.v);
+                        setMinSpendValue("");
+                      }}
+                      className={`h-11 px-2.5 rounded-xl text-[12px] font-bold transition-colors border ${
+                        minSpendUnit === o.v
+                          ? "bg-green-500 text-black border-green-500"
+                          : "bg-card text-muted-foreground border-border"
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                )}
               </div>
+              {benefitType === "service_bottle" && (
+                <div className="space-y-1.5">
+                  {bottleItems.map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={(e) => {
+                          const next = [...bottleItems];
+                          next[i] = { ...next[i], name: e.target.value };
+                          setBottleItems(next);
+                        }}
+                        placeholder="바틀 이름 (예: 샴페인, 하드, 호세 등)"
+                        maxLength={30}
+                        className="flex-1 min-w-0 h-11 rounded-xl bg-card border border-border px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
+                      />
+                      <div className="flex items-center gap-1 shrink-0 h-11 rounded-xl bg-card border border-border px-1">
+                        <button
+                          type="button"
+                          disabled={busy || item.qty <= 1}
+                          onClick={() => {
+                            const next = [...bottleItems];
+                            next[i] = { ...next[i], qty: Math.max(1, next[i].qty - 1) };
+                            setBottleItems(next);
+                          }}
+                          className="w-7 h-7 rounded-lg text-foreground font-black text-[15px] disabled:opacity-30 active:scale-95 transition"
+                        >
+                          −
+                        </button>
+                        <span className="w-9 text-center text-sm font-bold text-foreground tabular-nums">{item.qty}병</span>
+                        <button
+                          type="button"
+                          disabled={busy || item.qty >= 20}
+                          onClick={() => {
+                            const next = [...bottleItems];
+                            next[i] = { ...next[i], qty: Math.min(20, next[i].qty + 1) };
+                            setBottleItems(next);
+                          }}
+                          className="w-7 h-7 rounded-lg text-foreground font-black text-[15px] disabled:opacity-30 active:scale-95 transition"
+                        >
+                          +
+                        </button>
+                      </div>
+                      {bottleItems.length > 1 && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setBottleItems(bottleItems.filter((_, idx) => idx !== i))}
+                          className="shrink-0 w-9 h-11 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-red-400 active:scale-95 transition"
+                          aria-label="삭제"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {bottleItems.length < 2 && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setBottleItems([...bottleItems, { name: "", qty: 1 }])}
+                      className="h-9 px-3 rounded-full text-[12px] font-bold border border-border text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      바틀 추가
+                    </button>
+                  )}
+                </div>
+              )}
 
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={minSpendMan}
-                  onChange={(e) => setMinSpendMan(e.target.value.replace(/[^0-9]/g, ""))}
-                  placeholder={discountType === "percent" ? "300" : "100"}
-                  maxLength={5}
-                  className="w-full h-11 rounded-xl bg-card border border-border px-3 pr-28 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-muted-foreground font-bold">
-                  만원 이상 구매시
-                </span>
-              </div>
-
-              {discountType && (
-                <div className="relative">
+              {allowsDiscount(benefitType) && (
+              <div className="flex gap-1.5">
+                <div className="relative flex-1">
                   <input
                     type="text"
                     inputMode="numeric"
@@ -538,22 +671,45 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
                     onChange={(e) => setDiscountValue(e.target.value.replace(/[^0-9]/g, ""))}
                     placeholder={discountType === "percent" ? "10" : "5"}
                     maxLength={discountType === "percent" ? 3 : 4}
-                    className="w-full h-11 rounded-xl bg-card border border-border px-3 pr-24 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
+                    className="w-full h-11 rounded-xl bg-card border border-border pl-3 pr-20 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-muted-foreground font-bold">
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-muted-foreground font-bold pointer-events-none">
                     {discountType === "percent" ? "% 할인" : "만원 할인"}
                   </span>
                 </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {([
+                    { v: "flat", label: "정액 ₩" },
+                    { v: "percent", label: "정률 %" },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        if (discountType === o.v) return;
+                        setDiscountType(o.v);
+                        setDiscountValue("");
+                      }}
+                      className={`h-11 px-2.5 rounded-xl text-[12px] font-bold transition-colors border ${
+                        discountType === o.v
+                          ? "bg-green-500 text-black border-green-500"
+                          : "bg-card text-muted-foreground border-border"
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               )}
-
             </section>
-
             )}
 
-            {/* ④ 수량 (선택) */}
+            {/* ④ 수량 */}
             <section className="space-y-2">
               <div className="text-foreground font-bold text-[13px]">
-                <span>수량 (선택)</span>
+                <span>수량</span>
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {([
@@ -569,7 +725,7 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
                     onClick={() => setTotalCount(o.v)}
                     className={`h-9 px-3.5 rounded-full text-[12px] font-bold border transition-colors ${
                       totalCount === o.v
-                        ? "bg-amber-500 text-black border-amber-500"
+                        ? "bg-green-500 text-black border-green-500"
                         : "bg-card text-muted-foreground border-border"
                     }`}
                   >
@@ -585,9 +741,9 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
                     placeholder="직접입력"
                     maxLength={2}
                     disabled={busy}
-                    className={`h-9 w-24 rounded-full border px-3.5 text-[12px] font-bold text-center focus:outline-none focus:border-amber-500/50 ${
+                    className={`h-9 w-24 rounded-full border px-3.5 text-[12px] font-bold text-center focus:outline-none focus:border-green-500/50 ${
                       custom
-                        ? "bg-amber-500 text-black border-amber-500 pr-6"
+                        ? "bg-green-500 text-black border-green-500 pr-6"
                         : "bg-card text-foreground border-border placeholder:text-muted-foreground placeholder:font-bold"
                     }`}
                   />
@@ -612,6 +768,9 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
                 label="사용 마감"
                 timeLabel="마감 시각"
                 placeholder="마감 시각을 선택하세요"
+                min={dayjs().format("YYYY-MM-DDTHH:mm")}
+                max={dayjs().add(14, "day").format("YYYY-MM-DDTHH:mm")}
+                elevated
               />
               <p className="text-[11px] text-muted-foreground">
                 이 시각이 지나면 쿠폰이 자동으로 만료돼요. 최대 14일 이내로 설정할 수 있어요.
@@ -639,7 +798,7 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
                         onClick={() => toggleCondition(preset)}
                         className={`h-8 px-3 rounded-full text-[12px] font-bold border transition-colors ${
                           on
-                            ? "bg-amber-500 text-black border-amber-500"
+                            ? "bg-green-500 text-black border-green-500"
                             : "bg-card text-muted-foreground border-border"
                         }`}
                       >
@@ -651,7 +810,7 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
                 <textarea
                   value={conditions}
                   onChange={(e) => setConditions(e.target.value)}
-                  placeholder="사용 조건 (예: 23시 이전 입장, 여성 한정)"
+                  placeholder="사용 조건을 자유롭게 입력할 수 있어요"
                   rows={2}
                   maxLength={80}
                   className="w-full rounded-xl bg-card border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"

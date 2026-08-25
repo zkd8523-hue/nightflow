@@ -6,7 +6,7 @@ import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { benefitTypeLabel, couponDisplayName, REDEEM_COLORS, formatDiscount, formatCouponCountdown } from "@/lib/utils/coupon";
-import type { CouponBenefitType, CouponDiscountType } from "@/types/database";
+import type { CouponBenefitType, CouponDiscountType, CouponMinSpendUnit } from "@/types/database";
 
 /**
  * 쿠폰 사용 화면 — QR/스캐너 없이 MD가 "화면만 보고" 판단하는 위조 방지 UI.
@@ -38,6 +38,7 @@ interface ClaimData {
   discount_type: CouponDiscountType | null;
   discount_amount: number | null;
   min_spend: number | null;
+  min_spend_unit: CouponMinSpendUnit;
   md_name: string | null;
   md_image: string | null;
 }
@@ -351,7 +352,7 @@ function TicketCard({
   emoji: string;
   displayNow: number;
 }) {
-  const discount = formatDiscount(claim.discount_type, claim.discount_amount, claim.min_spend);
+  const discount = formatDiscount(claim.discount_type, claim.discount_amount, claim.min_spend, claim.min_spend_unit);
   const display = couponDisplayName(claim.benefit_type, claim.benefit_detail);
   const expiresLabel = formatCouponCountdown(claim.expires_at, displayNow);
 

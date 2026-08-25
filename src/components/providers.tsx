@@ -11,6 +11,7 @@ import { identifyUser } from "@/lib/analytics/events";
 import { WinAlertBanner } from "@/components/auctions/WinAlertBanner";
 import { NetworkOverlay } from "@/components/NetworkOverlay";
 import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
+import { LoginNotifyPromptSheet } from "@/components/common/LoginNotifyPromptSheet";
 import { initDeepLinkHandler, initBackButtonHandler } from "@/lib/native/deepLink";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -102,6 +103,12 @@ function PushInit() {
   return <PushPermissionPrompt userId={user.id} />;
 }
 
+function LoginNotifyPromptInit() {
+  const { user } = useCurrentUser();
+  if (!user) return null;
+  return <LoginNotifyPromptSheet />;
+}
+
 function DeepLinkInit() {
   useEffect(() => {
     initDeepLinkHandler();
@@ -126,6 +133,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <MixpanelInit />
       <DeepLinkInit />
       <PushInit />
+      <LoginNotifyPromptInit />
       <NetworkOverlay />
       <WinAlertBanner />
       <FavoritesProvider>

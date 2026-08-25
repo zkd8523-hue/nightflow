@@ -226,9 +226,10 @@ export const trackForeignEvent = (
  * - 'banner': 하단 플로팅 배너
  * - 'footer': 푸터 상시 버튼
  * - 'flag_created_sheet': 깃발 꽂은 직후 1회성 팝업
+ * - 'login_sheet': 로그인 직후 1회성 팝업 (Migration 551)
  */
 export const trackAppDownloadClick = (
-  location: 'banner' | 'footer' | 'flag_created_sheet',
+  location: 'banner' | 'footer' | 'flag_created_sheet' | 'login_sheet',
   params: Record<string, unknown> = {},
 ) => {
   trackEvent('app_download_click', {

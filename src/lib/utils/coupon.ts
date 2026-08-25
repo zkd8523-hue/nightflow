@@ -1,13 +1,16 @@
-import type { CouponBenefitType, CouponDiscountType } from "@/types/database";
+import type { CouponBenefitType, CouponDiscountType, CouponMinSpendUnit } from "@/types/database";
 import { getClubEventDateFrom } from "@/lib/utils/date";
+import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 
 /**
  * 쿠폰 혜택 6종 프리셋. 게스트 간판의 GUEST_SIGN_BENEFIT_PRESETS(hotdeal.ts)와
  * free_entry/free_drink 값을 공유해 어휘 체계를 통일한다.
  * benefit_type은 정확히 1개 필수(필터·통계·아이콘용), 추가 변형은 benefit_tags(태그)로.
  */
+// liquor_set(주류 세트 할인)은 table_discount와 개념이 겹쳐 칩에서 제거했다(2026-08-25).
+// 과거 발행분 조회·통계가 깨지지 않도록 CouponBenefitType 값 자체는 유지한다.
 export const COUPON_BENEFIT_PRESETS: { value: CouponBenefitType; label: string; emoji: string }[] = [
-  { value: "liquor_set", label: "주류 세트 할인", emoji: "🍾" },
+  { value: "service_bottle", label: "서비스 바틀", emoji: "🍾" },
   { value: "table_discount", label: "테이블 할인", emoji: "🥂" },
   { value: "free_entry", label: "무료입장", emoji: "🎟" },
   { value: "free_drink", label: "프리드링크", emoji: "🍸" },
@@ -112,6 +115,11 @@ export function formatWonCompact(won: number): string {
     : `${won.toLocaleString()}원`;
 }
 
+/** min_spend를 단위에 맞게 표기. bottle이면 "2병", krw면 만원 단위(기본). Migration 552 */
+export function formatMinSpend(minSpend: number, unit: CouponMinSpendUnit = "krw"): string {
+  return unit === "bottle" ? `${minSpend}병` : formatWonCompact(minSpend);
+}
+
 /**
  * 할인 문구 생성 (Migration 540).
  * "20% 할인" / "5만원 할인" / "50만원↑ 20% 할인" — 할인도 최소금액도 없으면 null.
@@ -120,13 +128,14 @@ export function formatWonCompact(won: number): string {
 export function formatDiscount(
   type: CouponDiscountType | null,
   amount: number | null,
-  minSpend: number | null
+  minSpend: number | null,
+  minSpendUnit: CouponMinSpendUnit = "krw"
 ): string | null {
   let discount = "";
   if (type === "percent" && amount != null) discount = `${amount}% 할인`;
   else if (type === "flat" && amount != null) discount = `${formatWonCompact(amount)} 할인`;
 
-  const prefix = minSpend != null ? `${formatWonCompact(minSpend)} 이상 ` : "";
+  const prefix = minSpend != null ? `${formatMinSpend(minSpend, minSpendUnit)} 이상 ` : "";
   if (!discount && !prefix) return null;
   return `${prefix}${discount}`.trim();
 }
@@ -145,7 +154,29 @@ export function couponDisplayName(
     const detail = benefitDetail?.trim();
     return { name: detail || "특별 혜택", emoji: detail ? "🎁" : emoji };
   }
+  if (benefitType === "service_bottle") {
+    const items = parseBottleItems(benefitDetail);
+    const name = items.length > 0 ? `${items.map((b) => `${b.name} ${b.qty}`).join(" + ")} 쿠폰` : label;
+    return { name, emoji };
+  }
   return { name: label, emoji };
+}
+
+/**
+ * CouponManager가 저장한 "샴페인 1, 호세 1" 포맷(옛 "N병" 포맷도 호환)을
+ * {name, qty} 배열로 되돌린다. 홈 카드·상세 페이지가 이름/숫자를 다른 색으로
+ * 렌더링할 때 쓴다 — couponDisplayName()의 문자열 하나만으로는 색 분리가 안 된다.
+ */
+export function parseBottleItems(detail?: string | null): { name: string; qty: number }[] {
+  const trimmed = detail?.trim();
+  if (!trimmed) return [];
+  return trimmed
+    .split(",")
+    .map((part) => {
+      const m = part.trim().match(/^(.+?)\s*(\d+)\s*병?$/);
+      return m ? { name: m[1].trim(), qty: Number(m[2]) } : { name: part.trim(), qty: NaN };
+    })
+    .filter((item) => item.name && !Number.isNaN(item.qty));
 }
 
 /**
@@ -156,10 +187,26 @@ export const NO_DISCOUNT_BENEFITS: CouponBenefitType[] = [
   "free_entry",
   "free_drink",
   "free_pass",
+  "service_bottle",
 ];
 
 export function allowsDiscount(type: CouponBenefitType | ""): boolean {
   return type !== "" && !NO_DISCOUNT_BENEFITS.includes(type);
+}
+
+/**
+ * 최소 구매 조건(min_spend) 입력이 의미 있는 혜택. 무료입장·프리드링크·프리패스는
+ * "공짜로 주는 것"이라 구매 조건 자체가 성립하지 않는다. 서비스 바틀은 오히려
+ * "x만원/x병 이상 구매시"가 핵심이라 allowsDiscount와 달리 여기서는 포함한다.
+ */
+export const NO_MIN_SPEND_BENEFITS: CouponBenefitType[] = [
+  "free_entry",
+  "free_drink",
+  "free_pass",
+];
+
+export function allowsMinSpend(type: CouponBenefitType | ""): boolean {
+  return type !== "" && !NO_MIN_SPEND_BENEFITS.includes(type);
 }
 
 /**
@@ -169,7 +216,8 @@ export function allowsDiscount(type: CouponBenefitType | ""): boolean {
 export function splitDiscount(
   type: CouponDiscountType | null,
   amount: number | null,
-  minSpend: number | null
+  minSpend: number | null,
+  minSpendUnit: CouponMinSpendUnit = "krw"
 ): { value: string; unit: string; condition: string | null } | null {
   // 할인 값이 없으면 강조할 금액 자체가 없으므로 null (호출부가 혜택명으로 대체)
   if (type == null || amount == null) return null;
@@ -177,7 +225,7 @@ export function splitDiscount(
   return {
     value,
     unit: "쿠폰",
-    condition: minSpend != null ? `${formatWonCompact(minSpend)} 이상 구매 시` : null,
+    condition: minSpend != null ? `${formatMinSpend(minSpend, minSpendUnit)} 이상 구매 시` : null,
   };
 }
 
@@ -199,13 +247,18 @@ export function isCouponDeadlineNear(endsAtISO: string, nowMs: number = Date.now
 
 /**
  * 유저 노출용 쿠폰 필터. clubs.is_test 마킹이 빠진 운영자 테스트 클럽이
- * 홈·목록에 그대로 뜨는 걸 막는다 (ClubBenefitSection의 HIDDEN_PATTERN과 동일 기준).
+ * 프로덕션 홈·목록에 그대로 뜨는 걸 막는다 (ClubBenefitSection의 HIDDEN_PATTERN과 동일 기준).
  *
- * ⚠️ 환경 분기를 두지 않는다. NEXT_PUBLIC_VERCEL_ENV가 주입되지 않으면
- *    undefined가 되어 필터가 통째로 스킵되는 사고가 있었다.
+ * SHOW_TEST_DATA(testData.ts)와 동일한 판정식을 쓴다 — 로컬/프리뷰에서는 테스트
+ * 클럽 발행분도 보여야 개발 중 확인이 가능하다. 과거 이 필터에 환경 분기를 걸었다가
+ * NEXT_PUBLIC_VERCEL_ENV가 undefined일 때 "필터가 통째로 스킵"되는 사고가 있었는데,
+ * 그건 `=== "production"`을 양성 조건으로 잘못 걸었을 때 얘기다.
+ * SHOW_TEST_DATA는 `!== "production"`이라 undefined에서도 항상 "테스트 데이터 노출"
+ * 쪽으로 떨어지므로(fail-safe), 프로덕션에서 필터가 빠지는 사고는 재현되지 않는다.
  */
 export function excludeTestClubCoupons<T extends { club?: { name?: string | null } | null }>(
   rows: T[]
 ): T[] {
+  if (SHOW_TEST_DATA) return rows;
   return rows.filter((r) => !/운영자/.test(r.club?.name ?? ""));
 }
