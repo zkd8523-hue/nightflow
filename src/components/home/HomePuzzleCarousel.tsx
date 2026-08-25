@@ -85,12 +85,15 @@ export function HomePuzzleCarousel({
     () => (shareMode ? puzzles.filter((p) => !p.host_is_md) : puzzles),
     [puzzles, shareMode]
   );
-  const leadGroup = partnerGroups[0] ?? null;
-  const visible = userPuzzles.slice(0, leadGroup ? MAX_CARDS - 1 : MAX_CARDS);
+  // 파트너 직통은 클럽×날짜 묶음 카드로 앞쪽에 최대 MAX_CARDS장까지 노출한다.
+  // 예전엔 partnerGroups[0] 1장만 그려서 클럽이 여러 곳이어도 홈에 하나만 보였다.
+  const leadGroups = partnerGroups.slice(0, MAX_CARDS);
+  const visible = userPuzzles.slice(0, Math.max(0, MAX_CARDS - leadGroups.length));
 
   // 현재 화면 맨 앞 카드의 날짜를 섹션 헤더로 올린다(스크롤 시 함께 변경).
+  // 렌더 순서(파트너 묶음 → 유저 조각)와 인덱스가 일치해야 헤더 날짜가 어긋나지 않는다.
   const headDates: string[] = [
-    ...(leadGroup ? [leadGroup.eventDate ?? leadGroup.puzzles[0].event_date] : []),
+    ...leadGroups.map((g) => g.eventDate ?? g.puzzles[0].event_date),
     ...visible.map((p) => p.event_date),
   ];
   const headDateSignature = headDates.join(",");
@@ -200,14 +203,17 @@ export function HomePuzzleCarousel({
         className="flex items-start gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x touch-pan-y -mt-3 pt-3 pb-1 -mx-2 px-2"
         style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
       >
-        {leadGroup && (
-          <div className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always">
+        {leadGroups.map((group) => (
+          <div
+            key={`${group.clubId}-${group.eventDate ?? ""}`}
+            className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always"
+          >
             <ClubDirectCard
-              group={leadGroup}
-              sheetPuzzles={puzzles.filter((p) => p.host_is_md && p.club_id === leadGroup.clubId)}
+              group={group}
+              sheetPuzzles={puzzles.filter((p) => p.host_is_md && p.club_id === group.clubId)}
             />
           </div>
-        )}
+        ))}
         {visible.map((puzzle) => {
           // 날짜는 섹션 헤더가 스크롤에 맞춰 표시 → 카드 위 날짜 헤더는 제거.
           return (
@@ -236,7 +242,7 @@ export function HomePuzzleCarousel({
             <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
               <div className="text-center w-full mt-8">
                 <p className="text-[14.5px] text-foreground/90 font-semibold mb-0.5">
-                  파티원을 모아 매출을 올려보세요!
+                  조각원(파티원)을 모아보세요!
                 </p>
                 <Link href="/md/auctions/new">
                   <Button className="h-12 pl-7 pr-9 text-black font-black text-[15px] rounded-full bg-green-500 hover:bg-green-400">

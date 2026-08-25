@@ -140,6 +140,22 @@ export function PartyChatRoom({
   const [replyTarget, setReplyTarget] = useState<PartyMessage | null>(null);
   // 방에서 내보내진 상태 (전송 시 참여자 아님 감지)
   const [removed, setRemoved] = useState(false);
+  // 채팅방 나가기 — 기존엔 채팅 목록 롱프레스에만 있어 방 안에서는 나갈 방법이 없었다
+  const [leaveConfirm, setLeaveConfirm] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
+  async function handleLeaveParty() {
+    if (leaving) return;
+    setLeaving(true);
+    const { data, error } = await createClient().rpc("leave_party", { p_puzzle_id: puzzleId });
+    if (error || !data?.success) {
+      toast.error(data?.error || error?.message || "나가기에 실패했어요");
+      setLeaving(false);
+      return;
+    }
+    toast.success("채팅방에서 나왔어요");
+    router.push("/messages");
+  }
 
   async function handleDeleteMessage(m: PartyMessage) {
     setMenuMsg(null);
@@ -443,6 +459,12 @@ export function PartyChatRoom({
 
   // 실제 채팅 참여자 수(방장+합류 유저, 게스트 제외)
   const memberCount = participants.length;
+  // 참여자 목록은 "나"를 맨 위로 — 내가 이 방에 제대로 들어와 있는지 한눈에 확인시켜준다.
+  // 서버 정렬(방장 → 파트너 → 멤버)은 나머지 순서로 그대로 유지.
+  const sortedParticipants = useMemo(
+    () => [...participants].sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id)),
+    [participants, me.id]
+  );
   // 내가 아직 한 마디도 안 했으면 인사말 추천 노출
   const iHaveSent = messages.some((m) => m.sender_id === me.id && !m.is_system);
   // 이미 초대된 MD가 있으면 다른 오퍼 초대 비활성 (조각당 MD 1명)
@@ -948,7 +970,8 @@ export function PartyChatRoom({
         >
           <div
             className="w-full max-w-lg bg-card rounded-t-3xl overflow-hidden"
-            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+            /* 하단 네비(56px) 위로 띄운다 — 안 그러면 목록 마지막 줄과 나가기 버튼이 네비에 가린다 */
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 56px)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
@@ -958,7 +981,7 @@ export function PartyChatRoom({
               </button>
             </div>
             <ul className="max-h-[50vh] overflow-y-auto px-2 pb-3">
-              {participants.map((p) => {
+              {sortedParticipants.map((p) => {
                 const canKick = isLeader && !p.is_leader && !p.is_md && p.id !== me.id;
                 return (
                 <li key={p.id} className="flex items-center gap-1 px-1">
@@ -1008,6 +1031,57 @@ export function PartyChatRoom({
                 );
               })}
             </ul>
+
+            {/* 나가기 — 방장(파트너)은 방을 유지해야 하므로 노출하지 않는다 */}
+            {!isLeader && (
+              <div className="px-4 pt-2 pb-1 border-t border-border">
+                <button
+                  onClick={() => { setDrawerOpen(false); setLeaveConfirm(true); }}
+                  className="w-full py-3 rounded-xl text-[14px] font-bold text-red-400 active:bg-red-500/10 transition-colors"
+                >
+                  채팅방 나가기
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 나가기 확인 (채팅 목록의 나가기 시트와 동일한 문구) */}
+      {leaveConfirm && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/60 flex items-end justify-center"
+          onClick={() => !leaving && setLeaveConfirm(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-card rounded-t-3xl p-5 space-y-4"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-1.5">
+              <p className="text-[16px] font-black text-foreground">이 채팅방에서 나갈까요?</p>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
+                {partyInfo.dateLabel} · {partyInfo.area}
+                <br />
+                단체채팅에서 나가고 파티 인원에서 빠져요.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setLeaveConfirm(false)}
+                disabled={leaving}
+                className="flex-1 py-3 rounded-xl bg-muted text-foreground font-bold text-[14px] disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleLeaveParty}
+                disabled={leaving}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-black text-[14px] disabled:opacity-50"
+              >
+                {leaving ? "나가는 중…" : "나가기"}
+              </button>
+            </div>
           </div>
         </div>
       )}

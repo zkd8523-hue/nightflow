@@ -29,6 +29,7 @@ import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
 import { ServiceUpdateSheet } from "@/components/home/ServiceUpdateSheet";
 import { PartyOnboardingSheet } from "@/components/home/PartyOnboardingSheet";
 import { OfferCreditGuideSheet } from "@/components/md/OfferCreditGuideSheet";
+import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
 
@@ -1305,12 +1306,19 @@ export function HomeContent({
                   다시 열 길이 없던 파트너 안내를 여기에 붙인다. manualOpen 이라 계정 플래그는
                   소모하지 않는다. */}
               {flagGuideOpen && (
+                // 파트너 + 파티 탭은 "오퍼를 보내는 법"이 아니라 "내 자리를 잡고 파티를
+                // 여는 법"이 필요하다 — 자리 잡기 → 세팅 → 홈 노출까지 보여주는
+                // ShareOnboardingSheet를 쓴다. 깃발 탭은 오퍼 쪽이 맞아 그대로 둔다.
                 isMdOrAdminUser ? (
-                  <OfferCreditGuideSheet
-                    isParty={currentTab === "share"}
-                    manualOpen
-                    onManualClose={() => setFlagGuideOpen(false)}
-                  />
+                  currentTab === "share" ? (
+                    <ShareOnboardingSheet manualOpen onManualClose={() => setFlagGuideOpen(false)} />
+                  ) : (
+                    <OfferCreditGuideSheet
+                      isParty={false}
+                      manualOpen
+                      onManualClose={() => setFlagGuideOpen(false)}
+                    />
+                  )
                 ) : currentTab === "share" ? (
                   <PartyOnboardingSheet manualOpen onManualClose={() => setFlagGuideOpen(false)} />
                 ) : (

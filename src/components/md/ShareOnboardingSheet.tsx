@@ -156,7 +156,7 @@ export function ShareOnboardingSheet({
       >
         <SheetHeader className="text-left p-0 gap-0 mb-4">
           <SheetTitle className="text-foreground text-[19px] font-black tracking-tight leading-tight">
-            <span className="text-brand-amber text-[23px]">조각</span>, 나플에서는 이렇게! 🎉
+            <span className="text-brand-amber text-[23px]">조각(파티)</span>, 나플에서는 이렇게! 🎉
           </SheetTitle>
         </SheetHeader>
 

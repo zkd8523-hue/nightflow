@@ -40,7 +40,7 @@ export function PartyOnboardingSheet({
       >
         <SheetHeader className="text-left p-0 gap-0 mb-2.5">
           <SheetTitle className="text-foreground text-[21px] font-black tracking-tight leading-tight">
-            혼자 와도 <span className="text-brand-amber text-[26px]">크게 놀 수 있어요</span> 🎉
+            적은 인원으로도 <span className="text-brand-amber text-[26px]">크게 놀 수 있어요</span> 🎉
           </SheetTitle>
         </SheetHeader>
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { normalizeProfileImage } from "@/lib/utils/image";
+import { createClient } from "@/lib/supabase/client";
 import dynamic from "next/dynamic";
 import type { Puzzle } from "@/types/database";
 
@@ -40,6 +41,27 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
   const [selectedDate, setSelectedDate] = useState(dates[0] ?? "");
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  // 이미 합류한 파티는 "합류하기"가 아니라 "합류중"으로 보여준다 —
+  // 합류 후 이 화면으로 돌아왔을 때 버튼이 그대로면 됐는지 알 수가 없다. (PuzzleCard isMember와 동일 패턴)
+  const [myPuzzleIds, setMyPuzzleIds] = useState<Set<string>>(new Set());
+
+  const loadMyMemberships = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setMyPuzzleIds(new Set());
+      return;
+    }
+    const { data } = await supabase
+      .from("puzzle_members")
+      .select("puzzle_id")
+      .eq("user_id", user.id);
+    if (data) setMyPuzzleIds(new Set(data.map((d) => d.puzzle_id)));
+  }, []);
+
+  useEffect(() => {
+    loadMyMemberships();
+  }, [loadMyMemberships]);
 
   if (dates.length === 0) return null;
 
@@ -120,8 +142,9 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
           // 남은 자리 수는 노출하지 않는다 — "0/4명"이 비어 보여 오히려 참가를 막는다.
           // 정원(4인)만 보여주고, 다 차면 버튼만 "마감"으로 바꾼다.
           const full = p.current_count >= p.target_count;
+          const joined = myPuzzleIds.has(p.id);
           return (
-            <div key={p.id} className={`bg-card px-4 py-3 ${full ? "opacity-50" : ""}`}>
+            <div key={p.id} className={`bg-card px-4 py-3 ${full && !joined ? "opacity-50" : ""}`}>
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-[14.5px] font-black text-foreground truncate">
@@ -133,7 +156,15 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
                     <span className="text-brand-amber font-bold">{p.budget_per_person.toLocaleString()}원</span>
                   </p>
                 </div>
-                {full ? (
+                {joined ? (
+                  // 합류 확인 + 단체채팅 재진입 동선 — 이게 없으면 "합류가 된 건가?"에서 멈춘다
+                  <Link
+                    href={`/party/${p.id}`}
+                    className="shrink-0 h-8 px-3.5 rounded-full bg-green-500/15 border border-green-500/30 text-money font-black text-[12px] flex items-center active:scale-95 transition-transform"
+                  >
+                    합류중
+                  </Link>
+                ) : full ? (
                   <span className="shrink-0 h-8 px-3.5 rounded-full bg-muted text-muted-foreground font-black text-[12px] flex items-center">
                     마감
                   </span>
@@ -160,7 +191,11 @@ export function ClubSharePuzzles({ puzzles, hideTitle = false }: Props) {
         <PuzzleJoinSheet
           puzzle={joinTarget}
           open={!!joinTarget}
-          onClose={() => setJoinTarget(null)}
+          onClose={() => {
+            setJoinTarget(null);
+            // 합류 성공/실패 어느 쪽이든 최신 상태로 맞춘다 (성공 시 버튼 → "합류중")
+            loadMyMemberships();
+          }}
         />
       )}
     </div>

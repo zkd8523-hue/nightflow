@@ -64,7 +64,7 @@ export function OfferCreditGuideSheet({
         <SheetHeader className="text-left p-0 gap-0 mb-0.5">
           <SheetTitle className="text-foreground text-[19px] font-black tracking-tight leading-tight">
             {isParty ? (
-              <>나플로 <span className="text-emerald-400 text-[23px]">조각</span>을 모아보세요!</>
+              <>나플로 <span className="text-emerald-400 text-[23px]">조각(파티)</span>을 모아보세요!</>
             ) : (
               <><span className="text-emerald-400 text-[23px]">깃발</span>을 따고 <span className="text-emerald-400 text-[23px]">매출</span>을 높여보세요!</>
             )}
@@ -114,7 +114,7 @@ export function OfferCreditGuideSheet({
           onClick={dismiss}
           className="w-full h-12 mt-3 rounded-xl bg-amber-500 text-black font-black text-[14px] active:scale-95 transition-transform"
         >
-          {isParty ? "조각원 모으기" : "확인, 계속할게요"}
+          {isParty ? "조각(파티) 모으기" : "확인, 계속할게요"}
         </button>
         <button
           type="button"

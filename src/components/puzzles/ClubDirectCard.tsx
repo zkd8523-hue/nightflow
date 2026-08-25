@@ -188,8 +188,11 @@ export function ClubDirectCard({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent side="bottom" className="bg-background border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
         <SheetHeader className="px-4 pt-5 pb-0 text-left">
-          {/* 오퍼 카드의 클럽명 규격 그대로 (SecretOfferCard.tsx:112-130) */}
-          <SheetTitle className="flex items-center justify-between gap-2">
+          {/* 오퍼 카드의 클럽명 규격 그대로 (SecretOfferCard.tsx:112-130).
+              지역은 클럽명 바로 옆에 둔다 — 오른쪽 끝으로 밀면 시트 닫기(X)
+              아래에 붙어 무엇에 대한 라벨인지 안 읽힌다. 닫기 버튼과 겹치지
+              않게 제목 줄 자체에도 오른쪽 여백(pr-8)을 준다. */}
+          <SheetTitle className="flex items-baseline gap-2 pr-8">
             <Link
               href={`/clubs/${group.clubId}`}
               className="inline-flex items-baseline gap-0.5 text-[21px] font-black text-foreground hover:text-brand-amber transition-colors min-w-0"
