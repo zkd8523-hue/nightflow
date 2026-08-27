@@ -98,8 +98,8 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   const minPrice = Math.round(currentBudget * 0.8);
   const maxPrice = Math.round(currentBudget * 1.2);
   const [proposedPrice, setProposedPrice] = useState<number>(currentBudget);
-  // Migration 358: 조각 매치 크레딧 정액 10, 깃발 15. (DB puzzle_match_credit_cost와 일치)
-  const matchCost = puzzle.is_recruiting_party ? 10 : 15;
+  // Migration 587: 조각(파티)은 전액 무료(0), 깃발 15. (DB puzzle_match_credit_cost와 일치)
+  const matchCost = puzzle.is_recruiting_party ? 0 : 15;
   // 오퍼 템플릿 종류 — 깃발/조각 템플릿을 분리 저장·조회 (Migration 464)
   const offerKind: "flag" | "share" = puzzle.is_recruiting_party ? "share" : "flag";
 
@@ -339,7 +339,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           <div className="flex items-center gap-2 pr-8">
             <SheetTitle className="text-foreground text-[17px] font-black text-left">
               {puzzle.is_recruiting_party
-                ? (editingOffer ? "오퍼 수정" : "오퍼") + " 🎉"
+                ? (editingOffer ? "메시지 수정" : "메시지 남기기") + " 🎉"
                 : (editingOffer ? "시크릿오퍼 수정" : "시크릿오퍼")}
             </SheetTitle>
             <span className="flex items-center gap-1 text-[10px] text-brand-amber font-bold flex-shrink-0">
@@ -531,7 +531,11 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="방장에게 전달할 메시지 (전화·카톡·인스타·URL 금지)"
+              placeholder={
+                puzzle.is_recruiting_party
+                  ? "조건·혜택 자유롭게 (전화·카톡·인스타·URL 금지)"
+                  : "방장에게 전달할 메시지 (전화·카톡·인스타·URL 금지)"
+              }
               rows={3}
               maxLength={200}
               className="w-full bg-card border border-border rounded-xl px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50 resize-none"
@@ -571,34 +575,40 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             )}
           </div>
 
-          {/* 크레딧 안내 */}
+          {/* 안내 — 조각(파티)은 Migration 587부터 상담까지 전액 무료 */}
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
             <p className="text-[12px] text-brand-amber dark:text-brand-amber/80 leading-relaxed">
-              {puzzle.is_recruiting_party && (
-                <>✓ 뽑히면 <strong className="text-brand-amber">파티원 전원이 있는 단톡방</strong>에서 상담해요.<br /></>
-              )}
-              ✓ 오퍼 전송은 무료입니다.<br />
-              {offerChatOn ? (
+              {puzzle.is_recruiting_party ? (
                 <>
-                  ✓ 매칭되면 <strong className="text-brand-amber">{matchCost} 크레딧</strong> 1회 ({puzzle.is_recruiting_party ? "상담 시작 또는 수락 시" : "대화 첫 답장 또는 수락 시"})<br />
+                  ✓ 유저가 채팅을 시작하면 <strong className="text-brand-amber">파티원 전원이 있는 단톡방</strong>에서 상담해요.<br />
+                  ✓ <strong className="text-brand-amber">전액 무료</strong>입니다.
                 </>
               ) : (
                 <>
-                  ✓ 방장이 수락하면 <strong className="text-brand-amber">30 크레딧</strong>이 차감됩니다.<br />
+                  ✓ 오퍼 전송은 무료입니다.<br />
+                  {offerChatOn ? (
+                    <>
+                      ✓ 매칭되면 <strong className="text-brand-amber">{matchCost} 크레딧</strong> 1회 (대화 첫 답장 또는 수락 시)<br />
+                    </>
+                  ) : (
+                    <>
+                      ✓ 방장이 수락하면 <strong className="text-brand-amber">30 크레딧</strong>이 차감됩니다.<br />
+                    </>
+                  )}
+                  ✓ 거절/미선택 시 크레딧은 차감되지 않아요.
                 </>
               )}
-              ✓ 거절/미선택 시 크레딧은 차감되지 않아요.
             </p>
           </div>
 
-          {credits !== null && credits < (offerChatOn ? matchCost : 30) && (
+          {!puzzle.is_recruiting_party && credits !== null && credits < (offerChatOn ? matchCost : 30) && (
             <Link
               href="/md/credits"
               className="flex items-center justify-between gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 hover:bg-red-500/15 transition-colors"
             >
               <p className="text-[12px] text-red-400 leading-relaxed">
                 {offerChatOn
-                  ? `${puzzle.is_recruiting_party ? "상담하려면" : "대화 답장하려면"} 크레딧이 필요해요 (${credits}/${matchCost}). 오퍼는 지금도 무료로 보낼 수 있어요.`
+                  ? `대화 답장하려면 크레딧이 필요해요 (${credits}/${matchCost}). 오퍼는 지금도 무료로 보낼 수 있어요.`
                   : `크레딧이 부족합니다 (${credits}/30). 충전 후 오퍼할 수 있어요.`}
               </p>
               <span className="flex items-center gap-0.5 shrink-0 text-[12px] font-black text-brand-amber">
@@ -612,7 +622,9 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             disabled={loading || myClubs.length === 0 || currentBudget <= 0 || (!puzzle.is_recruiting_party && (proposedPrice < minPrice || proposedPrice > maxPrice)) || (puzzle.is_recruiting_party ? !comment.trim() : selectedIncludes.length === 0) || (!editingOffer && !offerChatOn && credits !== null && credits < 30)}
             className="w-full h-13 bg-inverse hover:opacity-90 text-inverse-foreground font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
-            {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "오퍼 보내기")}
+            {loading
+              ? editingOffer ? "수정 중..." : "전송 중..."
+              : editingOffer ? "수정 저장" : puzzle.is_recruiting_party ? "메시지 남기기" : "오퍼 보내기"}
           </Button>
         </div>
       </SheetContent>

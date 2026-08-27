@@ -25,7 +25,7 @@ interface SecretOfferCardProps {
   actionLoading: boolean;
   onAccept: (offerId: string) => void;
   onReject: (offerId: string) => void;
-  /** 조각: "무료 상담" 클릭 시 해당 MD를 단체채팅에 초대 */
+  /** 조각: "채팅 시작" 클릭 시 해당 MD를 단체채팅에 초대 */
   onInvite?: (offerId: string) => void;
   /** 조각: 이 오퍼의 MD가 현재 단체채팅에 초대되어 상담 중인지 */
   isInvited?: boolean;
@@ -66,7 +66,7 @@ export function SecretOfferCard({
   const t = makeT(lang);
   const commentEn = useTranslatedComment(offer.comment, isForeigner);
   const { products: liquorProducts } = useLiquorProducts();
-  // 골드 칩 CTA("무료 상담") / 조각 "상담중" 칩이 뜨는 조건과 동일 — 그 경우엔 시간을 상단 대신
+  // 골드 칩 CTA("채팅 시작"/"무료 상담") / 조각 "상담중" 칩이 뜨는 조건과 동일 — 그 경우엔 시간을 상단 대신
   // CTA(칩) 옆에 붙여서 빈 줄처럼 보이는 헤더 행을 없앰 (다른 상태에선 상단에 유지)
   const showsGoldCta =
     hideClubHeader &&
@@ -266,7 +266,7 @@ export function SecretOfferCard({
                   className="inline-flex items-center gap-1.5 rounded-full px-4 h-9 bg-gradient-to-b from-amber-400 to-amber-500 text-black font-black text-[13px] shadow-[0_0_16px_-2px_rgba(245,158,11,0.6)] hover:from-amber-300 hover:to-amber-400 active:scale-[0.97] transition-all disabled:opacity-50"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  {t("무료 상담", "Free chat")}
+                  {t("채팅 시작", "Start chat")}
                 </button>
               </div>
             ) : (
@@ -278,7 +278,7 @@ export function SecretOfferCard({
                   className="flex items-center justify-center gap-1.5 w-full h-11 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[13px] disabled:opacity-50"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  {t("무료 상담하기", "Free chat")}
+                  {t("채팅 시작하기", "Start chat")}
                 </button>
               </div>
             )

@@ -46,15 +46,13 @@ interface Props {
   me: Me;
   isLeader: boolean;
   isMd?: boolean;
-  /** MD가 상담(크레딧 사용)에 이미 동의했는지. false면 입장 시 동의 모달 노출 */
+  /** MD가 상담에 이미 동의했는지. false면 입장 시 동의 모달 노출 */
   mdConsented?: boolean;
   puzzleStatus: string;
   partyInfo: PartyInfo;
   participants: PartyParticipant[];
 }
 
-// 조각 매치 크레딧 정액 (Migration 358 / OfferSheet와 일치)
-const PARTY_MATCH_CREDIT_COST = 10;
 
 // 첫 진입 인사말 추천 (한 번이라도 보내면 사라짐)
 const GREETING_PRESETS = [
@@ -109,7 +107,7 @@ export function PartyChatRoom({
 
   const [participants, setParticipants] = useState<PartyParticipant[]>(initialParticipants);
   const [offersOpen, setOffersOpen] = useState(false);
-  // MD 입장 동의(크레딧 사용) 상태. 미동의면 상담 시작 모달을 띄우고 채팅 차단.
+  // MD 입장 동의 상태. 미동의면 상담 시작 모달을 띄우고 채팅 차단.
   const [consented, setConsented] = useState(mdConsented);
   const [consentBusy, setConsentBusy] = useState(false);
   const [declineConfirm, setDeclineConfirm] = useState(false);
@@ -124,7 +122,7 @@ export function PartyChatRoom({
       return;
     }
     setConsented(true);
-    toast.success(`매치 크레딧 ${PARTY_MATCH_CREDIT_COST}개를 사용해 상담을 시작했어요`);
+    toast.success("상담을 시작했어요");
   }
 
   async function handleDeclineConsult() {
@@ -1211,7 +1209,7 @@ export function PartyChatRoom({
         </div>
       )}
 
-      {/* MD 입장 동의 게이트: 미동의 시 채팅 차단 + 크레딧 사용 확인 */}
+      {/* MD 입장 동의 게이트: 미동의 시 채팅 차단 (Migration 587부터 무료) */}
       {showConsentGate && (
         <div className="fixed inset-0 z-[80] bg-black/80 flex items-end justify-center">
           <div
@@ -1222,7 +1220,7 @@ export function PartyChatRoom({
               <div className="text-[34px] leading-none">🤝</div>
               <p className="text-[19px] font-black text-foreground">상담을 시작할까요?</p>
               <p className="text-[14px] text-foreground/80">
-                수락 시 <span className="text-brand-amber font-bold">{PARTY_MATCH_CREDIT_COST}크레딧</span>이 소모돼요
+                파티원 전원이 있는 단톡방에서 상담해요 · <span className="text-brand-amber font-bold">무료</span>
               </p>
             </div>
 
@@ -1239,7 +1237,7 @@ export function PartyChatRoom({
                 disabled={consentBusy}
                 className="w-full py-3 rounded-2xl text-[14px] text-muted-foreground hover:text-red-400 font-bold disabled:opacity-50 transition-colors"
               >
-                거절 (오퍼 철회)
+                거절 (메시지 철회)
               </button>
             </div>
           </div>

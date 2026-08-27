@@ -104,9 +104,13 @@ export function OfferCreditGuideSheet({
           </p>
         )}
 
-        {/* 금액 근거: OfferSheet.tsx(Migration 358) — 깃발 15, 조각 10 크레딧 */}
+        {/* 금액 근거: 깃발 15 크레딧 / 조각(파티)은 Migration 587부터 상담까지 전액 무료 */}
         <p className={`text-center text-[11px] text-muted-foreground font-semibold ${isParty ? "mt-3" : "mt-1.5"}`}>
-          무료 오퍼, 매치시에만 <span className="text-brand-amber font-black">{isParty ? 10 : 15} 크레딧</span>
+          {isParty ? (
+            <>메시지도, 상담도 <span className="text-brand-amber font-black">전액 무료</span></>
+          ) : (
+            <>무료 오퍼, 매치시에만 <span className="text-brand-amber font-black">15 크레딧</span></>
+          )}
         </p>
 
         <button

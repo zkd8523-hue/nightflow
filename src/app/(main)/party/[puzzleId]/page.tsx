@@ -80,7 +80,7 @@ export default async function PartyChatPage({ params }: PageProps) {
     .eq("puzzle_id", puzzleId)
     .maybeSingle();
   const invitedMdId = partyMd?.md_id ?? null;
-  // MD가 아직 상담(크레딧 사용)에 동의하지 않았으면 입장 시 동의 모달 노출
+  // MD가 아직 상담에 동의하지 않았으면 입장 시 동의 모달 노출 (Migration 587부터 무료)
   const mdConsented = !!(partyMd as { consented_at?: string | null } | null)?.consented_at;
 
   // MD의 클럽명 (초대 오퍼 기준)
