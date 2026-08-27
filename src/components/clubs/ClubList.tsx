@@ -8,14 +8,14 @@ import { ChevronLeft, ChevronRight, MapPin, Search, X, ArrowLeft, Heart, Sliders
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, ClubAreaChips, type ClubFilters } from "./ClubFilterChips";
 import { ClubMap } from "./ClubMap";
-import { createClient } from "@/lib/supabase/client";
 import {
   FEATURE_GROUPS,
   getTagsByGroup,
   makeTag,
   AREA_OPTIONS,
 } from "@/lib/clubs/tags";
-import { getClubAliases } from "@/lib/clubs/aliases";
+import { clubMatchesQuery } from "@/lib/search/clubMatch";
+import { useSearchMissLogger } from "@/lib/search/logMiss";
 import { benefitLabel } from "@/lib/utils/hotdeal";
 import { distanceKm } from "@/lib/chat/areas";
 import { getCurrentCoords } from "@/lib/geo/currentCoords";
@@ -36,11 +36,6 @@ interface ClubListItem {
   entry_fee_detail?: string | null;
   aliases?: string[];
   hasPartner?: boolean;
-}
-
-/** 검색용 정규화 — 소문자 + 양끝 공백 제거 + 연속 공백 1개 */
-function normalizeSearch(s: string): string {
-  return s.toLowerCase().trim().replace(/\s+/g, " ");
 }
 
 type ViewMode = "list" | "map";
@@ -150,7 +145,6 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
     return clubs.filter((c) => !hiddenIds.has(c.id));
   }, [clubs]);
 
-  const normalizedQuery = normalizeSearch(query);
   const filtered = useMemo(() => {
     return dedupedClubs.filter((c) => {
       if (filters.areas.length && !filters.areas.includes(c.area || ""))
@@ -163,43 +157,20 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
         const wanted = filters.venueTypes.map((v) => makeTag("venue_type", v));
         if (!wanted.some((t) => c.tags?.includes(t))) return false;
       }
-      if (normalizedQuery) {
-        // DB clubs.aliases + 정적 CLUB_ALIASES 매핑(aliases.ts) 둘 다 매칭.
-        // 정적 매핑에 "에이스", "버뮤다", "디엠" 등 한글 별칭 등록됨.
-        const staticAliases = getClubAliases(c.id);
-        const haystack = [
-          c.name,
-          c.area || "",
-          ...(c.aliases || []),
-          ...staticAliases,
-        ]
-          .map(normalizeSearch)
-          .join("  ");
-        if (!haystack.includes(normalizedQuery)) return false;
-      }
+      // DB clubs.aliases + 정적 CLUB_ALIASES 둘 다 매칭 (lib/search가 단독으로 규칙을 쥔다)
+      if (!clubMatchesQuery(c, query)) return false;
       return true;
     });
-  }, [dedupedClubs, filters, normalizedQuery]);
+  }, [dedupedClubs, filters, query]);
 
-  // 검색 실패 로깅: 쿼리 입력 후 500ms 안정 + 결과 0건이면 1회 기록
-  useEffect(() => {
-    if (!normalizedQuery) return;
-    if (normalizedQuery.length < 2) return;
-    if (filtered.length > 0) return;
-    const timer = setTimeout(async () => {
-      try {
-        const supabase = createClient();
-        await supabase.rpc("log_search_miss", {
-          p_query: query,
-          p_normalized: normalizedQuery,
-          p_result_count: 0,
-        });
-      } catch {
-        // 로깅 실패는 조용히 무시 (UX 영향 X)
-      }
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [normalizedQuery, filtered.length, query]);
+  // 검색 실패 로깅용 카운트 — 지역·장르 칩을 빼고 "검색어만" 적용한 결과 수.
+  // filtered.length를 쓰면 필터 때문에 0건인 것까지 별칭 미스로 기록돼 큐가 오염된다.
+  const queryOnlyMatchCount = useMemo(() => {
+    if (!query.trim()) return dedupedClubs.length;
+    return dedupedClubs.filter((c) => clubMatchesQuery(c, query)).length;
+  }, [dedupedClubs, query]);
+
+  useSearchMissLogger("clubs", query, queryOnlyMatchCount);
 
   const byArea: Record<string, ClubListItem[]> = {};
   for (const c of filtered) {

@@ -49,6 +49,8 @@ interface ClubRef {
   is_test: boolean;
   status: string;
   deleted_at: string | null;
+  /** clubs.aliases (Migration 231) — 검색 전용. 운영자가 /admin/clubs/search-misses에서 늘린다. */
+  aliases: string[] | null;
 }
 
 interface RawLineupRow {
@@ -81,7 +83,7 @@ export default async function LineupsPage() {
     .from("club_lineups")
     .select(
       `id, event_date, club_id, door_open_min, event_title,
-       clubs(id, name, area, thumbnail_url, is_test, status, deleted_at),
+       clubs(id, name, area, thumbnail_url, is_test, status, deleted_at, aliases),
        lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram))`
     )
     .gte("event_date", getBusinessDateISO())
@@ -144,6 +146,7 @@ export default async function LineupsPage() {
       club_id: club.id,
       club_name: club.name,
       club_area: club.area,
+      club_aliases: club.aliases ?? [],
       club_thumbnail: club.thumbnail_url,
       door_open_min: r.door_open_min,
       event_title: r.event_title,

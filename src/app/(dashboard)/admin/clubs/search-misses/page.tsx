@@ -8,13 +8,31 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
+type Surface = "clubs" | "lineups" | "events";
+
 interface MissSummary {
   normalized_query: string;
   miss_count: number;
   sample_query: string;
   last_seen: string;
   resolved_alias_for: string | null;
+  /** 검색이 일어난 화면 (Migration 601) */
+  surface: Surface;
 }
+
+const SURFACE_LABEL: Record<Surface, string> = {
+  clubs: "클럽",
+  lineups: "라인업",
+  events: "공연",
+};
+
+/** 화면별 미스 필터 칩 */
+const SURFACE_FILTERS: Array<{ value: Surface | null; label: string }> = [
+  { value: null, label: "전체 화면" },
+  { value: "clubs", label: "클럽" },
+  { value: "lineups", label: "라인업" },
+  { value: "events", label: "공연" },
+];
 
 interface ClubOption {
   id: string;
@@ -30,6 +48,7 @@ export default function AdminSearchMissesPage() {
   const [misses, setMisses] = useState<MissSummary[]>([]);
   const [clubs, setClubs] = useState<ClubOption[]>([]);
   const [onlyUnresolved, setOnlyUnresolved] = useState(true);
+  const [surface, setSurface] = useState<Surface | null>(null);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState<string | null>(null);
 
@@ -48,6 +67,7 @@ export default function AdminSearchMissesPage() {
         supabase.rpc("admin_get_search_miss_summary", {
           p_limit: 200,
           p_only_unresolved: onlyUnresolved,
+          p_surface: surface,
         }),
         supabase
           .from("clubs")
@@ -70,7 +90,7 @@ export default function AdminSearchMissesPage() {
   useEffect(() => {
     if (user?.role === "admin") loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, onlyUnresolved]);
+  }, [user, onlyUnresolved, surface]);
 
   const handleResolve = async (
     normalized: string,
@@ -155,6 +175,24 @@ export default function AdminSearchMissesPage() {
           </button>
         </div>
 
+        {/* 화면별 필터 — 클럽 미스와 DJ/아티스트 미스를 섞어 보면 오해소가 난다 */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          {SURFACE_FILTERS.map((f) => (
+            <button
+              key={f.label}
+              type="button"
+              onClick={() => setSurface(f.value)}
+              className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
+                surface === f.value
+                  ? "bg-inverse text-inverse-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -174,16 +212,21 @@ export default function AdminSearchMissesPage() {
                 : null;
               return (
                 <li
-                  key={m.normalized_query}
+                  key={`${m.surface}:${m.normalized_query}`}
                   className="bg-card rounded-2xl border border-border p-4 space-y-3"
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <p className="text-foreground font-black text-[15px] truncate">
                       {m.sample_query}
                     </p>
-                    <span className="text-brand-amber text-[12px] font-bold flex-shrink-0">
-                      {m.miss_count}회
-                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-bold">
+                        {SURFACE_LABEL[m.surface] ?? m.surface}
+                      </span>
+                      <span className="text-brand-amber text-[12px] font-bold">
+                        {m.miss_count}회
+                      </span>
+                    </div>
                   </div>
                   <p className="text-[10px] text-muted-foreground">
                     마지막: {new Date(m.last_seen).toLocaleString("ko-KR")}
@@ -193,7 +236,7 @@ export default function AdminSearchMissesPage() {
                     <div className="text-[12px] text-money">
                       ✅ "{resolvedClub.name}" 별칭으로 등록됨
                     </div>
-                  ) : (
+                  ) : m.surface === "clubs" ? (
                     <ResolveControl
                       normalized={m.normalized_query}
                       sample={m.sample_query}
@@ -201,6 +244,22 @@ export default function AdminSearchMissesPage() {
                       disabled={resolving === m.normalized_query}
                       onResolve={handleResolve}
                     />
+                  ) : (
+                    <div className="space-y-2">
+                      {/* 라인업·공연 미스는 DJ/아티스트 이름일 수 있다. 여기서 클럽을 매핑하면
+                          clubs.aliases에 엉뚱한 별칭이 들어가므로, 클럽이 확실할 때만 등록한다. */}
+                      <p className="text-[11px] text-muted-foreground">
+                        {SURFACE_LABEL[m.surface]} 화면 미스 — DJ·아티스트 이름일 수 있어요.
+                        클럽이 확실한 경우에만 등록하세요.
+                      </p>
+                      <ResolveControl
+                        normalized={m.normalized_query}
+                        sample={m.sample_query}
+                        clubs={clubs}
+                        disabled={resolving === m.normalized_query}
+                        onResolve={handleResolve}
+                      />
+                    </div>
                   )}
                 </li>
               );

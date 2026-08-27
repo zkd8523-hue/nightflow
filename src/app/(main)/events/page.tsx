@@ -45,6 +45,8 @@ interface ClubRef {
   is_test: boolean;
   status: string;
   deleted_at: string | null;
+  /** clubs.aliases (Migration 231) — 검색 전용("제제"로 JEJE 공연을 찾게 한다). */
+  aliases: string[] | null;
 }
 
 /** 조인이 배열/객체 양쪽으로 오는 PostgREST 특성 흡수(/lineups와 동일 규약). */
@@ -70,7 +72,7 @@ export default async function EventsPage() {
     .from("club_events")
     .select(
       `id, event_date, title, club_id, club_name_raw, venue_area, lineup, source_url,
-       clubs(id, name, thumbnail_url, is_test, status, deleted_at),
+       clubs(id, name, thumbnail_url, is_test, status, deleted_at, aliases),
        club_event_performers(raw_name, sort_order, artists(id, display_name, instagram))`
     )
     .eq("status", "approved")
@@ -95,8 +97,33 @@ export default async function EventsPage() {
     }> | null;
   };
 
+  const raw = (data ?? []) as unknown as RawRow[];
+
+  // 아티스트 별칭 — 포스터 표기가 여러 개인 아티스트를 어느 표기로 검색해도 찾히게 한다.
+  // 중첩 select(artists(artist_aliases(...)))가 아니라 별도 쿼리로 붙이는 건 /lineups의
+  // dj_aliases와 같은 이유 — 2단계 중첩은 행이 불어나고 firstOf 정규화가 번거롭다.
+  const artistIds = [
+    ...new Set(
+      raw.flatMap((r) =>
+        (r.club_event_performers ?? [])
+          .map((p) => firstOf(p.artists)?.id)
+          .filter(Boolean) as string[]
+      )
+    ),
+  ];
+  const aliasesByArtist: Record<string, string[]> = {};
+  if (artistIds.length > 0) {
+    const { data: aliasRows } = await supabase
+      .from("artist_aliases")
+      .select("artist_id, alias")
+      .in("artist_id", artistIds);
+    for (const a of (aliasRows ?? []) as Array<{ artist_id: string; alias: string }>) {
+      (aliasesByArtist[a.artist_id] ??= []).push(a.alias);
+    }
+  }
+
   const rows: UndergroundEventRow[] = [];
-  for (const r of (data ?? []) as unknown as RawRow[]) {
+  for (const r of raw) {
     const club = firstOf(r.clubs);
 
     // 테스트/삭제/미승인 클럽에 붙은 공연은 감춘다. 단 club_id가 없는(미등록 장소)
@@ -110,7 +137,8 @@ export default async function EventsPage() {
 
     const linked: EventPerformer[] = performers
       .map((p) => p.artist)
-      .filter((a): a is EventPerformer => a !== null);
+      .filter((a): a is EventPerformer => a !== null)
+      .map((a) => ({ ...a, aliases: aliasesByArtist[a.id] ?? [] }));
 
     // lineup(TEXT[] 원문) 중 artists 조인에 못 붙은 이름 — 텍스트로라도 보여준다.
     // (재파싱 이전 데이터나 정규화 실패분이 여기 남는다)
@@ -128,6 +156,10 @@ export default async function EventsPage() {
       // 단 파서 표기(<UNKNOWN>)는 그대로 내보내지 않는다 — 캡션에 📍가 아예 없던
       // 항목이라 채울 값이 없고, 내부 토큰이 화면에 노출되면 버그로 보인다.
       venue_name: normalizeVenueName(r.club_name_raw) || club?.name || "(장소 미상)",
+      // venue_name은 캡션 원문 우선이라 정식명이 빠질 수 있다("JEJE"만 있고 clubs.name 미반영).
+      // 별칭 매칭은 club_id 기준이므로 정식명·별칭을 검색 전용으로 따로 싣는다(화면 미노출).
+      club_name: club?.name ?? null,
+      club_aliases: club?.aliases ?? [],
       venue_area: r.venue_area,
       source_url: r.source_url,
       performers: linked,

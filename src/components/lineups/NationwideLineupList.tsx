@@ -9,7 +9,9 @@ import { formatBusinessMin } from "@/lib/lineups/time";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
-import { getClubAliases } from "@/lib/clubs/aliases";
+import { clubMatchesQuery } from "@/lib/search/clubMatch";
+import { useSearchMissLogger } from "@/lib/search/logMiss";
+import { performerMatchesQuery } from "@/lib/search/performerMatch";
 import { useFavoritesContext, useDjFavoritesContext } from "@/components/providers";
 import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
 import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
@@ -40,6 +42,8 @@ export interface LineupClubRow {
   club_id: string;
   club_name: string;
   club_area: string | null;
+  /** clubs.aliases — 검색에만 쓰고 화면에는 안 뿌린다(dj.aliases와 같은 규약) */
+  club_aliases: string[];
   club_thumbnail: string | null;
   door_open_min: number | null;
   event_title: string | null;
@@ -59,28 +63,15 @@ interface DjRow {
 
 type Tab = "club" | "dj";
 
-/** 클럽 검색과 같은 정규화 규칙(ClubList.tsx의 normalizeSearch). */
-function normalizeSearch(s: string): string {
-  return s.toLowerCase().trim().replace(/\s+/g, " ");
-}
-
-/** DJ가 검색어에 걸리는지 — 표기명 + 인스타 핸들 + dj_aliases의 다른 표기들. */
-function djMatches(dj: NonNullable<LineupSetRef["dj"]>, q: string): boolean {
-  if (!q) return true;
-  return [dj.display_name, dj.instagram ?? "", ...dj.aliases]
-    .map(normalizeSearch)
-    .some((h) => h.includes(q));
-}
-
 /**
- * 클럽이 검색어에 걸리는지 — 클럽명 + 지역 + 정적 별칭(aliases.ts).
- * aliases.ts에 "버뮤다"·"에이스" 같은 한글 표기가 등록돼 있어 /clubs 검색과 결과가 같다.
+ * 클럽이 검색어에 걸리는지 — 클럽명 + 지역 + DB 별칭(clubs.aliases) + 정적 별칭(aliases.ts).
+ * 매칭 규칙은 lib/search가 단독으로 쥔다(/clubs·/events와 동일).
  */
 function clubMatches(row: LineupClubRow, q: string): boolean {
-  if (!q) return true;
-  return [row.club_name, row.club_area ?? "", ...getClubAliases(row.club_id)]
-    .map(normalizeSearch)
-    .some((h) => h.includes(q));
+  return clubMatchesQuery(
+    { id: row.club_id, name: row.club_name, area: row.club_area, aliases: row.club_aliases },
+    q
+  );
 }
 
 /** 날짜 그룹을 순서 그대로 유지하며 묶는다(입력이 event_date 오름차순 정렬 상태). */
@@ -171,10 +162,10 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
   const clubGroups = useMemo(() => {
     // 클럽별 탭에서도 같은 검색창이 동작한다. 클럽명뿐 아니라 그 라인업에 있는 DJ로도
     // 찾히게 한다 — "ZESTURE 어디서 틀지"를 클럽별 탭에서 검색해도 결과가 나와야 한다.
-    const q = normalizeSearch(query);
+    const q = query;
     let searched = q
       ? filtered.filter(
-          (r) => clubMatches(r, q) || r.sets.some((s) => s.dj && djMatches(s.dj, q))
+          (r) => clubMatches(r, q) || r.sets.some((s) => s.dj && performerMatchesQuery(s.dj, q))
         )
       : filtered;
 
@@ -192,9 +183,23 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
     ]) as Array<[string, LineupClubRow[]]>;
   }, [filtered, isFavorited, query, favOnly]);
 
+  // 검색 실패 로깅용 — 지역·날짜·찜 칩을 빼고 "검색어만" 적용한 결과 수.
+  // 탭별로 세지 않고 클럽·DJ 양쪽을 합산한다: DJ 탭에서 클럽명을 쳐서 0건인 건
+  // 별칭 부족이 아니라 탭을 잘못 고른 것이라, 미스로 기록하면 큐가 오염된다.
+  const queryOnlyMatchCount = useMemo(() => {
+    if (!query.trim()) return rows.length;
+    return rows.filter(
+      (r) =>
+        clubMatches(r, query) ||
+        r.sets.some((s) => s.dj && performerMatchesQuery(s.dj, query))
+    ).length;
+  }, [rows, query]);
+
+  useSearchMissLogger("lineups", query, queryOnlyMatchCount);
+
   const djGroups = useMemo(() => {
-    // DJ 검색은 djMatches가 담당 — 표기명 + 인스타 핸들 + dj_aliases의 다른 표기.
-    const q = normalizeSearch(query);
+    // DJ 검색은 performerMatchesQuery가 담당 — 표기명 + 인스타 핸들 + dj_aliases의 다른 표기.
+    const q = query;
     const flat: DjRow[] = [];
     for (const r of filtered) {
       for (const s of r.sets) {
@@ -203,7 +208,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
         // DJ 본인(이름·핸들·별칭)으로만 검색한다.
         // 클럽명으로도 걸리게 하면 "그 클럽 소속 DJ"처럼 읽히는데, DJ는 여러 클럽에서
         // 뛰므로 사실과 다른 인상을 준다. 클럽으로 찾는 건 클럽별 탭의 역할.
-        if (!djMatches(s.dj, q)) continue;
+        if (!performerMatchesQuery(s.dj, q)) continue;
         flat.push({
           event_date: r.event_date,
           start_min: s.start_min,

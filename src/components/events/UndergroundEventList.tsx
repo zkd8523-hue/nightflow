@@ -12,11 +12,17 @@ import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 import { useLineupLikes } from "@/hooks/useLineupLikes";
 import { hypeTier, hypeBadgeClass, hypeBadgeIconClass } from "@/lib/lineups/hypeTier";
+import { matchesQuery } from "@/lib/search/normalize";
+import { clubMatchesQuery } from "@/lib/search/clubMatch";
+import { useSearchMissLogger } from "@/lib/search/logMiss";
+import { performerMatchesQuery } from "@/lib/search/performerMatch";
 
 export interface EventPerformer {
   id: string;
   display_name: string;
   instagram: string | null;
+  /** artist_aliases — 검색 전용(화면 미노출) */
+  aliases?: string[];
 }
 
 /** 서버에서 정규화해 내려주는 공연 1건. */
@@ -35,6 +41,10 @@ export interface UndergroundEventRow {
   performers: EventPerformer[];
   /** 아티스트 마스터에 못 붙은 원문 이름(조인 실패분) — 텍스트로만 표시 */
   extra_names: string[];
+  /** 클럽 정식명 — venue_name이 캡션 원문이라 빠질 수 있어 검색 전용으로 따로 받는다 */
+  club_name: string | null;
+  /** clubs.aliases — 검색 전용(화면 미노출) */
+  club_aliases: string[];
 }
 
 function groupByDate(rows: UndergroundEventRow[]): Array<[string, UndergroundEventRow[]]> {
@@ -78,18 +88,39 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
 
   const groups = useMemo(() => {
     let out = area ? rows.filter((r) => r.venue_area === area) : rows;
-    const q = query.trim().toLowerCase();
-    if (q) {
+    if (query.trim()) {
+      // 클럽은 별칭까지 본다 — "제제"로 JEJE 공연이, "볼레로"로 Bolero 공연이 나와야 한다.
+      // club_id가 없는 미등록 장소는 붙일 별칭이 없어 캡션 원문(venue_name)으로만 걸린다.
       out = out.filter(
         (r) =>
-          (r.title ?? "").toLowerCase().includes(q) ||
-          r.venue_name.toLowerCase().includes(q) ||
-          r.performers.some((p) => p.display_name.toLowerCase().includes(q)) ||
-          r.extra_names.some((n) => n.toLowerCase().includes(q))
+          matchesQuery([r.title, r.venue_name, ...r.extra_names], query) ||
+          (r.club_id !== null &&
+            clubMatchesQuery(
+              { id: r.club_id, name: r.club_name ?? r.venue_name, aliases: r.club_aliases },
+              query
+            )) ||
+          r.performers.some((p) => performerMatchesQuery(p, query))
       );
     }
     return groupByDate(out);
   }, [rows, area, query]);
+
+  // 검색 실패 로깅용 — 지역 칩을 빼고 "검색어만" 적용한 결과 수.
+  const queryOnlyMatchCount = useMemo(() => {
+    if (!query.trim()) return rows.length;
+    return rows.filter(
+      (r) =>
+        matchesQuery([r.title, r.venue_name, ...r.extra_names], query) ||
+        (r.club_id !== null &&
+          clubMatchesQuery(
+            { id: r.club_id, name: r.club_name ?? r.venue_name, aliases: r.club_aliases },
+            query
+          )) ||
+        r.performers.some((p) => performerMatchesQuery(p, query))
+    ).length;
+  }, [rows, query]);
+
+  useSearchMissLogger("events", query, queryOnlyMatchCount);
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-24">
