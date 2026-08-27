@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/sheet";
 import { formatBusinessMin, nowBusinessMinutes } from "@/lib/lineups/time";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
-import { Disc3 } from "lucide-react";
+import { Disc3, ImagePlus } from "lucide-react";
 import { DjNameButton } from "@/components/djs/DjNameButton";
+import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 import type { TodayLineupSet } from "./ClubLineupSection";
 
 export interface UpcomingLineup {
@@ -30,6 +31,7 @@ export interface UpcomingLineup {
  */
 export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineups: UpcomingLineup[] }) {
   const [open, setOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   // 지금 트는 DJ — 전광판 라벨 자리에 NOW로 띄운다. 부모에서 넘겨받지 않고 여기서
   // 계산하는 이유: 1분마다 갱신돼야 하는데 부모(클럽 상세 전체)를 리렌더시킬 이유가 없다.
   // SSR/클라이언트 첫 렌더가 어긋나지 않도록 null로 시작해 마운트 후 채운다.
@@ -242,16 +244,26 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
                 );
               })}
             </div>
-            <Link
-              href={`/clubs/${clubId}/lineup/${selectedLineup.event_date}`}
-              onClick={() => setOpen(false)}
-              className="inline-block text-xs text-amber-400 hover:text-amber-300 transition-colors pt-1"
-            >
-              전체 보기 →
-            </Link>
+            <div className="flex items-center justify-between pt-1">
+              <Link
+                href={`/clubs/${clubId}/lineup/${selectedLineup.event_date}`}
+                onClick={() => setOpen(false)}
+                className="text-xs text-amber-400 hover:text-amber-300 transition-colors"
+              >
+                전체 보기 →
+              </Link>
+              <button
+                onClick={() => setReportOpen(true)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ImagePlus className="w-3 h-3" />
+                제보하기
+              </button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
+      <LineupReportSheet open={reportOpen} onOpenChange={setReportOpen} variant="lineup" />
     </>
   );
 }

@@ -26,6 +26,8 @@ interface Props {
   newFlagHref: string;
   /** 조각(파티원 모집) 모드 — 빈상태/CTA 문구를 조각으로 전환 */
   shareMode?: boolean;
+  /** shareMode일 때 무엇을 그릴지. "user"=유저 파티만, "clubdirect"=클럽 묶음만. 미지정=기존 혼합 */
+  shareVariant?: "user" | "clubdirect";
   /** 마지막 카드 자리에 노출할 CTA. 없으면 "자세히 보기" 카드 노출. */
   showFlagCTA?: boolean;
   /**
@@ -50,6 +52,7 @@ export function HomePuzzleCarousel({
   detailHref,
   newFlagHref,
   shareMode = false,
+  shareVariant,
   showFlagCTA = false,
   totalCount,
   isAreaFiltered = false,
@@ -87,11 +90,20 @@ export function HomePuzzleCarousel({
   );
   // 파트너 직통은 클럽×날짜 묶음 카드로 앞쪽에 최대 MAX_CARDS장까지 노출한다.
   // 예전엔 partnerGroups[0] 1장만 그려서 클럽이 여러 곳이어도 홈에 하나만 보였다.
-  const leadGroups = partnerGroups.slice(0, MAX_CARDS);
-  const visible = userPuzzles.slice(0, Math.max(0, MAX_CARDS - leadGroups.length));
+  // shareVariant가 지정되면 홈에서 파티/클럽 다이렉트를 세로로 분리한 줄이므로 한쪽만 그린다.
+  const leadGroups =
+    shareVariant === "user" ? [] : partnerGroups.slice(0, MAX_CARDS);
+  const visible =
+    shareVariant === "clubdirect"
+      ? []
+      : userPuzzles.slice(0, Math.max(0, MAX_CARDS - leadGroups.length));
 
   // 현재 화면 맨 앞 카드의 날짜를 섹션 헤더로 올린다(스크롤 시 함께 변경).
   // 렌더 순서(파트너 묶음 → 유저 조각)와 인덱스가 일치해야 헤더 날짜가 어긋나지 않는다.
+  // shareVariant로 한쪽만 그릴 때는 그쪽 후보가 0건인지로 빈 상태를 판단해야 한다.
+  // (puzzles 전체는 홈에서 두 캐러셀에 같은 배열을 넘기므로 비어있지 않을 수 있다)
+  const isEmpty = leadGroups.length === 0 && visible.length === 0;
+
   const headDates: string[] = [
     ...leadGroups.map((g) => g.eventDate ?? g.puzzles[0].event_date),
     ...visible.map((p) => p.event_date),
@@ -149,7 +161,7 @@ export function HomePuzzleCarousel({
     })();
   }, []);
 
-  if (puzzles.length === 0) {
+  if (isEmpty) {
     // 지역 필터 때문에 0개 → 깃발꽂기 유도 대신 "전체 보기"로 안내
     if (isAreaFiltered) {
       return (
@@ -210,6 +222,7 @@ export function HomePuzzleCarousel({
           >
             <ClubDirectCard
               group={group}
+              showBadge={false}
               sheetPuzzles={puzzles.filter((p) => p.host_is_md && p.club_id === group.clubId)}
             />
           </div>
@@ -237,7 +250,7 @@ export function HomePuzzleCarousel({
           );
         })}
         {isMd ? (
-          shareMode ? (
+          shareMode && shareVariant !== "clubdirect" ? (
             /* MD 조각: 매출 유도 CTA (등록은 무료, 유저 입장 시 크레딧 과금) */
             <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
               <div className="text-center w-full mt-8">
@@ -256,8 +269,8 @@ export function HomePuzzleCarousel({
           /* MD/Admin 깃발: "더보기" 슬라이드 제거 — 깃발 신규 진입점 숨김 */
         ) : (
           <>
-            {/* 깃발 신규 생성 CTA 제거 — shareMode(파티)일 때만 노출 */}
-            {showFlagCTA && shareMode && (
+            {/* 깃발 신규 생성 CTA 제거 — shareMode(파티)일 때만 노출. 클럽 다이렉트 줄엔 부적절해 제외 */}
+            {showFlagCTA && shareMode && shareVariant !== "clubdirect" && (
               <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
                 <div className="text-center w-full mt-8">
                   <p className="text-[14.5px] text-foreground/90 font-semibold mb-0.5">

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mic2, ExternalLink, ChevronRight } from "lucide-react";
+import { Mic2, ExternalLink, ChevronRight, ImagePlus } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { splitLineupDate, isLineupToday } from "@/lib/lineups/formatDate";
 import { eventSlug } from "@/lib/events/slug";
+import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 
 export interface ClubEventPerformer {
   id: string;
@@ -39,6 +40,7 @@ export interface ClubUpcomingEvent {
  */
 export function ClubUpcomingEvents({ events }: { events: ClubUpcomingEvent[] }) {
   const [open, setOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   if (!events.length) return null;
 
   // 전광판에 흐를 항목 — 날짜 + 출연자(없으면 공연명)
@@ -211,8 +213,17 @@ export function ClubUpcomingEvents({ events }: { events: ClubUpcomingEvent[] }) 
               );
             })}
           </div>
+
+          <button
+            onClick={() => setReportOpen(true)}
+            className="mt-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ImagePlus className="w-3 h-3" />
+            제보하기
+          </button>
         </SheetContent>
       </Sheet>
+      <LineupReportSheet open={reportOpen} onOpenChange={setReportOpen} variant="event" />
     </>
   );
 }

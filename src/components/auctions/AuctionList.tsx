@@ -80,6 +80,8 @@ function ShareFilterRow({ label, chips, value, onChange }: { label: string; chip
     </div>
   );
 }
+export type AuctionListTab = "today" | "advance" | "puzzle" | "share" | "clubdirect";
+
 interface AuctionListProps {
   activeAuctions: Auction[];
   puzzles?: Puzzle[];
@@ -93,10 +95,10 @@ interface AuctionListProps {
   userInterestedSet?: Set<string>;
   userRole?: "user" | "md" | "admin";
   currentUserId?: string;
-  initialTab?: "today" | "advance" | "puzzle" | "share";
-  onTabChange?: (tab: "today" | "advance" | "puzzle" | "share") => void;
+  initialTab?: AuctionListTab;
+  onTabChange?: (tab: AuctionListTab) => void;
   onShowGuide?: () => void;
-  tabPromises?: Partial<Record<"today" | "advance" | "puzzle" | "share", { content: React.ReactNode; note?: React.ReactNode }>>;
+  tabPromises?: Partial<Record<AuctionListTab, { content: React.ReactNode; note?: React.ReactNode }>>;
   guideSlot?: React.ReactNode;
   hideTabs?: boolean;
   hideAreaFilter?: boolean;
@@ -225,15 +227,14 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const instantEnabled = isInstantEnabled();
 
   // 경매가 있는 탭을 기본으로 선택 (instant off일 때 today 후보 제외)
-  // 깃발 탭 버튼 제거로 기본 폴백도 "share"로 변경 (puzzle로 두면 보이지 않는 탭에 착지함)
-  const [tab, setTabRaw] = useState<"today" | "advance" | "puzzle" | "share">(() => {
+  // 깃발 탭 버튼 제거로 기본 폴백도 "share"로 변경 (puzzle/advance로 두면 버튼 없는 탭에 착지함)
+  const [tab, setTabRaw] = useState<AuctionListTab>(() => {
     if (initialTab && (initialTab !== "today" || instantEnabled)) return initialTab;
     if (instantEnabled && todayAuctions.length > 0) return "today";
-    if (advanceAuctions.length > 0) return "advance";
     return "share";
   });
 
-  const setTab = (t: "today" | "advance" | "puzzle" | "share") => {
+  const setTab = (t: AuctionListTab) => {
     setTabRaw(t);
     onTabChange?.(t);
   };
@@ -264,6 +265,15 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   // (구 auctions listing_type='share' 소스는 폐기 — 조각 모델이 puzzles로 이전됨)
   const sharePuzzles = useMemo(
     () => puzzles.filter((p) => p.is_recruiting_party && matchesArea(p.area, effectiveShareArea ?? null)),
+    [puzzles, effectiveShareArea]
+  );
+
+  // 클럽 다이렉트 탭: 파트너(host_is_md) 조각만. 파티 탭과 동일한 지역 필터(effectiveShareArea) 공유.
+  const clubDirectPuzzles = useMemo(
+    () =>
+      puzzles.filter(
+        (p) => p.is_recruiting_party && p.host_is_md && matchesArea(p.area, effectiveShareArea ?? null)
+      ),
     [puzzles, effectiveShareArea]
   );
 
@@ -301,7 +311,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   return (
     <div className="flex flex-col">
       {!hideTabs && (
-      <div className={`flex items-center gap-2 -mx-4 px-4 ${tab === "share" ? "mb-2" : "mb-4"}`}>
+      <div className={`flex items-center gap-2 -mx-4 px-4 ${(tab === "share" || tab === "clubdirect") ? "mb-2" : "mb-4"}`}>
         {onBack && (
           <button
             type="button"
@@ -327,6 +337,18 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               </button>
             )}
 
+            {clubDirectPuzzles.length > 0 && (
+              <button
+                onClick={() => setTab("clubdirect")}
+                className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "clubdirect"
+                  ? "bg-amber-500 text-black"
+                  : "bg-muted text-muted-foreground hover:bg-muted hover:text-white"
+                  }`}
+              >
+                <span className="text-[16px] leading-none">🍾</span> 클럽 다이렉트
+              </button>
+            )}
+
 {instantEnabled && (
               <button
                 onClick={() => setTab("today")}
@@ -348,7 +370,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {/* 필터 줄: 지역필터 숨김 + advance탭 아님 = 내용 없음 → 빈 박스 제거 (클럽 상세) */}
       {!(hideAreaFilter && tab !== "advance") && (
-      <div className={`flex items-center gap-2 h-9 ${tab === "share" ? "mb-1.5" : "mb-5"}`}>
+      <div className={`flex items-center gap-2 h-9 ${(tab === "share" || tab === "clubdirect") ? "mb-1.5" : "mb-5"}`}>
           {!hideAreaFilter && (
           <div
             data-no-pull-refresh
@@ -361,8 +383,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             <div className="flex gap-2 px-1 pr-6 w-max">
               {/* 파티 탭은 독립 지역필터(effectiveShareArea), 그 외는 selectedArea */}
               {(() => {
-              const areaForChips = tab === "share" ? effectiveShareArea : (selectedArea ?? null);
-              const onAreaChipChange = tab === "share" ? effectiveShareAreaChange : onAreaChange;
+              const areaForChips = (tab === "share" || tab === "clubdirect") ? effectiveShareArea : (selectedArea ?? null);
+              const onAreaChipChange = (tab === "share" || tab === "clubdirect") ? effectiveShareAreaChange : onAreaChange;
               return (<>
               <button
                 onClick={() => onAreaChipChange?.(null)}
@@ -826,6 +848,20 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           onActiveFilterChange={setPuzzleHasActiveFilter}
           partyOnly
           shareMode
+          clubDirectMode="hidden"
+          hideEmptyState={hideShareEmptyState}
+        />
+      )}
+
+      {tab === "clubdirect" && (
+        <PuzzleList
+          puzzles={clubDirectPuzzles}
+          userRole={userRole}
+          offerCounts={puzzleOfferCounts}
+          selectedArea={effectiveShareArea}
+          partyOnly
+          shareMode
+          clubDirectMode="only"
           hideEmptyState={hideShareEmptyState}
         />
       )}

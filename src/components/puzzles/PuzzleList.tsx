@@ -97,6 +97,13 @@ interface PuzzleListProps {
   shareMode?: boolean;
   /** 클럽 상세 등 이미 예약/깃발 CTA가 있는 화면에서 조각 빈상태 CTA 중복 노출 방지 */
   hideEmptyState?: boolean;
+  /**
+   * shareMode에서 클럽 다이렉트(host_is_md) 섹션 취급.
+   * "hidden"=섹션 제거(파티 탭 — 클럽 다이렉트는 별도 탭으로 분리됨)
+   * "only"=클럽 다이렉트만 렌더(클럽 다이렉트 전용 탭)
+   * 미지정=기존 혼합 동작(다른 호출부 호환용)
+   */
+  clubDirectMode?: "hidden" | "only";
 }
 
 export function PuzzleList({
@@ -117,6 +124,7 @@ export function PuzzleList({
   onSortModeChange,
   shareMode = false,
   hideEmptyState = false,
+  clubDirectMode,
 }: PuzzleListProps) {
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
@@ -203,10 +211,17 @@ export function PuzzleList({
     () => (shareMode ? filteredPuzzles.filter((p) => !p.host_is_md) : filteredPuzzles),
     [filteredPuzzles, shareMode]
   );
-  // 클럽 단위 묶음 — 클럽이 지정되지 않은 파트너 조각은 묶을 대상이 없어 제외된다.
+  // 클럽×날짜 단위 묶음(더보기 클럽 다이렉트 탭과 홈 캐러셀 기준 통일).
+  // 클럽이 지정되지 않은 파트너 조각은 묶을 대상이 없어 여기서 제외되고, orphanPartnerPuzzles로 별도 렌더.
   const partnerClubGroups = useMemo(
-    () => groupPuzzlesByClub(pinnedPartnerPuzzles),
-    [pinnedPartnerPuzzles]
+    () => (clubDirectMode === "hidden" ? [] : groupPuzzlesByClub(pinnedPartnerPuzzles, { byDate: true })),
+    [pinnedPartnerPuzzles, clubDirectMode]
+  );
+  // club_id 없는 파트너 조각 — groupPuzzlesByClub이 버리고 listPuzzles(!host_is_md)에도 안 걸려
+  // 기존엔 어디에도 노출되지 않던 항목. 클럽 다이렉트 탭에서는 섹션 하단에 개별 카드로 보정 노출한다.
+  const orphanPartnerPuzzles = useMemo(
+    () => (clubDirectMode === "only" ? pinnedPartnerPuzzles.filter((p) => !p.club_id) : []),
+    [pinnedPartnerPuzzles, clubDirectMode]
   );
 
   const eventDates = useMemo(() => {
@@ -290,8 +305,9 @@ export function PuzzleList({
 
   return (
     <div className="relative">
-      {/* 필터 아이콘 버튼: 부모(AuctionList)가 컨트롤하지 않을 때만 자체 노출 */}
-      {puzzles.length > 0 && onFilterOpenChange === undefined && (
+      {/* 필터 아이콘 버튼: 부모(AuctionList)가 컨트롤하지 않을 때만 자체 노출.
+          클럽 다이렉트 전용 목록은 인원/자리/날짜 필터가 카드 단위로 매핑되지 않아 숨긴다. */}
+      {puzzles.length > 0 && onFilterOpenChange === undefined && clubDirectMode !== "only" && (
         <div className="flex items-center justify-end gap-1.5 mb-3">
           {hasActiveFilter && (
             <button
@@ -386,20 +402,61 @@ export function PuzzleList({
         </SheetContent>
       </Sheet>
 
-      {/* ── 파트너 직통 고정 섹션 — 클럽 단위로 묶어 카드 수를 클럽 수로 억제(Migration 505) ── */}
-      {shareMode && partnerClubGroups.length > 0 && (
-        <div className="space-y-2 mb-8">
+      {/* ── 파트너 직통 고정 섹션 — 클럽×날짜로 묶어 카드 수를 억제(Migration 505) ── */}
+      {shareMode && clubDirectMode !== "hidden" && (partnerClubGroups.length > 0 || orphanPartnerPuzzles.length > 0) && (
+        <div className={`space-y-2 ${clubDirectMode === "only" ? "mb-0" : "mb-8"}`}>
           <ClubDirectHeader />
           <div className="flex flex-col gap-5">
             {partnerClubGroups.map((group) => (
-              <ClubDirectCard key={group.clubId} group={group} showBadge={false} />
+              <ClubDirectCard
+                key={`${group.clubId}-${group.eventDate ?? ""}`}
+                group={group}
+                showBadge={false}
+                sheetPuzzles={pinnedPartnerPuzzles.filter((p) => p.club_id === group.clubId)}
+              />
+            ))}
+            {orphanPartnerPuzzles.map((puzzle) => (
+              <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); }}>
+                <PuzzleCard puzzle={puzzle} userRole={userRole} offerCount={offerCounts[puzzle.id] || 0}
+                  isMember={myPuzzleIds.has(puzzle.id)} hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
+                  onJoin={(p) => setJoinTarget(p)} onUnlock={(p) => setUnlockTarget(p)} />
+              </Link>
             ))}
           </div>
-          {listPuzzles.length > 0 && <div className="border-t border-border mt-2" />}
+          {clubDirectMode !== "only" && listPuzzles.length > 0 && <div className="border-t border-border mt-2" />}
         </div>
       )}
 
-      {filteredPuzzles.length === 0 ? (
+      {clubDirectMode === "only" ? (
+        filteredPuzzles.length === 0 && !(hideEmptyState && !hasActiveFilter) && (
+          <div className="flex flex-col items-center justify-center py-20 gap-2">
+            <div className="space-y-2 text-center">
+              {hasActiveFilter ? (
+                <>
+                  <p className="text-[15px] font-bold text-foreground/80">조건에 맞는 클럽 다이렉트가 없어요</p>
+                  <p className="text-[12px] text-muted-foreground leading-relaxed">필터를 조정해보세요</p>
+                  <button
+                    onClick={() => {
+                      setNbiFilter("all");
+                      setSeatFilter("all");
+                      setDateFilter("all");
+                    }}
+                    className="inline-flex items-center gap-1.5 mt-3 bg-muted hover:bg-muted text-foreground rounded-full px-5 py-2 text-[12px] font-bold transition-colors"
+                  >
+                    필터 초기화
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="text-[40px] leading-none">🍾</span>
+                  <p className="text-[15px] font-bold text-foreground">아직 클럽 다이렉트가 없어요</p>
+                  <p className="text-[12px] text-muted-foreground leading-relaxed">파트너 클럽이 자리를 올리면 여기에 표시돼요</p>
+                </>
+              )}
+            </div>
+          </div>
+        )
+      ) : filteredPuzzles.length === 0 ? (
         hideEmptyState && !hasActiveFilter ? null : (
         <div className="flex flex-col items-center justify-center py-20 gap-2">
           <div className="absolute top-0 right-0">{toggleButton}</div>
@@ -671,7 +728,7 @@ export function PuzzleList({
       )}
 
       {/* Floating CTA 버튼 (MD 제외) — 빈 상태/리스트 끝 도달 시 숨김. 깃발 분기는 제거(shareMode만 노출) */}
-      {shareMode && userRole !== "md" && filteredPuzzles.length > 0 && (
+      {shareMode && clubDirectMode !== "only" && userRole !== "md" && filteredPuzzles.length > 0 && (
         <Link
           href={userRole ? "/shares/new" : "/login?redirect=/shares/new"}
           onClick={() => trackEvent("puzzle_cta_click", { source: "list_float" })}

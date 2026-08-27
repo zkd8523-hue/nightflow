@@ -115,7 +115,8 @@ export const trackBid = (action: 'start' | 'complete', params: {
  * 조각(share) 매물 관련 이벤트 추적 도우미
  *
  * 이벤트 명세:
- * - share_tab_view: 홈 "조각" 탭 진입
+ * - share_tab_view: 홈 "파티" 탭 진입
+ * - clubdirect_tab_view: 홈/더보기 "클럽 다이렉트" 탭 진입
  * - share_listing_created: MD가 조각 매물 등록 완료
  * - share_card_click: 홈/리스트에서 조각 카드 클릭
  * - share_view: 조각 상세 진입
@@ -131,6 +132,7 @@ export const trackBid = (action: 'start' | 'complete', params: {
 export const trackShareEvent = (
   eventName:
     | 'share_tab_view'
+    | 'clubdirect_tab_view'
     | 'share_listing_created'
     | 'share_card_click'
     | 'share_view'

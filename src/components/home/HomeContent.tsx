@@ -3,12 +3,12 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AuctionList } from "@/components/auctions/AuctionList";
+import { AuctionList, type AuctionListTab } from "@/components/auctions/AuctionList";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, PartyPopper, ChevronRight, ArrowDown } from "lucide-react";
+import { CheckCircle2, X, PartyPopper, ChevronRight } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { ClubStrip } from "@/components/home/ClubStrip";
 import { isAuctionExpired } from "@/lib/utils/auction";
@@ -20,6 +20,7 @@ import { getBrowserKind, isIOS, isAndroid } from "@/lib/utils/browser";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { HomePuzzleCarousel } from "@/components/home/HomePuzzleCarousel";
+import { groupPuzzlesByClub } from "@/components/puzzles/ClubDirectCard";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { LineupTicker } from "@/components/home/LineupTicker";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
@@ -177,7 +178,7 @@ export const PUZZLE_ONBOARDING_STEPS_MD = [
 
 type TabPromise = { content: React.ReactNode; note?: React.ReactNode };
 
-const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise> = {
+const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share" | "clubdirect", TabPromise> = {
   today: { content: "지금 비어있는 자리, 한눈에" },
   advance: {
     content: (
@@ -218,9 +219,17 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
       </>
     ),
   },
+  clubdirect: {
+    content: (
+      <>
+        <div className="text-[15.5px] text-foreground">파티와 똑같지만, 클럽이 직접 운영해요!</div>
+        <div className="text-[15.5px] text-foreground">클릭 한 번으로 파티 참가!</div>
+      </>
+    ),
+  },
 };
 
-const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromise> = {
+const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share" | "clubdirect", TabPromise> = {
   today: { content: "지금 비어있는 자리, 한눈에" },
   advance: {
     content: (
@@ -237,6 +246,15 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromi
     note: "💰 제안 무료 · 매칭 시 직접 거래",
   },
   share: {
+    content: (
+      <>
+        <div className="text-[15.5px] text-foreground">이번주 파티를 미리 올려보세요!</div>
+        <div className="text-[15.5px] text-foreground">링크 하나로 공유, 인원관리도 간편해요!</div>
+      </>
+    ),
+    note: "🎉 수수료 0% · 현장 직접 수령",
+  },
+  clubdirect: {
     content: (
       <>
         <div className="text-[15.5px] text-foreground">이번주 파티를 미리 올려보세요!</div>
@@ -277,12 +295,12 @@ export function HomeContent({
   const [selectedShareArea, setSelectedShareArea] = useState<string | null>(null);
   // 섹션 헤더 옆 날짜 — 캐러셀이 스크롤에 맞춰 "현재 맨 앞 카드 날짜"를 올려준다. (깃발 캐러셀 제거로 puzzleHeaderDate는 삭제)
   const [shareHeaderDate, setShareHeaderDate] = useState<string | null>(null);
+  // 클럽 다이렉트 섹션 헤더 날짜 — 파티(shareHeaderDate)와 별도 캐러셀이라 상태도 분리한다.
+  const [clubDirectHeaderDate, setClubDirectHeaderDate] = useState<string | null>(null);
   // 가이드는 항상 닫힘 상태로 시작. "ⓘ 깃발 이용 방법" 버튼으로만 펼침.
   const [showGuide, setShowGuide] = useState(false);
   // 가이드 모드는 단일 (full만) — 시크릿오퍼는 PUZZLE_ONBOARDING_STEPS 2단계에 통합됨
   const [guideMode, setGuideMode] = useState<"full">("full");
-  // 첫 방문 시 캐러셀 위 인라인 가이드 — 깃발 캐러셀 제거로 항상 false 고정 (닫기 로직 없음)
-  const showTopGuide = false;
   /** 더보기 화면의 "이용방법" — 첫 방문 모달을 수동으로 연다 */
   const [flagGuideOpen, setFlagGuideOpen] = useState(false);
 
@@ -338,8 +356,6 @@ export function HomeContent({
     return () => clearInterval(id);
   }, [tipResetKey]);
 
-  // Tip 박스에 data-no-pull-refresh 부착. PullToRefresh 컴포넌트가 자동으로 pull 동작 차단.
-  const tipBoxRef = useRef<HTMLDivElement>(null);
   const changeTipRotation = (next: number | ((v: number) => number)) => {
     setTipRotation(next);
     setTipResetKey((k) => k + 1);
@@ -405,18 +421,21 @@ export function HomeContent({
       areaDefaultApplied.current = true;
     }
   }, [isMdOrAdminUser, user?.area]);
-  const normalizeTab = (t: string | null): "today" | "advance" | "puzzle" | "share" => {
+  const normalizeTab = (t: string | null): AuctionListTab => {
     if (t === "today" && instantEnabled) return "today";
     if (t === "advance") return "advance";
     if (t === "puzzle") return "puzzle";
-    // share는 폴백 없이 그대로 — "조각 더보기"(?tab=share)로 진입 시 깃발로 강등되면 안 됨.
-    // 조각 탭 가시성은 compact의 showShareTab, detail의 canShowShareTab이 각각 제어.
+    // share/clubdirect는 폴백 없이 그대로 — "더보기"(?tab=share|clubdirect)로 진입 시
+    // 다른 탭으로 강등되면 안 됨. 가시성은 compact의 showShareTab/clubDirectCount,
+    // detail의 canShowShareTab/clubDirectPuzzles.length가 각각 제어.
     if (t === "share") return "share";
-    return "puzzle";
+    if (t === "clubdirect") return "clubdirect";
+    // 버튼 없는 탭(puzzle)이 기본 폴백이면 첫 진입 시 안 보이는 탭에 착지한다 → share로.
+    return "share";
   };
 
-  // URL에서 탭 상태 읽어오기 (instant off 시 today → puzzle)
-  const [currentTab, setCurrentTab] = useState<"today" | "advance" | "puzzle" | "share">(() => {
+  // URL에서 탭 상태 읽어오기 (instant off 시 today → share)
+  const [currentTab, setCurrentTab] = useState<AuctionListTab>(() => {
     return normalizeTab(searchParams.get("tab"));
   });
 
@@ -425,7 +444,7 @@ export function HomeContent({
 
   // 탭 변경 시 URL 업데이트 — router.replace는 서버 컴포넌트 refetch를 유발해
   // 캐러셀이 깜빡임. URL만 history API로 갱신하고, 페이지 상태는 setCurrentTab으로 즉시 반영.
-  const handleTabChange = (tab: "today" | "advance" | "puzzle" | "share") => {
+  const handleTabChange = (tab: AuctionListTab) => {
     const safe = normalizeTab(tab);
     setCurrentTab(safe);
     if (typeof window !== "undefined") {
@@ -448,6 +467,8 @@ export function HomeContent({
   useEffect(() => {
     if (currentTab === "share") {
       trackShareEvent("share_tab_view", { source: "home" });
+    } else if (currentTab === "clubdirect") {
+      trackShareEvent("clubdirect_tab_view", { source: "home" });
     }
   }, [currentTab]);
 
@@ -584,18 +605,19 @@ export function HomeContent({
   }, [areaFilteredPuzzles, isDetailMode]);
 
   /**
-   * "N개 더보기"의 N — 화면에 실제로 깔리는 카드 수.
+   * "N개 더보기"의 N — 파티(유저)와 클럽 다이렉트가 별도 섹션/탭이 되면서 카운트도 분리한다.
    * 파트너 조각은 클럽×날짜로 한 장에 묶이므로(ClubDirectCard) 건수로 세면
-   * 카드 2장인데 15개라고 적히는 일이 생긴다.
+   * 카드 2장인데 15개라고 적히는 일이 생긴다 — 더보기(PuzzleList)와 동일하게 byDate로 통일.
    */
-  const shareCardCount = useMemo(() => {
-    const clubKeys = new Set<string>();
-    let userCount = 0;
-    sharePuzzles.forEach((p) => {
-      if (p.host_is_md && p.club_id) clubKeys.add(`${p.club_id}|${p.event_date}`);
-      else userCount += 1;
-    });
-    return clubKeys.size + userCount;
+  const userShareCount = useMemo(
+    () => sharePuzzles.filter((p) => !p.host_is_md).length,
+    [sharePuzzles]
+  );
+  const clubDirectCount = useMemo(() => {
+    const partnerPuzzles = sharePuzzles.filter((p) => p.host_is_md);
+    const grouped = groupPuzzlesByClub(partnerPuzzles, { byDate: true });
+    const orphanCount = partnerPuzzles.filter((p) => !p.club_id).length;
+    return grouped.length + orphanCount;
   }, [sharePuzzles]);
 
   const areaFilteredShares = useMemo(
@@ -836,41 +858,14 @@ export function HomeContent({
     const isMdOrAdmin = user?.role === "md" || user?.role === "admin";
     const newShareHref = user ? "/shares/new" : "/login?redirect=/shares/new";
 
-    // 탭별 Tip 콘텐츠 (풀 화면과 일관)
-    const userPuzzleTipContent = (
-      <div className="text-[14.5px] text-foreground">
-        오퍼 받아보고, 별로면 패스해도 <span className="text-brand-amber font-black">OK!</span>
-      </div>
-    );
-    const mdPuzzleTipContent = (
-      <div>유저들의 예산이 기다리고 있어요 💰</div>
-    );
-    const mdShareTipContent = (
-      <>
-        <div className="text-foreground">이번주 파티를 미리 올려보세요!</div>
-        <div className="text-foreground">링크 하나로 공유, 인원관리도 간편해요!</div>
-      </>
-    );
-    const compactTipContent: Record<"puzzle" | "share", React.ReactNode> = {
-      puzzle: isMdOrAdmin ? mdPuzzleTipContent : userPuzzleTipContent,
-      share: isMdOrAdmin ? mdShareTipContent : TAB_PROMISES.share.content,
-    };
-    // 깃발/조각을 세로 2섹션으로 항상 노출. Tip·이용방법 가이드는 깃발 섹션 전용이므로
-    // steps/tip을 깃발(puzzle) 기준으로 고정한다. (share용 분기 제거)
-    const compactSteps = isMdOrAdmin ? PUZZLE_ONBOARDING_STEPS_MD : PUZZLE_ONBOARDING_STEPS;
-    const visibleCompactTip = compactTipContent.puzzle;
-    // 팁 슬라이드 index 1 = 매칭오퍼("어떤 오퍼 받을지 궁금해?") — recentMatchedPuzzle 있을 때만
-    const compactSlideCount = recentMatchedPuzzle ? 3 : 2;
-    const isCompactOfferSlide = !!recentMatchedPuzzle && tipRotation % compactSlideCount === 1;
-
     // 섹션 헤더 한 줄: [아이콘 버튼] [첫 날짜] ... [더보기]  (홈은 지역 필터 없음 — 탐색은 더보기에서)
     const renderSectionRow = (opts: {
       icon: string;
       label: string;
-      detailTab: "puzzle" | "share";
+      detailTab: "puzzle" | "share" | "clubdirect";
       /** 배지 옆에 표시할 첫 카드 날짜 "6/23(화)" — 없으면 생략 */
       dateLabel?: string | null;
-      /** 전체 개수 — "X개 더보기"로 표시 (0/미지정이면 "더보기") */
+      /** 전체 개수 — 현재는 미표시(항상 "더보기"), N개 더보기 파생 카운트는 다른 용도로 남겨둠 */
       count?: number;
     }) => (
       <div className="flex items-center gap-2 -mx-4 px-4 mb-2">
@@ -890,10 +885,10 @@ export function HomeContent({
         )}
         <Link
           href={detailHref(opts.detailTab)}
-          aria-label={opts.count && opts.count > 0 ? `${opts.count}개 더보기` : "더보기"}
+          aria-label="더보기"
           className="ml-auto -my-1.5 -mr-2 shrink-0 self-center text-[12px] text-muted-foreground hover:text-foreground active:text-foreground font-bold inline-flex items-center gap-0.5 px-2 py-2.5 rounded-lg active:bg-white/5 transition-colors"
         >
-          {opts.count && opts.count > 0 ? `${opts.count}개 더보기` : "더보기"}
+          더보기
           <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       </div>
@@ -927,205 +922,53 @@ export function HomeContent({
             </div>
           </div>
 
-          {/* MD 팁박스 — 홈에서 제거 (상세 "더보기"에는 유지). false로 차단 */}
-          {false && isMdOrAdmin && visibleCompactTip && (
-            <div className="order-1 bg-muted border-amber-400/50 rounded-xl px-3 py-2 mb-2 [border-width:0.5px]">
-              <div className="text-[14px] text-foreground font-black leading-snug break-keep"><ArrowDown className="w-3.5 h-3.5 inline-block mr-1 text-brand-amber relative -top-px animate-bounce" />유저들의 예산이 기다리고 있어요</div>
-            </div>
-          )}
-
-          {/* 유저 팁박스 — 홈에서 제거 (상세 "더보기"에는 유지). false로 차단 */}
-          {false && visibleCompactTip && !isMdOrAdmin && (
-            <section className="space-y-2 mb-3 order-1">
-              {true && (
-                <div
-                  ref={tipBoxRef}
-                  data-no-pull-refresh
-                  className={`relative bg-gradient-to-br from-amber-400/10 via-card to-card border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 ${(showTopGuide || showGuide || isCompactOfferSlide) ? "" : "pr-[88px]"} ${recentMatchedPuzzle ? "pt-3.5 pb-5" : "pt-2.5 pb-2"}`}
-                >
-                  {(() => {
-                    const compactSlides: React.ReactNode[] = [
-                      <div key="new" className="text-[14px] text-foreground font-black leading-snug break-keep">예약금 Zero, 수수료 Zero</div>,
-                      ...(recentMatchedPuzzle ? [
-                        <button
-                          key="offer"
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setShowMatchedModal(true); }}
-                          className="w-full text-[14px] text-foreground font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-foreground transition-colors"
-                        >
-                          <span className="underline underline-offset-4 decoration-2 decoration-amber-400/70">어떤 오퍼 받을지 궁금해?</span>
-                          <span aria-hidden>👈</span>
-                        </button>
-                      ] : []),
-                      <div key="tip" className="text-[14px] text-foreground font-black leading-snug break-keep">{visibleCompactTip}</div>,
-                    ];
-                    const slideCount = compactSlides.length;
-                    const safeRotation = tipRotation % slideCount;
-                    return (
-                      <>
-                        <div
-                          ref={tipContainerRef}
-                          className="overflow-hidden select-none"
-                          style={{ touchAction: "pan-y" }}
-                          onPointerDown={(e) => {
-                            const width = tipContainerRef.current?.offsetWidth ?? 0;
-                            tipSwipeRef.current = { startX: e.clientX, startY: e.clientY, active: true, width };
-                            setTipIsDragging(true);
-                            (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-                          }}
-                          onPointerMove={(e) => {
-                            const ref = tipSwipeRef.current;
-                            if (!ref?.active) return;
-                            const dx = e.clientX - ref.startX;
-                            const dy = e.clientY - ref.startY;
-                            if (Math.abs(dx) <= Math.abs(dy)) return;
-                            e.preventDefault();
-                            const widthPct = ref.width > 0 ? (dx / ref.width) * 100 : 0;
-                            const minOffset = safeRotation === 0 ? 0 : -100;
-                            const maxOffset = safeRotation === slideCount - 1 ? 0 : 100;
-                            const offsetPct = Math.max(minOffset, Math.min(maxOffset, widthPct));
-                            setTipDragOffset(offsetPct);
-                          }}
-                          onPointerUp={(e) => {
-                            const ref = tipSwipeRef.current;
-                            if (!ref?.active) { setTipIsDragging(false); return; }
-                            const dx = e.clientX - ref.startX;
-                            const dy = e.clientY - ref.startY;
-                            tipSwipeRef.current = null;
-                            setTipIsDragging(false);
-                            setTipDragOffset(0);
-                            if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-                              if (dx < 0 && safeRotation < slideCount - 1) changeTipRotation(safeRotation + 1);
-                              else if (dx > 0 && safeRotation > 0) changeTipRotation(safeRotation - 1);
-                            }
-                          }}
-                          onPointerCancel={() => {
-                            tipSwipeRef.current = null;
-                            setTipIsDragging(false);
-                            setTipDragOffset(0);
-                          }}
-                        >
-                          <div
-                            className="flex w-full"
-                            style={{
-                              transform: `translateX(calc(-${safeRotation * 100}% + ${tipDragOffset}%))`,
-                              transition: tipIsDragging ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
-                              willChange: "transform",
-                            }}
-                          >
-                            {compactSlides.map((slide, i) => (
-                              // 2번(오퍼 버튼) 기준으로 모든 슬라이드 세로 가운데 정렬 + 동일 최소높이
-                              <div key={i} className="w-full shrink-0 flex items-center min-h-[22px]">{slide}</div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="absolute left-0 right-0 -bottom-1 flex items-center justify-center gap-0.5 pointer-events-none">
-                          {compactSlides.map((_, i) => (
-                            <button
-                              key={i}
-                              type="button"
-                              aria-label={`슬라이드 ${i + 1}`}
-                              onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
-                              className="pointer-events-auto p-2.5"
-                            >
-                              <span className={`block w-2 h-2 rounded-full transition-colors ${safeRotation === i ? "bg-amber-400" : "bg-muted"}`} />
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    );
-                  })()}
-                  {!showTopGuide && !isCompactOfferSlide && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
-                      className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-brand-amber hover:bg-amber-400/25 hover:text-brand-amber active:scale-95 transition-all"
-                    >
-                      이용방법
-                    </button>
-                  )}
-                </div>
-              )}
-              {showGuide && (
-                <div className="bg-card border border-border rounded-3xl p-4 relative">
-                  <button
-                    onClick={dismissGuide}
-                    aria-label="가이드 닫기"
-                    className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors z-10"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="flex flex-col gap-2">
-                    {compactSteps.map((step, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-muted/60 border border-border rounded-2xl p-3 flex flex-row items-center gap-3 relative overflow-hidden"
-                      >
-                        {idx === 0 && currentTab === "puzzle" && !isMdOrAdmin && (
-                          <span className="absolute top-0 right-0 text-[10px] font-black text-emerald-400 bg-card border border-emerald-500/50 px-2 py-1 rounded-tr-2xl rounded-bl-xl rounded-tl-none rounded-br-none leading-none z-10">
-                            모든 서비스 무료
-                          </span>
-                        )}
-                        <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
-                          {step.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-[14.5px] font-black text-foreground mb-0.5 break-keep">{step.title}</h3>
-                          <p className={`text-[12px] text-muted-foreground font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
-                            {step.desc.split("\n").map((line, lineIdx, arr) => {
-                              const parts = line.split(/(\*\*[^*]+\*\*)/g);
-                              return (
-                                <span key={lineIdx}>
-                                  {parts.map((part, pIdx) =>
-                                    /^\*\*[^*]+\*\*$/.test(part) ? (
-                                      <span key={pIdx} className="text-foreground/90 font-semibold">
-                                        {part.slice(2, -2)}
-                                      </span>
-                                    ) : (
-                                      <span key={pIdx}>{part}</span>
-                                    )
-                                  )}
-                                  {lineIdx < arr.length - 1 && "\n"}
-                                </span>
-                              );
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {/* 깃발 "🚩 바로가기" CTA 제거 — 깃발 신규 진입점 숨김 */}
-                </div>
-              )}
-            </section>
-          )}
-
           {/* 🚩 깃발 섹션(헤더+인라인 가이드+캐러셀) 제거 — 깃발 신규 진입점 숨김 */}
 
-          {/* ── 파티 섹션 — order-2로 팁박스 아래 배치 ── */}
-          <div className="order-2 flex flex-col">
+          {/* ── 파티 섹션 (유저가 올린 파티만) ── */}
+          <div className="flex flex-col">
           {showShareTab && (
             <>
               {/* ── 파티 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
-              {renderSectionRow({ icon: "🎉", label: "파티", detailTab: "share", dateLabel: shareHeaderDate, count: shareCardCount })}
+              {renderSectionRow({ icon: "🎉", label: "파티", detailTab: "share", dateLabel: shareHeaderDate, count: userShareCount })}
 
-              {/* 유저 파티(파티원 모집) 캐러셀 — HomePuzzleCarousel 재사용(shareMode) */}
+              {/* 유저 파티(파티원 모집) 캐러셀 — HomePuzzleCarousel 재사용(shareMode + shareVariant="user") */}
               <div className="mb-2">
                 <HomePuzzleCarousel
                   puzzles={sharePuzzles}
-                  totalCount={sharePuzzles.length}
+                  totalCount={userShareCount}
                   offerCounts={puzzleOfferCounts}
                   userRole={user?.role as "user" | "md" | "admin" | undefined}
                   detailHref={detailHref("share")}
                   newFlagHref={newShareHref}
                   showFlagCTA
                   shareMode
+                  shareVariant="user"
                   onActiveDateChange={setShareHeaderDate}
                 />
               </div>
             </>
           )}
           </div>
+
+          {/* ── 클럽 다이렉트 섹션 (파트너 클럽이 올린 조각) — 0건이면 헤더까지 통째 숨김 ── */}
+          {clubDirectCount > 0 && (
+            <div className="flex flex-col">
+              {renderSectionRow({ icon: "🍾", label: "클럽 다이렉트", detailTab: "clubdirect", dateLabel: clubDirectHeaderDate, count: clubDirectCount })}
+              <div className="mb-2">
+                <HomePuzzleCarousel
+                  puzzles={sharePuzzles}
+                  totalCount={clubDirectCount}
+                  offerCounts={puzzleOfferCounts}
+                  userRole={user?.role as "user" | "md" | "admin" | undefined}
+                  detailHref={detailHref("clubdirect")}
+                  newFlagHref={newShareHref}
+                  shareMode
+                  shareVariant="clubdirect"
+                  onActiveDateChange={setClubDirectHeaderDate}
+                />
+              </div>
+            </div>
+          )}
 
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>
@@ -1152,7 +995,7 @@ export function HomeContent({
             ? (isMdOrAdmin ? PUZZLE_ONBOARDING_STEPS_MD : PUZZLE_ONBOARDING_STEPS)
             : currentTab === "advance"
             ? EARLYBIRD_ONBOARDING_STEPS
-            : currentTab === "share"
+            : (currentTab === "share" || currentTab === "clubdirect")
             ? (isMdOrAdmin ? SHARE_ONBOARDING_STEPS_MD : SHARE_ONBOARDING_STEPS)
             : ONBOARDING_STEPS;
           // MD 전용 puzzle tip
@@ -1175,22 +1018,22 @@ export function HomeContent({
               };
           const visibleSteps = steps;
           // 상세 팁 슬라이드 index 1 = 매칭오퍼 슬라이드 — 유저 & 비-share 탭 & recentMatchedPuzzle일 때만
-          const detailHasOffer = !isMdOrAdmin && currentTab !== "share" && !!recentMatchedPuzzle;
+          const detailHasOffer = !isMdOrAdmin && currentTab !== "share" && currentTab !== "clubdirect" && !!recentMatchedPuzzle;
           const isDetailOfferSlide = detailHasOffer && tipRotation % 3 === 1;
           const guideCard = (
             <section className="space-y-2 -mx-2 mb-3">
               {/* TIP 박스 — 항시 노출 (매치 깃발 있으면 슬라이드) */}
               {overriddenTabPromises[currentTab]?.content && (
-                <div className={`relative bg-gradient-to-br from-amber-400/10 via-card to-card border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${((currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") && !isDetailOfferSlide) ? "pr-[88px]" : ""}`}>
+                <div className={`relative bg-gradient-to-br from-amber-400/10 via-card to-card border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${((currentTab === "puzzle" || currentTab === "advance" || currentTab === "share" || currentTab === "clubdirect") && !isDetailOfferSlide) ? "pr-[88px]" : ""}`}>
                   {(() => {
                     // compact와 동일한 3장 슬라이드 — 인트로 + (매치 있으면) "오퍼 궁금해?" + 본문
                     const introText = "예약금 Zero, 수수료 Zero";
                     const detailSlides: React.ReactNode[] = [
-                      // 조각 탭은 인트로("오픈채팅으로 찾기 어려우셨다면?") 페이지 제거 — tip 슬라이드만 노출
-                      ...(currentTab !== "share" ? [
+                      // 조각/클럽 다이렉트 탭은 인트로("오픈채팅으로 찾기 어려우셨다면?") 페이지 제거 — tip 슬라이드만 노출
+                      ...(currentTab !== "share" && currentTab !== "clubdirect" ? [
                         <div key="new" className="text-[15.5px] text-foreground font-black leading-snug break-keep">{introText}</div>,
                       ] : []),
-                      ...(!isMdOrAdmin && currentTab !== "share" && recentMatchedPuzzle ? [
+                      ...(!isMdOrAdmin && currentTab !== "share" && currentTab !== "clubdirect" && recentMatchedPuzzle ? [
                         <button
                           key="offer"
                           type="button"
@@ -1286,7 +1129,7 @@ export function HomeContent({
                       </>
                     );
                   })()}
-                  {(currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") && !isDetailOfferSlide && (
+                  {(currentTab === "puzzle" || currentTab === "advance" || currentTab === "share" || currentTab === "clubdirect") && !isDetailOfferSlide && (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setFlagGuideOpen(true); }}
@@ -1307,7 +1150,7 @@ export function HomeContent({
                 // 여는 법"이 필요하다 — 자리 잡기 → 세팅 → 홈 노출까지 보여주는
                 // ShareOnboardingSheet를 쓴다. 깃발 탭은 오퍼 쪽이 맞아 그대로 둔다.
                 isMdOrAdminUser ? (
-                  currentTab === "share" ? (
+                  (currentTab === "share" || currentTab === "clubdirect") ? (
                     <ShareOnboardingSheet manualOpen onManualClose={() => setFlagGuideOpen(false)} />
                   ) : (
                     <OfferCreditGuideSheet
@@ -1316,7 +1159,7 @@ export function HomeContent({
                       onManualClose={() => setFlagGuideOpen(false)}
                     />
                   )
-                ) : currentTab === "share" ? (
+                ) : (currentTab === "share" || currentTab === "clubdirect") ? (
                   <PartyOnboardingSheet manualOpen onManualClose={() => setFlagGuideOpen(false)} />
                 ) : (
                   <FlagOnboardingSheet autoShow={false} manualOpen onManualClose={() => setFlagGuideOpen(false)} />
@@ -1338,7 +1181,7 @@ export function HomeContent({
                         key={idx}
                         className="bg-muted/60 border border-border rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default relative overflow-hidden"
                       >
-                        {idx === 0 && (currentTab === "puzzle" || currentTab === "share") && !isMdOrAdmin && (
+                        {idx === 0 && (currentTab === "puzzle" || currentTab === "share" || currentTab === "clubdirect") && !isMdOrAdmin && (
                           <span className="absolute top-0 right-0 text-[10px] font-black text-emerald-400 bg-card border border-emerald-500/50 px-2 py-1 rounded-tr-2xl rounded-bl-xl rounded-tl-none rounded-br-none leading-none z-10">
                             모든 서비스 무료
                           </span>
@@ -1415,7 +1258,7 @@ export function HomeContent({
 
 
         {/* 깃발 "⛳ 깃발꽂기" 대형 CTA 제거 — 비로그인 로그인 유도만 남김 */}
-        {!isLoading && !user && currentTab !== "share" && currentTab !== "puzzle" && auctions.active.length > 0 && (
+        {!isLoading && !user && currentTab !== "share" && currentTab !== "puzzle" && currentTab !== "clubdirect" && auctions.active.length > 0 && (
           <div className="text-center -mt-20 pb-3 relative z-10">
             <p className="text-[14.5px] text-foreground/90 font-semibold mb-1">
               3초만에 로그인하고 입찰하기
