@@ -5,6 +5,7 @@ import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { buildAcceptedFlagMessage } from "@/lib/utils/puzzleMessage";
 import { type Lang, makeT } from "@/lib/i18n";
+import { getShareOrigin } from "@/lib/utils/shareOrigin";
 
 interface Props {
   puzzle: {
@@ -29,7 +30,7 @@ export function CopyAcceptedMessageButton({ puzzle, offer, lang = "ko" }: Props)
   const t = makeT(lang);
 
   const handleCopy = async () => {
-    const msg = buildAcceptedFlagMessage(puzzle, offer, window.location.origin, lang);
+    const msg = buildAcceptedFlagMessage(puzzle, offer, getShareOrigin(), lang);
     try {
       await navigator.clipboard.writeText(msg);
       setCopied(true);

@@ -8,6 +8,7 @@ import { Link2, Share2, X } from "lucide-react";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { shareViaNative } from "@/lib/native/nativeShare";
 import { trackEvent } from "@/lib/analytics/events";
+import { getShareOrigin } from "@/lib/utils/shareOrigin";
 
 const AREA_LABEL: Record<string, string> = {
   gangnam: "강남",
@@ -66,7 +67,9 @@ export function ShareCreatedSheet({
   // "서울 어디든" 같은 광역 표기는 공유 멘트에서 "서울"로 축약
   const rawArea = AREA_LABEL[area] ?? area;
   const areaLabel = /어디든/.test(rawArea) ? "서울" : rawArea;
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  // 로컬에서 공유하면 localhost 링크가 나가 카톡이 이미지를 못 긁고 링크도 안 열린다
+  // → getShareOrigin()이 로컬·프리뷰에서 프로덕션 도메인으로 대체 (shareOrigin.ts)
+  const origin = getShareOrigin();
   // 카톡은 URL 단위로 OG를 캐싱 → 링크는 더미 쿼리로 매번 새로 스크랩되게
   const bust = Date.now();
   const shareUrl = `${origin}/flags/${puzzleId}?t=${bust}`;

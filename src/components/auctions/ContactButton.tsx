@@ -5,6 +5,7 @@ import { Phone, Instagram, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import { trackEvent } from "@/lib/analytics/events";
+import { getShareOrigin } from "@/lib/utils/shareOrigin";
 
 interface ContactButtonProps {
   auctionId: string;
@@ -20,7 +21,7 @@ interface ContactButtonProps {
 
 function buildCopyMessage(auctionId: string, clubName?: string, tableInfo?: string, currentBid?: number, eventDate?: string, entryTime?: string): string | null {
   if (!clubName || !currentBid) return null;
-  const postUrl = `${window.location.origin}/auctions/${auctionId}`;
+  const postUrl = `${getShareOrigin()}/auctions/${auctionId}`;
   const entry = eventDate ? formatEntryTime(entryTime ?? null, eventDate) : (entryTime ? `${entryTime} 입장` : "즉시 입장");
   return [
     `[NightFlow 예약 문의] ${clubName} · ${tableInfo}`,

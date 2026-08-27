@@ -8,6 +8,7 @@ import type { Auction } from "@/types/database";
 import { AuctionCard } from "@/components/auctions/AuctionCard";
 import { appendReferralCode } from "@/lib/utils/share";
 import { useReferralCode } from "@/hooks/useReferralCode";
+import { getShareOrigin } from "@/lib/utils/shareOrigin";
 
 interface Props {
   auction: Auction;
@@ -19,7 +20,7 @@ export function StoryShareView({ auction }: Props) {
   const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
-    const baseUrl = `${window.location.origin}/auctions/${auction.id}`;
+    const baseUrl = `${getShareOrigin()}/auctions/${auction.id}`;
     let url = appendReferralCode(baseUrl, referralCode);
     try {
       const u = new URL(url);

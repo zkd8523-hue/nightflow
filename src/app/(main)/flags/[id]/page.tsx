@@ -122,7 +122,9 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
           url: ogImage,
           width: 1200,
           height: 630,
-          type: "image/png",
+          // 조각 카드는 .jpg, 깃발은 .png — 실제 파일 형식과 맞춰야 한다.
+          // 고정 "image/png"로 두면 조각 공유 시 선언과 실응답(image/jpeg)이 어긋난다.
+          type: puzzle.is_recruiting_party ? "image/jpeg" : "image/png",
           alt: `${area} 클럽 ${puzzle.is_recruiting_party ? "파티" : "깃발"} - 나이트플로우`,
         },
       ],

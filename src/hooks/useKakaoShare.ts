@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
+import { getShareOrigin } from "@/lib/utils/shareOrigin";
 
 declare global {
   interface Window {
@@ -96,7 +97,7 @@ export function useKakaoShare(): UseKakaoShareReturn {
       const isMD = params.isFromMD === true;
       const price = params.startPrice.toLocaleString();
       const fallbackImage = typeof window !== "undefined"
-        ? `${window.location.origin}/nightflow-share-fallback.svg`
+        ? `${getShareOrigin()}/nightflow-share-fallback.svg`
         : "";
 
       const dateStr = params.eventDate

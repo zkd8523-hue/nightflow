@@ -4,6 +4,7 @@ import { formatEventDate, formatEntryTime } from "./format";
 import { logger } from "./logger";
 import { trackEvent } from "@/lib/analytics/events";
 import { shareViaNative } from "@/lib/native/nativeShare";
+import { getShareOrigin } from "./shareOrigin";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 
@@ -45,7 +46,7 @@ export async function shareAuction({
   tableInfo,
   referralCode,
 }: ShareAuctionParams): Promise<boolean> {
-  const baseUrl = `${window.location.origin}/auctions/${auctionId}`;
+  const baseUrl = `${getShareOrigin()}/auctions/${auctionId}`;
   let url = appendReferralCode(baseUrl, referralCode);
 
   try {
@@ -142,7 +143,7 @@ export async function shareToInstagram(
   auctionUrl?: string,
   referralCode?: string | null
 ): Promise<boolean> {
-  const baseUrl = auctionUrl || `${window.location.origin}/auctions/${auctionId}`;
+  const baseUrl = auctionUrl || `${getShareOrigin()}/auctions/${auctionId}`;
   let url = appendReferralCode(baseUrl, referralCode);
 
   try {
@@ -220,7 +221,7 @@ export async function shareInvite(params: {
   eventDate: string;
   referralCode?: string | null;
 }): Promise<void> {
-  const baseUrl = `${window.location.origin}/auctions/${params.auctionId}`;
+  const baseUrl = `${getShareOrigin()}/auctions/${params.auctionId}`;
   let url = appendReferralCode(baseUrl, params.referralCode);
 
   try {
@@ -282,7 +283,7 @@ export async function shareLineup({
   clubName,
   eventTitle,
 }: ShareLineupParams): Promise<boolean> {
-  const baseUrl = `${window.location.origin}/clubs/${clubId}/lineup/${eventDate}`;
+  const baseUrl = `${getShareOrigin()}/clubs/${clubId}/lineup/${eventDate}`;
   let url = baseUrl;
   try {
     const u = new URL(url);
@@ -351,7 +352,7 @@ export async function shareEvent({
   title,
   venue,
 }: ShareEventParams): Promise<boolean> {
-  const baseUrl = `${window.location.origin}/events/${eventDate}/${encodeURIComponent(slug)}`;
+  const baseUrl = `${getShareOrigin()}/events/${eventDate}/${encodeURIComponent(slug)}`;
   let url = baseUrl;
   try {
     const u = new URL(url);
@@ -404,7 +405,7 @@ interface ShareClubParams {
  * 클럽 상세를 SNS에 공유 (shareAuction과 동일 패턴)
  */
 export async function shareClub({ clubId, clubName }: ShareClubParams): Promise<boolean> {
-  const baseUrl = `${window.location.origin}/clubs/${clubId}`;
+  const baseUrl = `${getShareOrigin()}/clubs/${clubId}`;
   let url = baseUrl;
   try {
     const u = new URL(url);
@@ -449,7 +450,7 @@ export async function shareClub({ clubId, clubName }: ShareClubParams): Promise<
  * 경매 링크만 클립보드에 복사
  */
 export async function copyAuctionLink(auctionId: string, referralCode?: string | null): Promise<boolean> {
-  const baseUrl = `${window.location.origin}/auctions/${auctionId}`;
+  const baseUrl = `${getShareOrigin()}/auctions/${auctionId}`;
   let url = appendReferralCode(baseUrl, referralCode);
   
   try {

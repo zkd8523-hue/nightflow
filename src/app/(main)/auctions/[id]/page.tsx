@@ -129,8 +129,15 @@ export default async function AuctionDetailPage({ params }: PageProps) {
   // 그 외 상태(unsold/cancelled/expired)는 관련 클럽 페이지 or 홈으로 리디렉트.
   const DEAD_STATUSES = ["unsold", "cancelled", "expired"];
   if (DEAD_STATUSES.includes(auction.status as string)) {
-    if (auction.club?.id) {
-      redirect(`/clubs/${auction.club.id}?from=expired-auction`);
+    // 클럽 페이지로 보내기 전에 그 클럽이 실제로 열리는지 확인해야 한다.
+    // 클럽 상세는 status='approved' + deleted_at IS NULL 인 것만 렌더하므로
+    // (clubs/[id]/page.tsx), 조건을 안 보고 리디렉트하면 404로 떨군다.
+    // 실측: 종료 경매 234건 중 179건이 pending(테스트 클럽) 또는 중복정리로
+    // soft delete된 클럽을 가리켜 공유 링크가 전부 404로 끝나고 있었다.
+    const club = auction.club as { id?: string; status?: string; deleted_at?: string | null } | null;
+    const clubIsVisible = !!club?.id && club.status === "approved" && !club.deleted_at;
+    if (clubIsVisible) {
+      redirect(`/clubs/${club!.id}?from=expired-auction`);
     }
     redirect("/?from=expired-auction");
   }

@@ -16,6 +16,7 @@ import { useReferralCode } from "@/hooks/useReferralCode";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import type { Auction } from "@/types/database";
+import { getShareOrigin } from "@/lib/utils/shareOrigin";
 
 interface ShareAuctionSheetProps {
   isOpen: boolean;
@@ -72,12 +73,12 @@ export function ShareAuctionSheet({
 
   const auctionUrl =
     typeof window !== "undefined"
-      ? appendReferralCode(`${window.location.origin}/auctions/${auction.id}`, referralCode)
+      ? appendReferralCode(`${getShareOrigin()}/auctions/${auction.id}`, referralCode)
       : "";
 
   const shareImageUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/api/auctions/${auction.id}/share-image?format=kakao`
+      ? `${getShareOrigin()}/api/auctions/${auction.id}/share-image?format=kakao`
       : "";
 
   const handleKakaoShare = async () => {

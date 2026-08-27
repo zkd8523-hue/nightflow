@@ -15,6 +15,7 @@ import { PartyPopper, MessageCircle, Instagram, Link2, Share2, ArrowRight, Rotat
 
 import { shareAuction, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useReferralCode } from "@/hooks/useReferralCode";
+import { getShareOrigin } from "@/lib/utils/shareOrigin";
 
 
 interface ShareSuccessSheetProps {
@@ -49,11 +50,11 @@ export function ShareSuccessSheet({
   const [sharing, setSharing] = useState<string | null>(null);
 
   const auctionUrl = typeof window !== "undefined"
-    ? appendReferralCode(`${window.location.origin}/auctions/${auctionId}`, referralCode)
+    ? appendReferralCode(`${getShareOrigin()}/auctions/${auctionId}`, referralCode)
     : "";
 
   const shareImageUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/api/auctions/${auctionId}/share-image?format=kakao`
+    ? `${getShareOrigin()}/api/auctions/${auctionId}/share-image?format=kakao`
     : "";
 
   const handleKakaoShare = async () => {
