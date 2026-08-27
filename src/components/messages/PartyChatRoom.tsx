@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, AtSign, ChevronDown, ChevronRight, CornerDownRight, Send, SmilePlus, ThumbsDown, ThumbsUp, Trash2, UserPlus, Users, X } from "lucide-react";
+import { ArrowLeft, AtSign, ChevronDown, CornerDownRight, Send, SmilePlus, ThumbsDown, ThumbsUp, Trash2, UserPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
@@ -666,20 +666,18 @@ export function PartyChatRoom({
           <button onClick={() => router.push("/messages")} className="p-1 -ml-1 text-foreground/80 shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          {/* 탭하면 파티 상세로. 클럽명은 아래 칩이 보여주므로 반복하지 않는다 */}
-          <Link href={`/flags/${puzzleId}`} className="flex items-center gap-1.5 min-w-0 flex-1 active:opacity-70">
-            <p className="text-[13px] font-bold text-foreground truncate">
-              {[
-                partyInfo.dateLabel,
-                partyInfo.area,
-                `인당 ${partyInfo.perPerson.toLocaleString()}원`,
-                `${partyInfo.currentCount}/${partyInfo.targetCount}명`,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-          </Link>
+          {/* 클럽명은 아래 칩이 보여주므로 반복하지 않는다. 파티 상세로 이동은
+              쓸모가 없어 없앤 순수 요약 텍스트다(탭 불가). */}
+          <p className="text-[13px] font-bold text-foreground truncate min-w-0 flex-1">
+            {[
+              partyInfo.dateLabel,
+              partyInfo.area,
+              `인당 ${partyInfo.perPerson.toLocaleString()}원`,
+              `${partyInfo.currentCount}/${partyInfo.targetCount}명`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
           <button
             onClick={() => setDrawerOpen(true)}
             className="flex items-center gap-1 p-1.5 text-foreground/80 shrink-0"
@@ -700,7 +698,7 @@ export function PartyChatRoom({
                   className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-colors ${
                     activeRoomMdId === null
                       ? "bg-inverse text-inverse-foreground"
-                      : "bg-muted text-muted-foreground"
+                      : "bg-white/5 text-muted-foreground"
                   }`}
                 >
                   💬 파티원
@@ -712,7 +710,7 @@ export function PartyChatRoom({
                     className={`relative shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-colors ${
                       activeRoomMdId === r.mdId
                         ? "bg-inverse text-inverse-foreground"
-                        : "bg-muted text-muted-foreground"
+                        : "bg-white/5 text-muted-foreground"
                     }`}
                   >
                     {r.chipLabel}
@@ -786,7 +784,7 @@ export function PartyChatRoom({
                 {sortedOffers.map((o) => (
                   <li
                     key={o.offer_id}
-                    className={`rounded-xl p-3 border ${o.is_invited ? "border-amber-500/40 bg-amber-500/5" : "border-border bg-card/50"}`}
+                    className="rounded-xl p-3 border border-border bg-card/50"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -1313,6 +1311,15 @@ export function PartyChatRoom({
                       <p className="text-[14px] font-bold text-foreground truncate">
                         {p.display_name ?? "멤버"}
                         {p.id === me.id && <span className="ml-1 text-[11px] text-brand-amber">나</span>}
+                        {/* 성별·연령 제한 파티(Migration 594)에서만 의미가 있지만,
+                            굳이 제한 여부로 숨기지 않고 정보가 있으면 그대로 보여준다 */}
+                        {(p.age != null || p.gender) && (
+                          <span className="ml-1.5 text-[11px] font-medium text-muted-foreground">
+                            {[p.age != null ? `${p.age}세` : null, p.gender === "male" ? "남" : p.gender === "female" ? "여" : null]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                        )}
                       </p>
                       {p.is_md && p.club_name && (
                         <p className="text-[11px] text-money font-medium truncate">{p.club_name}</p>

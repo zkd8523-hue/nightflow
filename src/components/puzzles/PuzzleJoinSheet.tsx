@@ -182,6 +182,14 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
           </p>
         </SheetHeader>
 
+        {/* 성별·연령 제한 파티 — 참가하면 내 나이·성별이 다른 파티원에게 공개된다는 걸
+            합류 전에 알린다(Migration 594로 실제 참가 제한도 함께 걸림) */}
+        {(puzzle.gender_pref !== "any" || puzzle.min_age != null || puzzle.max_age != null) && (
+          <p className="text-[12px] text-brand-amber bg-muted/50 border border-border rounded-xl px-4 py-3 mb-4 leading-relaxed">
+            조건에 맞는 인원만 참가해요. 파티원은 나이·성별을 서로에게 공개해요.
+          </p>
+        )}
+
         {/* 성별 미입력 시: 파티로 안내 (성별 무관 파티에선 불필요) */}
         {genderLoaded && !myGender && !genderNeutral && (
           <div className="space-y-2 mb-5 bg-muted/50 border border-border rounded-2xl p-4">

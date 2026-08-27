@@ -17,7 +17,7 @@ import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
 import { SecretOfferCard } from "./SecretOfferCard";
 import { PuzzlePiece, buildPuzzleSlotLayout } from "./PuzzleCard";
-import type { Puzzle, PuzzleMember, PuzzleOffer, OfferChatMeta, GenderPref, AgePref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
+import type { Puzzle, PuzzleMember, PuzzleOffer, OfferChatMeta, GenderPref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { toEnglishInclude } from "@/lib/utils/liquorEn";
@@ -87,15 +87,6 @@ interface PuzzleDetailClientProps {
 const GENDER_LABEL: Record<GenderPref, string | null> = {
   male_only: "남",
   female_only: "녀",
-  any: null,
-};
-const AGE_LABEL: Record<AgePref, string | null> = {
-  "20s": "20대",
-  "30s": "30대",
-  early_20s: "20초",
-  late_20s: "20후",
-  early_30s: "30초",
-  mid_30s: "30중",
   any: null,
 };
 const VIBE_LABEL: Record<VibePref, string | null> = {
@@ -396,10 +387,15 @@ export function PuzzleDetailClient({
     .filter((n): n is string => Boolean(n));
 
   const genderTag = GENDER_LABEL[puzzle.gender_pref];
-  // Migration 171: age_pref가 배열. 'any' 포함 시 null, 외엔 라벨 조합 ("20초·20후")
-  const ageTag = puzzle.age_pref.includes("any")
-    ? null
-    : puzzle.age_pref.map((a) => AGE_LABEL[a]).filter(Boolean).join("·") || null;
+  // Migration 594: 20대/30대 버킷(age_pref, 레거시) 대신 실제 나이 범위(min_age/max_age)로 표시.
+  const ageTag =
+    puzzle.min_age != null && puzzle.max_age != null
+      ? `${puzzle.min_age}-${puzzle.max_age}세`
+      : puzzle.min_age != null
+        ? `${puzzle.min_age}세 이상`
+        : puzzle.max_age != null
+          ? `${puzzle.max_age}세 이하`
+          : null;
   const vibeTag = VIBE_LABEL[puzzle.vibe_pref];
   const musicTag =
     puzzle.music_preference === "hiphop"
@@ -1186,7 +1182,7 @@ export function PuzzleDetailClient({
                 {tags.map((tag) => (
                   <span
                     key={tag}
-                    className="text-[12px] px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-400 font-medium"
+                    className="text-[12px] px-2.5 py-1 rounded-full bg-muted text-foreground/80 font-medium"
                   >
                     {tag}
                   </span>

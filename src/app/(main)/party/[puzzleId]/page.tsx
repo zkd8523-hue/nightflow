@@ -15,16 +15,22 @@ interface PageProps {
   params: Promise<{ puzzleId: string }>;
 }
 
+interface ProfileRow {
+  id: string;
+  display_name: string | null;
+  profile_image: string | null;
+  /** Migration 594/595: 성별·연령 제한 파티에서 참여자끼리 서로 공개 */
+  gender: 'male' | 'female' | null;
+  age: number | null;
+}
+
 interface MemberRow {
   user_id: string;
   guest_count: number;
-  user:
-    | { id: string; display_name: string | null; profile_image: string | null }
-    | { id: string; display_name: string | null; profile_image: string | null }[]
-    | null;
+  user: ProfileRow | ProfileRow[] | null;
 }
 
-function pickUser(u: MemberRow["user"]) {
+function pickUser<T>(u: T | T[] | null | undefined): T | null {
   if (!u) return null;
   return Array.isArray(u) ? u[0] ?? null : u;
 }
@@ -56,7 +62,7 @@ export default async function PartyChatPage({ params }: PageProps) {
   const { data: puzzle } = await supabase
     .from("puzzles")
     .select(
-      "id, leader_id, status, area, event_date, target_count, current_count, budget_per_person, total_budget, is_recruiting_party, leader:public_user_profiles!puzzles_leader_id_fkey(id, display_name, profile_image)"
+      "id, leader_id, status, area, event_date, target_count, current_count, budget_per_person, total_budget, is_recruiting_party, leader:public_user_profiles!puzzles_leader_id_fkey(id, display_name, profile_image, gender, age)"
     )
     .eq("id", puzzleId)
     .maybeSingle();
@@ -67,7 +73,7 @@ export default async function PartyChatPage({ params }: PageProps) {
   const { data: memberRows } = await supabase
     .from("puzzle_members")
     .select(
-      "user_id, guest_count, user:public_user_profiles!puzzle_members_user_id_fkey(id, display_name, profile_image)"
+      "user_id, guest_count, user:public_user_profiles!puzzle_members_user_id_fkey(id, display_name, profile_image, gender, age)"
     )
     .eq("puzzle_id", puzzleId);
 
@@ -110,7 +116,9 @@ export default async function PartyChatPage({ params }: PageProps) {
   }
   const clubNameSeen = new Map<string, number>();
   const rooms: PartyRoom[] = partyMds.map((r) => {
-    const mdProfile = pickUser((r as { md?: MemberRow["user"] }).md ?? null);
+    const mdProfile = pickUser(
+      (r as { md?: { id: string; display_name: string | null; profile_image: string | null } | { id: string; display_name: string | null; profile_image: string | null }[] }).md ?? null
+    );
     const clubName = r.offer_id ? clubByOfferId.get(r.offer_id) ?? null : null;
     let chipLabel = clubName ?? "파트너";
     if (clubName && (clubNameCounts.get(clubName) ?? 0) > 1) {
@@ -145,6 +153,8 @@ export default async function PartyChatPage({ params }: PageProps) {
       profile_image: u?.profile_image ?? null,
       is_leader: m.user_id === puzzle.leader_id,
       guest_count: m.guest_count ?? 0,
+      gender: u?.gender ?? null,
+      age: u?.age ?? null,
     });
   }
   // 방장이 멤버 목록에 없으면 보강
@@ -155,6 +165,8 @@ export default async function PartyChatPage({ params }: PageProps) {
       profile_image: leader?.profile_image ?? null,
       is_leader: true,
       guest_count: 0,
+      gender: leader?.gender ?? null,
+      age: leader?.age ?? null,
     });
   }
   // 초대된 파트너 전원 추가.

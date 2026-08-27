@@ -737,7 +737,7 @@ export function PuzzleList({
           }`}
         >
           <span className="text-black text-sm font-semibold whitespace-nowrap">
-            파티 올리기
+            파티 만들기
           </span>
           <Plus className="w-5 h-5 text-black" />
         </Link>

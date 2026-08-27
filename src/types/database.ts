@@ -843,8 +843,12 @@ export interface Puzzle {
   event_date: string;
   kakao_open_chat_url: string | null; // 오퍼 수락 시점에 입력, MD에게만 공개
   gender_pref: GenderPref;
-  /** Migration 171: 복수 선택 가능. ['any'] = 전체 허용 */
+  /** Migration 171: 복수 선택 가능. ['any'] = 전체 허용. Migration 594부터 신규 등록은
+   *  min_age/max_age 범위로 대체 — 과거 파티의 레거시 표시용으로만 남아있다. */
   age_pref: AgePref[];
+  /** Migration 594: 실제 참가를 막는 연령 범위(세). 둘 다 null이면 제한 없음 */
+  min_age: number | null;
+  max_age: number | null;
   vibe_pref: VibePref;
   /** Migration 156: 음악 선호. NULL = 미지정(상관없음 동일 취급) */
   music_preference: MusicPref | null;
@@ -996,6 +1000,10 @@ export interface PartyParticipant {
   is_md?: boolean;
   /** MD의 클럽명 (is_md일 때) */
   club_name?: string | null;
+  /** Migration 594: 성별·연령 제한 파티에서 파티원 서로에게 공개 */
+  gender?: 'male' | 'female' | null;
+  /** Migration 595: public_user_profiles 뷰의 계산된 나이(생년월일 원본은 비공개) */
+  age?: number | null;
 }
 
 /**

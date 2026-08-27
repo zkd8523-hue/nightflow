@@ -6,7 +6,7 @@ import { getLang, makeT, areaLabel } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, isFlagAreaOpen } from "@/lib/constants/areas";
 import { toast } from "sonner";
-import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X, ChevronLeft, Search } from "lucide-react";
+import { Minus, Plus, Users, ArrowRight, Flag, Check, Puzzle, HelpCircle, X, ChevronLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
@@ -14,7 +14,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
-import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle as PuzzleType, PreferredClubItem } from "@/types/database";
+import type { GenderPref, MusicPref, Puzzle as PuzzleType, PreferredClubItem } from "@/types/database";
 import { PreferredClubsPicker } from "@/components/clubs/PreferredClubsPicker";
 import { saveClubWishes } from "@/lib/clubs/preferredClubs";
 import { trackEvent } from "@/lib/analytics/events";
@@ -105,19 +105,6 @@ const GENDER_OPTIONS: { value: GenderPref; label: string; en: string }[] = [
   // 섹션이 '선호'라 '~만'은 모순 → 라벨은 '남자'/'여자'. DB 값은 enum이라 유지.
   { value: 'male_only', label: '남자', en: 'Men' },
   { value: 'female_only', label: '여자', en: 'Women' },
-];
-
-const AGE_OPTIONS: { value: AgePref; label: string; en: string }[] = [
-  { value: "any", label: "상관없음", en: "Any" },
-  { value: "20s", label: "20대", en: "20s" },
-  { value: "30s", label: "30대", en: "30s" },
-];
-
-// Phase 1: 바이브 라벨 정정 (조용히 → 편하게, 상관없음 → 누구나 환영)
-const VIBE_OPTIONS: { value: VibePref; label: string; en: string }[] = [
-  { value: "any", label: "누구나 환영", en: "Anyone welcome" },
-  { value: "active", label: "외향인 환영", en: "Extroverts" },
-  { value: "chill", label: "내향인 환영", en: "Introverts" },
 ];
 
 // Phase 1 신규: 음악 선호 (한국 클럽씬 1차 분기 - 힙합/EDM)
@@ -221,10 +208,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
   const [guestCount, setGuestCount] = useState<number>(
     initialGuest > 0 ? initialGuest : ((draft?.guestCount as number) ?? 1)
   );
-  const [genderPref, setGenderPref] = useState<GenderPref>(
-    // 기본 'any' — 다른 선호(연령/음악/바이브)와 동일하게 "상관없음"에서 시작.
-    // 과거 파티원 모집 모드의 'male_only' 기본값은 조각에 맞지 않아 제거.
-    puzzle?.gender_pref ?? (draft?.genderPref as GenderPref) ?? "any"
+  // 아무것도 미리 선택돼 있지 않게(null) 시작 — "상관없음"도 직접 눌러서
+  // 골라야 하는 선택지로 둔다. 제출 시에만 null → 'any'로 취급.
+  const [genderPref, setGenderPref] = useState<GenderPref | null>(
+    puzzle?.gender_pref ?? (draft?.genderPref as GenderPref) ?? null
   );
   // Migration 184: 성별 슬롯 분리
   const [myGender, setMyGender] = useState<'male' | 'female' | null>(null);
@@ -290,35 +277,17 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
     setGenderModalOpen(false);
     trackEvent('user_gender_set', { source: 'puzzle_form', gender: g });
   };
-  // Migration 171: 복수 선택 지원. ['any'] = 전체. 빈 배열은 불가.
-  const [agePref, setAgePref] = useState<AgePref[]>(() => {
-    if (puzzle?.age_pref && puzzle.age_pref.length > 0) return puzzle.age_pref;
-    const draftArr = draft?.agePref;
-    if (Array.isArray(draftArr) && draftArr.length > 0) return draftArr as AgePref[];
-    if (typeof draftArr === "string") return [draftArr as AgePref];
-    return ["any"];
-  });
-
-  const toggleAgePref = (value: AgePref) => {
-    setAgePref((prev) => {
-      // "상관없음" 클릭 → 단독 선택으로 리셋
-      if (value === "any") return ["any"];
-      // 구체 연령 클릭 시 "any" 자동 제거
-      const withoutAny = prev.filter((v) => v !== "any");
-      const isSelected = withoutAny.includes(value);
-      const next = isSelected
-        ? withoutAny.filter((v) => v !== value)
-        : [...withoutAny, value];
-      // 모두 해제되면 "any"로 폴백
-      return next.length === 0 ? ["any"] : next;
-    });
-  };
-  const [vibePref, setVibePref] = useState<VibePref>(
-    puzzle?.vibe_pref ?? (draft?.vibePref as VibePref) ?? "any"
+  // Migration 594: 버킷(20대/30대) 대신 실제 나이 범위로 직접 입력받는다.
+  // 둘 다 비어있으면(null) 제한 없음.
+  const [minAge, setMinAge] = useState<number | null>(
+    puzzle?.min_age ?? (draft?.minAge as number) ?? null
   );
-  // Phase 1: 음악 선호 (DB nullable, 기본값 'any')
-  const [musicPref, setMusicPref] = useState<MusicPref>(
-    puzzle?.music_preference ?? (draft?.musicPref as MusicPref) ?? "any"
+  const [maxAge, setMaxAge] = useState<number | null>(
+    puzzle?.max_age ?? (draft?.maxAge as number) ?? null
+  );
+  // Phase 1: 음악 선호 (DB nullable). 신규 등록은 "상관없음"도 직접 선택하도록 null 시작.
+  const [musicPref, setMusicPref] = useState<MusicPref | null>(
+    puzzle?.music_preference ?? (draft?.musicPref as MusicPref) ?? null
   );
   // 여성 파티원 모집 시 방장도 여성임을 확인하는 체크박스
   const [leaderFemaleConfirmed, setLeaderFemaleConfirmed] = useState<boolean>(
@@ -389,9 +358,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
         targetCount !== (puzzle?.target_count ?? 4) ||
         hasGuest !== (initialGuest > 0) ||
         (hasGuest && guestCount !== initialGuest) ||
-        genderPref !== (puzzle?.gender_pref ?? "any") ||
-        JSON.stringify([...agePref].sort()) !== JSON.stringify([...(puzzle?.age_pref ?? ["any"])].sort()) ||
-        vibePref !== (puzzle?.vibe_pref ?? "any") ||
+        genderPref !== (puzzle?.gender_pref ?? null) ||
+        minAge !== (puzzle?.min_age ?? null) ||
+        maxAge !== (puzzle?.max_age ?? null) ||
         (musicPref === "any" ? null : musicPref) !== (puzzle?.music_preference ?? null)
         // 카톡 URL은 edit 모드에서 수정 불가 (dirty 체크 제외)
       )
@@ -441,8 +410,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
             hasGuest,
             guestCount,
             genderPref,
-            agePref,
-            vibePref,
+            minAge,
+            maxAge,
             musicPref,
             leaderFemaleConfirmed,
             // notes, notesEverEdited 제외 — 자동 채움이 매번 새로 추천하도록
@@ -468,8 +437,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
     hasGuest,
     guestCount,
     genderPref,
-    agePref,
-    vibePref,
+    minAge,
+    maxAge,
     musicPref,
     leaderFemaleConfirmed,
   ]);
@@ -758,9 +727,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
             area,
             event_date: eventDate,
             is_recruiting_party: effectiveIsRecruiting,
-            gender_pref: effectiveIsRecruiting ? genderPref : 'any',
-            age_pref: effectiveIsRecruiting ? agePref : ['any'],
-            vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
+            gender_pref: effectiveIsRecruiting ? (genderPref ?? 'any') : 'any',
+            min_age: effectiveIsRecruiting ? minAge : null,
+            max_age: effectiveIsRecruiting ? maxAge : null,
+            vibe_pref: 'any', // Migration 594: 바이브 선택지 제거, 항상 기본값
             music_preference: musicPref === 'any' ? null : musicPref,
             // 카톡 오픈채팅: edit 모드에선 직접 수정 X. 단, 깃발(파티원 모집 OFF)로 전환되면
             // 카톡 URL은 더 이상 사용되지 않으므로 null로 정리 (데이터 정합성).
@@ -820,9 +790,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
           leader_id: userId,
           area,
           event_date: eventDate,
-          gender_pref: (effectiveIsRecruiting && !shareMode) ? genderPref : 'any',
-          age_pref: effectiveIsRecruiting ? agePref : ['any'],
-          vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
+          gender_pref: (effectiveIsRecruiting && !shareMode) ? (genderPref ?? 'any') : 'any',
+          min_age: effectiveIsRecruiting ? minAge : null,
+          max_age: effectiveIsRecruiting ? maxAge : null,
+          vibe_pref: 'any', // Migration 594: 바이브 선택지 제거, 항상 기본값
           music_preference: musicPref === 'any' ? null : musicPref,
           kakao_open_chat_url: (effectiveIsRecruiting && !shareMode) ? (kakaoUrl.trim() || null) : null,
           total_budget: totalBudget,
@@ -1102,7 +1073,6 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       {/* 방문희망날짜 */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-foreground font-bold mb-2">
-          <Calendar className="w-4 h-4 text-money" />
           <span>{t("방문희망날짜", "Visit date")}</span>
         </div>
         <DateTimeSheet
@@ -1119,7 +1089,6 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       {/* 지역 */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-foreground font-bold mb-2">
-          <MapPin className="w-4 h-4 text-money" />
           <span>{t("지역", "Area")}</span>
         </div>
         <div>
@@ -1198,7 +1167,6 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       {/* 인원 설정 */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-foreground font-bold mb-2">
-          <Users className="w-4 h-4 text-money" />
           <span>{t("인원 설정", "Group size")}</span>
         </div>
         <div className="space-y-4">
@@ -1288,7 +1256,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
 
               {/* 동행 일행 */}
               <div className="space-y-3 pt-3 border-t border-border">
-                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <span className="text-[13px] font-bold text-foreground">
                     {puzzle?.host_is_md
                       ? t("이미 모아진 인원이 있나요?", "Already have members?")
@@ -1334,7 +1302,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
                   숨기면 정작 헷갈리는 케이스(총원=일행)에 확인 문구가 사라진다. */}
               {effectiveTargetCount - effectiveCurrentCount > 0 ? (
                 <p className="text-[12px] text-money font-bold">
-                  🎉 {t(`총 ${effectiveTargetCount - effectiveCurrentCount}명을 구해요`, `Looking for ${effectiveTargetCount - effectiveCurrentCount} more`)}
+                  {t(`총 ${effectiveTargetCount - effectiveCurrentCount}명을 구해요`, `Looking for ${effectiveTargetCount - effectiveCurrentCount} more`)}
                 </p>
               ) : (
                 <p className="text-[12px] text-muted-foreground font-bold">
@@ -1349,7 +1317,6 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       {/* 예산 (모드에 따라 총액 or 인당) */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-foreground font-bold mb-2">
-          <Coins className="w-4 h-4 text-money" />
           <span>{isRecruitingParty ? t("인당 예산", "Budget per person") : t("총 예산", "Total budget")}</span>
         </div>
         <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
@@ -1462,55 +1429,65 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       {/* 취향 태그 — 파티원 모집 중일 때만. MD 직통 파티(host_is_md)은 취향 선호가 무의미하므로 숨김 */}
       {isRecruitingParty && !puzzle?.host_is_md && <section className="space-y-4">
         <div className="flex items-center gap-2 text-foreground font-bold mb-2">
-          <Sparkles className="w-4 h-4 text-money" />
-          <span>{t("이런 분들을 선호해요", "Who you prefer")}</span>
+          <span>{t("파티원 선별", "Party member screening")}</span>
         </div>
 
         <div className="space-y-2.5">
-          {/* 성별 선호 — 파티는 성별 '슬롯'(정원 배분)은 안 쓰지만 선호는 받는다 */}
+          {/* 연령 제한 — 20대/30대 버킷 대신 실제 나이 범위로 직접 입력받는다(Migration 594).
+              둘 다 비워두면 제한 없음. */}
           <div className="flex items-center gap-3">
-            <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("성별", "Gender")}</p>
-            <div className="flex gap-1.5 flex-wrap">
-              {GENDER_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setGenderPref(opt.value)}
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
-                    genderPref === opt.value
-                      ? "bg-inverse text-inverse-foreground"
-                      : "bg-card text-muted-foreground border border-border hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  {isForeigner ? opt.en : opt.label}
-                </button>
-              ))}
+            <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("연령", "Age")}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* 토글이 아니라 리셋 버튼 — 둘 다 비어있는 게 디폴트라 성별·음악처럼
+                  "선택됨" 하이라이트를 주면 아무것도 안 골랐는데 켜진 것처럼 보인다 */}
+              <button
+                type="button"
+                onClick={() => { setMinAge(null); setMaxAge(null); }}
+                className="px-2.5 py-1 rounded-full text-[11px] font-bold transition-all bg-card text-muted-foreground border border-border hover:bg-muted hover:text-foreground"
+              >
+                {t("상관없음", "Any")}
+              </button>
+              {/* min 속성 = 스피너로 처음 올릴 때 시작값(빈 값에서 ▲ 누르면 이 값으로 점프) */}
+              <input
+                type="number"
+                inputMode="numeric"
+                min={20}
+                max={99}
+                placeholder={t("전체", "Any")}
+                value={minAge ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+                  setMinAge(v);
+                }}
+                className="w-16 px-2.5 py-1 rounded-full text-[11px] font-bold text-center bg-card text-foreground border border-border focus:outline-none focus:border-foreground/40"
+              />
+              <span className="text-[11px] text-muted-foreground">~</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={30}
+                max={99}
+                placeholder={t("전체", "Any")}
+                value={maxAge ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value === "" ? null : Math.max(0, Number(e.target.value));
+                  setMaxAge(v);
+                }}
+                className="w-16 px-2.5 py-1 rounded-full text-[11px] font-bold text-center bg-card text-foreground border border-border focus:outline-none focus:border-foreground/40"
+              />
+              <span className="text-[11px] text-muted-foreground">{t("세", "yo")}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("연령", "Age")}</p>
-            <div className="flex gap-1.5 flex-wrap">
-              {AGE_OPTIONS.map((opt) => {
-                const selected = agePref.includes(opt.value);
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => toggleAgePref(opt.value)}
-                    aria-pressed={selected}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
-                      selected
-                        ? "bg-inverse text-inverse-foreground"
-                        : "bg-card text-muted-foreground border border-border hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    {isForeigner ? opt.en : opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {/* 팝업 대신 인라인 경고 문구로 대체 — 조건이 하나라도 걸려있을 때만 노출 */}
+          {(minAge !== null || maxAge !== null || (genderPref !== null && genderPref !== "any")) && (
+            <p className="text-[11px] text-brand-amber pl-11 -mt-1">
+              {t(
+                "조건에 맞는 인원만 참가해요. 파티원은 나이·성별을 서로에게 공개해요",
+                "Only people who match can join. Party members share their age/gender with each other"
+              )}
+            </p>
+          )}
 
           <div className="flex items-center gap-3">
             <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("음악", "Music")}</p>
@@ -1532,16 +1509,18 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
             </div>
           </div>
 
+          {/* 성별 제한 — 예전엔 '선호' 표시만 하고 실제 참가는 막지 않았지만,
+              이제 join_puzzle이 실제로 걸러낸다(Migration 594). 표현도 그에 맞게 단호하게. */}
           <div className="flex items-center gap-3">
-            <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("바이브", "Vibe")}</p>
+            <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("성별", "Gender")}</p>
             <div className="flex gap-1.5 flex-wrap">
-              {VIBE_OPTIONS.map((opt) => (
+              {GENDER_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setVibePref(opt.value)}
+                  onClick={() => setGenderPref(opt.value)}
                   className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
-                    vibePref === opt.value
+                    genderPref === opt.value
                       ? "bg-inverse text-inverse-foreground"
                       : "bg-card text-muted-foreground border border-border hover:bg-muted hover:text-foreground"
                   }`}
@@ -1557,7 +1536,6 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       {/* 팀 소개 (한 줄 메모) */}
       <section className="space-y-4">
         <div className="flex items-baseline gap-2 text-foreground font-bold mb-2">
-          <MessageCircle className="w-4 h-4 text-money self-center" />
           <span>{isRecruitingParty ? (shareMode ? t("파티 소개", "About your group") : t("퍼즐 소개", "About your group")) : t("깃발 제목", "Flag title")}</span>
           {isRecruitingParty && (
             <span className="text-[11px] text-muted-foreground font-normal">
@@ -1613,7 +1591,6 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       {isRecruitingParty && !shareMode && (
         <section className="space-y-4">
           <div className="flex items-baseline gap-2 text-foreground font-bold mb-2">
-            <MessageCircle className="w-4 h-4 text-yellow-400 self-center" />
             <span>{t("카톡 오픈채팅 링크", "KakaoTalk open chat link")}</span>
             {isEditMode && (
               <span className="text-[11px] text-muted-foreground font-normal">{t("수정 불가", "Can't edit")}</span>
@@ -1637,7 +1614,6 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       {/* 요약 미리보기 */}
       <section className="space-y-4">
         <div className="flex items-baseline gap-2 text-foreground mb-2">
-          <Sparkles className="w-4 h-4 text-money self-center" />
           <span className="text-[18px] font-bold">{shareMode ? t("요약", "Summary") : t("깃발 요약", "Summary")}</span>
         </div>
         <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 space-y-3">
