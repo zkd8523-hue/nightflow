@@ -1,0 +1,291 @@
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { BadgeCheck, Instagram, Music, Heart, Pencil } from "lucide-react";
+import { BackButton } from "@/components/ui/BackButton";
+import { DjLedShowList, type DjShowRow } from "@/components/djs/DjLedShowList";
+import { DjUpdateLineupButton } from "@/components/djs/DjUpdateLineupButton";
+import { getBusinessDateISO } from "@/lib/lineups/time";
+import { SHOW_TEST_DATA } from "@/lib/utils/testData";
+import type { Metadata } from "next";
+
+// 없는 slug는 notFound() — force-dynamic 필수. 없으면 Soft 404가 되어
+// SEO 색인이 오염된다(클럽 상세·날짜별 라인업 페이지와 동일 이유).
+export const dynamic = "force-dynamic";
+
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
+
+interface ClubRef {
+  id: string;
+  name: string;
+  area: string | null;
+  is_test: boolean;
+  status: string;
+  deleted_at: string | null;
+}
+
+interface RawSetRow {
+  start_min: number | null;
+  club_lineups:
+    | { event_date: string; clubs: ClubRef | ClubRef[] }
+    | { event_date: string; clubs: ClubRef | ClubRef[] }[]
+    | null;
+}
+
+function isVisibleClub(c: ClubRef | null): c is ClubRef {
+  if (!c || c.deleted_at) return false;
+  if (!SHOW_TEST_DATA && (c.is_test || c.status !== "approved")) return false;
+  return true;
+}
+
+function toRows(raw: RawSetRow[] | null): DjShowRow[] {
+  const rows: DjShowRow[] = [];
+  for (const r of raw ?? []) {
+    const lineup = Array.isArray(r.club_lineups) ? r.club_lineups[0] : r.club_lineups;
+    if (!lineup) continue;
+    const club = Array.isArray(lineup.clubs) ? lineup.clubs[0] : lineup.clubs;
+    if (!isVisibleClub(club)) continue;
+    rows.push({
+      club_id: club.id,
+      club_name: club.name,
+      club_area: club.area,
+      event_date: lineup.event_date,
+      start_min: r.start_min,
+    });
+  }
+  return rows;
+}
+
+async function fetchDj(slug: string) {
+  const supabase = await createClient();
+
+  const djQuery = supabase
+    .from("djs")
+    .select("id, display_name, slug, instagram, soundcloud_url, bio, photo_url, claimed_by_user_id, is_test")
+    .eq("slug", slug)
+    .is("deleted_at", null);
+  if (!SHOW_TEST_DATA) djQuery.eq("is_test", false);
+  const { data: dj } = await djQuery.maybeSingle();
+  if (!dj) return null;
+
+  const today = getBusinessDateISO();
+
+  const [{ data: upcomingRaw }, { data: pastRaw }, { count: favoriteCount }, { data: auth }] = await Promise.all([
+    supabase
+      .from("lineup_sets")
+      .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at))")
+      .eq("dj_id", dj.id)
+      .gte("club_lineups.event_date", today)
+      .limit(60),
+    supabase
+      .from("lineup_sets")
+      .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at))")
+      .eq("dj_id", dj.id)
+      .lt("club_lineups.event_date", today)
+      .limit(60),
+    supabase.from("user_favorite_djs").select("id", { count: "exact", head: true }).eq("dj_id", dj.id),
+    supabase.auth.getUser(),
+  ]);
+
+  const upcoming = toRows(upcomingRaw as unknown as RawSetRow[])
+    .sort((a, b) => a.event_date.localeCompare(b.event_date) || (a.start_min ?? 0) - (b.start_min ?? 0));
+
+  // 최근 20건 — 78%가 라인업 1건뿐인 현재는 상한이 작동할 일이 없지만, 수집이
+  // 쌓이면 필요해진다(예정만 보여주면 SEO 본문이 얇고, 예정 0건 DJ는 빈 페이지가 됨).
+  const past = toRows(pastRaw as unknown as RawSetRow[])
+    .sort((a, b) => b.event_date.localeCompare(a.event_date) || (b.start_min ?? 0) - (a.start_min ?? 0))
+    .slice(0, 20);
+
+  return {
+    dj,
+    upcoming,
+    past,
+    favoriteCount: favoriteCount ?? 0,
+    isOwner: dj.claimed_by_user_id === (auth.user?.id ?? null) && dj.claimed_by_user_id !== null,
+  };
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const result = await fetchDj(slug);
+  if (!result) return {};
+  const { dj, upcoming } = result;
+  const nextShow = upcoming[0];
+  const title = `${dj.display_name} — DJ 프로필 · 라인업`;
+  const description = nextShow
+    ? `${dj.display_name} DJ 프로필. 다음 무대: ${nextShow.club_name} ${nextShow.event_date}. 나플에서 라인업을 확인하세요.`
+    : `${dj.display_name} DJ 프로필과 지난 플레이 이력을 나플에서 확인하세요.`;
+  return { title, description };
+}
+
+export default async function DjProfilePage({ params }: PageProps) {
+  const { slug } = await params;
+  const result = await fetchDj(slug);
+  if (!result) notFound();
+  const { dj, upcoming, past, favoriteCount, isOwner } = result;
+
+  const isVerified = !!dj.claimed_by_user_id;
+  const igHandle = dj.instagram?.replace(/^@/, "") || null;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: dj.display_name,
+    image: dj.photo_url ?? undefined,
+    url: `https://nightflow.kr/dj/${dj.slug}`,
+    sameAs: [
+      igHandle ? `https://instagram.com/${igHandle}` : null,
+      dj.soundcloud_url ?? null,
+    ].filter(Boolean),
+    performerIn: upcoming.map((s) => ({
+      "@type": "Event",
+      name: `${s.club_name} ${s.event_date}`,
+      startDate: s.event_date,
+      location: { "@type": "Place", name: s.club_name },
+    })),
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      <div className="min-h-screen bg-background text-foreground max-w-lg mx-auto pb-24">
+        <div className="px-4 pt-3">
+          <BackButton fallbackHref="/lineups" />
+        </div>
+
+        {/* 명함 카드 — /u 프로필과 동일 마크업. DJ만 다른 세계관이면 앱이 갈라진다 */}
+        <div className="px-4 mt-2">
+          <div className="bg-card border border-border rounded-3xl p-4">
+            <div className="flex items-start gap-4 pt-1">
+              <div className="flex flex-col items-center gap-1.5 shrink-0">
+                <div className="relative w-24 h-24 rounded-full overflow-hidden bg-muted shrink-0 ring-2 ring-border">
+                  {dj.photo_url ? (
+                    <Image src={dj.photo_url} alt={dj.display_name} fill sizes="96px" className="object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-foreground/60 text-4xl font-black">
+                      {dj.display_name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                {isVerified && (
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-blue-500 text-white text-[11px] font-black leading-none">
+                    <BadgeCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
+                    인증됨
+                  </span>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="min-w-0 text-xl font-black leading-tight break-words tracking-tight">
+                    {dj.display_name}
+                  </h1>
+                  {isOwner && (
+                    <Link
+                      href={`/dj/${dj.slug}/edit`}
+                      aria-label="프로필 편집"
+                      className="shrink-0 w-7 h-7 rounded-full bg-muted/70 text-muted-foreground hover:text-foreground hover:bg-muted grid place-items-center active:scale-95 transition-all"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
+                </div>
+                {igHandle && (
+                  <a
+                    href={`https://instagram.com/${igHandle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[13px] text-muted-foreground truncate hover:text-foreground/80 active:opacity-70 transition-colors block mt-0.5"
+                  >
+                    @{igHandle}
+                  </a>
+                )}
+                {/* 팔로움 숫자 — 시드 없음(진짜 찜 개수만). 0이면 부풀린 숫자로 오해받지
+                    않도록 아예 숨긴다. */}
+                {favoriteCount > 0 && (
+                  <p className="flex items-center gap-1 text-[12px] text-muted-foreground mt-1">
+                    <Heart className="w-3 h-3 fill-current" />
+                    {favoriteCount}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {dj.bio && (
+              <p className="mt-3 text-[13px] font-semibold leading-[1.45] whitespace-pre-wrap break-words text-foreground">
+                {dj.bio}
+              </p>
+            )}
+
+            {!isVerified && (
+              <Link
+                href="/dj/apply"
+                className="mt-4 block text-center text-[12px] font-bold text-amber-400 hover:text-amber-300"
+              >
+                이 프로필이 본인인가요? →
+              </Link>
+            )}
+
+            {(igHandle || dj.soundcloud_url) && (
+              <div className="mt-4 -mx-4 -mb-4">
+                <div className="grid grid-cols-2 divide-x divide-border border-t border-border">
+                  {igHandle && (
+                    <a
+                      href={`https://instagram.com/${igHandle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center gap-2 bg-card px-4 py-2.5 active:bg-muted transition-colors rounded-bl-3xl ${!dj.soundcloud_url ? "rounded-br-3xl" : ""}`}
+                    >
+                      <div className="w-7 h-7 rounded-full bg-pink-500/15 flex items-center justify-center flex-shrink-0">
+                        <Instagram className="w-4 h-4 text-pink-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase">인스타그램</p>
+                        <p className="text-[13px] font-bold text-foreground truncate">@{igHandle}</p>
+                      </div>
+                    </a>
+                  )}
+                  {dj.soundcloud_url && (
+                    <a
+                      href={dj.soundcloud_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center gap-2 bg-card px-4 py-2.5 active:bg-muted transition-colors rounded-br-3xl ${!igHandle ? "rounded-bl-3xl" : ""}`}
+                    >
+                      <div className="w-7 h-7 rounded-full bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+                        <Music className="w-4 h-4 text-orange-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase">사운드클라우드</p>
+                        <p className="text-[13px] font-bold text-foreground truncate">듣기</p>
+                      </div>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-8 border-t border-border" />
+
+        <div className="px-4 mt-6">
+          <h2 className="text-[15px] font-black text-foreground mb-3">예정된 라인업</h2>
+          <DjLedShowList rows={upcoming} emptyLabel="예정된 라인업이 없어요" />
+        </div>
+
+        <div className="px-4 mt-8 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[15px] font-black text-foreground">지난 플레이</h2>
+          </div>
+          <DjUpdateLineupButton isOwner={isOwner} />
+          <DjLedShowList rows={past} emptyLabel="등록된 지난 플레이가 없어요" />
+        </div>
+      </div>
+    </>
+  );
+}

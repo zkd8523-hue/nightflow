@@ -8,6 +8,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotifications } from "@/hooks/useNotifications";
 import { CreditChargedDialog } from "@/components/md/CreditChargedDialog";
 import { useSupportUnread } from "@/hooks/useSupportUnread";
+import { useDjClaimStatus } from "@/hooks/useDjClaimStatus";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -33,17 +34,12 @@ import {
   Clock,
   AlertTriangle,
   User,
-  Heart,
   TrendingUp,
   Star,
   ChevronLeft,
   ChevronRight,
-  Settings,
-  HelpCircle,
   Headset,
   Globe,
-  Megaphone,
-  Ticket,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
@@ -125,6 +121,8 @@ export function Header({
   backHref,
 }: HeaderProps = {}) {
   const { user, isLoading } = useCurrentUser();
+  // role==='user'일 때만 의미가 있다 — MD·admin은 이미 다른 메뉴 분기가 있다.
+  const djClaim = useDjClaimStatus(user?.role === "user" ? user.id : undefined);
   const resetAuth = useAuthStore((s) => s.reset);
   const {
     notifications,
@@ -298,7 +296,7 @@ export function Header({
                 NightFlow
               </Link>
               <p className="text-[13px] text-muted-foreground font-medium tracking-tight whitespace-nowrap">
-                클럽의 모든 혜택을 한손에
+                전국 클럽·공연 정보와 혜택을 한손에
               </p>
             </>
           )}
@@ -532,9 +530,6 @@ export function Header({
                         onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                       >
-                        <span className="w-9 h-9 rounded-xl bg-indigo-500/15 flex items-center justify-center shrink-0">
-                          <LayoutDashboard className="w-[18px] h-[18px] text-indigo-400" />
-                        </span>
                         <span className="text-[15px] font-bold">파트너 대시보드</span>
                       </Link>
                     )}
@@ -544,10 +539,7 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <span className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
-                        <Ticket className="w-[18px] h-[18px] text-brand-amber" />
-                      </span>
-                      <span className="text-[15px] font-bold">내 쿠폰함</span>
+                      <span className="text-[15px] font-bold">쿠폰</span>
                     </Link>
 
                     <Link
@@ -555,20 +547,35 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <span className="w-9 h-9 rounded-xl bg-rose-500/15 flex items-center justify-center shrink-0">
-                        <Heart className="w-[18px] h-[18px] text-rose-400" />
-                      </span>
-                      <span className="text-[15px] font-bold">찜 목록</span>
+                      <span className="text-[15px] font-bold">찜</span>
                     </Link>
 
+                    <Link
+                      href="/lineups"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                    >
+                      <span className="text-[15px] font-bold">DJ 라인업</span>
+                    </Link>
+
+                    {/* DJ 라인업과 짝 — 같은 수집 파이프라인에서 나오는 두 축이라
+                        메뉴에서도 붙여 둔다(라인업=클럽 DJ 타임테이블, 공연=래퍼/가수) */}
+                    <Link
+                      href="/events"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                    >
+                      <span className="text-[15px] font-bold">공연 정보</span>
+                    </Link>
+
+                    <div className="h-px bg-muted/50 my-2" />
+
+                    {/* ── 지원: 필요할 때만 찾는 것들 ── */}
                     <Link
                       href="/faq"
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <span className="w-9 h-9 rounded-xl bg-sky-500/15 flex items-center justify-center shrink-0">
-                        <HelpCircle className="w-[18px] h-[18px] text-sky-400" />
-                      </span>
                       <span className="text-[15px] font-bold">자주 묻는 질문</span>
                     </Link>
 
@@ -577,9 +584,6 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <span className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
-                        <Headset className="w-[18px] h-[18px] text-emerald-400" />
-                      </span>
                       <span className="text-[15px] font-bold">고객 문의</span>
                       {supportUnread && (
                         <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
@@ -591,9 +595,6 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <span className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
-                        <Megaphone className="w-[18px] h-[18px] text-brand-amber" />
-                      </span>
                       <span className="text-[15px] font-bold">건의게시판</span>
                     </Link>
 
@@ -604,9 +605,6 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <span className="w-9 h-9 rounded-xl bg-foreground/5 flex items-center justify-center shrink-0">
-                        <Settings className="w-[18px] h-[18px] text-muted-foreground" />
-                      </span>
                       <span className="text-[15px] font-bold">설정</span>
                     </Link>
 
@@ -620,16 +618,27 @@ export function Header({
                   </nav>
                 </div>
 
-                {/* 화면 최하단 고정: MD·파트너 신청 */}
-                {user.role === "user" && user.md_status !== "pending" && (
+                {/* 화면 최하단 고정: 파트너 신청(MD/DJ 갈림길).
+                    둘 중 하나라도 완료(claimedSlug)되면 항목을 아예 숨긴다 —
+                    이미 인증된 DJ에게 "또 신청하라"는 화면을 보여줄 이유가 없다. */}
+                {user.role === "user" && user.md_status !== "pending" && !djClaim.claimedSlug && (
                   <div className="shrink-0 border-t border-border/50 p-3">
                     <Link
-                      href="/md/apply"
+                      href={djClaim.pending ? "/dj/apply" : "/partner/apply"}
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <Star className="w-5 h-5 text-brand-amber" />
-                      <span className="text-[15px] font-bold">파트너 신청</span>
+                      {djClaim.pending ? (
+                        <>
+                          <Clock className="w-5 h-5 text-brand-amber" />
+                          <span className="text-[15px] font-bold">인증 대기 중</span>
+                        </>
+                      ) : (
+                        <>
+                          <Star className="w-5 h-5 text-brand-amber" />
+                          <span className="text-[15px] font-bold">파트너 신청</span>
+                        </>
+                      )}
                     </Link>
                   </div>
                 )}
@@ -664,13 +673,30 @@ export function Header({
 
                 <nav className="flex flex-col p-4 gap-1">
                   <Link
+                    href="/lineups"
+                    onClick={() => setGuestMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                  >
+                    <span className="text-[15px] font-bold">DJ 라인업</span>
+                  </Link>
+
+                  {/* 로그인 메뉴와 짝을 맞춘다 — 비로그인도 볼 수 있는 화면인데
+                      여기만 빠져 있으면 가입 전 유저는 공연을 발견할 길이 없다 */}
+                  <Link
+                    href="/events"
+                    onClick={() => setGuestMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                  >
+                    <span className="text-[15px] font-bold">공연 정보</span>
+                  </Link>
+
+                  <div className="h-px bg-muted/50 my-2" />
+
+                  <Link
                     href="/faq"
                     onClick={() => setGuestMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                   >
-                    <span className="w-9 h-9 rounded-xl bg-sky-500/15 flex items-center justify-center shrink-0">
-                      <HelpCircle className="w-[18px] h-[18px] text-sky-400" />
-                    </span>
                     <span className="text-[15px] font-bold">자주 묻는 질문</span>
                   </Link>
 
@@ -679,9 +705,6 @@ export function Header({
                     onClick={() => setGuestMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                   >
-                    <span className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
-                      <Headset className="w-[18px] h-[18px] text-emerald-400" />
-                    </span>
                     <span className="text-[15px] font-bold">고객 문의</span>
                   </Link>
 
@@ -690,9 +713,6 @@ export function Header({
                     onClick={() => setGuestMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                   >
-                    <span className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
-                      <Megaphone className="w-[18px] h-[18px] text-brand-amber" />
-                    </span>
                     <span className="text-[15px] font-bold">건의게시판</span>
                   </Link>
                 </nav>

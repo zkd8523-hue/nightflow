@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Heart } from "lucide-react";
 import { formatBusinessMin, nowBusinessMinutes, getBusinessDateISO } from "@/lib/lineups/time";
 import { DjNameButton } from "@/components/djs/DjNameButton";
+import { useDjFavoritesContext } from "@/components/providers";
 import type { DjProfileTarget } from "@/components/djs/DjProfileSheet";
 
 export interface LineupTableSet {
@@ -30,6 +32,11 @@ export function LineupSetTable({
   eventDate: string;
 }) {
   const [nowMin, setNowMin] = useState<number | null>(null);
+  const { isFavoritedDj } = useDjFavoritesContext();
+  // 캡션 수집 라인업은 전 행이 start_min=null이다 — 이럴 때 시간 열을 그대로
+  // 두면 빈 칸(w-20)만 남아 이름이 오른쪽으로 밀려나 보인다(왼쪽 여백 버그).
+  // 시간이 하나도 없으면 그 열 자체를 없앤다.
+  const hasAnyTime = sets.some((s) => s.start_min !== null);
 
   useEffect(() => {
     // 오늘이 아니면 시계를 돌릴 이유가 없다
@@ -61,18 +68,35 @@ export function LineupSetTable({
                   isNow ? "bg-amber-500/5" : ""
                 }`}
               >
-                <td
-                  className={`px-4 py-3 font-mono w-20 ${
-                    isNow
-                      ? "text-amber-500 border-l-2 border-amber-500"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {s.start_min !== null ? formatBusinessMin(s.start_min) : ""}
-                </td>
-                <td className="px-4 py-3 text-foreground">
-                  {/* 이름 → 프로필 시트, 인스타 아이콘 → 인스타 (라인업 화면 공통 규칙) */}
-                  {s.dj ? <DjNameButton dj={s.dj} /> : "-"}
+                {hasAnyTime && (
+                  <td
+                    className={`px-4 py-3 font-mono w-20 ${
+                      isNow
+                        ? "text-amber-500 border-l-2 border-amber-500"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {s.start_min !== null ? formatBusinessMin(s.start_min) : ""}
+                  </td>
+                )}
+                <td className={`py-3 text-foreground ${hasAnyTime ? "px-4" : "pl-5 pr-4"}`}>
+                  {/* 이름 → 프로필 시트, 인스타 아이콘 → 인스타 (라인업 화면 공통 규칙).
+                      찜한 DJ만 이름 왼쪽에 하트 표시 — 찜/해제는 이름을 눌러 여는
+                      프로필 시트 안에서 이미 가능하므로 여기선 정적 표시만 한다.
+                      하트 자리는 보이든 안 보이든 폭을 고정해 이름 시작 위치가
+                      행마다 흔들리지 않게 한다. */}
+                  {s.dj ? (
+                    <span className="inline-flex items-center gap-1.5 max-w-full">
+                      <span className="w-3.5 shrink-0 inline-flex items-center justify-center">
+                        {isFavoritedDj(s.dj.id) && (
+                          <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" aria-hidden="true" />
+                        )}
+                      </span>
+                      <DjNameButton dj={s.dj} />
+                    </span>
+                  ) : (
+                    "-"
+                  )}
                 </td>
                 <td className="px-4 py-3 w-12 text-right">
                   {isNow && (

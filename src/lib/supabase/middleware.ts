@@ -7,7 +7,7 @@ const FLAG_DETAIL_RE =
   /^\/flags\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // 로그인 필수 경로 (prefix 매칭)
-const PROTECTED_PREFIXES = ["/md/apply", "/admin", "/bids", "/my-wins", "/profile", "/favorites", "/settings", "/my-penalties"];
+const PROTECTED_PREFIXES = ["/md/apply", "/admin", "/bids", "/my-wins", "/profile", "/favorites", "/settings", "/my-penalties", "/partner/apply", "/dj/apply"];
 
 // /md/ 아래에는 MD 대시보드((dashboard)/md/*)와 공개 MD 프로필((main)/md/[slug])이 섞여 있다.
 // "/md/" 전체를 보호하면 MD가 인스타 바이오에 걸어둔 공개 프로필까지 로그인 벽에 걸리고,

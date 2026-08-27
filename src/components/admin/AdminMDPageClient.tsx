@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { MDManagement } from "@/components/admin/MDManagement";
+import { DjClaimManagement } from "@/components/admin/DjClaimManagement";
 import { Card } from "@/components/ui/card";
 import { Users, UserPlus, ShieldAlert, ChevronLeft, AlertTriangle, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { computeHealthStatus } from "@/lib/utils/mdHealth";
-import type { User, Club, MDHealthScore } from "@/types/database";
+import type { User, Club, MDHealthScore, DjClaim } from "@/types/database";
 
 interface UserWithClub extends User {
     default_club: Club | null;
@@ -16,15 +18,33 @@ interface UserWithClub extends User {
 interface AdminMDPageClientProps {
     initialUsers: UserWithClub[];
     healthScores?: MDHealthScore[];
+    initialDjClaims?: DjClaim[];
 }
 
-export function AdminMDPageClient({ initialUsers, healthScores }: AdminMDPageClientProps) {
+export function AdminMDPageClient({ initialUsers, healthScores, initialDjClaims }: AdminMDPageClientProps) {
     const [users, setUsers] = useState<UserWithClub[]>(initialUsers);
+    const [djClaims, setDjClaims] = useState<DjClaim[]>(initialDjClaims ?? []);
+
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    // 탭 상태는 URL 쿼리로 — 승인/거절 처리 후 새로고침해도 보던 탭이 유지돼야 한다.
+    const tab = searchParams.get("tab") === "dj" ? "dj" : "md";
+    const setTab = useCallback((next: "md" | "dj") => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (next === "dj") params.set("tab", "dj");
+        else params.delete("tab");
+        const qs = params.toString();
+        router.replace(qs ? `/admin/mds?${qs}` : "/admin/mds", { scroll: false });
+    }, [router, searchParams]);
 
     // 실시간으로 count 계산
     const pendingCount = useMemo(() =>
         users.filter(u => u.md_status === "pending").length,
         [users]
+    );
+    const djPendingCount = useMemo(() =>
+        djClaims.filter(c => c.status === "pending").length,
+        [djClaims]
     );
 
     const approvedCount = useMemo(() =>
@@ -102,13 +122,38 @@ export function AdminMDPageClient({ initialUsers, healthScores }: AdminMDPageCli
                     </div>
                 </header>
 
+                {/* 탭 — 신청 검토는 성격이 같은 운영자 업무라 한 화면에서 처리한다.
+                    상단 통계 카드는 MD 기준 그대로 둔다(DJ 건수는 여기 탭 라벨에만 표시). */}
+                <div className="flex gap-1 border-b border-border">
+                    <button
+                        onClick={() => setTab("md")}
+                        className={`px-4 py-2.5 text-sm font-bold border-b-2 transition-colors ${
+                            tab === "md" ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground/70"
+                        }`}
+                    >
+                        관리자 신청{pendingCount > 0 ? ` (${pendingCount})` : ""}
+                    </button>
+                    <button
+                        onClick={() => setTab("dj")}
+                        className={`px-4 py-2.5 text-sm font-bold border-b-2 transition-colors ${
+                            tab === "dj" ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground/70"
+                        }`}
+                    >
+                        DJ 인증{djPendingCount > 0 ? ` (${djPendingCount})` : ""}
+                    </button>
+                </div>
+
                 {/* Content Section */}
-                <MDManagement
-                    initialUsers={users}
-                    healthScores={healthScores}
-                    users={users}
-                    setUsers={setUsers}
-                />
+                {tab === "md" ? (
+                    <MDManagement
+                        initialUsers={users}
+                        healthScores={healthScores}
+                        users={users}
+                        setUsers={setUsers}
+                    />
+                ) : (
+                    <DjClaimManagement claims={djClaims} setClaims={setDjClaims} />
+                )}
             </div>
         </div>
     );
