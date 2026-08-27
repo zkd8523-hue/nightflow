@@ -281,7 +281,6 @@ export async function shareLineup({
   eventDate,
   clubName,
   eventTitle,
-  djNames,
 }: ShareLineupParams): Promise<boolean> {
   const baseUrl = `${window.location.origin}/clubs/${clubId}/lineup/${eventDate}`;
   let url = baseUrl;
@@ -295,10 +294,12 @@ export async function shareLineup({
   const dateLabel = dayjs(eventDate).locale('ko').format('M월 D일 (dd)');
   const titleText = eventTitle ? ` 〈${eventTitle}〉` : '';
   const shareTitle = `${clubName}${titleText} ${dateLabel} 라인업`;
-  // title에 이미 클럽명·파티명·날짜가 있으므로 본문은 라인업·CTA만 남긴다
-  // (클럽명·날짜가 본문에도 또 나오면 공유 시트에서 같은 정보가 두 번 보임).
-  const lineupLine = djNames && djNames.length > 0 ? djNames.join(', ') : clubName;
-  const text = `${lineupLine}\n나플에서 확인하기 👉`;
+  // 카카오톡 등 대부분의 공유 대상은 title/text/url을 따로 안 받고 한 메시지에
+  // 그대로 이어붙인 뒤, 그 안의 링크를 또 카드로 미리보기한다 — title에 이미 다
+  // 있는 내용을 본문에 다시 쓰면 "글자+카드"로 같은 정보가 두 번 보인다.
+  // 카드(og:title/description)가 클럽명·날짜·라인업을 이미 보여주므로 본문은
+  // 짧은 한 줄만 남긴다.
+  const text = `나플에서 라인업 확인하기 👉`;
 
   // 앱(Capacitor): OS 공유 시트 우선 — WebView에서 navigator.share가 불안정해
   // 클립보드 복사로 조용히 새는 경우가 있다(실측 사고).
@@ -346,8 +347,6 @@ export async function shareEvent({
   slug,
   title,
   venue,
-  area,
-  performerNames,
 }: ShareEventParams): Promise<boolean> {
   const baseUrl = `${window.location.origin}/events/${eventDate}/${encodeURIComponent(slug)}`;
   let url = baseUrl;
@@ -359,11 +358,10 @@ export async function shareEvent({
   } catch {}
 
   const dateLabel = dayjs(eventDate).locale('ko').format('M월 D일 (dd)');
-  const venueText = area ? `${venue} · ${area}` : venue;
   const shareTitle = `${title} - ${venue} ${dateLabel}`;
-  // title에 이미 파티명·클럽명·날짜가 있으므로 본문은 장소·라인업·CTA만 남긴다.
-  const lineupLine = performerNames && performerNames.length > 0 ? `\n${performerNames.join(', ')} 출연` : '';
-  const text = `${venueText}${lineupLine}\n나플에서 확인하기 👉`;
+  // shareLineup과 동일 이유 — title/카드가 이미 장소·날짜·라인업을 보여주므로
+  // 본문은 짧은 한 줄만 남긴다(area는 title에 없어 카드/메타에서만 보여줌).
+  const text = `나플에서 공연 정보 확인하기 👉`;
 
   const native = await shareViaNative({ title: shareTitle, text, url });
   if (native.handled) {
@@ -401,7 +399,7 @@ interface ShareClubParams {
 /**
  * 클럽 상세를 SNS에 공유 (shareAuction과 동일 패턴)
  */
-export async function shareClub({ clubId, clubName, area }: ShareClubParams): Promise<boolean> {
+export async function shareClub({ clubId, clubName }: ShareClubParams): Promise<boolean> {
   const baseUrl = `${window.location.origin}/clubs/${clubId}`;
   let url = baseUrl;
   try {
@@ -411,8 +409,9 @@ export async function shareClub({ clubId, clubName, area }: ShareClubParams): Pr
     url = u.toString();
   } catch {}
 
-  const areaText = area ? `${area} ` : '';
-  const text = `🌃 ${areaText}${clubName}\n나플에서 위치·영업시간·가격표를 확인하세요 👉`;
+  // title(clubName)과 카드(og:title/description)가 이미 클럽명·지역·정보를
+  // 보여주므로 본문은 짧은 한 줄만 남긴다(shareLineup/shareEvent와 동일 이유).
+  const text = `🌃 나플에서 위치·영업시간·가격표 확인하기 👉`;
 
   const native = await shareViaNative({ title: clubName, text, url });
   if (native.handled) {

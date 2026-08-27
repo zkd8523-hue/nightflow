@@ -169,34 +169,31 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
             <SheetTitle className="text-foreground text-lg">예정된 라인업</SheetTitle>
           </SheetHeader>
 
-          {/* 날짜 칩 — 스와이프 캐러셀이 아니라 눌러서 전환하는 버튼 목록 */}
-          {lineups.length > 1 && (
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-              {lineups.map((lineup, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSelectedIndex(i)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
-                    i === selectedIndex
-                      ? "bg-amber-500 text-black"
-                      : "bg-[#1C1C1E] text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {formatLineupDate(lineup.event_date)}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* 날짜 칩 — 스와이프 캐러셀이 아니라 눌러서 전환하는 버튼 목록.
+              날짜가 하나뿐이어도 항상 띄운다 — 눌러야 하는 UI는 아니지만
+              "이게 몇 월 며칠 라인업인지"를 일관된 자리에서 보여준다. */}
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+            {lineups.map((lineup, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedIndex(i)}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
+                  i === selectedIndex
+                    ? "bg-amber-500 text-black"
+                    : "bg-[#1C1C1E] text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {formatLineupDate(lineup.event_date)}
+              </button>
+            ))}
+          </div>
 
           <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-2">
-            {/* 칩이 2개 이상일 때만 날짜를 칩이 대신 보여준다 — 라인업이 1개뿐이면
-                칩 자체가 안 뜨니 여기서 날짜를 빠뜨리지 않는다. */}
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-foreground">
-                {lineups.length <= 1 ? formatLineupDate(selectedLineup.event_date) : ""}
-                {/* 파티 이름은 꺾쇠 + amber (라인업 화면 공통 규칙) */}
+                {/* 날짜는 이제 칩이 항상 보여주므로 여기서 반복하지 않는다 */}
                 {selectedLineup.event_title && (
-                  <span className={lineups.length <= 1 ? "ml-1.5 text-amber-400" : "text-amber-400"}>
+                  <span className="text-amber-400">
                     〈{selectedLineup.event_title}〉
                   </span>
                 )}
