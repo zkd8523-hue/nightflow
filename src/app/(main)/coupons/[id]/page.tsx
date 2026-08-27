@@ -182,10 +182,12 @@ export default async function CouponDetailPage({ params }: { params: Promise<{ i
       )}
 
       <div className="bg-card border border-border rounded-xl p-4 mb-6 space-y-2">
-        <div className="flex items-center justify-between text-[13px]">
-          <span className="text-muted-foreground">남은 수량</span>
-          <span className="font-bold text-foreground">{formatCouponRemaining(coupon.claimed_count, coupon.total_count)}</span>
-        </div>
+        {formatCouponRemaining(coupon.claimed_count, coupon.total_count) && (
+          <div className="flex items-center justify-between text-[13px]">
+            <span className="text-muted-foreground">남은 수량</span>
+            <span className="font-bold text-foreground">{formatCouponRemaining(coupon.claimed_count, coupon.total_count)}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between text-[13px]">
           <span className="text-muted-foreground inline-flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" />

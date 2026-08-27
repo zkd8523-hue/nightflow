@@ -94,10 +94,19 @@ export function formatCouponTimer(endsAtISO: string, nowMs: number = Date.now())
   return days > 0 ? `D-${days} ${clock}` : clock;
 }
 
+/** 잔여 수량을 노출하기 시작하는 임계치 — 이 이하로 남아야 "N장 남음"이 뜬다. */
+export const COUPON_LOW_STOCK_THRESHOLD = 3;
+
+/**
+ * 잔여 수량 라벨. 넉넉히 남아 있을 때(임계치 초과) 숫자를 보여주면 오히려
+ * 긴박감이 사라지므로 빈 문자열을 돌려주고, 호출부에서 렌더를 생략한다.
+ */
 export function formatCouponRemaining(claimed: number, total: number | null): string {
   if (total == null) return "수량 무제한";
   const left = Math.max(0, total - claimed);
-  return left === 0 ? "모두 소진" : `${left}장 남음`;
+  if (left === 0) return "모두 소진";
+  if (left > COUPON_LOW_STOCK_THRESHOLD) return "";
+  return `${left}장 남음`;
 }
 
 /**

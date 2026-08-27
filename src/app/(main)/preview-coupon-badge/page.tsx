@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
-import { formatCouponTimer, formatCouponRemaining } from "@/lib/utils/coupon";
+import { formatCouponTimer, formatCouponRemaining, COUPON_LOW_STOCK_THRESHOLD } from "@/lib/utils/coupon";
 
 const MOCK_CASES: { label: string; hoursLeft: number; left: number | null; club: string }[] = [
   { label: "30분 후 마감", hoursLeft: 0.5, left: 3, club: "그루브&스팟" },
@@ -61,9 +61,10 @@ function MockCard({
   const endsAtISO = new Date(now + hoursLeft * 3600 * 1000).toISOString();
   const msLeft = new Date(endsAtISO).getTime() - now;
   const urgent = msLeft > 0 && msLeft <= 24 * 60 * 60 * 1000;
-  const lowStock = left !== null && left > 0 && left <= 5;
+  const lowStock = left !== null && left > 0 && left <= COUPON_LOW_STOCK_THRESHOLD;
   const claimed = 0;
   const total = left; // formatCouponRemaining(claimed, total) → left장 남음
+  const stockLabel = formatCouponRemaining(claimed, total);
 
   return (
     <div className="shrink-0 w-40 rounded-xl overflow-hidden bg-card border border-border">
@@ -88,9 +89,9 @@ function MockCard({
             <Clock className="w-2.5 h-2.5 shrink-0" />
             {formatCouponTimer(endsAtISO, now)}
           </span>
-          {total !== null && (
+          {stockLabel && (
             <p className={`truncate text-[10px] font-black ${lowStock ? "text-red-400" : "text-brand-amber"}`}>
-              {formatCouponRemaining(claimed, total)}
+              {stockLabel}
             </p>
           )}
         </div>

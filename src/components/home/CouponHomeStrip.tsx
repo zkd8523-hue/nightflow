@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { benefitTypeLabel, couponDisplayName, formatCouponTimer, formatCouponRemaining, splitDiscount, formatMinSpend, parseBottleItems, excludeTestClubCoupons } from "@/lib/utils/coupon";
+import { benefitTypeLabel, couponDisplayName, formatCouponTimer, formatCouponRemaining, COUPON_LOW_STOCK_THRESHOLD, splitDiscount, formatMinSpend, parseBottleItems, excludeTestClubCoupons } from "@/lib/utils/coupon";
 import { hideTestData } from "@/lib/utils/testData";
 import type { CouponIssue } from "@/types/database";
 
@@ -85,7 +85,9 @@ function CouponHomeCard({ coupon, now }: { coupon: CouponIssue; now: number }) {
   // (기존엔 마감이 임박하면 재고가 가려져, 정작 급할 때 "몇 장 남았는지"를 알 수 없었다)
   const left =
     coupon.total_count == null ? null : Math.max(0, coupon.total_count - coupon.claimed_count);
-  const lowStock = left !== null && left > 0 && left <= 5;
+  const lowStock = left !== null && left > 0 && left <= COUPON_LOW_STOCK_THRESHOLD;
+  // 넉넉히 남았을 땐 빈 문자열 → 렌더 생략 (숫자가 오히려 여유 신호가 된다)
+  const stockLabel = formatCouponRemaining(coupon.claimed_count, coupon.total_count);
   // 마감 24시간 이내 = 빨강(오늘 안에 끝), 그 외 = 파랑.
   // 항상 빨간 뱃지는 "급하다"는 신호가 아니라 그냥 배경색이 된다.
   const msLeft = new Date(coupon.redeem_ends_at).getTime() - now;
@@ -171,11 +173,11 @@ function CouponHomeCard({ coupon, now }: { coupon: CouponIssue; now: number }) {
             >
               {formatCouponTimer(coupon.redeem_ends_at, now)}
             </span>
-            {left !== null && (
+            {stockLabel && (
               <p
                 className={`truncate text-[10px] font-black ${lowStock ? "text-red-400" : "text-brand-amber"}`}
               >
-                {formatCouponRemaining(coupon.claimed_count, coupon.total_count)}
+                {stockLabel}
               </p>
             )}
           </div>

@@ -44,6 +44,7 @@ function CouponTicketRow({ coupon }: { coupon: CouponIssue }) {
   const display = couponDisplayName(coupon.benefit_type, coupon.benefit_detail);
   const discountLabel = formatDiscount(coupon.discount_type, coupon.discount_amount, coupon.min_spend, coupon.min_spend_unit);
   const soldOut = coupon.status === "sold_out";
+  const stock = formatCouponRemaining(coupon.claimed_count, coupon.total_count);
 
   const handleClaim = async () => {
     setBusy(true);
@@ -81,8 +82,12 @@ function CouponTicketRow({ coupon }: { coupon: CouponIssue }) {
           <span className="text-[11px] font-bold text-brand-amber">{discountLabel}</span>
         )}
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span>{formatCouponRemaining(coupon.claimed_count, coupon.total_count)}</span>
-          <span>·</span>
+          {stock && (
+            <>
+              <span>{stock}</span>
+              <span>·</span>
+            </>
+          )}
           <span>{soldOut ? "소진됨" : formatCouponCountdown(coupon.redeem_ends_at)}</span>
         </div>
       </div>

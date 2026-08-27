@@ -69,7 +69,7 @@ export function CouponCard({ coupon, now, dateLabel }: Props) {
             </div>
           )}
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-muted-foreground">{stock}</span>
+            {stock && <span className="text-[11px] font-bold text-muted-foreground">{stock}</span>}
             <span className={`text-[11px] font-black inline-flex items-center gap-1 ${soldOut ? "text-muted-foreground" : "text-brand-amber"}`}>
               <Clock className="w-3 h-3" />
               {soldOut ? "소진됨" : countdown}
