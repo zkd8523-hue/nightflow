@@ -267,9 +267,16 @@ export const PuzzleCard = memo(function PuzzleCard({
   const userOfferBadge =
     offerCount > 0 ? (
       <span className="text-[12px] font-bold text-brand-amber [text-shadow:0_0_5px_rgba(251,191,36,0.25)]">
-        {/* 3개 이상 = 경쟁이 붙은 핫한 깃발일 때만 🔥로 강조 */}
-        {offerCount >= 3 && <span aria-hidden>🔥 </span>}
-        오퍼 <span className="text-[14px] font-black tabular-nums">{offerCount}</span>개 중에서 고르는중
+        {isRecruitingParty ? (
+          /* 파티: 카드는 정보 밀도가 높아 짧게. 상세 헤더는 전체 문장 유지 */
+          <>💌 파트너 메시지 <span className="text-[14px] font-black tabular-nums">{offerCount}</span></>
+        ) : (
+          <>
+            {/* 3개 이상 = 경쟁이 붙은 핫한 깃발일 때만 🔥로 강조 */}
+            {offerCount >= 3 && <span aria-hidden>🔥 </span>}
+            오퍼 <span className="text-[14px] font-black tabular-nums">{offerCount}</span>개 중에서 고르는중
+          </>
+        )}
       </span>
     ) : null;
 

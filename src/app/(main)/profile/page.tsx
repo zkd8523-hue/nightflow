@@ -38,7 +38,8 @@ export default function ProfilePage() {
   // MD 파트너 연락처(인스타/카카오)는 자주 안 바꾸는 값이라 설정으로 이동 → PartnerContactSettings
 
   const [myFlags, setMyFlags] = useState<Puzzle[]>([]);
-  // 진행중 깃발별 pending 오퍼 수 — 홈 카드와 동일한 "오퍼 N개 중에서 고르는중" 표시용
+  // 진행중 깃발별 pending 오퍼 수 — 홈 카드와 동일한 배지 표시용
+  // (깃발="오퍼 N개 중에서 고르는중", 파티="파트너 N명이 메시지를 남겼어요")
   const [flagOfferCounts, setFlagOfferCounts] = useState<Record<string, number>>({});
   // 깃발별 "마지막으로 확인한 오퍼 수"(localStorage) — 상세를 열면 갱신됨. NEW +N 계산 기준.
   const [flagOffersSeen, setFlagOffersSeen] = useState<Record<string, number>>({});

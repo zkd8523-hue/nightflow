@@ -1675,6 +1675,24 @@ export function PuzzleDetailClient({
                     </>
                   )}
                 </h2>
+                {/* "파트너"가 낯선 유저를 위한 인라인 설명 — 탭하면 펼쳐진다.
+                    파티에서만 노출 (깃발은 MD 대상 화면이라 이미 아는 용어) */}
+                {isRecruitingParty && (
+                  <details className="group/pt relative">
+                    <summary className="list-none cursor-pointer select-none w-4 h-4 flex items-center justify-center rounded-full border border-border text-[10px] font-bold text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-colors">
+                      ?
+                      <span className="sr-only">{t("파트너란?", "What is a partner?")}</span>
+                    </summary>
+                    <p className="absolute left-0 top-6 z-20 w-60 rounded-xl bg-card border border-border px-3 py-2.5 text-[12px] font-normal text-muted-foreground leading-relaxed shadow-lg">
+                      <span className="font-bold text-foreground">{t("파트너란?", "What is a partner?")}</span>
+                      {" : "}
+                      {t(
+                        "나이트플로우가 검증한 클럽의 대표·관리자·영업진이에요. 메시지의 조건이 마음에 들면 채팅으로 상담할 수 있어요",
+                        "Verified club owners, managers and staff. If you like the terms in their message, you can start a chat.",
+                      )}
+                    </p>
+                  </details>
+                )}
               </div>
               {puzzle.status !== "open" &&
                 (isAccepted || (!offersLoading && pendingOffers.length === 0)) && (
@@ -2132,7 +2150,7 @@ export function PuzzleDetailClient({
                           )}
                           {isLeaderMember && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-brand-amber">
-                              대표자
+                              파티장
                             </span>
                           )}
                           {isMe && !isLeaderMember && (
