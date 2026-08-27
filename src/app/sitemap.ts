@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { eventSlug } from "@/lib/events/slug";
 import { createServerClient } from "@supabase/ssr";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
 
@@ -27,6 +28,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/`, lastModified: now, changeFrequency: "hourly", priority: 1.0 },
     { url: `${BASE_URL}/clubs`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE_URL}/lineups`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE_URL}/events`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     ...SHARE_AREAS.map((area) => ({
       url: `${BASE_URL}/share/${encodeURIComponent(area)}`,
       lastModified: now,
@@ -142,7 +145,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const nowIso = new Date().toISOString();
     // 테스트/운영자 데이터는 sitemap에서 제외 — 검색엔진 색인 오염 방지.
     // 클럽: is_test=false / 깃발: leader(users).is_test=false (club_id 없으므로 leader 기준)
-    const [auctionsRes, clubsRes, puzzlesRes, mdsRes] = await Promise.all([
+    // 라인업 아카이브 색인 범위 — 지난 60일 + 향후 14일.
+    // 지난 날짜도 싣는 이유: "클럽명 8월 30일 라인업" 류 쿼리는 행사가 끝난 뒤에도
+    // 검색되고, 해당 페이지는 계속 200을 낸다(날짜별 페이지는 만료되지 않음).
+    const dayMs = 24 * 60 * 60 * 1000;
+    const kstNow = new Date(Date.now() + 9 * 3600 * 1000);
+    const lineupFrom = new Date(kstNow.getTime() - 60 * dayMs).toISOString().slice(0, 10);
+    const lineupTo = new Date(kstNow.getTime() + 14 * dayMs).toISOString().slice(0, 10);
+
+    const [auctionsRes, clubsRes, puzzlesRes, mdsRes, lineupsRes,
+      eventsRes, djsRes,
+    ] = await Promise.all([
       supabase
         .from("auctions")
         .select("id, updated_at, status, club:clubs!inner(is_test)")
@@ -180,6 +193,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq("md_status", "approved")
         .not("md_unique_slug", "is", null)
         .eq("is_test", false)
+        .limit(500),
+      // 날짜별 라인업 아카이브. club_lineups에는 is_test가 없으므로 clubs!inner 조인으로
+      // 테스트 클럽을 거른다(558 규약) — 안 걸면 테스트 클럽이 색인된다.
+      supabase
+        .from("club_lineups")
+        .select("club_id, event_date, clubs!inner(is_test, status, deleted_at)")
+        .eq("clubs.is_test", false)
+        .eq("clubs.status", "approved")
+        .is("clubs.deleted_at", null)
+        .gte("event_date", lineupFrom)
+        .lte("event_date", lineupTo)
+        .order("event_date", { ascending: false })
+        .limit(500),
+      // 공연 상세(/events/{date}/{slug}) — 슬러그는 title에서 파생하므로 title을 같이 받는다.
+      // 지난 공연도 싣는다: 행사가 끝나도 "공연명" 검색은 계속 들어오고 페이지는 200을 낸다
+      // (라인업 아카이브와 같은 근거).
+      supabase
+        .from("club_events")
+        .select("event_date, title, clubs(is_test, status, deleted_at)")
+        .eq("status", "approved")
+        .gte("event_date", lineupFrom)
+        .order("event_date", { ascending: false })
+        .limit(500),
+      // DJ 공개 프로필(/dj/{slug}) — 라인업 0건인 DJ는 thin content라 제외.
+      // lineup_sets!inner로 필터하면 라인업이 하나도 없는 DJ는 자동으로 빠진다.
+      supabase
+        .from("djs")
+        .select("slug, updated_at, lineup_sets!inner(id)")
+        .eq("is_test", false)
+        .is("deleted_at", null)
         .limit(500),
     ]);
 
@@ -239,6 +282,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6,
       }));
 
+    const lineupRoutes: MetadataRoute.Sitemap = (lineupsRes.data ?? []).map((l) => ({
+      url: `${BASE_URL}/clubs/${l.club_id}/lineup/${l.event_date}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.65,
+    }));
+
+    // 공연 상세 — 테스트/미승인 클럽에 붙은 건 제외. club_id 없는 공연(283건)은 그대로 싣는다.
+    const eventRoutes: MetadataRoute.Sitemap = (eventsRes.data ?? [])
+      .filter((e) => {
+        const c = Array.isArray(e.clubs) ? e.clubs[0] : e.clubs;
+        return !(c && (c.is_test || c.deleted_at || c.status !== "approved"));
+      })
+      .map((e) => ({ date: e.event_date as string, slug: eventSlug(e.title as string | null) }))
+      .filter((e) => e.date && e.slug)
+      .map((e) => ({
+        url: `${BASE_URL}/events/${e.date}/${encodeURIComponent(e.slug)}`,
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.65,
+      }));
+
+    const djRoutes: MetadataRoute.Sitemap = (djsRes.data ?? [])
+      .filter((d) => d.slug)
+      .map((d) => ({
+        url: `${BASE_URL}/dj/${d.slug}`,
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      }));
+
     return [
       ...staticRoutes,
       ...auctionRoutes,
@@ -246,6 +320,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...enClubRoutes,
       ...puzzleRoutes,
       ...mdRoutes,
+      ...lineupRoutes,
+      ...eventRoutes,
+      ...djRoutes,
     ];
   } catch {
     return staticRoutes;

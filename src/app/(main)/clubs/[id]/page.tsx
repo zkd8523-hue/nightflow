@@ -4,6 +4,10 @@ import { ClubDetailContent } from "@/components/clubs/ClubDetailContent";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { normalizeDowSlots, summarizeSlots, pickUpcomingBenefit, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
+import { getBusinessDateISO } from "@/lib/lineups/time";
+import type { TodayLineup } from "@/components/clubs/ClubLineupSection";
+import type { UpcomingLineup } from "@/components/clubs/UpcomingLineupSheet";
+import type { ClubUpcomingEvent, ClubEventPerformer } from "@/components/clubs/ClubUpcomingEvents";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 import type { Metadata } from "next";
 
@@ -95,11 +99,16 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
   const todayKstISO = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   // 서로 독립적인 4개 쿼리를 병렬 실행 — 직렬(4 RTT) → 1 RTT. (mdRow만 slotRow 의존이라 이후 순차)
+  const todayBusinessDateISO = getBusinessDateISO();
+
   const [
     { data: club },
     { data: activeAuctions },
     { data: slotRow },
     { data: sharePuzzles },
+    { data: lineupRow },
+    { data: upcomingLineupRows },
+    { data: upcomingEventRows },
   ] = await Promise.all([
     (() => {
       const q = supabase.from("clubs").select("*").eq("id", id).is("deleted_at", null);
@@ -134,11 +143,127 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
       .gte("event_date", todayKstISO)
       .order("event_date", { ascending: true })
       .limit(50),
+    // 오늘 영업일 라인업. 클라이언트 fetch가 아니라 서버 조회인 이유: SEO 크롤러가 봐야 한다.
+    supabase
+      .from("club_lineups")
+      .select(
+        "door_open_min, event_title, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram))"
+      )
+      .eq("club_id", id)
+      .eq("event_date", todayBusinessDateISO)
+      .maybeSingle(),
+    // 오늘부터 앞으로 예정된 라인업 전부 — "어떤 DJ들이 올까?" 목록 시트용.
+    // 오늘 것만 보여주면 게시일과 실제 방문일 사이에 확인할 방법이 없다.
+    supabase
+      .from("club_lineups")
+      .select("event_date, door_open_min, event_title, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram))")
+      .eq("club_id", id)
+      .gte("event_date", todayBusinessDateISO)
+      .order("event_date", { ascending: true })
+      .limit(20),
+    // 예정된 공연(라이브). DJ 라인업은 상세에 티커로 보이는데 공연은 어디에도
+    // 안 보여서, 공연이 잡힌 클럽도 상세만 보면 일정이 없는 것처럼 읽혔다.
+    // club_events는 approved만 공개 SELECT(Migration 564).
+    supabase
+      .from("club_events")
+      .select(
+        "id, event_date, title, source_url, lineup, club_event_performers(raw_name, sort_order, artists(id, display_name, instagram))"
+      )
+      .eq("club_id", id)
+      .eq("status", "approved")
+      .gte("event_date", todayKstISO)
+      .order("event_date", { ascending: true })
+      .limit(10),
   ]);
 
   if (!club) {
     notFound();
   }
+
+  // 오늘 라인업 정규화. 셋이 없으면(라인업 자체가 없거나 빈 경우) null로 통일 —
+  // ClubLineupSection이 자기소거하도록.
+  const todayLineup: TodayLineup | null = (() => {
+    if (!lineupRow) return null;
+    const rawSets = (lineupRow.lineup_sets ?? []) as Array<{
+      start_min: number | null;
+      end_min: number | null;
+      sort_order: number;
+      djs: { id: string; slug: string; display_name: string; instagram: string | null } | { id: string; slug: string; display_name: string; instagram: string | null }[] | null;
+    }>;
+    if (rawSets.length === 0) return null;
+    const sets = rawSets
+      .map((s) => ({
+        start_min: s.start_min,
+        end_min: s.end_min,
+        sort_order: s.sort_order,
+        dj: Array.isArray(s.djs) ? s.djs[0] ?? null : s.djs,
+      }))
+      // 시간이 없는 캡션 라인업은 적힌 순서를 쓴다 (Migration 573)
+      .sort((a, b) =>
+        a.start_min !== null && b.start_min !== null
+          ? a.start_min - b.start_min
+          : a.sort_order - b.sort_order
+      );
+    return { door_open_min: lineupRow.door_open_min, event_title: lineupRow.event_title, sets };
+  })();
+
+  // "어떤 DJ들이 올까?" 시트용 — 오늘부터 앞으로 예정된 전체 라인업.
+  const upcomingLineups: UpcomingLineup[] = (upcomingLineupRows ?? [])
+    .map((row) => {
+      const rawSets = (row.lineup_sets ?? []) as Array<{
+        start_min: number | null;
+        end_min: number | null;
+        sort_order: number;
+        djs: { id: string; slug: string; display_name: string; instagram: string | null } | { id: string; slug: string; display_name: string; instagram: string | null }[] | null;
+      }>;
+      const sets = rawSets
+        .map((s) => ({
+          start_min: s.start_min,
+          end_min: s.end_min,
+          sort_order: s.sort_order,
+          dj: Array.isArray(s.djs) ? s.djs[0] ?? null : s.djs,
+        }))
+        // 시간이 없는 캡션 라인업은 적힌 순서를 쓴다 (Migration 573)
+      .sort((a, b) =>
+        a.start_min !== null && b.start_min !== null
+          ? a.start_min - b.start_min
+          : a.sort_order - b.sort_order
+      );
+      return { event_date: row.event_date, door_open_min: row.door_open_min, event_title: row.event_title, sets };
+    })
+    .filter((l) => l.sets.length > 0);
+
+  // 예정된 공연 정규화. 출연자는 artists 조인 우선이고, 조인이 안 붙은 원문 이름은
+  // extra_names 로 따로 낸다(공연 목록 화면과 같은 규칙) — 이름은 있는데 마스터에
+  // 없다고 화면에서 지워버리면 "출연자 미정"처럼 보인다.
+  const upcomingEvents: ClubUpcomingEvent[] = (upcomingEventRows ?? []).map((row) => {
+    const perfRows = (row.club_event_performers ?? []) as Array<{
+      raw_name: string | null;
+      sort_order: number | null;
+      artists: { id: string; display_name: string; instagram: string | null } | { id: string; display_name: string; instagram: string | null }[] | null;
+    }>;
+    const sorted = [...perfRows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    const performers: ClubEventPerformer[] = [];
+    const matchedRaw = new Set<string>();
+    for (const pr of sorted) {
+      const a = Array.isArray(pr.artists) ? pr.artists[0] ?? null : pr.artists;
+      if (!a) continue;
+      performers.push({ id: a.id, display_name: a.display_name, instagram: a.instagram });
+      if (pr.raw_name) matchedRaw.add(pr.raw_name);
+    }
+    // lineup(원문 이름 배열)에는 있는데 조인으로 안 붙은 것만 남긴다
+    const extra_names = ((row.lineup ?? []) as string[]).filter(
+      (n) => n && !matchedRaw.has(n) && !performers.some((p) => p.display_name === n)
+    );
+    return {
+      id: row.id,
+      event_date: row.event_date,
+      title: row.title,
+      source_url: row.source_url,
+      performers,
+      extra_names,
+    };
+  });
 
   let guestSignSlot: {
     slot_id?: string;
@@ -146,6 +271,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     today_slots?: ReturnType<typeof normalizeDowSlots>;
     md: { id: string; display_name: string | null; profile_image: string | null; instagram: string | null; kakao_open_chat_url: string | null };
     today_benefit: string | null;
+    today_tags: string[];
   } | null = null;
 
   // 노출 판정은 week_start(getActiveWeekStartISO, 월 18시 게이트 포함) 단일 기준.
@@ -161,7 +287,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
       const todaySlots = normalizeDowSlots(byDow[todayDowKey as HotdealDow]);
       // 표시용: 오늘 혜택 없으면 이번 주 가장 가까운 요일 혜택 (미래는 "(금)" 라벨).
       // 편집 대상(today_dow/today_slots)은 오늘 그대로 유지 — admin "오늘 혜택" 수정은 오늘 기준.
-      const todayText = pickUpcomingBenefit(byDow)?.labeledText || null;
+      const upcomingBenefit = pickUpcomingBenefit(byDow);
       guestSignSlot = {
         slot_id: slotRow.id,
         today_dow: todayDowKey,
@@ -173,7 +299,8 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
           instagram: mdRow.instagram,
           kakao_open_chat_url: mdRow.kakao_open_chat_url,
         },
-        today_benefit: todayText,
+        today_benefit: upcomingBenefit?.labeledText || null,
+        today_tags: upcomingBenefit?.tags ?? [],
       };
     }
   }
@@ -463,6 +590,9 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         guestSignSlot={guestSignSlot}
         hideShareList={fromHotdeal}
         sharePuzzles={sharePuzzles || []}
+        todayLineup={todayLineup}
+        upcomingLineups={upcomingLineups}
+        upcomingEvents={upcomingEvents}
       />
     </>
   );

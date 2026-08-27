@@ -6,6 +6,7 @@ import { useAuthInit, useCurrentUser } from "@/hooks/useCurrentUser";
 import { useTouchLastSeen } from "@/hooks/useTouchLastSeen";
 import { useFavoriteClubs } from "@/hooks/useFavoriteClubs";
 import { useFavoriteMds } from "@/hooks/useFavoriteMds";
+import { useFavoriteDjs } from "@/hooks/useFavoriteDjs";
 import { initAnalytics } from "@/lib/analytics";
 import { identifyUser } from "@/lib/analytics/events";
 import { WinAlertBanner } from "@/components/auctions/WinAlertBanner";
@@ -83,15 +84,38 @@ export function useMdFavoritesContext() {
   return ctx;
 }
 
+// DJ 찜 Context — 앱 전체에서 한 번만 API 호출 (Migration 570)
+type DjFavoritesContextType = ReturnType<typeof useFavoriteDjs>;
+
+const DjFavoritesContext = createContext<DjFavoritesContextType | null>(null);
+
+export function useDjFavoritesContext() {
+  const ctx = useContext(DjFavoritesContext);
+  // Provider 밖에서 호출돼도 throw하지 않고 no-op을 준다 — SSR/Provider 외부 안전성.
+  // 클럽·MD 찜과 동일한 방어 패턴.
+  if (!ctx) {
+    return {
+      favoriteDjs: [],
+      isLoading: false,
+      isFavoritedDj: () => false,
+      toggleFavoriteDj: async () => {},
+    } as DjFavoritesContextType;
+  }
+  return ctx;
+}
+
 function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useCurrentUser();
   const favoritesValue = useFavoriteClubs(user?.id);
   const mdFavoritesValue = useFavoriteMds(user?.id);
+  const djFavoritesValue = useFavoriteDjs(user?.id);
 
   return (
     <FavoritesContext.Provider value={favoritesValue}>
       <MdFavoritesContext.Provider value={mdFavoritesValue}>
-        {children}
+        <DjFavoritesContext.Provider value={djFavoritesValue}>
+          {children}
+        </DjFavoritesContext.Provider>
       </MdFavoritesContext.Provider>
     </FavoritesContext.Provider>
   );

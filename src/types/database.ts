@@ -721,6 +721,52 @@ export interface UserFavoriteMd {
   md?: Pick<PublicUserProfile, "id" | "display_name" | "profile_image" | "md_unique_slug">;
 }
 
+/** DJ 마스터 (Migration 557). instagram은 핸들만 저장 — clubs.instagram과 같은 규약. */
+export interface Dj {
+  id: string;
+  display_name: string;
+  slug: string;
+  instagram: string | null;
+  soundcloud_url: string | null;
+  bio: string | null;
+  photo_url: string | null;
+  resident_club_id: string | null;
+  is_test: boolean;
+  deleted_at: string | null;
+  /** 본인 인증 소유자 (Migration 583). NULL = 미인증. */
+  claimed_by_user_id: string | null;
+  claimed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** DJ 찜 (Migration 570). /lineups에서 날짜 그룹 내 정렬 우선순위로 쓴다(필터 아님). */
+export interface UserFavoriteDj {
+  id: string;
+  user_id: string;
+  dj_id: string;
+  created_at: string;
+  dj?: Pick<Dj, "id" | "display_name" | "slug" | "instagram" | "photo_url">;
+}
+
+/** DJ 인증 신청 (Migration 583). dj_id가 NULL이면 신규 등록 요청. */
+export interface DjClaim {
+  id: string;
+  created_at: string;
+  claimant_id: string;
+  dj_id: string | null;
+  requested_name: string | null;
+  requested_clubs: string | null;
+  claimed_instagram: string;
+  memo: string | null;
+  status: "pending" | "approved" | "rejected";
+  reject_reason: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  dj?: Pick<Dj, "id" | "display_name" | "slug" | "instagram"> | null;
+  claimant?: Pick<User, "display_name" | "name" | "instagram"> | null;
+}
+
 export interface ChatInterest {
   id: string;
   auction_id: string;

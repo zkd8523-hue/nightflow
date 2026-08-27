@@ -8,6 +8,8 @@ import {
   TrendingUp,
   AlertCircle,
   Store,
+  Compass,
+  Music2,
   Flag,
   ShieldAlert,
   Sparkles,
@@ -23,6 +25,9 @@ import {
   Landmark,
   Ticket,
   PartyPopper,
+  Disc3,
+  Activity,
+  Users2,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -60,6 +65,7 @@ export default async function AdminDashboardPage() {
     { count: foreignNew },
     { count: pendingBankCredits },
     { count: pendingWordReports },
+    { count: pendingLineupDrafts },
   ] = await Promise.all([
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "user"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "md"),
@@ -93,7 +99,12 @@ export default async function AdminDashboardPage() {
     supabase.from("credit_payments").select("*", { count: "exact", head: true }).eq("method", "bank_transfer").eq("status", "pending"),
     // 5자 리뷰 단어 신고 미처리
     supabase.from("club_word_cloud_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    // 클럽 타임테이블 검토 대기
+    supabase.from("lineup_drafts").select("*", { count: "exact", head: true }).eq("status", "pending"),
   ]);
+
+  const { data: artistDupes } = await supabase.rpc("find_duplicate_artists");
+  const artistDupeCount = artistDupes?.length ?? 0;
 
   // 시간 기반 필터: 종료 시간이 아직 안 지난 경매만 카운트
   const activeCount = (liveAuctions || []).filter((a) => {
@@ -290,6 +301,24 @@ export default async function AdminDashboardPage() {
       href: "/admin/clubs",
     },
     {
+      label: "미등록 클럽 발굴",
+      value: "공연 이력 기반",
+      icon: Compass,
+      color: "text-brand-amber",
+      bgColor: "bg-amber-500/10",
+      badge: null,
+      href: "/admin/club-discovery",
+    },
+    {
+      label: "아티스트·DJ 인스타",
+      value: "연결 관리",
+      icon: Music2,
+      color: "text-brand-amber",
+      bgColor: "bg-amber-500/10",
+      badge: null,
+      href: "/admin/performers",
+    },
+    {
       label: "주류 정보 관리",
       value: "관리",
       icon: Wine,
@@ -351,6 +380,33 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-pink-500/10",
       badge: null,
       href: "/admin/hotdeal-clicks",
+    },
+    {
+      label: "라인업 검토",
+      value: pendingLineupDrafts ? `${pendingLineupDrafts}건 대기` : "관리",
+      icon: Disc3,
+      color: "text-brand-amber",
+      bgColor: "bg-amber-500/10",
+      badge: pendingLineupDrafts ? `🔴 ${pendingLineupDrafts}건` : null,
+      href: "/admin/lineups",
+    },
+    {
+      label: "수집 현황",
+      value: "인스타 파이프라인",
+      icon: Activity,
+      color: "text-sky-400",
+      bgColor: "bg-sky-500/10",
+      badge: null,
+      href: "/admin/collection",
+    },
+    {
+      label: "아티스트 병합",
+      value: artistDupeCount ? `${artistDupeCount}건 대기` : "관리",
+      icon: Users2,
+      color: "text-brand-amber",
+      bgColor: "bg-amber-500/10",
+      badge: artistDupeCount ? `🔴 ${artistDupeCount}건` : null,
+      href: "/admin/artists",
     },
     {
       label: "스트라이크 유저",

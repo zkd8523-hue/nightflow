@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useFavoritesContext } from "@/components/providers";
+import { useFavoritesContext, useDjFavoritesContext } from "@/components/providers";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Heart, Wine } from "lucide-react";
-import type { UserFavoriteClub, HotdealBenefitsByDow } from "@/types/database";
+import { ArrowLeft, Heart, Wine, Instagram, Disc3 } from "lucide-react";
+import type { UserFavoriteClub, UserFavoriteDj, HotdealBenefitsByDow } from "@/types/database";
+import { formatBusinessMin, getBusinessDateISO } from "@/lib/lineups/time";
+import { formatLineupDate } from "@/lib/lineups/formatDate";
 import { createClient } from "@/lib/supabase/client";
 import {
   pickUpcomingBenefit,
@@ -209,6 +211,163 @@ function ClubFavoriteList({ items }: { items: UserFavoriteClub[] }) {
   );
 }
 
+type UpcomingSet = {
+  event_date: string;
+  start_min: number | null;
+  club_id: string;
+  club_name: string;
+};
+
+/**
+ * 찜한 DJ들의 "다음 플레이" 1건씩. 찜 목록에서 가장 궁금한 건 "이 DJ 언제 트냐"이므로
+ * 이름만 나열하는 대신 예정된 가장 가까운 라인업을 붙인다.
+ */
+function useUpcomingByDj(djIds: string[]): Record<string, UpcomingSet> {
+  const [map, setMap] = useState<Record<string, UpcomingSet>>({});
+  const key = useMemo(() => [...djIds].sort().join(","), [djIds]);
+
+  useEffect(() => {
+    if (djIds.length === 0) {
+      setMap({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("lineup_sets")
+        .select(
+          "dj_id, start_min, club_lineups!inner(event_date, clubs!inner(id, name))"
+        )
+        .in("dj_id", djIds)
+        .gte("club_lineups.event_date", getBusinessDateISO())
+        .order("start_min", { ascending: true })
+        .limit(300);
+
+      if (cancelled) return;
+
+      type Row = {
+        dj_id: string;
+        start_min: number | null;
+        club_lineups:
+          | { event_date: string; clubs: { id: string; name: string } | { id: string; name: string }[] }
+          | { event_date: string; clubs: { id: string; name: string } | { id: string; name: string }[] }[]
+          | null;
+      };
+
+      const next: Record<string, UpcomingSet> = {};
+      for (const r of (data ?? []) as unknown as Row[]) {
+        // PostgREST 조인은 배열/객체 양쪽으로 온다 (라인업 화면 공통 규약)
+        const lineup = Array.isArray(r.club_lineups) ? r.club_lineups[0] : r.club_lineups;
+        if (!lineup) continue;
+        const club = Array.isArray(lineup.clubs) ? lineup.clubs[0] : lineup.clubs;
+        if (!club) continue;
+
+        const cand: UpcomingSet = {
+          event_date: lineup.event_date,
+          start_min: r.start_min,
+          club_id: club.id,
+          club_name: club.name,
+        };
+        const cur = next[r.dj_id];
+        // 가장 이른 날짜, 같은 날이면 가장 이른 시각 1건만 남긴다
+        if (
+          !cur ||
+          cand.event_date < cur.event_date ||
+          (cand.event_date === cur.event_date &&
+            cand.start_min !== null && cur.start_min !== null &&
+            cand.start_min < cur.start_min)
+        ) {
+          next[r.dj_id] = cand;
+        }
+      }
+      setMap(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return map;
+}
+
+function DjFavoriteList({ items }: { items: UserFavoriteDj[] }) {
+  const djIds = useMemo(
+    () => items.map((f) => f.dj?.id).filter((id): id is string => !!id),
+    [items]
+  );
+  const upcoming = useUpcomingByDj(djIds);
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Disc3 className="w-12 h-12 text-muted-foreground mb-4" />
+        <p className="text-[15px] text-muted-foreground font-bold mb-2">아직 찜한 DJ가 없어요</p>
+        <p className="text-[13px] text-muted-foreground mb-6">
+          라인업에서 DJ 옆 하트로 찜해보세요.
+        </p>
+        <Link
+          href="/lineups?tab=dj"
+          className="h-10 px-5 rounded-full bg-muted text-foreground font-bold text-[14px] inline-flex items-center hover:bg-muted transition-colors"
+        >
+          DJ 라인업 보기
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 pb-24">
+      {items.map((fav) => {
+        const dj = fav.dj;
+        if (!dj) return null;
+        const next = upcoming[dj.id];
+        return (
+          <div
+            key={fav.id}
+            className="flex items-center gap-3 p-3 rounded-2xl bg-card"
+          >
+            {/* 이니셜 원 없음 — DJ는 프로필 사진이 없는 운영자 등록 데이터 (라인업 화면 공통) */}
+            <div className="flex-1 min-w-0">
+              {/* DJ 프로필 페이지가 없으므로 인스타가 있으면 이름이 인스타 링크
+                  (라인업 화면들과 같은 규칙) */}
+              {dj.instagram ? (
+                <a
+                  href={`https://instagram.com/${dj.instagram}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 max-w-full text-[15px] font-black text-foreground hover:text-amber-400 transition-colors"
+                >
+                  <span className="truncate">{dj.display_name}</span>
+                  <Instagram className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" aria-hidden="true" />
+                </a>
+              ) : (
+                <p className="text-[15px] font-black text-foreground truncate">
+                  {dj.display_name}
+                </p>
+              )}
+
+              {next ? (
+                <Link
+                  href={`/clubs/${next.club_id}/lineup/${next.event_date}`}
+                  className="block text-[12px] text-muted-foreground truncate hover:text-foreground transition-colors"
+                >
+                  {formatLineupDate(next.event_date)} · {next.club_name}{" "}
+                  {next.start_min !== null && (
+                    <span className="font-mono">{formatBusinessMin(next.start_min)}</span>
+                  )}
+                </Link>
+              ) : (
+                <p className="text-[12px] text-muted-foreground">예정된 라인업 없음</p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ClubImageFallback({ name }: { name: string }) {
   const initial = name.trim().charAt(0);
   let hash = 0;
@@ -247,9 +406,11 @@ function EmptyState() {
 export default function FavoritesPage() {
   const { user, isLoading: userLoading } = useCurrentUser();
   const { favorites: favoriteClubs, isLoading: clubFavLoading } = useFavoritesContext();
+  const { favoriteDjs, isLoading: djFavLoading } = useDjFavoritesContext();
+  const [tab, setTab] = useState<"club" | "dj">("club");
   const router = useRouter();
 
-  if (userLoading || clubFavLoading) {
+  if (userLoading || clubFavLoading || djFavLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-border border-t-white rounded-full animate-spin" />
@@ -274,15 +435,43 @@ export default function FavoritesPage() {
             <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
           <h1 className="text-xl font-black text-foreground">찜</h1>
-          {favoriteClubs.length > 0 && (
-            <span className="text-[13px] text-muted-foreground">{favoriteClubs.length}개</span>
+          {(tab === "club" ? favoriteClubs.length : favoriteDjs.length) > 0 && (
+            <span className="text-[13px] text-muted-foreground">
+              {tab === "club" ? favoriteClubs.length : favoriteDjs.length}개
+            </span>
           )}
         </div>
 
-        {favoriteClubs.length === 0 ? (
-          <EmptyState />
+        {/* 클럽 / DJ 탭 — 라인업 화면과 같은 세그먼트 토글 */}
+        <div className="flex bg-card rounded-lg p-[3px] mb-4" role="tablist">
+          {(["club", "dj"] as const).map((t) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => setTab(t)}
+              className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                tab === t ? "bg-muted text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {t === "club" ? "클럽" : "DJ"}
+              {(t === "club" ? favoriteClubs.length : favoriteDjs.length) > 0 && (
+                <span className="ml-1 opacity-60">
+                  {t === "club" ? favoriteClubs.length : favoriteDjs.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {tab === "club" ? (
+          favoriteClubs.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <ClubFavoriteList items={favoriteClubs} />
+          )
         ) : (
-          <ClubFavoriteList items={favoriteClubs} />
+          <DjFavoriteList items={favoriteDjs} />
         )}
       </div>
     </div>

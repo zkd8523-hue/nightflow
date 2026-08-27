@@ -14,18 +14,13 @@ import {
   Loader2,
   Clock,
   Ticket,
-  Music,
-  Cigarette,
-  CigaretteOff,
   Shirt,
   Heart,
   MessageCircle,
-  Disc3,
   Copy,
   Check,
   Pencil,
   Globe,
-  type LucideIcon,
 } from "lucide-react";
 import { uploadImage } from "@/lib/utils/upload";
 import { toast } from "sonner";
@@ -48,6 +43,9 @@ import type { Club, Auction, HotdealDow, HotdealTimeSlot, Puzzle } from "@/types
 import { GUEST_SIGN_BENEFIT_PRESETS, benefitLabel } from "@/lib/utils/hotdeal";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 import { ClubCouponBar } from "@/components/coupon/ClubCouponBar";
+import { type TodayLineup } from "./ClubLineupSection";
+import { UpcomingLineupSheet, type UpcomingLineup } from "./UpcomingLineupSheet";
+import { ClubUpcomingEvents, type ClubUpcomingEvent } from "./ClubUpcomingEvents";
 
 function trackGuestSignClick(
   slotId: string | undefined,
@@ -75,6 +73,7 @@ interface GuestSignSlotInfo {
     kakao_open_chat_url: string | null;
   };
   today_benefit: string | null;
+  today_tags?: string[];
 }
 
 interface ClubDetailContentProps {
@@ -85,6 +84,13 @@ interface ClubDetailContentProps {
   hideShareList?: boolean;
   /** Migration 505: 이 클럽의 파트너 직통 조각(host_is_md, 오늘 이후). 클럽당 파트너 1명 전제 */
   sharePuzzles?: Puzzle[];
+  /** 오늘 영업일 DJ 타임테이블. 없으면 섹션 자체가 렌더되지 않는다 */
+  /** @deprecated 오늘 라인업 섹션 제거 — 전광판(UpcomingLineupSheet)이 NOW를 표시한다.
+   *  page.tsx가 아직 넘기고 있어 시그니처만 남겨 둔다. */
+  todayLineup?: TodayLineup | null;
+  /** 오늘부터 앞으로 예정된 라인업 전체. "어떤 DJ들이 올까?" 시트 진입점용 */
+  upcomingLineups?: UpcomingLineup[];
+  upcomingEvents?: ClubUpcomingEvent[];
 }
 
 export function ClubDetailContent({
@@ -93,6 +99,9 @@ export function ClubDetailContent({
   guestSignSlot = null,
   hideShareList = false,
   sharePuzzles = [],
+  todayLineup = null,
+  upcomingLineups = [],
+  upcomingEvents = [],
 }: ClubDetailContentProps) {
   const activeAuctions = useMemo(() => {
     return rawActiveAuctions.map(adjustMockAuctionDates);
@@ -362,7 +371,17 @@ export function ClubDetailContent({
           clubAreaKr={club.area ?? null}
         />
 
-        <FeatureIconRow tags={clubTags} />
+        <div className={`px-4 ${upcomingLineups.length > 0 ? "pt-2 pb-1" : "pt-4"}`}>
+          <UpcomingLineupSheet clubId={club.id} lineups={upcomingLineups} />
+        </div>
+
+        {/* 공연 전광판. DJ 라인업 전광판과 같은 생김새로 바로 아래 붙인다 —
+            간격을 벌리면 관련 없는 블록처럼 읽힌다. */}
+        {upcomingEvents.length > 0 && (
+          <div className="px-4 pt-1.5 pb-1">
+            <ClubUpcomingEvents events={upcomingEvents} />
+          </div>
+        )}
 
         {isAdmin && (
           <div className="px-4 pt-3">
@@ -406,7 +425,7 @@ export function ClubDetailContent({
           </div>
         )}
 
-        <div className="p-4 space-y-2">
+        <div className="px-4 pt-2 pb-4 space-y-2">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-baseline gap-2 flex-wrap flex-1 min-w-0">
             {/* H2로 강등 — 실제 H1은 page.tsx의 sr-only로 풍부한 SEO 본문이 됨.
@@ -468,21 +487,27 @@ export function ClubDetailContent({
           )}
 
           {/* 게스트 간판 — 이번 주 차지 MD 정보 (각진 '간판' 스타일 + 밝은 내부 배경으로 배경과 분리) */}
-          {guestSignSlot && (
+          {guestSignSlot && (() => {
+            // MD가 문구를 안 쓰고 칩만 고른 경우도 있으므로, 텍스트가 없으면
+            // 칩 라벨을 이어붙여 띠를 만든다("무료입장 · 프리드링크"). 목록/홈 배너 폴백과 동일 규칙.
+            const bannerText =
+              guestSignSlot.today_benefit?.trim() ||
+              (guestSignSlot.today_tags ?? []).slice(0, 2).map((t) => benefitLabel(t).label).join(" · ");
+            return (
             <div className="bg-muted border border-amber-500/50 rounded-md overflow-hidden mt-1 shadow-[0_6px_24px_-8px_rgba(245,158,11,0.35)]">
               {/* 헤더: 혜택 앰버 '간판' */}
-              {guestSignSlot.today_benefit && (
+              {bannerText && (
                 <div className="bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-2 border-b-2 border-amber-600/40">
                   <span
                     className="block whitespace-pre-line text-black text-[14px] tracking-tight text-center leading-[1.15] line-clamp-2"
                     style={{ fontFamily: "var(--font-display-kr)" }}
                   >
-                    {guestSignSlot.today_benefit}
+                    {bannerText}
                   </span>
                 </div>
               )}
 
-              <div className="p-3 space-y-2.5">
+              <div className="px-3 pt-2 pb-0 space-y-1.5">
                 {isAdmin && guestSignSlot.slot_id && guestSignSlot.today_dow && (
                   <AdminGuestSignEditor
                     slotId={guestSignSlot.slot_id}
@@ -515,89 +540,94 @@ export function ClubDetailContent({
                     </p>
                   </div>
                 </Link>
-                <div className="space-y-2">
-                  <div className={`grid divide-x divide-border rounded-md border border-border overflow-hidden ${guestSignSlot.md.kakao_open_chat_url ? "grid-cols-2" : "grid-cols-1"}`}>
-                    {guestSignSlot.md.instagram && (
-                      <a
-                        href={`https://instagram.com/${guestSignSlot.md.instagram}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "instagram")}
-                        className="bg-card hover:bg-muted px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
-                      >
-                        <Instagram className="w-4 h-4 text-pink-400 flex-shrink-0" />
-                        <span className="text-foreground text-[12px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
-                      </a>
-                    )}
-                    {guestSignSlot.md.kakao_open_chat_url && (
-                      <a
-                        href={guestSignSlot.md.kakao_open_chat_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "openchat")}
-                        className="bg-card hover:bg-muted px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
-                      >
-                        <MessageCircle className="w-4 h-4 text-[#FEE500] flex-shrink-0" fill="currentColor" />
-                        <span className="text-foreground text-[12px] font-bold truncate">오픈채팅</span>
-                      </a>
-                    )}
-                  </div>
-                  {(guestSignSlot.md.instagram || guestSignSlot.md.kakao_open_chat_url) && (
-                    <div className="grid grid-cols-2 divide-x divide-border rounded-md border border-border overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const benefit = guestSignSlot.today_benefit?.trim();
-                          const message = [
-                            "[나플 게스트 문의] 안녕하세요!",
-                            `${clubName}${benefit ? ` "${benefit}"` : ""} 게스트 가능할까요?`,
-                          ].join("\n");
-                          try {
-                            await navigator.clipboard.writeText(message);
-                            setGuestSignCopied("guest");
-                            toast.success("메시지가 복사됐어요");
-                            trackGuestSignClick(guestSignSlot.slot_id, "copy_message");
-                            setTimeout(() => setGuestSignCopied(null), 2000);
-                          } catch {
-                            toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
-                          }
-                        }}
-                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 bg-card hover:bg-muted text-[12px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.98] transition"
-                      >
-                        {guestSignCopied === "guest" ? <Check className="w-3.5 h-3.5 text-money" /> : <Copy className="w-3.5 h-3.5" />}
-                        {guestSignCopied === "guest" ? "복사됐어요" : "게스트 문의 복사"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const message = [
-                            "[나플 예약 문의] 안녕하세요!",
-                            `${clubName} 테이블 예약 가능할까요?`,
-                          ].join("\n");
-                          try {
-                            await navigator.clipboard.writeText(message);
-                            setGuestSignCopied("reserve");
-                            toast.success("메시지가 복사됐어요");
-                            trackGuestSignClick(guestSignSlot.slot_id, "copy_message");
-                            setTimeout(() => setGuestSignCopied(null), 2000);
-                          } catch {
-                            toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
-                          }
-                        }}
-                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 bg-card hover:bg-muted text-[12px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.98] transition"
-                      >
-                        {guestSignCopied === "reserve" ? <Check className="w-3.5 h-3.5 text-money" /> : <Copy className="w-3.5 h-3.5" />}
-                        {guestSignCopied === "reserve" ? "복사됐어요" : "예약 문의 복사"}
-                      </button>
-                    </div>
+              </div>
+              <div className="mt-1.5">
+                <div className={`grid divide-x divide-border border-t border-border overflow-hidden ${guestSignSlot.md.kakao_open_chat_url ? "grid-cols-2" : "grid-cols-1"}`}>
+                  {guestSignSlot.md.instagram && (
+                    <a
+                      href={`https://instagram.com/${guestSignSlot.md.instagram}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "instagram")}
+                      className="bg-card hover:bg-muted px-3 py-2.5 flex items-center justify-center gap-2 active:scale-95 transition"
+                    >
+                      <Instagram className="w-4 h-4 text-pink-400 flex-shrink-0" />
+                      <span className="text-foreground text-[12px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
+                    </a>
+                  )}
+                  {guestSignSlot.md.kakao_open_chat_url && (
+                    <a
+                      href={guestSignSlot.md.kakao_open_chat_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "openchat")}
+                      className="bg-card hover:bg-muted px-3 py-2.5 flex items-center justify-center gap-2 active:scale-95 transition"
+                    >
+                      <MessageCircle className="w-4 h-4 text-[#FEE500] flex-shrink-0" fill="currentColor" />
+                      <span className="text-foreground text-[12px] font-bold truncate">오픈채팅</span>
+                    </a>
                   )}
                 </div>
+                {(guestSignSlot.md.instagram || guestSignSlot.md.kakao_open_chat_url) && (
+                  <div className="grid grid-cols-2 divide-x divide-border/60 border-t-2 border-border bg-background/40 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const benefit = bannerText?.trim();
+                        const message = [
+                          "[나플 게스트 문의] 안녕하세요!",
+                          `${clubName}${benefit ? ` "${benefit}"` : ""} 게스트 가능할까요?`,
+                        ].join("\n");
+                        try {
+                          await navigator.clipboard.writeText(message);
+                          setGuestSignCopied("guest");
+                          toast.success("메시지가 복사됐어요");
+                          trackGuestSignClick(guestSignSlot.slot_id, "copy_message");
+                          setTimeout(() => setGuestSignCopied(null), 2000);
+                        } catch {
+                          toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
+                        }
+                      }}
+                      className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 hover:bg-muted text-[12px] font-bold text-foreground/70 hover:text-foreground active:scale-[0.98] transition"
+                    >
+                      {guestSignCopied === "guest" ? <Check className="w-3.5 h-3.5 text-money" /> : <Copy className="w-3.5 h-3.5" />}
+                      {guestSignCopied === "guest" ? "복사됐어요" : "게스트 문의 복사"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const message = [
+                          "[나플 예약 문의] 안녕하세요!",
+                          `${clubName} 테이블 예약 가능할까요?`,
+                        ].join("\n");
+                        try {
+                          await navigator.clipboard.writeText(message);
+                          setGuestSignCopied("reserve");
+                          toast.success("메시지가 복사됐어요");
+                          trackGuestSignClick(guestSignSlot.slot_id, "copy_message");
+                          setTimeout(() => setGuestSignCopied(null), 2000);
+                        } catch {
+                          toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
+                        }
+                      }}
+                      className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 hover:bg-muted text-[12px] font-bold text-foreground/70 hover:text-foreground active:scale-[0.98] transition"
+                    >
+                      {guestSignCopied === "reserve" ? <Check className="w-3.5 h-3.5 text-money" /> : <Copy className="w-3.5 h-3.5" />}
+                      {guestSignCopied === "reserve" ? "복사됐어요" : "예약 문의 복사"}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* 쿠폰 띠 — 배민식 띠+시트. 활성 쿠폰 없으면 자체적으로 렌더 안 함 (Migration 539) */}
           <ClubCouponBar clubId={club.id} />
+
+          {/* 타입/음악/흡연 태그를 해시태그로 — 정보 리스트 맨 위. LED 전광판이 원래
+              이 정보(FeatureIconRow)가 있던 자리를 대신하면서, 태그는 여기로 옮겨왔다. */}
+          <HashtagRow tags={clubTags} />
 
           {clubAddress && (
             <button
@@ -822,98 +852,34 @@ export function ClubDetailContent({
   );
 }
 
-const FEATURE_ICONS: Record<string, LucideIcon> = {
-  venue_type: Disc3,
-  genre: Music,
-  smoking: Cigarette,
-};
-
-function FeatureIconRow({
-  tags,
-  canPartnerEdit = false,
-  onEdit,
-}: {
-  tags: string[];
-  canPartnerEdit?: boolean;
-  onEdit?: () => void;
-}) {
-  type Cell = { key: string; Icon: LucideIcon; value: string | null; groupLabel: string };
-  const cells: Cell[] = [];
-
-  // 표시 순서: 타입(venue_type) → 음악(genre) → 흡연(smoking)
-  const ORDER: { key: ClubTagGroup; label: string }[] = [
-    { key: "venue_type", label: "타입" },
-    { key: "genre", label: "음악" },
-    { key: "smoking", label: "흡연" },
+/**
+ * 타입/음악/흡연 태그를 #해시태그로 표시. FeatureIconRow와 같은 태그 그룹(venue_type/
+ * genre/smoking)을 쓰지만, 자리가 정보 리스트(주소·영업시간 등)로 옮겨오면서
+ * 아이콘 3칸 대신 한 줄짜리 해시태그 나열로 형태를 바꿨다 — 아이콘 없이도 정보
+ * 리스트의 다른 항목들(아이콘+텍스트)과 톤이 맞도록 볼드 처리.
+ */
+function HashtagRow({ tags }: { tags: string[] }) {
+  const ORDER: { key: ClubTagGroup }[] = [
+    { key: "venue_type" },
+    { key: "genre" },
+    { key: "smoking" },
   ];
 
+  const labels: string[] = [];
   for (const item of ORDER) {
     const groupTags = getTagsByGroup(tags, item.key);
-    if (groupTags.length === 0 && !canPartnerEdit) continue;
-    // 다중 선택 그룹은 ' · ' 로 join, 단일은 첫 값만
-    const value =
-      groupTags.length === 0
-        ? null
-        : groupTags.map((t) => t.shortLabel ?? t.label).join(" · ");
-
-    // smoking은 값에 따라 아이콘 분기 (흡연=Cigarette, 금연=CigaretteOff)
-    let Icon = FEATURE_ICONS[item.key] ?? Music;
-    if (item.key === "smoking" && groupTags.length > 0) {
-      const isNotAllowed = groupTags.some((t) => t.key === "not_allowed");
-      Icon = isNotAllowed ? CigaretteOff : Cigarette;
+    for (const t of groupTags) {
+      labels.push(t.shortLabel ?? t.label);
     }
-
-    cells.push({
-      key: item.key,
-      Icon,
-      value,
-      groupLabel: item.label,
-    });
   }
 
-  if (cells.length === 0) return null;
+  if (labels.length === 0) return null;
 
   return (
-    <div className="border-t border-b border-border flex items-stretch divide-x divide-neutral-800">
-      {cells.map(({ key, Icon, value, groupLabel }) => {
-        const isEmpty = !value;
-        const content = (
-          <>
-            <Icon
-              className={`w-5 h-5 ${isEmpty ? "text-muted-foreground" : "text-foreground"}`}
-              strokeWidth={1.75}
-            />
-            <span
-              className={`text-[11px] font-bold truncate max-w-full ${
-                isEmpty
-                  ? canPartnerEdit
-                    ? "text-brand-amber dark:text-brand-amber/80"
-                    : "text-muted-foreground"
-                  : "text-foreground"
-              }`}
-            >
-              {isEmpty ? (canPartnerEdit ? `+ ${groupLabel}` : groupLabel) : value}
-            </span>
-          </>
-        );
-        return isEmpty && canPartnerEdit && onEdit ? (
-          <button
-            key={key}
-            type="button"
-            onClick={onEdit}
-            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-3 px-2 hover:bg-card/50 transition-colors"
-          >
-            {content}
-          </button>
-        ) : (
-          <div
-            key={key}
-            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-3 px-2"
-          >
-            {content}
-          </div>
-        );
-      })}
+    <div className="flex flex-wrap gap-x-2 gap-y-1 text-[12px] font-bold text-foreground">
+      {labels.map((label, i) => (
+        <span key={i}>#{label}</span>
+      ))}
     </div>
   );
 }

@@ -34,12 +34,6 @@ enabled = true
 #
 # [functions.close-expired-auctions]
 # schedule = "*/2 * * * *"        # 매 2분 - 만료 경매 자동 종료
-#
-# [functions.expire-payments]
-# schedule = "*/5 * * * *"        # 매 5분 - 15분 미결제 자동 취소 + 단계적 패널티
-#
-# [functions.payment-reminders]
-# schedule = "* * * * *"          # 매 1분 - 결제 마감 5분 전 리마인더 알림톡
 
 # Edge Functions는 Supabase Dashboard에서 Cron 설정
 # Dashboard > Edge Functions > [함수명] > Settings > Cron Schedule
@@ -53,11 +47,6 @@ entrypoint = "./functions/purge-deleted-accounts/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/notify-closing-soon/index.ts"
-
-[functions.payment-reminders]
-enabled = true
-verify_jwt = false
-entrypoint = "./functions/payment-reminders/index.ts"
 
 [functions.expire-puzzles]
 enabled = true
@@ -94,3 +83,10 @@ verify_jwt = false
 entrypoint = "./functions/reset-today-views/index.ts"
 # 크론: 매일 04:00 KST (19:00 UTC) — Dashboard > Edge Functions > reset-today-views > Settings > Cron Schedule
 # schedule = "0 19 * * *"
+
+[functions.collect-club-events]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/collect-club-events/index.ts"
+# 크론: 수 09:00 KST (00:00 UTC) — Migration 571 pg_cron 등록 (Apify 무료 크레딧 절약)
+# schedule = "0 0 * * 3"
