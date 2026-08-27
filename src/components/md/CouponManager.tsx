@@ -97,11 +97,9 @@ export function CouponManager({ clubs, initialCoupons, defaultClubId, embedded =
   const [conditions, setConditions] = useState("");
   const [showMore, setShowMore] = useState(false);
 
-  // 사용 마감 — 기본값: 오늘 밤 마감(영업일 기준 익일 새벽 5시)
+  // 사용 마감 — 기본값: 10일 뒤 (최대 허용치는 14일, DateTimeSheet max 참고)
   const defaultEndsAt = useMemo(() => {
-    const now = dayjs();
-    const base = now.hour() < 6 ? now : now.add(1, "day");
-    return base.hour(5).minute(0).second(0).format("YYYY-MM-DDTHH:mm");
+    return dayjs().add(10, "day").format("YYYY-MM-DDTHH:mm");
   }, []);
   const [redeemEndsAtLocal, setRedeemEndsAtLocal] = useState(defaultEndsAt);
 
