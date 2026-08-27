@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { ReportActions } from "@/components/admin/ReportActions";
 import { PuzzleReportActions } from "@/components/admin/PuzzleReportActions";
+import { EventCommentReportActions } from "@/components/admin/EventCommentReportActions";
 
 const AUCTION_REASON_LABELS: Record<string, string> = {
   fake_listing: "허위매물",
@@ -22,6 +23,14 @@ const PUZZLE_REASON_LABELS: Record<string, { label: string; color: string }> = {
   other: { label: "기타", color: "bg-muted text-muted-foreground border border-border/50" },
 };
 
+const COMMENT_REASON_LABELS: Record<string, { label: string; color: string }> = {
+  spam: { label: "스팸", color: "bg-purple-500/15 text-purple-400 border border-purple-500/20" },
+  abuse: { label: "욕설·괴롭힘", color: "bg-orange-500/15 text-orange-400 border border-orange-500/20" },
+  sexual: { label: "선정성", color: "bg-red-500/15 text-red-400 border border-red-500/20" },
+  advertising: { label: "광고", color: "bg-blue-500/15 text-blue-400 border border-blue-500/20" },
+  other: { label: "기타", color: "bg-muted text-muted-foreground border border-border/50" },
+};
+
 type SearchParams = Promise<{ tab?: string }>;
 
 export default async function AdminReportsPage({
@@ -30,7 +39,8 @@ export default async function AdminReportsPage({
   searchParams: SearchParams;
 }) {
   const { tab } = await searchParams;
-  const activeTab: "auction" | "puzzle" = tab === "puzzle" ? "puzzle" : "auction";
+  const activeTab: "auction" | "puzzle" | "comment" =
+    tab === "puzzle" ? "puzzle" : tab === "comment" ? "comment" : "auction";
 
   const supabase = await createClient();
 
@@ -46,9 +56,19 @@ export default async function AdminReportsPage({
   }
 
   // 두 카운트 모두 헤더에 노출
-  const [{ count: auctionReportCount }, { count: puzzleReportCount }] = await Promise.all([
+  const [
+    { count: auctionReportCount },
+    { count: puzzleReportCount },
+    { count: commentReportCount },
+  ] = await Promise.all([
     supabase.from("auction_reports").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("puzzle_content_reports").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    // 603 미적용 환경에서도 페이지가 죽지 않게 한다
+    supabase
+      .from("event_comment_reports")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .then((r) => r, () => ({ count: 0 })),
   ]);
 
   // 활성 탭 데이터만 로드
@@ -57,6 +77,9 @@ export default async function AdminReportsPage({
     : null;
   const puzzleData = activeTab === "puzzle"
     ? await loadPuzzleReports(supabase)
+    : null;
+  const commentData = activeTab === "comment"
+    ? await loadCommentReports(supabase)
     : null;
 
   return (
@@ -73,13 +96,14 @@ export default async function AdminReportsPage({
           <div>
             <h1 className="text-xl font-black tracking-tight">신고 관리</h1>
             <p className="text-[12px] text-muted-foreground mt-0.5">
-              경매 {auctionReportCount || 0}건 / 깃발 {puzzleReportCount || 0}건 대기
+              경매 {auctionReportCount || 0}건 / 깃발 {puzzleReportCount || 0}건 / 댓글{" "}
+              {commentReportCount || 0}건 대기
             </p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="grid grid-cols-2 gap-2 mb-6 bg-card border border-border rounded-2xl p-1">
+        <div className="grid grid-cols-3 gap-2 mb-6 bg-card border border-border rounded-2xl p-1">
           <Link
             href="/admin/reports?tab=auction"
             className={`text-center py-2.5 rounded-xl text-[13px] font-bold transition-colors ${
@@ -100,6 +124,16 @@ export default async function AdminReportsPage({
           >
             깃발 신고 ({puzzleReportCount || 0})
           </Link>
+          <Link
+            href="/admin/reports?tab=comment"
+            className={`text-center py-2.5 rounded-xl text-[13px] font-bold transition-colors ${
+              activeTab === "comment"
+                ? "bg-inverse text-inverse-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            댓글 신고 ({commentReportCount || 0})
+          </Link>
         </div>
 
         {activeTab === "auction" && auctionData && (
@@ -107,6 +141,9 @@ export default async function AdminReportsPage({
         )}
         {activeTab === "puzzle" && puzzleData && (
           <PuzzleReportsView data={puzzleData} />
+        )}
+        {activeTab === "comment" && commentData && (
+          <CommentReportsView data={commentData} />
         )}
       </div>
     </div>
@@ -453,5 +490,139 @@ function PuzzleReportsView({
         </div>
       )}
     </>
+  );
+}
+
+/* ==========================================================================
+   공연 댓글 신고 (Migration 603)
+   ========================================================================== */
+
+async function loadCommentReports(
+  supabase: Awaited<ReturnType<typeof createClient>>
+) {
+  const { data: reports } = await supabase
+    .from("event_comment_reports")
+    .select("id, comment_id, reporter_id, reason, message, status, created_at")
+    .order("status", { ascending: true })
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  const list = reports ?? [];
+
+  // 신고된 댓글 본문 — 무엇을 신고했는지 안 보이면 판단할 수가 없다.
+  // 이미 지워진 댓글은 조회에 안 잡히므로 "삭제됨"으로 표시한다.
+  const commentIds = [...new Set(list.map((r) => r.comment_id))];
+  const { data: comments } = commentIds.length
+    ? await supabase
+        .from("event_comments")
+        .select("id, content, media, author_id, event_id, is_deleted, created_at")
+        .in("id", commentIds)
+    : { data: [] };
+
+  const authorIds = [...new Set((comments ?? []).map((c) => c.author_id))];
+  const reporterIds = [...new Set(list.map((r) => r.reporter_id))];
+  const { data: users } = [...authorIds, ...reporterIds].length
+    ? await supabase
+        .from("users")
+        .select("id, name, display_name")
+        .in("id", [...new Set([...authorIds, ...reporterIds])])
+    : { data: [] };
+
+  return { reports: list, comments: comments ?? [], users: users ?? [] };
+}
+
+function CommentReportsView({
+  data,
+}: {
+  data: Awaited<ReturnType<typeof loadCommentReports>>;
+}) {
+  const { reports, comments, users } = data;
+
+  if (reports.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <Flag className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+        <p className="text-[15px] font-bold text-muted-foreground">아직 신고가 없습니다</p>
+        <p className="text-[12px] text-muted-foreground mt-1">
+          유저가 공연 댓글을 신고하면 여기에 표시됩니다
+        </p>
+      </div>
+    );
+  }
+
+  const nameOf = (id: string) => {
+    const u = users.find((x) => x.id === id);
+    return u?.display_name || u?.name || "알 수 없음";
+  };
+
+  return (
+    <div className="space-y-3">
+      {reports.map((r) => {
+        const c = comments.find((x) => x.id === r.comment_id);
+        const reason = COMMENT_REASON_LABELS[r.reason] ?? COMMENT_REASON_LABELS.other;
+        // 조회에 안 잡히거나 is_deleted면 이미 지워진 댓글
+        const deleted = !c || c.is_deleted;
+
+        return (
+          <Card key={r.id} className="p-4 bg-card border-border">
+            <div className="flex items-start justify-between gap-3 mb-2.5">
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${reason.color}`}>
+                {reason.label}
+              </span>
+              <span className="text-[11px] text-muted-foreground shrink-0">
+                {new Date(r.created_at).toLocaleString("ko-KR")}
+              </span>
+            </div>
+
+            {/* 신고된 댓글 본문 */}
+            <div className="rounded-xl bg-muted/40 border border-border/50 p-3 mb-2.5">
+              {deleted ? (
+                <p className="text-[13px] text-muted-foreground italic">
+                  삭제된 댓글입니다
+                </p>
+              ) : (
+                <>
+                  <p className="text-[12px] font-bold text-muted-foreground mb-1">
+                    {nameOf(c.author_id)}
+                  </p>
+                  {c.content && (
+                    <p className="text-[13.5px] whitespace-pre-wrap break-words">
+                      {c.content}
+                    </p>
+                  )}
+                  {Array.isArray(c.media) && c.media.length > 0 && (
+                    <p className="text-[12px] text-muted-foreground mt-1">
+                      사진 {c.media.length}장 첨부
+                    </p>
+                  )}
+                  <Link
+                    href={`/events`}
+                    className="inline-block text-[11px] text-brand-amber font-bold mt-1.5"
+                  >
+                    공연 보기 →
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <p className="text-[12px] text-muted-foreground mb-1">
+              신고자: {nameOf(r.reporter_id)}
+            </p>
+            {r.message && (
+              <p className="text-[12.5px] text-foreground mb-2.5">사유: {r.message}</p>
+            )}
+
+            <div className="mt-2.5">
+              <EventCommentReportActions
+                reportId={r.id}
+                commentId={r.comment_id}
+                status={r.status}
+                commentDeleted={deleted}
+              />
+            </div>
+          </Card>
+        );
+      })}
+    </div>
   );
 }

@@ -1731,11 +1731,24 @@ export interface EventComment {
   content: string;
   /** 와글과 같은 형식 (Migration 287) — 사진만 올린 댓글은 content가 빈 문자열 */
   media: ChatMediaItem[];
+  /** @deprecated Migration 602 — 공연 채팅방은 대댓글로 대체됐다. 기존 데이터 호환용. */
   room_id: string | null;
+  /** 답글의 부모 댓글. NULL이면 최상위 댓글 (Migration 602, 1-depth만) */
+  parent_id: string | null;
+  /** 비정규화 카운트 — 트리거가 동기화한다 (Migration 602) */
+  reply_count: number;
+  like_count: number;
+  /** 마지막 수정 시각 (Migration 603). NULL이면 원본 그대로 */
+  edited_at: string | null;
   is_deleted: boolean;
   created_at: string;
   author?: { id: string; display_name: string | null; profile_image: string | null };
+  /** @deprecated Migration 602 */
   room?: EventChatRoom | null;
+  /** 내가 이 댓글에 좋아요를 눌렀는지 — 목록 조회 시 클라이언트가 채운다 */
+  liked_by_me?: boolean;
+  /** 최상위 댓글에 매달린 답글들 (클라이언트에서 트리로 조립) */
+  replies?: EventComment[];
 }
 
 /** 건의 게시판 작성자 요약 (public_user_profiles 임베드) */

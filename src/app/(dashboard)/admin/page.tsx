@@ -170,8 +170,12 @@ export default async function AdminDashboardPage() {
     }))
     .sort((a, b) => b.auctions - a.auctions);
 
-  // 신고 수 조회 (미처리만) — 경매 + 깃발 합산
-  const [{ count: pendingAuctionReportCount }, { count: pendingPuzzleReportCount }] = await Promise.all([
+  // 신고 수 조회 (미처리만) — 경매 + 깃발 + 공연 댓글 합산
+  const [
+    { count: pendingAuctionReportCount },
+    { count: pendingPuzzleReportCount },
+    { count: pendingEventCommentReportCount },
+  ] = await Promise.all([
     supabase
       .from("auction_reports")
       .select("id", { count: "exact", head: true })
@@ -180,8 +184,17 @@ export default async function AdminDashboardPage() {
       .from("puzzle_content_reports")
       .select("id", { count: "exact", head: true })
       .eq("status", "pending"),
+    // Migration 603 미적용 환경에서도 대시보드 전체가 죽지 않아야 한다 → 실패는 0으로
+    supabase
+      .from("event_comment_reports")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .then((r) => r, () => ({ count: 0 })),
   ]);
-  const pendingReportCount = (pendingAuctionReportCount || 0) + (pendingPuzzleReportCount || 0);
+  const pendingReportCount =
+    (pendingAuctionReportCount || 0) +
+    (pendingPuzzleReportCount || 0) +
+    (pendingEventCommentReportCount || 0);
 
   // 연락 미수신 신고 큐 (visit_result=noshow, strike 미처리)
   const { count: pendingPuzzleNoshowCount } = await supabase
