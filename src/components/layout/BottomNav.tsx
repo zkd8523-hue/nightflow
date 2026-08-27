@@ -67,21 +67,30 @@ export function BottomNav() {
   // 채팅 입력 포커스 중엔 네비 숨김
   if (composerFocused) return null;
 
-  // 찜 자리를 채팅으로 대체 (플래그 OFF면 찜 유지)
+  // 찜 자리를 메시지로 대체 (플래그 OFF면 찜 유지).
+  // ⚠️ useOfferChatFlag는 3-state다 — undefined(확정 전) / true / false.
+  //    undefined를 falsy로 흘리면 "찜"이 먼저 그려졌다가 조회 완료 후 "메시지"로
+  //    바뀌어 깜빡인다. 확정 전에는 자리만 잡아두고 아무것도 그리지 않는다
+  //    (탭을 빼버리면 나머지 4개가 재배치돼 더 크게 흔들린다).
   const tabs = [
     { label: "홈", icon: Home, href: "/" },
     { label: "클럽지도", icon: Map, href: "/clubs" },
     { label: "OPEN", icon: WagleIcon, href: "/chat" },
-    offerChatOn
-      ? { label: "메시지", icon: MessageCircle, href: "/messages" }
-      : { label: "찜", icon: Heart, href: "/favorites" },
+    offerChatOn === undefined
+      ? null
+      : offerChatOn
+        ? { label: "메시지", icon: MessageCircle, href: "/messages" }
+        : { label: "찜", icon: Heart, href: "/favorites" },
     { label: "MY", icon: User, href: "/profile" },
   ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border">
       <div className="max-w-lg mx-auto flex items-center justify-around pb-[env(safe-area-inset-bottom)]">
-        {tabs.map(({ label, icon: Icon, href }) => {
+        {tabs.map((tab, i) => {
+          // 플래그 확정 전 슬롯 — 자리만 차지하고 비워둔다 (레이아웃 고정)
+          if (!tab) return <div key={`pending-${i}`} className="flex-1" aria-hidden />;
+          const { label, icon: Icon, href } = tab;
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
           // 와글 활성 시 보라 시그니처 (MUSIC 가치), 나머지는 흰색
           const activeClass = "text-foreground";
