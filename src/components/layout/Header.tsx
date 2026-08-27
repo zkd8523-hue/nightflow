@@ -263,7 +263,9 @@ export function Header({
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <CreditChargedDialog />
-      <div className="container mx-auto max-w-lg px-4 h-[52px] flex items-center justify-between">
+      {/* 홈만 데스크톱에서 좌우 확장 (page.tsx의 lg:max-w-4xl과 정렬을 맞춤).
+          다른 페이지는 아직 max-w-lg 본문이라 헤더만 넓히면 정렬이 어긋난다. */}
+      <div className={`container mx-auto max-w-lg ${pathname === "/" ? "lg:max-w-4xl" : ""} px-4 h-[52px] flex items-center justify-between`}>
         <div className="flex items-center gap-2 min-w-0">
           {compact && backHref && (
             <Link

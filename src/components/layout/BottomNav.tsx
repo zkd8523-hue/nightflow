@@ -86,7 +86,9 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border">
-      <div className="max-w-lg mx-auto flex items-center justify-around pb-[env(safe-area-inset-bottom)]">
+      {/* 홈만 데스크톱에서 본문(lg:max-w-4xl)과 폭을 맞춘다 — 안 맞추면 콘텐츠는 중앙인데
+          탭만 화면 전체로 퍼져 정렬이 어긋나 보인다. 다른 페이지는 본문이 아직 max-w-lg. */}
+      <div className={`max-w-lg ${pathname === "/" ? "lg:max-w-4xl" : ""} mx-auto flex items-center justify-around pb-[env(safe-area-inset-bottom)]`}>
         {tabs.map((tab, i) => {
           // 플래그 확정 전 슬롯 — 자리만 차지하고 비워둔다 (레이아웃 고정)
           if (!tab) return <div key={`pending-${i}`} className="flex-1" aria-hidden />;

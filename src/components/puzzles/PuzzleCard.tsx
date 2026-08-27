@@ -561,9 +561,9 @@ export const PuzzleCard = memo(function PuzzleCard({
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
-                className="text-[13px] font-bold text-brand-amber hover:text-amber-100 active:scale-[0.97] transition-all shrink-0 [text-shadow:0_0_10px_rgba(245,158,11,0.65)]"
+                className="text-[13px] font-bold text-brand-amber hover:text-amber-100 active:scale-[0.97] transition-all shrink-0 [text-shadow:0_0_6px_rgba(245,158,11,0.3)]"
               >
-                {offerCount > 0 ? "나도 메시지 →" : "먼저 메시지 →"}
+                1:1 메시지 →
               </button>
             )}
           </div>

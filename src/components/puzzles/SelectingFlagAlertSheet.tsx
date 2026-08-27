@@ -25,6 +25,9 @@ export function SelectingFlagAlertSheet() {
         .select("id, expires_at")
         .eq("leader_id", user.id)
         .eq("status", "selecting")
+        // 깃발 전용 알림이다 — 조각(파티)까지 긁어오면 "깃발이 없는데 왜 뜨지"가 된다.
+        // 조각은 MD 고정가 방이라 고를 오퍼 자체가 없고, 아래 CTA의 /flags/[id]도 엉뚱한 화면이다.
+        .eq("is_recruiting_party", false)
         .gt("expires_at", new Date().toISOString())
         .order("expires_at", { ascending: true })
         .limit(1)

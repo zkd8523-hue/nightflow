@@ -16,10 +16,36 @@ import { UnreadBadge, unreadCountOf } from "@/components/chat/UnreadBadge";
 import { contactCardPreview } from "@/components/messages/ContactCardMessage";
 import type { DmThread } from "@/types/dm";
 
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
 function formatDate(d: string): string {
   try {
     const dt = new Date(d);
     return `${dt.getMonth() + 1}/${dt.getDate()}`;
+  } catch {
+    return "";
+  }
+}
+
+// 파티 헤더용 날짜 — "8/28"만으로는 무슨 요일인지, 코앞인지 알 수가 없다.
+// 요일을 붙이고 당일·내일은 상대 표현을 앞세운다(놀러 가는 날짜가 핵심 정보).
+function partyDateLabel(d: string): string {
+  try {
+    const dt = new Date(d);
+    if (Number.isNaN(dt.getTime())) return "";
+    const base = `${dt.getMonth() + 1}/${dt.getDate()}(${WEEKDAYS[dt.getDay()]})`;
+    // KST 기준 날짜 비교 — event_date는 날짜만 담긴 값이라 시간대 오차를 피한다
+    const today = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+    );
+    const diff = Math.round(
+      (new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime() -
+        new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) /
+        86400000
+    );
+    if (diff === 0) return `오늘 ${base}`;
+    if (diff === 1) return `내일 ${base}`;
+    return base;
   } catch {
     return "";
   }
@@ -208,6 +234,24 @@ export function MessagesListClient() {
     [partyRooms]
   );
 
+  // 파티 목록은 "놀러 가는 날짜" 순으로 본다 — RPC는 마지막 메시지 시각순(last_at)이라
+  // 오늘(8/28) → 8/30 → 내일(8/29)처럼 날짜가 뒤죽박죽 보였다. 채팅은 최근 대화순이
+  // 관례지만, 이 목록의 단위는 대화가 아니라 "약속"이라 임박한 순이 맞다.
+  // 지난 약속(종료·취소)은 아래로 내리고, 그 안에서는 최근 날짜부터.
+  const sortedPartyRooms = useMemo(() => {
+    const closedRank = (st: string) => (["expired", "cancelled"].includes(st) ? 1 : 0);
+    return [...partyRooms].sort((a, b) => {
+      const ca = closedRank(a.puzzle_status);
+      const cb = closedRank(b.puzzle_status);
+      if (ca !== cb) return ca - cb;
+      const da = a.event_date ?? "";
+      const db = b.event_date ?? "";
+      if (da !== db) return ca === 1 ? db.localeCompare(da) : da.localeCompare(db);
+      // 같은 날짜면 최근 대화가 위로
+      return (b.last_at ?? "").localeCompare(a.last_at ?? "");
+    });
+  }, [partyRooms]);
+
   // 파티가 비어 있어도 다른 탭으로 튀지 않는다(기본 탭 고정 = 파티).
   // 단, 파티는 없고 메시지에 안 읽은 대화가 있으면 그쪽을 1회 먼저 보여준다.
   useEffect(() => {
@@ -246,7 +290,7 @@ export function MessagesListClient() {
             >
               <span>🎉 파티</span>
               {partyRooms.length > 0 && (
-                <span className={`text-[11px] ${tab === "share" ? "text-foreground/80" : "text-muted-foreground"}`}>
+                <span className={`text-[10px] leading-none px-1.5 py-0.5 rounded-full font-bold ${tab === "share" ? "bg-white/15 text-foreground/90" : "bg-white/[0.06] text-muted-foreground"}`}>
                   {partyRooms.length}
                 </span>
               )}
@@ -258,7 +302,7 @@ export function MessagesListClient() {
             >
               <span>💬 1:1</span>
               {dmThreads.length > 0 && (
-                <span className={`text-[11px] ${tab === "dm" ? "text-foreground/80" : "text-muted-foreground"}`}>
+                <span className={`text-[10px] leading-none px-1.5 py-0.5 rounded-full font-bold ${tab === "dm" ? "bg-white/15 text-foreground/90" : "bg-white/[0.06] text-muted-foreground"}`}>
                   {dmThreads.length}
                 </span>
               )}
@@ -337,18 +381,38 @@ export function MessagesListClient() {
       ) : (
         <div>
           {/* 파티 탭: 단체채팅방(파티) — 깃발과 동일한 헤더+행 구조 */}
-          {tab === "share" && partyRooms.map((room) => {
-            const budgetText = room.budget ? ` · ${Math.round(room.budget / 10000)}만원` : "";
+          {tab === "share" && sortedPartyRooms.map((room) => {
+            // 총예산이 아니라 인당 가격이 유저의 판단 기준이다(홈·상세 표기와 통일).
+            const perPerson =
+              room.budget && room.target_count ? Math.round(room.budget / room.target_count) : 0;
+            const perPersonText = perPerson ? `인당 ${perPerson.toLocaleString()}원` : null;
+            const isClosed = ["expired", "cancelled"].includes(room.puzzle_status);
+            // 클럽명·날짜·가격은 바로 위 헤더가 이미 보여준다 — 행에서 반복하면
+            // "운영자 테스트 클럽 · dd"처럼 같은 말이 두 번 나온다.
+            // 행 제목은 방을 구분하는 메모(notes)를 쓰고, 없으면 지역으로 채운다.
+            const roomTitle = room.notes?.trim() || `${room.area} 파티`;
             return (
               <div key={room.puzzle_id} className="mb-1">
-                {/* 파티 헤더 — 깃발 헤더와 동일한 톤 */}
+                {/* 파티 헤더 — 날짜만 덩그러니 있어서 어느 파티인지 알 수 없었다.
+                    "언제·어디서·얼마" 세 가지를 한 줄에 담는다. 어디는 지역이 아니라
+                    클럽명이 기준(MD 직통 조각은 클럽이 곧 정체성). */}
                 <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-card/40">
-                  <p className="text-[13px] font-bold text-foreground/80 truncate">
-                    {formatDate(room.event_date)}
+                  <p className="text-[13px] font-bold text-foreground/80 truncate min-w-0">
+                    {partyDateLabel(room.event_date)}
+                    <span className="font-medium text-muted-foreground">
+                      {[room.club_name || room.area, perPersonText].filter(Boolean).map((v) => ` · ${v}`).join("")}
+                    </span>
                   </p>
-                  <span className="shrink-0 text-[11px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-bold">
-                    {room.member_count}/{room.target_count}명
-                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isClosed && (
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-bold">
+                        종료
+                      </span>
+                    )}
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-bold">
+                      {room.member_count}/{room.target_count}명
+                    </span>
+                  </div>
                 </div>
                 {/* 단체채팅 행 */}
                 <Link
@@ -372,7 +436,7 @@ export function MessagesListClient() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-[14px] font-bold text-foreground truncate">
-                        {room.notes || `${formatDate(room.event_date)} · ${room.area}${budgetText}`}
+                        {roomTitle}
                       </p>
                       {room.is_leader && (
                         <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold">MY</span>

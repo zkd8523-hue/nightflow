@@ -19,6 +19,8 @@ interface ProfileRow {
   id: string;
   display_name: string | null;
   profile_image: string | null;
+  /** 방장이 MD면 참여자 목록에서 "파트너" + 클럽명으로 표시한다 */
+  role?: string | null;
   /** Migration 594/595: 성별·연령 제한 파티에서 참여자끼리 서로 공개 */
   gender: 'male' | 'female' | null;
   age: number | null;
@@ -62,7 +64,7 @@ export default async function PartyChatPage({ params }: PageProps) {
   const { data: puzzle } = await supabase
     .from("puzzles")
     .select(
-      "id, leader_id, status, area, event_date, target_count, current_count, budget_per_person, total_budget, is_recruiting_party, leader:public_user_profiles!puzzles_leader_id_fkey(id, display_name, profile_image, gender, age)"
+      "id, leader_id, status, area, event_date, target_count, current_count, budget_per_person, total_budget, is_recruiting_party, club:clubs(name), leader:public_user_profiles!puzzles_leader_id_fkey(id, display_name, profile_image, gender, age, role)"
     )
     .eq("id", puzzleId)
     .maybeSingle();
@@ -140,6 +142,14 @@ export default async function PartyChatPage({ params }: PageProps) {
     (puzzle as { leader?: MemberRow["user"] }).leader ?? null
   );
 
+  // MD 직통 조각은 방장이 곧 파트너(MD)다 — 헤더 제목과 참여자 라벨 모두
+  // 지역("홍대")이 아니라 클럽명을 써야 어느 방인지 알아볼 수 있다.
+  const puzzleClub = pickUser(
+    (puzzle as { club?: { name: string } | { name: string }[] | null }).club ?? null
+  );
+  const clubName = puzzleClub?.name ?? null;
+  const leaderIsMd = leader?.role === "md";
+
   // 방장도 puzzle_members에 포함됨(PuzzleForm) → 멤버 목록 기준으로 구성 + 중복 제거.
   const participants: PartyParticipant[] = [];
   const seen = new Set<string>();
@@ -147,14 +157,16 @@ export default async function PartyChatPage({ params }: PageProps) {
     if (seen.has(m.user_id)) continue;
     seen.add(m.user_id);
     const u = pickUser(m.user);
+    const rowIsLeader = m.user_id === puzzle.leader_id;
     participants.push({
       id: m.user_id,
       display_name: u?.display_name ?? null,
       profile_image: u?.profile_image ?? null,
-      is_leader: m.user_id === puzzle.leader_id,
+      is_leader: rowIsLeader,
       guest_count: m.guest_count ?? 0,
       gender: u?.gender ?? null,
       age: u?.age ?? null,
+      ...(rowIsLeader && leaderIsMd ? { is_md: true, club_name: clubName } : {}),
     });
   }
   // 방장이 멤버 목록에 없으면 보강
@@ -167,6 +179,7 @@ export default async function PartyChatPage({ params }: PageProps) {
       guest_count: 0,
       gender: leader?.gender ?? null,
       age: leader?.age ?? null,
+      ...(leaderIsMd ? { is_md: true, club_name: clubName } : {}),
     });
   }
   // 초대된 파트너 전원 추가.
@@ -229,6 +242,7 @@ export default async function PartyChatPage({ params }: PageProps) {
       partyInfo={{
         dateLabel,
         area: puzzle.area,
+        clubName,
         perPerson,
         currentCount: puzzle.current_count,
         targetCount: puzzle.target_count,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mic2, ExternalLink, ChevronRight, ImagePlus } from "lucide-react";
+import { Mic2, ExternalLink, ChevronRight } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { splitLineupDate, isLineupToday } from "@/lib/lineups/formatDate";
 import { eventSlug } from "@/lib/events/slug";
@@ -214,12 +214,12 @@ export function ClubUpcomingEvents({ events }: { events: ClubUpcomingEvent[] }) 
             })}
           </div>
 
+          {/* 제보 진입점 — 공연 목록 화면(UndergroundEventList)과 같은 문장형·같은 자리 */}
           <button
             onClick={() => setReportOpen(true)}
-            className="mt-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="w-full py-4 text-center text-[11px] text-muted-foreground leading-relaxed"
           >
-            <ImagePlus className="w-3 h-3" />
-            제보하기
+            빠진 공연이 있나요? <b className="text-amber-400 font-bold">제보하기 ›</b>
           </button>
         </SheetContent>
       </Sheet>

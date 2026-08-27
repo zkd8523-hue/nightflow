@@ -85,8 +85,10 @@ export function ClubDirectCard({
   const partnerName = puzzles[0]?.leader?.display_name || puzzles[0]?.leader?.name || null;
   const minPrice = Math.min(...puzzles.map((p) => p.budget_per_person));
   // 미리보기 2줄 — 최저가 순. 마감 임박(1자리 이하)은 빨갛게.
-  const preview = puzzles.slice(0, 2);
-  const restCount = puzzles.length - preview.length;
+  // 데스크톱(lg~)은 카드 아래 여백이 남으므로 전 등급을 펼친다. 접는 건 모바일 사정이라
+  // 렌더는 전부 하고 3번째부터 CSS로만 숨긴다(화면 폭을 JS로 재면 하이드레이션이 어긋난다).
+  const PREVIEW_COUNT = 2;
+  const restCount = puzzles.length - PREVIEW_COUNT;
   const urgentCount = puzzles.filter((p) => {
     const left = p.target_count - p.current_count;
     return left > 0 && left <= 1;
@@ -154,12 +156,15 @@ export function ClubDirectCard({
 
       {/* 파티 미리보기 — "인당 N원부터"가 추상적으로 남지 않게 실제 가격표를 보여준다 */}
       <div className="mt-2.5 pt-2 border-t border-border/60">
-        {preview.map((p) => {
+        {puzzles.map((p, i) => {
           // 이름과 정원을 한 덩어리로 — "가성비 6인"이 자리 하나를 가리키는 최소 단위다.
           // 열을 셋으로 쪼개면 눈이 좌우로 흩어진다.
           const full = p.current_count >= p.target_count;
           return (
-            <div key={p.id} className="flex items-center gap-2 py-1.5 text-[12px] font-bold">
+            <div
+              key={p.id}
+              className={`flex items-center gap-2 py-1.5 text-[12px] font-bold ${i >= PREVIEW_COUNT ? "hidden lg:flex" : ""}`}
+            >
               <span className="text-foreground truncate">
                 {p.notes || "자리"} <span className="text-muted-foreground">{p.target_count}인</span>
               </span>
@@ -170,7 +175,7 @@ export function ClubDirectCard({
           );
         })}
         {restCount > 0 && (
-          <p className="text-[11.5px] text-muted-foreground font-bold pt-1.5">＋ {restCount}개 더</p>
+          <p className="text-[11.5px] text-muted-foreground font-bold pt-1.5 lg:hidden">＋ {restCount}개 더</p>
         )}
       </div>
 

@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, AtSign, ChevronDown, CornerDownRight, Send, SmilePlus, ThumbsDown, ThumbsUp, Trash2, UserPlus, Users, X } from "lucide-react";
+import { ArrowLeft, AtSign, ChevronDown, ChevronRight, CornerDownRight, Send, SmilePlus, ThumbsDown, ThumbsUp, Trash2, UserPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
@@ -37,6 +37,8 @@ interface Me {
 interface PartyInfo {
   dateLabel: string;
   area: string;
+  /** MD 직통 조각의 클럽명. 헤더 제목은 지역보다 클럽명이 우선이다 */
+  clubName?: string | null;
   perPerson: number;
   currentCount: number;
   targetCount: number;
@@ -666,18 +668,25 @@ export function PartyChatRoom({
           <button onClick={() => router.push("/messages")} className="p-1 -ml-1 text-foreground/80 shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          {/* 클럽명은 아래 칩이 보여주므로 반복하지 않는다. 파티 상세로 이동은
-              쓸모가 없어 없앤 순수 요약 텍스트다(탭 불가). */}
-          <p className="text-[13px] font-bold text-foreground truncate min-w-0 flex-1">
-            {[
-              partyInfo.dateLabel,
-              partyInfo.area,
-              `인당 ${partyInfo.perPerson.toLocaleString()}원`,
-              `${partyInfo.currentCount}/${partyInfo.targetCount}명`,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
+          {/* 클럽명은 아래 칩이 보여주므로 반복하지 않는다. 요약바 전체가 파티 상세로
+              가는 탭 영역이다 — 채팅방에서 조건(가격·구성)을 다시 확인할 길이 없었다. */}
+          <button
+            onClick={() => router.push(`/flags/${puzzleId}`)}
+            className="flex items-center gap-0.5 min-w-0 flex-1 text-left active:opacity-60 transition-opacity"
+            aria-label="파티 상세 보기"
+          >
+            <span className="text-[13px] font-bold text-foreground truncate min-w-0">
+              {[
+                partyInfo.dateLabel,
+                partyInfo.clubName || partyInfo.area,
+                `인당 ${partyInfo.perPerson.toLocaleString()}원`,
+                `${partyInfo.currentCount}/${partyInfo.targetCount}명`,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
           <button
             onClick={() => setDrawerOpen(true)}
             className="flex items-center gap-1 p-1.5 text-foreground/80 shrink-0"
@@ -1311,8 +1320,9 @@ export function PartyChatRoom({
                       <p className="text-[14px] font-bold text-foreground truncate">
                         {p.display_name ?? "멤버"}
                         {p.id === me.id && <span className="ml-1 text-[11px] text-brand-amber">나</span>}
-                        {/* 성별·연령 제한 파티(Migration 594)에서만 의미가 있지만,
-                            굳이 제한 여부로 숨기지 않고 정보가 있으면 그대로 보여준다 */}
+                        {/* 제한 여부와 무관하게 항상 노출한다 — 누구와 같이 가는지는
+                            파티의 기본 정보다. 합류 시트가 이 공개를 사전 고지한다
+                            (PuzzleJoinSheet: "파티원은 나이·성별을 서로에게 공개해요"). */}
                         {(p.age != null || p.gender) && (
                           <span className="ml-1.5 text-[11px] font-medium text-muted-foreground">
                             {[p.age != null ? `${p.age}세` : null, p.gender === "male" ? "남" : p.gender === "female" ? "여" : null]
