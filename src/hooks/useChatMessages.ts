@@ -38,8 +38,12 @@ export function useChatMessages(room: ChatRoomCode) {
       .eq("is_deleted", false)
       .is("parent_id", null);
     // room='all'(전국 통합)이면 방 필터 없이 전체를 읽는다. 지역방이면 그 방만.
+    // 단, 공연방(event:*)은 특정 공연에 종속된 대화라 전국 피드에 섞이면 안 된다
+    // → is_scoped=FALSE로 걸러낸다 (Migration 598).
     if (room !== "all") {
       query = query.eq("room", room);
+    } else {
+      query = query.eq("is_scoped", false);
     }
     // 프로덕션 빌드에선 테스트 계정 메시지 제외 (Migration 317)
     if (process.env.NODE_ENV === "production") {
@@ -163,6 +167,10 @@ export function useChatMessages(room: ChatRoomCode) {
             shared_puzzle_id: string | null;
           };
           if (newMsg.is_deleted) return;
+          // 전국 피드는 공연방 메시지를 받지 않는다 — Realtime 필터로는 걸 수 없어
+          // (postgres_changes는 단일 eq만 지원) 여기서 거른다. 초기 로드 쪽은
+          // is_scoped=false 쿼리로 이미 걸려 있다 (Migration 598).
+          if (room === "all" && newMsg.room.startsWith("event:")) return;
           // 답글은 타임라인에 추가하지 않되, 부모 reply_count 옵티미스틱 +1
           if (newMsg.parent_id) {
             setMessages((prev) =>

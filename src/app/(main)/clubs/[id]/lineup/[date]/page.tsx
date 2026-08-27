@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Disc3, ChevronRight, ExternalLink, Ticket } from "lucide-react";
 import { LineupSetTable } from "@/components/lineups/LineupSetTable";
+import { LineupLikeButton } from "@/components/lineups/LineupLikeButton";
 import { getBusinessDateISO } from "@/lib/lineups/time";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
@@ -32,6 +33,8 @@ interface DjRef {
 }
 
 interface LineupRow {
+  /** club_lineups.id — 좋아요(lineup_likes)가 매달리는 키 (Migration 596) */
+  id: string;
   event_title: string | null;
   ticket_url: string | null;
   source: string;
@@ -58,7 +61,7 @@ async function fetchLineup(clubId: string, date: string) {
 
   const { data: lineup } = await supabase
     .from("club_lineups")
-    .select("event_title, ticket_url, source, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram))")
+    .select("id, event_title, ticket_url, source, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram))")
     .eq("club_id", clubId)
     .eq("event_date", date)
     .maybeSingle<LineupRow>();
@@ -167,9 +170,21 @@ export default async function ClubLineupDatePage({ params }: PageProps) {
             />
           </div>
 
+          {/* 날짜를 제목 위 눈썹으로 뺐다 — 공연 상세와 같은 구조.
+              "클럽명 8월 30일 라인업"을 h1에 다 넣으면 390px에서 무조건 두 줄이 되는데
+              (30px 기준 클럽명만 빼도 300px+), 날짜는 검색 쿼리에 필요한 문자열이라
+              지울 수는 없다. 눈썹으로 올리면 텍스트는 그대로 남아 색인되고 제목은 짧아진다. */}
+          {/* 좋아요는 제목 옆(오른쪽 위) — 공연 상세와 같은 구조.
+              제목이 길면 버튼 아래로 흘러 내려가도록 float를 쓴다. */}
           <div>
-            <h1 className="text-xl font-black text-foreground">
-              {club.name} {dateLabel} 라인업
+            <div className="float-right ml-3 mb-1">
+              <LineupLikeButton lineupId={lineup.id} />
+            </div>
+            <p className="text-[12px] font-bold text-muted-foreground mb-1">
+              {dateLabel} 라인업
+            </p>
+            <h1 className="text-[30px] font-black tracking-tight leading-tight break-keep text-foreground">
+              {club.name}
             </h1>
             {/* 파티 이름 — 꺾쇠로 감싸 클럽 설명이 아니라 "그날의 이벤트 제목"임을
                 드러낸다(한국어권에서 〈〉는 작품·행사명 표기). */}
@@ -178,6 +193,7 @@ export default async function ClubLineupDatePage({ params }: PageProps) {
                 〈{lineup.event_title}〉
               </p>
             )}
+            <div className="clear-both" />
           </div>
 
           {/* 예매 링크 — 캡션에 명시된 경우만(lineup.ticket_url). 없는 라인업이

@@ -150,7 +150,7 @@ export default async function HomePage() {
   const ssrPuzzleCount = puzzles.length;
 
   return (
-    <div className="container mx-auto max-w-lg px-4 pt-2 pb-4">
+    <div className="container mx-auto max-w-lg lg:max-w-4xl px-4 pt-2 pb-4">
       {/* 기기 언어 자동 감지 → 외국어면 해당 언어 진입 (국제 앱 표준) */}
       <LangAutoRedirect />
       <h1 className="sr-only">

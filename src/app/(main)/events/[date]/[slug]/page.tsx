@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Instagram, ExternalLink, ChevronLeft, ChevronRight, Disc3 } from "lucide-react";
+import { Instagram, ExternalLink, ChevronLeft, ChevronRight, MapPin, Clock, Disc3 } from "lucide-react";
 import { createServerClient } from "@supabase/ssr";
 import { eventSlug, normalizeSlugParam, isValidEventDate } from "@/lib/events/slug";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
+import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { EventShareButton } from "@/components/events/EventShareButton";
+import { LineupLikeButton } from "@/components/lineups/LineupLikeButton";
+import { EventCommentSection } from "@/components/events/EventCommentSection";
 
 // 공연 상세 — "SENSI SOUND", "팔로알토 공연" 류 고유명사 검색의 착지점.
 // 없는 조합은 notFound() → force-dynamic 필수. 없으면 Suspense 경계가 200을 먼저
@@ -33,6 +36,10 @@ interface ClubRef {
   area: string | null;
   address: string | null;
   thumbnail_url: string | null;
+  /** 아래 셋은 공연장 미리보기용 — 클럽 상세와 같은 필드를 쓴다 */
+  tags: string[] | null;
+  operating_hours: string | null;
+  instagram: string | null;
   is_test: boolean;
   status: string;
   deleted_at: string | null;
@@ -72,7 +79,7 @@ async function fetchEvent(date: string, slugParam: string) {
     .from("club_events")
     .select(
       `id, event_date, title, club_id, club_name_raw, venue_area, lineup, source_url, source_account, ticket_url,
-       clubs(id, name, area, address, thumbnail_url, is_test, status, deleted_at),
+       clubs(id, name, area, address, thumbnail_url, tags, operating_hours, instagram, is_test, status, deleted_at),
        club_event_performers(raw_name, sort_order, artists(id, display_name, instagram, artist_aliases(alias)))`
     )
     .eq("status", "approved")
@@ -116,18 +123,7 @@ async function fetchEvent(date: string, slugParam: string) {
   const linkedNames = new Set(performers.map((p) => p.raw_name));
   const extra = (row.lineup ?? []).filter((n) => n && !linkedNames.has(n));
 
-  // 같은 날 다른 공연 — 내부 링크용
-  const sameDay = rows
-    .filter((r) => r.id !== row.id && r.title)
-    .slice(0, 6)
-    .map((r) => ({
-      title: r.title!,
-      slug: eventSlug(r.title),
-      venue: normalizeVenueName(r.club_name_raw) || firstOf(r.clubs)?.name || "",
-    }))
-    .filter((r) => r.slug);
-
-  return { row, club: club ?? null, performers, extra, sameDay };
+  return { row, club: club ?? null, performers, extra };
 }
 
 /**
@@ -210,7 +206,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   const found = await fetchEvent(date, slug);
   if (!found) notFound();
 
-  const { row, club, performers, extra, sameDay } = found;
+  const { row, club, performers, extra } = found;
   const title = row.title ?? "공연";
   const venue = normalizeVenueName(row.club_name_raw) || club?.name || "(장소 미상)";
   const area = club?.area ?? row.venue_area ?? "";
@@ -281,34 +277,111 @@ export default async function EventDetailPage({ params }: PageProps) {
           />
         </nav>
 
+        {/* 날짜는 제목 위 눈썹(eyebrow)이다 — 캡슐로 감싸면 누를 수 있는 것처럼 보이는데
+            실제로는 아무 동작도 없다. 아래 "일시" 줄과도 중복이라 최소한으로 둔다. */}
+        <p className={`text-[12px] font-bold ${isPast ? "text-muted-foreground" : "text-foreground"}`}>
+          {isPast ? `지난 공연 · ${year}. ${dateLabel}` : `${year}. ${dateLabel}`}
+        </p>
+
+        {/* 좋아요는 제목 옆(오른쪽 위). 아래로 내리면 한 줄을 통째로 먹어 붕 떠 보인다.
+            제목이 길면 버튼 아래로 흘러 내려가도록 float를 쓴다 — flex로 나란히 두면
+            버튼이 폭을 상시 점유해 짧은 제목까지 두 줄로 밀린다. */}
         <div>
-          {isPast ? (
-            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold px-3 py-1.5 rounded-full bg-muted text-muted-foreground border border-border">
-              <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
-              지난 공연
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold px-3 py-1.5 rounded-full bg-brand-amber/15 text-brand-amber">
-              <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true" />
-              {dateLabel}
-            </span>
-          )}
+          <div className="float-right ml-3 mb-1">
+            <LineupLikeButton lineupId={row.id} target="event" />
+          </div>
+          <h1 className="text-[30px] font-black tracking-tight leading-tight break-keep">{title}</h1>
+          <div className="clear-both" />
         </div>
 
-        <h1 className="text-[30px] font-black tracking-tight leading-tight break-keep">{title}</h1>
-
         {/* 핵심 정보 — 제목 아래 부제는 두지 않는다(이 카드와 완전 중복이라) */}
+        {/* "일시" 줄은 뒀다가 지웠다 — club_events엔 시간 컬럼이 없어서 결국
+            제목 위 눈썹과 같은 날짜를 연도만 붙여 반복하는 줄이었다.
+            연도는 눈썹으로 옮겼으므로 정보 손실은 없다. */}
         <dl className="rounded-2xl bg-card border border-border px-4">
-          <div className="flex gap-3 py-3 border-b border-border">
-            <dt className="shrink-0 w-[52px] text-[12px] font-bold text-muted-foreground pt-0.5">일시</dt>
-            <dd className="text-[15px] tabular-nums">{year}. {dateLabel}</dd>
-          </div>
-          <div className="flex gap-3 py-3">
-            <dt className="shrink-0 w-[52px] text-[12px] font-bold text-muted-foreground pt-0.5">장소</dt>
-            <dd className="text-[15px] min-w-0">
-              <span>{venue}{area && ` · ${area}`}</span>
-              {club?.address && (
-                <span className="block text-[13px] text-muted-foreground mt-0.5">{club.address}</span>
+          {/* 장소 줄 자체가 공연장 상세로 가는 링크다. 예전엔 아래에 "공연장 정보
+              더보기" 카드를 따로 뒀는데, 같은 곳을 두 번 가리키면서 화면만 먹었다.
+              등록된 공연장일 때만 링크 — 미등록 장소(전체의 절반)는 갈 데가 없다. */}
+          <div className="py-3.5">
+            <dt className="sr-only">장소</dt>
+            <dd className="min-w-0">
+              {club ? (
+                <Link
+                  href={`/clubs/${club.id}`}
+                  aria-label={`${club.name} 공연장 정보 보기`}
+                  className="block group"
+                >
+                  {/* 클럽 상세 헤더의 축약본 — 이름·지역·해시태그·주소·영업시간까지만
+                      가져오고 LED 라이브 배너는 뺀다(그 정보가 곧 이 공연이라 중복). */}
+                  <div className="flex items-center gap-3">
+                    {club.thumbnail_url ? (
+                      <Image
+                        src={club.thumbnail_url}
+                        alt=""
+                        width={52}
+                        height={52}
+                        className="w-13 h-13 rounded-xl object-cover shrink-0"
+                      />
+                    ) : (
+                      <span className="w-13 h-13 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                        <Disc3 className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="text-2xl font-black tracking-tight truncate group-hover:text-brand-amber transition-colors">
+                          {venue}
+                        </span>
+                        {area && (
+                          <span className="text-[13px] text-muted-foreground shrink-0">{area}</span>
+                        )}
+                      </span>
+                    </span>
+                    <ChevronRight
+                      className="w-5 h-5 shrink-0 text-muted-foreground group-hover:text-brand-amber transition-colors"
+                      aria-hidden="true"
+                    />
+                  </div>
+
+                  {/* 태그는 DB에 "venue_type:club" 같은 코드로 저장된다 — 그대로 찍으면
+                      #venue_type:club이 화면에 나온다. 클럽 상세(HashtagRow)와 같은
+                      규칙으로 한글 라벨을 뽑고 순서도 타입 → 음악 → 흡연으로 맞춘다. */}
+                  {(() => {
+                    const ORDER: ClubTagGroup[] = ["venue_type", "genre", "smoking"];
+                    const labels = ORDER.flatMap((g) =>
+                      getTagsByGroup(club.tags ?? [], g).map((t) => t.shortLabel ?? t.label)
+                    );
+                    if (labels.length === 0) return null;
+                    return (
+                      <p className="flex flex-wrap gap-x-2 gap-y-0.5 mt-2.5 text-[12px] font-bold text-foreground">
+                        {labels.map((label, i) => (
+                          <span key={i}>#{label}</span>
+                        ))}
+                      </p>
+                    );
+                  })()}
+
+                  {club.address && (
+                    <p className="flex items-center gap-1.5 mt-2 text-[12px] text-muted-foreground">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{club.address}</span>
+                    </p>
+                  )}
+
+                  {club.operating_hours && (
+                    <p className="flex items-center gap-1.5 mt-1 text-[12px] text-muted-foreground">
+                      <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{club.operating_hours}</span>
+                    </p>
+                  )}
+                </Link>
+              ) : (
+                <span className="block text-2xl font-black tracking-tight truncate">
+                  {venue}
+                  {area && (
+                    <span className="text-[13px] font-medium text-muted-foreground"> · {area}</span>
+                  )}
+                </span>
               )}
             </dd>
           </div>
@@ -348,39 +421,6 @@ export default async function EventDetailPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* 공연장 정보 카드 — "장소" 줄의 텍스트만으로는 눌러볼 이유가 잘 안
-            보였다(라인업 상세 페이지엔 이미 같은 톤의 카드가 있음). "클럽"이라
-            안 하는 이유: 이 화면의 절반은 미등록 장소·라이브홀 등 클럽이 아니다.
-            라인업 섹션 다음 배치 — 출연자를 먼저 보고, 그다음 "어디서" 열리는지로
-            자연스럽게 이어진다. */}
-        {club && (
-          <Link
-            href={`/clubs/${club.id}`}
-            aria-label={`${club.name} 공연장 정보 더보기`}
-            className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3 hover:bg-muted/40 transition-colors"
-          >
-            {club.thumbnail_url ? (
-              <Image
-                src={club.thumbnail_url}
-                alt=""
-                width={44}
-                height={44}
-                className="w-11 h-11 rounded-xl object-cover flex-shrink-0"
-              />
-            ) : (
-              <span className="w-11 h-11 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                <Disc3 className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-foreground truncate">공연장 정보 더보기</p>
-              <p className="text-[11px] text-muted-foreground">
-                위치 · 영업시간 · 가격표{area ? ` · ${area}` : ""}
-              </p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
-          </Link>
-        )}
 
         {/* 원문 캡션은 싣지 않는다 — 클럽·프로모터 저작물이고, 인스타와 중복 콘텐츠가 된다.
             사실 정보만 위에 재구성하고 원문은 링크로 보낸다. */}
@@ -402,23 +442,9 @@ export default async function EventDetailPage({ params }: PageProps) {
           </Link>
         </div>
 
-        {sameDay.length > 0 && (
-          <section>
-            <h2 className="text-[17px] font-black mb-2">{dateLabel} 다른 공연</h2>
-            <div className="flex flex-wrap gap-2">
-              {sameDay.map((e) => (
-                <Link
-                  key={e.slug}
-                  href={`/events/${date}/${encodeURIComponent(e.slug)}`}
-                  className="px-3 py-1.5 rounded-full bg-card border border-border text-[13px] font-bold hover:text-brand-amber transition-colors max-w-full truncate"
-                >
-                  {e.title}
-                  {e.venue && <span className="text-muted-foreground font-medium"> · {e.venue}</span>}
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* 댓글 — 자유 댓글이 기본이고, 여기서 "같이 갈 사람" 채팅방을 만들어
+            댓글로 올릴 수 있다 (Migration 598). 지난 공연은 읽기 전용. */}
+        <EventCommentSection eventId={row.id} isPast={isPast} />
       </div>
 
       {/* 하단 CTA — 문의는 붙이지 않는다(외부 의존 + 파트너 미보장). 확실히

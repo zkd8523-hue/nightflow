@@ -23,6 +23,7 @@ import { findClubIdsByAlias } from "@/lib/clubs/aliases";
 import type { ChatMessage, Puzzle } from "@/types/database";
 import {
   ROOM_LABEL,
+  isEventRoom,
   type ChatRoomCode,
   type ChatRegionCode,
   type VerifiableArea,
@@ -39,11 +40,17 @@ interface Props {
   loginRedirect?: string;
   /** 채팅 상단 헤더 우측에 넣을 지역 필터 (세로 공간 절약) */
   regionFilter?: React.ReactNode;
+  /**
+   * 뒤로가기 옆에 넣을 제목 영역 (공연방 등).
+   * 넘기면 지역방 기본 UI 대신 이걸 그린다 — 헤더를 밖에서 또 그리면
+   * 뒤로가기가 두 줄로 겹친다.
+   */
+  header?: React.ReactNode;
 }
 
 const MAX_LEN = 500;
 
-export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: Props) {
+export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter, header }: Props) {
   const router = useRouter();
   const { user } = useCurrentUser();
   const { messages, loading, reload, addLocalMessage } = useChatMessages(room);
@@ -656,6 +663,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
+        {header}
         {regionFilter}
       </div>
 
@@ -718,7 +726,9 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
           <p className="text-[13px] text-muted-foreground">
             {room === "all"
               ? "첫 LIVE를 남겨보세요!"
-              : `지금 ${ROOM_LABEL[room]}에 있다면 첫 LIVE를 남겨보세요!`}
+              : isEventRoom(room)
+                ? "첫 메시지를 남겨보세요!"
+                : `지금 ${ROOM_LABEL[room]}에 있다면 첫 LIVE를 남겨보세요!`}
           </p>
         </div>
       ) : (

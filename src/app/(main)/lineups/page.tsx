@@ -52,6 +52,8 @@ interface ClubRef {
 }
 
 interface RawLineupRow {
+  /** club_lineups.id — 날짜별 좋아요(lineup_likes)가 매달리는 키 (Migration 596) */
+  id: string;
   event_date: string;
   club_id: string;
   door_open_min: number | null;
@@ -78,7 +80,7 @@ export default async function LineupsPage() {
   const { data } = await supabase
     .from("club_lineups")
     .select(
-      `event_date, club_id, door_open_min, event_title,
+      `id, event_date, club_id, door_open_min, event_title,
        clubs(id, name, area, thumbnail_url, is_test, status, deleted_at),
        lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram))`
     )
@@ -137,6 +139,7 @@ export default async function LineupsPage() {
     if (sets.length === 0) continue; // 셋 없는 껍데기 라인업은 목록에 안 낸다
 
     rows.push({
+      id: r.id,
       event_date: r.event_date,
       club_id: club.id,
       club_name: club.name,

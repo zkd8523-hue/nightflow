@@ -1050,6 +1050,8 @@ export interface PartyChatSummary {
   target_count: number;
   /** MD 직통 조각의 클럽 대표 이미지. 없으면 프론트에서 지역 첫 글자 폴백 (Migration 412) */
   club_thumbnail: string | null;
+  /** 채팅방 제목용 클럽명 (Migration 599). 구버전 RPC면 undefined */
+  club_name?: string | null;
   is_leader: boolean;
   puzzle_status: string;
   last_content: string;
@@ -1504,9 +1506,11 @@ export interface ClubWordCloud {
 // 실시간 채팅 (Migration 284)
 // ============================================================================
 // Migration 421: 광역 채팅방 + 레거시 코드
+// Migration 598: 공연 채팅방 'event:<공연 id>:<8자>' 추가
 export type ChatRoomCode =
   | 'sudogwon' | 'gyeongsang' | 'jeolla'
-  | 'all' | 'gangnam' | 'hongdae' | 'itaewon' | 'other';
+  | 'all' | 'gangnam' | 'hongdae' | 'itaewon' | 'other'
+  | `event:${string}`;
 /** LIVE GPS 인증 지역 (채팅방과 별개) */
 export type VerifiableArea = 'gangnam' | 'hongdae' | 'itaewon';
 
@@ -1707,6 +1711,31 @@ export interface ChatShotComment {
   is_deleted: boolean;
   created_at: string;
   author?: { id: string; display_name: string | null; profile_image: string | null };
+}
+
+/** 공연별 "같이 갈 사람" 채팅방 (Migration 598). 실체는 chat_messages(room). */
+export interface EventChatRoom {
+  id: string;
+  /** chat_messages.room에 들어가는 키 — 'event:<event_id>:<8자>' */
+  room: string;
+  title: string;
+  is_closed: boolean;
+  creator_id: string;
+}
+
+/** 공연 상세 자유 댓글 (Migration 598). room이 있으면 채팅방을 올린 댓글. */
+export interface EventComment {
+  id: string;
+  event_id: string;
+  author_id: string;
+  content: string;
+  /** 와글과 같은 형식 (Migration 287) — 사진만 올린 댓글은 content가 빈 문자열 */
+  media: ChatMediaItem[];
+  room_id: string | null;
+  is_deleted: boolean;
+  created_at: string;
+  author?: { id: string; display_name: string | null; profile_image: string | null };
+  room?: EventChatRoom | null;
 }
 
 /** 건의 게시판 작성자 요약 (public_user_profiles 임베드) */

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Disc3, Heart, Search, X, CalendarDays, ChevronRight } from "lucide-react";
+import { Disc3, ThumbsUp, Heart, Search, X, CalendarDays, ChevronRight } from "lucide-react";
 import { formatBusinessMin } from "@/lib/lineups/time";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
@@ -14,6 +14,8 @@ import { useFavoritesContext, useDjFavoritesContext } from "@/components/provide
 import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
 import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
+import { useLineupLikes } from "@/hooks/useLineupLikes";
+import { hypeTier, hypeBadgeClass, hypeBadgeIconClass } from "@/lib/lineups/hypeTier";
 
 export interface LineupSetRef {
   // 캡션에서 수집한 라인업은 시간이 없다(순서만 있음) — Migration 573
@@ -32,6 +34,8 @@ export interface LineupSetRef {
 
 /** 서버에서 정규화해 내려주는 라인업 1건(= 클럽 × 날짜). */
 export interface LineupClubRow {
+  /** club_lineups.id — 날짜별 좋아요(lineup_likes)가 매달리는 키 (Migration 596) */
+  id: string;
   event_date: string;
   club_id: string;
   club_name: string;
@@ -113,6 +117,14 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
   // 하트 안 한 항목도 전부 그대로 남는다. 날짜 순서 자체는 절대 안 바뀐다.
   const { isFavorited } = useFavoritesContext();
   const { isFavoritedDj } = useDjFavoritesContext();
+
+  // 🔥 그날 DJ셋 좋아요 (Migration 596) — 클럽 찜(하트)과는 다른 축이다.
+  //   찜 = "나 여기 단골"(나만 보는 북마크, 정렬·필터용)
+  //   🔥 = "오늘 이 셋 좋다"(남에게 보이는 숫자, 그날 한정)
+  // 카드마다 조회하면 쿼리가 카드 수만큼 늘어나므로 목록 최상위에서 한 번만 부른다.
+  // 목록은 숫자만 읽는다(누르는 건 상세) → 로그인 여부와 무관하게 카운트만 받아온다.
+  const lineupIds = useMemo(() => rows.map((r) => r.id), [rows]);
+  const { getLike } = useLineupLikes(lineupIds, undefined);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -221,7 +233,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-24">
-      <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
+      <div className="max-w-lg lg:max-w-4xl mx-auto px-4 pt-6 space-y-4">
         <LineupPageHeader active="lineups" />
 
         {/* 지역 칩 + 하트 필터 — 탭 전환과 무관하게 유지된다.
@@ -445,9 +457,15 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
             {clubGroups.map(([date, list]) => (
               <section key={date} className="space-y-2">
                 <DateHeader date={date} />
-                <div className="space-y-2">
+                {/* 데스크톱은 2열 — 카드가 독립적이라 그리드로 쪼개도 안전하다.
+                    (DJ 탭은 한 덩어리 안에서 구분선으로 이어지는 리스트라 그대로 1열 유지) */}
+                <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2">
                   {list.map((r) => (
-                    <ClubLineupRow key={`${r.club_id}-${r.event_date}`} row={r} />
+                    <ClubLineupRow
+                      key={`${r.club_id}-${r.event_date}`}
+                      row={r}
+                      like={getLike(r.id)}
+                    />
                   ))}
                 </div>
               </section>
@@ -507,7 +525,13 @@ function DateHeader({ date }: { date: string }) {
 }
 
 /** 클럽별 탭 행 — 라인업 1건. 탭하면 그 날짜의 전체 타임테이블로. */
-function ClubLineupRow({ row }: { row: LineupClubRow }) {
+function ClubLineupRow({
+  row,
+  like,
+}: {
+  row: LineupClubRow;
+  like: { count: number; likedByMe: boolean };
+}) {
   const { isFavorited, toggleFavorite } = useFavoritesContext();
   const favorited = isFavorited(row.club_id);
   const preview = row.sets
@@ -520,19 +544,39 @@ function ClubLineupRow({ row }: { row: LineupClubRow }) {
       href={`/clubs/${row.club_id}/lineup/${row.event_date}`}
       className="flex items-center gap-3 bg-[#1C1C1E] rounded-2xl p-3 hover:bg-[#232326] transition-colors"
     >
-      {row.club_thumbnail ? (
-        <Image
-          src={row.club_thumbnail}
-          alt=""
-          width={48}
-          height={48}
-          className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
-        />
-      ) : (
-        <span className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
-          <Disc3 className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
-        </span>
-      )}
+      {/* 클럽 찜 하트는 썸네일 위에 얹는다 — "이 클럽을 찜"이라는 대상이 그림으로 명백해지고,
+          오른쪽에는 그날 셋 좋아요(🔥)가 들어와 둘이 헷갈리지 않는다. */}
+      <span className="relative w-12 h-12 flex-shrink-0">
+        {row.club_thumbnail ? (
+          <Image
+            src={row.club_thumbnail}
+            alt=""
+            width={48}
+            height={48}
+            className="w-12 h-12 rounded-xl object-cover"
+          />
+        ) : (
+          <span className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
+            <Disc3 className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+          </span>
+        )}
+        {/* 행 전체가 링크라 기본 동작을 막아야 상세로 안 넘어간다 */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFavorite(row.club_id);
+          }}
+          aria-label={`${row.club_name} ${favorited ? "찜 해제" : "찜하기"}`}
+          className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-black/85 ring-1 ring-white/25 transition-transform active:scale-90"
+        >
+          <Heart
+            className={`w-[11px] h-[11px] transition-colors ${
+              favorited ? "text-red-500 fill-red-500" : "text-white"
+            }`}
+          />
+        </button>
+      </span>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
@@ -547,22 +591,23 @@ function ClubLineupRow({ row }: { row: LineupClubRow }) {
       </div>
 
 
-      {/* 행 전체가 링크라 하트는 기본 동작을 막아야 상세로 안 넘어간다 */}
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          toggleFavorite(row.club_id);
-        }}
-        aria-label={`${row.club_name} ${favorited ? "찜 해제" : "찜하기"}`}
-        className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full hover:bg-white/5 transition-colors"
-      >
-        <Heart
-          className={`w-4 h-4 transition-colors ${
-            favorited ? "text-red-500 fill-red-500" : "text-muted-foreground"
-          }`}
-        />
-      </button>
+      {/* 🔥 그날 DJ셋 좋아요 — 목록에서는 "읽기 전용 신호"다.
+          누르는 건 상세 페이지에서 한다. 카드마다 회색 불이 줄줄이 서 있으면
+          커뮤니티가 아니라 "아무도 안 쓰는 서비스"로 보이므로, 0건이면 아예 그리지 않는다. */}
+      {like.count > 0 && (
+        <span
+          className={`shrink-0 inline-flex items-center gap-1 ${hypeBadgeClass(hypeTier(like.count))}`}
+          aria-label={`좋아요 ${like.count}`}
+        >
+          <ThumbsUp
+            className={`w-4 h-4 fill-current ${hypeBadgeIconClass(hypeTier(like.count))}`}
+            aria-hidden="true"
+          />
+          <span className="text-[12px] font-black tabular-nums">
+            {like.count}
+          </span>
+        </span>
+      )}
 
       <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden="true" />
     </Link>

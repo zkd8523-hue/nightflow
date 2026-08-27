@@ -7,8 +7,24 @@
 
 /** 광역 채팅방 코드 (Migration 421) */
 export type ChatRegionCode = "sudogwon" | "gyeongsang" | "jeolla";
+/**
+ * 공연 채팅방 코드 (Migration 598) — 'event:<공연 id>:<8자>'.
+ * 지역방과 달리 특정 공연에 종속되며, 전국 피드(room='all')에서 제외된다.
+ */
+export type EventRoomCode = `event:${string}`;
 /** 레거시 코드(기존 데이터/LIVE GPS 인증)까지 포함한 전체 room 코드 */
-export type ChatRoomCode = ChatRegionCode | "all" | "gangnam" | "hongdae" | "itaewon";
+export type ChatRoomCode =
+  | ChatRegionCode
+  | "all"
+  | "gangnam"
+  | "hongdae"
+  | "itaewon"
+  | EventRoomCode;
+
+/** 공연방인지 — 지역 전용 UI(GPS 인증·지역 라벨)를 건너뛸 때 쓴다 */
+export function isEventRoom(room: string): room is EventRoomCode {
+  return room.startsWith("event:");
+}
 /** LIVE GPS 인증 지역 (채팅방과 별개 — 클럽 픽 근접용) */
 export type VerifiableArea = "gangnam" | "hongdae" | "itaewon";
 

@@ -5,11 +5,13 @@ import Link from "next/link";
 import { eventSlug } from "@/lib/events/slug";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mic2, Search, X, ExternalLink, ChevronRight } from "lucide-react";
+import { Mic2, Search, X, ExternalLink, ChevronRight, ThumbsUp } from "lucide-react";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
+import { useLineupLikes } from "@/hooks/useLineupLikes";
+import { hypeTier, hypeBadgeClass, hypeBadgeIconClass } from "@/lib/lineups/hypeTier";
 
 export interface EventPerformer {
   id: string;
@@ -48,6 +50,12 @@ function groupByDate(rows: UndergroundEventRow[]): Array<[string, UndergroundEve
 export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // 👍 좋아요 (Migration 597) — DJ 라인업 목록과 같은 규칙이다.
+  // 카드마다 조회하면 쿼리가 카드 수만큼 늘어나므로 목록 최상위에서 한 번만 부른다.
+  // 목록은 숫자만 읽는다(누르는 건 상세) → 로그인 여부와 무관하게 카운트만 받아온다.
+  const eventIds = useMemo(() => rows.map((r) => r.id), [rows]);
+  const { getLike } = useLineupLikes(eventIds, undefined, "event");
 
   const [area, setArea] = useState<string | null>(() => searchParams.get("area"));
   // 검색어는 URL에 싣지 않는다(/lineups와 동일 규칙 — 타이핑마다 히스토리가 더러워진다)
@@ -196,7 +204,7 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
                 <DateHeader date={date} />
                 <div className="space-y-2">
                   {list.map((r) => (
-                    <EventCard key={r.id} row={r} />
+                    <EventCard key={r.id} row={r} like={getLike(r.id)} />
                   ))}
                 </div>
               </section>
@@ -233,7 +241,13 @@ function DateHeader({ date }: { date: string }) {
   );
 }
 
-function EventCard({ row }: { row: UndergroundEventRow }) {
+function EventCard({
+  row,
+  like,
+}: {
+  row: UndergroundEventRow;
+  like: { count: number; likedByMe: boolean };
+}) {
   const total = row.performers.length + row.extra_names.length;
 
   const slug = eventSlug(row.title);
@@ -252,6 +266,23 @@ function EventCard({ row }: { row: UndergroundEventRow }) {
         />
       )}
 
+      {/* 👍 좋아요 — 목록에서는 "읽기 전용 신호"다(누르는 건 상세).
+          제목 줄 안에 두면 카드가 3줄인데 배지만 첫 줄에 붙어 떠 보인다 →
+          화살표와 같이 세로 가운데에 고정한다(라인업 목록과 같은 자리).
+          0건이면 아예 그리지 않는다 — 회색 0이 줄줄이 서 있으면 빈 서비스로 보인다. */}
+      {like.count > 0 && (
+        <span
+          className={`absolute ${detailHref ? "right-12" : "right-3"} top-1/2 -translate-y-1/2 z-0 inline-flex items-center gap-1 ${hypeBadgeClass(hypeTier(like.count))}`}
+          aria-label={`좋아요 ${like.count}`}
+        >
+          <ThumbsUp
+            className={`w-4 h-4 fill-current ${hypeBadgeIconClass(hypeTier(like.count))}`}
+            aria-hidden="true"
+          />
+          <span className="text-[12px] font-black tabular-nums">{like.count}</span>
+        </span>
+      )}
+
       {/* 오른쪽 고정 화살표 — 누를 수 있다는 신호. 링크는 위 전면 레이어가 받는다 */}
       {detailHref && (
         <span
@@ -262,7 +293,7 @@ function EventCard({ row }: { row: UndergroundEventRow }) {
         </span>
       )}
 
-      <div className={`flex items-start gap-3 ${detailHref ? "pr-9" : ""}`}>
+      <div className={`flex items-start gap-3 ${detailHref ? (like.count > 0 ? "pr-24" : "pr-9") : (like.count > 0 ? "pr-14" : "")}`}>
         {/* 썸네일 — 등록 클럽이면 사진, 아니면 마이크 아이콘.
             공연 포스터는 저작권 때문에 저장하지 않으므로(club_events는 원본 링크만
             보관) 미등록 장소는 채울 이미지가 없다. */}
@@ -285,7 +316,9 @@ function EventCard({ row }: { row: UndergroundEventRow }) {
 
         <div className="min-w-0 flex-1">
           {row.title && (
-            <p className="text-sm font-bold text-foreground leading-snug pr-1">{row.title}</p>
+            <p className="text-sm font-bold text-foreground leading-snug pr-1">
+              {row.title}
+            </p>
           )}
 
           <div className="flex items-center gap-1 flex-wrap mt-0.5 text-[11px]">
