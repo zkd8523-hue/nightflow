@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Mic2, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { Mic2, ExternalLink, ChevronRight } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { splitLineupDate, isLineupToday } from "@/lib/lineups/formatDate";
+import { eventSlug } from "@/lib/events/slug";
 
 export interface ClubEventPerformer {
   id: string;
@@ -125,64 +127,86 @@ export function ClubUpcomingEvents({ events }: { events: ClubUpcomingEvent[] }) 
               const { label, dow } = splitLineupDate(e.event_date);
               const today = isLineupToday(e.event_date);
               const names = [...e.performers.map((p) => p.display_name), ...e.extra_names];
+              const slug = eventSlug(e.title);
+              const detailHref = slug ? `/events/${e.event_date}/${encodeURIComponent(slug)}` : null;
+
               return (
-                <div key={e.id} className="bg-[#141416] rounded-xl p-3">
-                  <div className="flex items-center gap-1.5 text-[11px]">
-                    <span className={today ? "font-black text-amber-400" : "font-bold text-neutral-300"}>
-                      {label}
-                    </span>
-                    <span className="text-neutral-600">{dow}</span>
-                    {today && (
-                      <span className="px-1.5 py-0.5 rounded bg-amber-500 text-black text-[9px] font-black">
-                        오늘
+                <div key={e.id} className="relative bg-[#141416] rounded-xl p-3">
+                  {/* 카드 전체가 공연 상세로 간다 — 안에 인스타·원본 링크가 있어
+                      <a> 중첩을 피하려고 투명 stretched link를 깔고 안쪽 링크만
+                      z-10으로 올린다(UndergroundEventList와 동일 패턴). */}
+                  {detailHref && (
+                    <Link
+                      href={detailHref}
+                      className="absolute inset-0 z-0 rounded-xl"
+                      aria-label={`${e.title ?? "공연"} 상세 보기`}
+                    />
+                  )}
+                  {detailHref && (
+                    <ChevronRight
+                      className="absolute right-3 top-3 w-4 h-4 text-neutral-600"
+                      aria-hidden="true"
+                    />
+                  )}
+
+                  <div className={detailHref ? "pr-6" : ""}>
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      <span className={today ? "font-black text-amber-400" : "font-bold text-neutral-300"}>
+                        {label}
                       </span>
+                      <span className="text-neutral-600">{dow}</span>
+                      {today && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500 text-black text-[9px] font-black">
+                          오늘
+                        </span>
+                      )}
+                    </div>
+
+                    {e.title && (
+                      <p className="mt-1 text-[13px] font-bold text-foreground leading-snug">{e.title}</p>
+                    )}
+
+                    {names.length > 0 && (
+                      <p className="mt-1 text-[12px] leading-relaxed text-neutral-300">
+                        {e.performers.map((p, i) => (
+                          <span key={p.id}>
+                            {i > 0 && <span className="text-neutral-600">, </span>}
+                            {/* 라인업 화면 공통 규칙: 인스타 있으면 이름 자체가 링크 */}
+                            {p.instagram ? (
+                              <a
+                                href={`https://instagram.com/${p.instagram}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="relative z-10 hover:text-pink-400 transition-colors"
+                              >
+                                {p.display_name}
+                              </a>
+                            ) : (
+                              p.display_name
+                            )}
+                          </span>
+                        ))}
+                        {e.extra_names.map((n, i) => (
+                          <span key={`x-${i}`}>
+                            {(e.performers.length > 0 || i > 0) && <span className="text-neutral-600">, </span>}
+                            {n}
+                          </span>
+                        ))}
+                      </p>
+                    )}
+
+                    {e.source_url && (
+                      <a
+                        href={e.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative z-10 mt-1.5 inline-flex items-center gap-1 text-[10px] text-neutral-600 hover:text-neutral-400 transition-colors"
+                      >
+                        <ExternalLink className="w-2.5 h-2.5" aria-hidden="true" />
+                        원본 게시물
+                      </a>
                     )}
                   </div>
-
-                  {e.title && (
-                    <p className="mt-1 text-[13px] font-bold text-foreground leading-snug">{e.title}</p>
-                  )}
-
-                  {names.length > 0 && (
-                    <p className="mt-1 text-[12px] leading-relaxed text-neutral-300">
-                      {e.performers.map((p, i) => (
-                        <span key={p.id}>
-                          {i > 0 && <span className="text-neutral-600">, </span>}
-                          {/* 라인업 화면 공통 규칙: 인스타 있으면 이름 자체가 링크 */}
-                          {p.instagram ? (
-                            <a
-                              href={`https://instagram.com/${p.instagram}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:text-pink-400 transition-colors"
-                            >
-                              {p.display_name}
-                            </a>
-                          ) : (
-                            p.display_name
-                          )}
-                        </span>
-                      ))}
-                      {e.extra_names.map((n, i) => (
-                        <span key={`x-${i}`}>
-                          {(e.performers.length > 0 || i > 0) && <span className="text-neutral-600">, </span>}
-                          {n}
-                        </span>
-                      ))}
-                    </p>
-                  )}
-
-                  {e.source_url && (
-                    <a
-                      href={e.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-neutral-600 hover:text-neutral-400 transition-colors"
-                    >
-                      <ExternalLink className="w-2.5 h-2.5" aria-hidden="true" />
-                      원본 게시물
-                    </a>
-                  )}
                 </div>
               );
             })}

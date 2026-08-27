@@ -164,19 +164,19 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
           if (next) setSelectedIndex(0); // 열 때마다 가장 가까운 날짜부터
         }}
       >
-        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-10 max-h-[80vh] overflow-y-auto max-w-lg mx-auto">
-          <SheetHeader className="text-left pb-2">
+        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-6 px-4 max-h-[80vh] overflow-y-auto max-w-lg mx-auto !gap-1.5">
+          <SheetHeader className="text-left pb-0 !p-0">
             <SheetTitle className="text-foreground text-lg">예정된 라인업</SheetTitle>
           </SheetHeader>
 
           {/* 날짜 칩 — 스와이프 캐러셀이 아니라 눌러서 전환하는 버튼 목록 */}
           {lineups.length > 1 && (
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
               {lineups.map((lineup, i) => (
                 <button
                   key={i}
                   onClick={() => setSelectedIndex(i)}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
                     i === selectedIndex
                       ? "bg-amber-500 text-black"
                       : "bg-[#1C1C1E] text-muted-foreground hover:text-foreground"
@@ -188,7 +188,7 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
             </div>
           )}
 
-          <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-2 mt-2">
+          <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-2">
             {/* 칩이 2개 이상일 때만 날짜를 칩이 대신 보여준다 — 라인업이 1개뿐이면
                 칩 자체가 안 뜨니 여기서 날짜를 빠뜨리지 않는다. */}
             <div className="flex items-center justify-between">
@@ -207,7 +207,7 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
                 </span>
               )}
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {selectedLineup.sets.map((set, j) => {
                 // NOW는 "오늘(가장 가까운 날짜)"에만 의미가 있다 — 다른 날짜 탭을
                 // 보고 있는데 시각만 맞다고 NOW를 켜면 거짓 정보가 된다.
@@ -221,7 +221,7 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
                 return (
                   <div
                     key={j}
-                    className={`flex items-center gap-3 py-1 ${
+                    className={`flex items-center gap-3 py-0.5 ${
                       isNow ? "-mx-2 px-2 border-l-2 border-amber-500 bg-amber-500/5 rounded-r" : ""
                     }`}
                   >

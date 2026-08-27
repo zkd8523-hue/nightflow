@@ -6,6 +6,7 @@ import { Instagram, ExternalLink, ChevronLeft, ChevronRight, Disc3 } from "lucid
 import { createServerClient } from "@supabase/ssr";
 import { eventSlug, normalizeSlugParam, isValidEventDate } from "@/lib/events/slug";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
+import { EventShareButton } from "@/components/events/EventShareButton";
 
 // 공연 상세 — "SENSI SOUND", "팔로알토 공연" 류 고유명사 검색의 착지점.
 // 없는 조합은 notFound() → force-dynamic 필수. 없으면 Suspense 경계가 200을 먼저
@@ -216,6 +217,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   const dateLabel = formatLineupDate(date);
   const year = date.slice(0, 4);
   const isPast = date < todayKST();
+  const performerNames = [...performers.map((p) => p.artist?.display_name ?? p.raw_name), ...extra].filter(Boolean);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -269,6 +271,14 @@ export default async function EventDetailPage({ params }: PageProps) {
           )}
           <span>›</span>
           <span className="text-foreground font-bold">{venue}</span>
+          <EventShareButton
+            eventDate={date}
+            slug={slug}
+            title={title}
+            venue={venue}
+            area={area}
+            performerNames={performerNames}
+          />
         </nav>
 
         <div>

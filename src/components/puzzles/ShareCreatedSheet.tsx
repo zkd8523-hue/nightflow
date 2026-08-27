@@ -71,8 +71,8 @@ export function ShareCreatedSheet({
   const bust = Date.now();
   const shareUrl = `${origin}/flags/${puzzleId}?t=${bust}`;
   // MD 직통은 클럽 대표 이미지(Supabase 공개 URL) — 로컬에서도 카카오가 긁을 수 있음.
-  // 유저 조각은 정적 파일(1200x630 사전 합성) — 로컬 미노출, 프로덕션에서만.
-  const imageUrl = useClub && clubThumbnail ? clubThumbnail : `${origin}/og-jogak-card.jpg`;
+  // 유저 조각은 나플 대표 이미지("FREE PASS" 카드) — 로컬 미노출, 프로덕션에서만.
+  const imageUrl = useClub && clubThumbnail ? clubThumbnail : `${origin}/og-image.png`;
 
   async function handleKakao() {
     trackEvent("puzzle_share_kakao_click", {

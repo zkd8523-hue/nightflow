@@ -3,6 +3,7 @@ import type { Auction } from "@/types/database";
 import { formatEventDate, formatEntryTime } from "./format";
 import { logger } from "./logger";
 import { trackEvent } from "@/lib/analytics/events";
+import { shareViaNative } from "@/lib/native/nativeShare";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 
@@ -293,9 +294,19 @@ export async function shareLineup({
 
   const dateLabel = dayjs(eventDate).locale('ko').format('M월 D일 (dd)');
   const titleText = eventTitle ? ` 〈${eventTitle}〉` : '';
-  const lineupText = djNames && djNames.length > 0 ? `\n라인업: ${djNames.join(', ')}` : '';
-  const shareTitle = `${clubName} ${dateLabel} 라인업`;
-  const text = `🎧 ${clubName}${titleText} ${dateLabel} 라인업${lineupText}\n\n나플에서 확인하세요 👉`;
+  const shareTitle = `${clubName}${titleText} ${dateLabel} 라인업`;
+  // title에 이미 클럽명·파티명·날짜가 있으므로 본문은 라인업·CTA만 남긴다
+  // (클럽명·날짜가 본문에도 또 나오면 공유 시트에서 같은 정보가 두 번 보임).
+  const lineupLine = djNames && djNames.length > 0 ? djNames.join(', ') : clubName;
+  const text = `${lineupLine}\n나플에서 확인하기 👉`;
+
+  // 앱(Capacitor): OS 공유 시트 우선 — WebView에서 navigator.share가 불안정해
+  // 클립보드 복사로 조용히 새는 경우가 있다(실측 사고).
+  const native = await shareViaNative({ title: shareTitle, text, url });
+  if (native.handled) {
+    trackEvent('lineup_shared', { club_id: clubId, event_date: eventDate, method: 'native' });
+    return !native.cancelled;
+  }
 
   if (navigator.share) {
     try {
@@ -314,6 +325,69 @@ export async function shareLineup({
   } else {
     await copyToClipboard(text, url);
     trackEvent('lineup_shared', { club_id: clubId, event_date: eventDate, method: 'clipboard' });
+    return false;
+  }
+}
+
+interface ShareEventParams {
+  eventDate: string;
+  slug: string;
+  title: string;
+  venue: string;
+  area?: string | null;
+  performerNames?: string[];
+}
+
+/**
+ * 공연 상세를 SNS에 공유 (shareLineup과 동일 패턴)
+ */
+export async function shareEvent({
+  eventDate,
+  slug,
+  title,
+  venue,
+  area,
+  performerNames,
+}: ShareEventParams): Promise<boolean> {
+  const baseUrl = `${window.location.origin}/events/${eventDate}/${encodeURIComponent(slug)}`;
+  let url = baseUrl;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('utm_source', 'share_sheet');
+    u.searchParams.set('utm_medium', 'share');
+    url = u.toString();
+  } catch {}
+
+  const dateLabel = dayjs(eventDate).locale('ko').format('M월 D일 (dd)');
+  const venueText = area ? `${venue} · ${area}` : venue;
+  const shareTitle = `${title} - ${venue} ${dateLabel}`;
+  // title에 이미 파티명·클럽명·날짜가 있으므로 본문은 장소·라인업·CTA만 남긴다.
+  const lineupLine = performerNames && performerNames.length > 0 ? `\n${performerNames.join(', ')} 출연` : '';
+  const text = `${venueText}${lineupLine}\n나플에서 확인하기 👉`;
+
+  const native = await shareViaNative({ title: shareTitle, text, url });
+  if (native.handled) {
+    trackEvent('event_shared', { event_date: eventDate, slug, method: 'native' });
+    return !native.cancelled;
+  }
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: shareTitle, text, url });
+      trackEvent('event_shared', { event_date: eventDate, slug, method: 'web_share_api' });
+      return true;
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "name" in err && err.name === "AbortError") {
+        return false;
+      }
+      logger.error("Event share failed:", err);
+      await copyToClipboard(text, url);
+      trackEvent('event_shared', { event_date: eventDate, slug, method: 'clipboard' });
+      return false;
+    }
+  } else {
+    await copyToClipboard(text, url);
+    trackEvent('event_shared', { event_date: eventDate, slug, method: 'clipboard' });
     return false;
   }
 }
@@ -339,6 +413,12 @@ export async function shareClub({ clubId, clubName, area }: ShareClubParams): Pr
 
   const areaText = area ? `${area} ` : '';
   const text = `🌃 ${areaText}${clubName}\n나플에서 위치·영업시간·가격표를 확인하세요 👉`;
+
+  const native = await shareViaNative({ title: clubName, text, url });
+  if (native.handled) {
+    trackEvent('club_shared', { club_id: clubId, method: 'native' });
+    return !native.cancelled;
+  }
 
   if (navigator.share) {
     try {
