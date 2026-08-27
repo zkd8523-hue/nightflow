@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { MapPin, X, Loader2, Hash, ArrowUp } from "lucide-react";
-import { WagleIcon } from "@/components/icons/WagleIcon";
+import { MapPin, X, Loader2, Hash, ArrowUp, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -17,8 +16,6 @@ import { ChatMessageItem } from "./ChatMessageItem";
 import { AreaVerifySheet } from "./AreaVerifySheet";
 import { ChatReplySheet } from "./ChatReplySheet";
 import { ClubHashtagSuggester } from "./ClubHashtagSuggester";
-import { ShotCarousel } from "./ShotCarousel";
-import { ShotCaptureSheet } from "./ShotCaptureSheet";
 import { ChatAttachMenu } from "./ChatAttachMenu";
 import { SharePuzzleSheet } from "./SharePuzzleSheet";
 import { getCurrentHashtagToken, extractHashtags } from "@/lib/chat/hashtag";
@@ -40,7 +37,7 @@ interface Props {
   room: ChatRoomCode;
   onAreaVerified?: (detected: VerifiableArea) => void;
   loginRedirect?: string;
-  /** LIVE 라벨 행에 넣을 지역 필터 (세로 공간 절약) */
+  /** 채팅 상단 헤더 우측에 넣을 지역 필터 (세로 공간 절약) */
   regionFilter?: React.ReactNode;
 }
 
@@ -50,13 +47,12 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
   const router = useRouter();
   const { user } = useCurrentUser();
   const { messages, loading, reload, addLocalMessage } = useChatMessages(room);
-  const { isVerified, activeAreas, refresh: refreshVerifications } =
-    useAreaVerification();
+  const { isVerified, refresh: refreshVerifications } = useAreaVerification();
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
-  const [verifyReason, setVerifyReason] = useState<"chat" | "shot">("chat");
+  const [verifyReason, setVerifyReason] = useState<"chat">("chat");
   const [media, setMedia] = useState<ChatMediaItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -94,9 +90,6 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
 
   // 답글 시트
   const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
-
-  // LIVE 캡처 시트
-  const [shotComposeOpen, setShotComposeOpen] = useState(false);
 
   // 내 조각 공유 (Migration 471) — 사진처럼 입력창에 첨부했다가 함께 전송
   const [sharePuzzleOpen, setSharePuzzleOpen] = useState(false);
@@ -207,11 +200,6 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
   // Migration 421: 광역 채팅방은 인증 불필요 — 로그인만 하면 누구나 쓰기.
   const requiresVerification = false;
   const verifiedForRoom = true;
-
-  // LIVE 작성 시 넘길 area — 인증된 지역이 있으면 힌트로 사용 (없으면 null, 전국 허용).
-  const shotAuthorArea: VerifiableArea | null = useMemo(() => {
-    return activeAreas.length > 0 ? activeAreas[0].area : null;
-  }, [activeAreas]);
 
   async function handleFiles(files: File[]) {
     if (files.length === 0) return;
@@ -658,44 +646,18 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      {/* 와글 LIVE 통합 캐러셀 — 상단 고정(스크롤 안 됨), 채팅만 내부 스크롤 */}
-      <div className="shrink-0">
-      <ShotCarousel
-        currentRoom={room === "all" ? undefined : (room as ChatRegionCode)}
-        headerRight={regionFilter}
-        size={68} // LIVE 탭은 홈(60)보다 조금 크게
-        showComposeButton={true}
-        currentUserId={user?.id}
-        currentUserProfile={user ? { profile_image: user.profile_image ?? null, display_name: user.display_name ?? null } : null}
-        onComposeClick={() => {
-          if (!user) {
-            router.push(loginTarget);
-            return;
-          }
-          // 인증 여부 상관 없이 항상 캡처 시트 오픈 — 안에서 일반/LIVE 분기
-          setShotComposeOpen(true);
-        }}
-      />
+      {/* 뒤로가기 + 지역 필터 행 — 상단 고정(스크롤 안 됨), 채팅만 내부 스크롤 */}
+      <div className="shrink-0 flex items-center gap-1 px-3 pt-2 pb-2 border-b border-border bg-background">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          aria-label="뒤로"
+          className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full hover:bg-card"
+        >
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </button>
+        {regionFilter}
       </div>
-
-      {/* LIVE 캡처 시트 — area 없어도 클럽 미지정 LIVE는 게시 가능 */}
-      {user && (
-        <ShotCaptureSheet
-          open={shotComposeOpen}
-          onOpenChange={setShotComposeOpen}
-          area={shotAuthorArea}
-          userId={user.id}
-          userProfile={{
-            display_name: user.display_name ?? null,
-            profile_image: user.profile_image ?? null,
-          }}
-          onRequestAreaVerify={() => {
-            setShotComposeOpen(false);
-            setVerifyReason("shot");
-            setVerifyOpen(true);
-          }}
-        />
-      )}
 
       {/* 내 파티 공유 (Migration 471) */}
       <SharePuzzleSheet

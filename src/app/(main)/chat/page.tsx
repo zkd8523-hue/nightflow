@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ChatRoom } from "@/components/chat/ChatRoom";
-import { LiveIntroModal } from "@/components/chat/LiveIntroModal";
 import { type ChatRegionCode } from "@/lib/chat/areas";
 import { useChatComposerStore } from "@/stores/useChatComposerStore";
 
@@ -12,7 +11,6 @@ import { useChatComposerStore } from "@/stores/useChatComposerStore";
  *   각 방이 텅 비어 보이는 역효과를 피한다. (거의 모든 클럽·글이 수도권)
  * - 부산·광주 등 실제 콘텐츠 밀도가 생기면 LAUNCH_REGIONS에 한 줄씩 추가 →
  *   자동으로 다지역 탭 선택 UI가 된다.
- * - LIVE 캐러셀은 이미 전국 통합 (Migration 420).
  */
 const LAUNCH_REGIONS: { code: ChatRegionCode; label: string }[] = [
   { code: "sudogwon", label: "수도권" },
@@ -35,9 +33,7 @@ export default function ChatPage() {
       }`}
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <LiveIntroModal />
-
-      {/* 지역 필터 — LIVE 라벨 행 우측에 배치 (세로 공간 절약, 컴팩트 크기) */}
+      {/* 지역 필터 — 채팅 상단 우측에 배치 (세로 공간 절약, 컴팩트 크기) */}
       <ChatRoom
         room={room}
         regionFilter={

@@ -32,7 +32,6 @@ import { ClubLocationModal } from "./ClubLocationModal";
 import { ClubProfileEditor } from "./ClubProfileEditor";
 import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
 import { WordCloudSection } from "./WordCloudSection";
-import { ClubShotSection } from "./ClubShotSection";
 import { FlagExplainerSheet } from "./FlagExplainerSheet";
 import { ClubSharePuzzles } from "./ClubSharePuzzles";
 import { trackEvent } from "@/lib/analytics/events";
@@ -365,13 +364,6 @@ export function ClubDetailContent({
               </label>
             )}
           </div>
-
-        {/* 클럽 LIVE (SHOT) — 대표 이미지 바로 아래. 이 클럽의 실시간 분위기가 핵심 */}
-        <ClubShotSection
-          clubId={club.id}
-          clubName={clubName}
-          clubAreaKr={club.area ?? null}
-        />
 
         <div className={`px-4 ${upcomingLineups.length > 0 ? "pt-2 pb-1" : "pt-4"}`}>
           <UpcomingLineupSheet clubId={club.id} lineups={upcomingLineups} />
