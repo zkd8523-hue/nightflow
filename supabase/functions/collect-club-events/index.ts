@@ -299,7 +299,8 @@ async function saveDjRows(
   djRows: NormalizedExtractionSetRow[],
   droppedRowCount: number,
   draftId: string | null,
-  ctx: SaveCtx
+  ctx: SaveCtx,
+  ticketUrl: string | null = null
 ): Promise<void> {
   if (djRows.length === 0) return;
   const { supabase, results } = ctx;
@@ -354,7 +355,7 @@ async function saveDjRows(
     // 설계하려면 이 변경 범위를 넘어선다.
     const payload = {
       status: "pending",
-      normalized: { event_date: eventDate, door_open_min: null, event_title: eventTitle, sets },
+      normalized: { event_date: eventDate, door_open_min: null, event_title: eventTitle, ticket_url: ticketUrl, sets },
     };
     if (draftId) {
       await supabase.from("lineup_drafts").update(payload).eq("id", draftId);
@@ -374,6 +375,7 @@ async function saveDjRows(
     p_sets: sets,
     p_source: "ig_auto",
     p_draft_id: draftId,
+    p_ticket_url: ticketUrl,
   });
   if (rpcErr) {
     results.errors.push(`upsert_lineup: ${rpcErr.message}`);
@@ -441,6 +443,7 @@ async function saveArtistRows(
     source_url: post.url ?? null,
     source_post_id: postId,
     raw_caption: caption,
+    ticket_url: event.ticketUrl,
   };
   // status 는 사람 판단이 없을 때만 싣는다(빼면 upsert 가 기존 값을 보존한다).
   if (!humanDecided) payload.status = status;
@@ -457,7 +460,7 @@ async function saveArtistRows(
   if (insErr && (insErr as any).code === "23505" && payload.event_date) {
     const { data: existing } = await supabase
       .from("club_events")
-      .select("id, club_id, venue_area, venue_type, title, source_url, lineup")
+      .select("id, club_id, venue_area, venue_type, title, source_url, ticket_url, lineup")
       .eq("event_date", payload.event_date)
       .or(clubId ? `club_id.eq.${clubId}` : `club_name_raw.eq.${clubNameRaw}`)
       .limit(1)
@@ -472,6 +475,7 @@ async function saveArtistRows(
           venue_type: existing.venue_type ?? event.venueType,
           title: existing.title ?? event.eventTitle,
           source_url: existing.source_url ?? (post.url ?? null),
+          ticket_url: existing.ticket_url ?? event.ticketUrl,
           lineup: merged,
         })
         .eq("id", existing.id);
@@ -607,7 +611,7 @@ async function processClubAccountPost(post: any, sourceClub: ClubRef & { id: str
       }
       const djDraftId = djDraftClaimUsed ? null : draft.id;
       djDraftClaimUsed = true;
-      await saveDjRows(sourceClub.id, eventDate, event.eventTitle, djRows, event.droppedRowCount, djDraftId, ctx);
+      await saveDjRows(sourceClub.id, eventDate, event.eventTitle, djRows, event.droppedRowCount, djDraftId, ctx, event.ticketUrl);
       anySaved = true;
     }
 
@@ -699,7 +703,7 @@ async function processCurationPost(post: any, ctx: SaveCtx, venueHint?: string):
     // 큐레이션 게시물은 클럽이 사후에만 확정되므로 draft claim 없이(p_draft_id=null)
     // 바로 저장한다.
     if (djRows.length > 0 && clubId) {
-      await saveDjRows(clubId, eventDate, event.eventTitle, djRows, event.droppedRowCount, null, ctx);
+      await saveDjRows(clubId, eventDate, event.eventTitle, djRows, event.droppedRowCount, null, ctx, event.ticketUrl);
     }
 
     if (artistRows.length > 0) {

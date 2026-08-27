@@ -264,6 +264,103 @@ export async function shareInvite(params: {
   trackEvent("auction_shared", { platform: "invite", auction_id: params.auctionId, method: "clipboard" });
 }
 
+interface ShareLineupParams {
+  clubId: string;
+  eventDate: string;
+  clubName: string;
+  eventTitle?: string | null;
+  djNames?: string[];
+}
+
+/**
+ * 클럽 날짜별 라인업을 SNS에 공유 (shareAuction과 동일 패턴)
+ */
+export async function shareLineup({
+  clubId,
+  eventDate,
+  clubName,
+  eventTitle,
+  djNames,
+}: ShareLineupParams): Promise<boolean> {
+  const baseUrl = `${window.location.origin}/clubs/${clubId}/lineup/${eventDate}`;
+  let url = baseUrl;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('utm_source', 'share_sheet');
+    u.searchParams.set('utm_medium', 'share');
+    url = u.toString();
+  } catch {}
+
+  const dateLabel = dayjs(eventDate).locale('ko').format('M월 D일 (dd)');
+  const titleText = eventTitle ? ` 〈${eventTitle}〉` : '';
+  const lineupText = djNames && djNames.length > 0 ? `\n라인업: ${djNames.join(', ')}` : '';
+  const shareTitle = `${clubName} ${dateLabel} 라인업`;
+  const text = `🎧 ${clubName}${titleText} ${dateLabel} 라인업${lineupText}\n\n나플에서 확인하세요 👉`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: shareTitle, text, url });
+      trackEvent('lineup_shared', { club_id: clubId, event_date: eventDate, method: 'web_share_api' });
+      return true;
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "name" in err && err.name === "AbortError") {
+        return false;
+      }
+      logger.error("Lineup share failed:", err);
+      await copyToClipboard(text, url);
+      trackEvent('lineup_shared', { club_id: clubId, event_date: eventDate, method: 'clipboard' });
+      return false;
+    }
+  } else {
+    await copyToClipboard(text, url);
+    trackEvent('lineup_shared', { club_id: clubId, event_date: eventDate, method: 'clipboard' });
+    return false;
+  }
+}
+
+interface ShareClubParams {
+  clubId: string;
+  clubName: string;
+  area?: string | null;
+}
+
+/**
+ * 클럽 상세를 SNS에 공유 (shareAuction과 동일 패턴)
+ */
+export async function shareClub({ clubId, clubName, area }: ShareClubParams): Promise<boolean> {
+  const baseUrl = `${window.location.origin}/clubs/${clubId}`;
+  let url = baseUrl;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('utm_source', 'share_sheet');
+    u.searchParams.set('utm_medium', 'share');
+    url = u.toString();
+  } catch {}
+
+  const areaText = area ? `${area} ` : '';
+  const text = `🌃 ${areaText}${clubName}\n나플에서 위치·영업시간·가격표를 확인하세요 👉`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: clubName, text, url });
+      trackEvent('club_shared', { club_id: clubId, method: 'web_share_api' });
+      return true;
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "name" in err && err.name === "AbortError") {
+        return false;
+      }
+      logger.error("Club share failed:", err);
+      await copyToClipboard(text, url);
+      trackEvent('club_shared', { club_id: clubId, method: 'clipboard' });
+      return false;
+    }
+  } else {
+    await copyToClipboard(text, url);
+    trackEvent('club_shared', { club_id: clubId, method: 'clipboard' });
+    return false;
+  }
+}
+
 /**
  * 경매 링크만 클립보드에 복사
  */

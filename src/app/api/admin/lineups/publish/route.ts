@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
     doorOpenMin?: unknown;
     eventTitle?: unknown;
     posterUrl?: unknown;
+    ticketUrl?: unknown;
     sets?: unknown;
     source?: unknown;
   };
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
-  const { draftId, clubId, eventDate, doorOpenMin, eventTitle, posterUrl, sets, source } = body;
+  const { draftId, clubId, eventDate, doorOpenMin, eventTitle, posterUrl, ticketUrl, sets, source } = body;
 
   if (typeof clubId !== "string" || !clubId) {
     return NextResponse.json({ error: "clubId required" }, { status: 400 });
@@ -185,6 +186,7 @@ export async function POST(req: NextRequest) {
     p_sets: resolvedSets,
     p_source: typeof source === "string" ? source : "admin_manual",
     p_draft_id: typeof draftId === "string" ? draftId : null,
+    p_ticket_url: typeof ticketUrl === "string" ? ticketUrl : null,
   });
 
   // RPC 결과가 실제로 유효한 lineup_id를 담고 있는지 명시적으로 검증한다.

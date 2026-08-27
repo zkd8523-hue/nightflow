@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // (테스트 클럽이 대부분 pending이라 개발 중 상세를 못 보는 문제).
   const metaQuery = supabase
     .from("clubs")
-    .select("name, area")
+    .select("name, area, thumbnail_url")
     .eq("id", id)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) metaQuery.eq("status", "approved");
@@ -76,7 +76,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: `${headName}${descAliases} 테이블 가격·주대·영업시간 확인, 무료입장·프리드링크 게스트 간판 혜택까지.`,
       url: `https://nightflow.kr/clubs/${id}`,
       type: "website",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      // 클럽 대표 사진이 있으면 그걸 카톡 공유 카드 이미지로 — 없으면 나플 공통
+      // 이미지로 폴백(썸네일 없는 클럽도 빈 카드가 뜨진 않게).
+      images: club.thumbnail_url
+        ? [{ url: club.thumbnail_url }]
+        : [{ url: "/og-image.png", width: 1200, height: 630 }],
     },
   };
 }

@@ -347,6 +347,9 @@ export interface RawExtractionEvent {
   venue_instagram: string | null;
   venue_area: string | null;
   venue_type?: "club" | "venue" | "other" | null;
+  /** 캡션에 명시된 예매/티켓 링크. 모델이 지어내지 않는다는 전제 하에, 여기서는
+   * 형식만 검증한다("이게 진짜 티켓 링크인가"는 프롬프트가 이미 판단했다). */
+  ticket_url?: string | null;
   sets: RawExtractionSet[];
 }
 export interface RawExtraction {
@@ -372,6 +375,7 @@ export interface NormalizedExtractionEvent {
   venueInstagram: string | null;
   venueArea: string | null;
   venueType: "club" | "venue" | "other" | null;
+  ticketUrl: string | null;
   rows: NormalizedExtractionSetRow[];
   droppedRowCount: number;
 }
@@ -398,6 +402,24 @@ export function sanitizeHandle(raw: string | null | undefined, blockedHandles?: 
   if (NON_PERFORMER_HANDLES.has(h)) return null;
   if (blockedHandles?.has(h)) return null;
   return h;
+}
+
+/**
+ * 예매 링크 검증 — http(s) URL 형식만 본다. 인스타그램 자기 게시물/프로필
+ * 링크는 이미 "원본 게시물 보기"로 따로 노출되므로 중복이라 걸러낸다.
+ */
+function sanitizeTicketUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  if (/(^|\.)instagram\.com$/.test(url.hostname)) return null;
+  return trimmed.slice(0, 500);
 }
 
 const MAX_EVENTS = 12;
@@ -453,8 +475,20 @@ function normalizeExtractionEvent(rawEvent: RawExtractionEvent | undefined): Nor
     rawEvent?.venue_type === "club" || rawEvent?.venue_type === "venue" || rawEvent?.venue_type === "other"
       ? rawEvent.venue_type
       : null;
+  const ticketUrl = sanitizeTicketUrl(rawEvent?.ticket_url);
 
-  return { doorOpenMin, eventTitle, eventMonthDay, venueName, venueInstagram, venueArea, venueType, rows, droppedRowCount };
+  return {
+    doorOpenMin,
+    eventTitle,
+    eventMonthDay,
+    venueName,
+    venueInstagram,
+    venueArea,
+    venueType,
+    ticketUrl,
+    rows,
+    droppedRowCount,
+  };
 }
 
 /**

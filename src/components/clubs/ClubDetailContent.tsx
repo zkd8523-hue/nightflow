@@ -26,6 +26,7 @@ import { uploadImage } from "@/lib/utils/upload";
 import { toast } from "sonner";
 import { AuctionList } from "@/components/auctions/AuctionList";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
+import { ClubShareButton } from "./ClubShareButton";
 import { DrinkMenuViewer } from "./DrinkMenuViewer";
 import { ClubLocationModal } from "./ClubLocationModal";
 import { ClubProfileEditor } from "./ClubProfileEditor";
@@ -317,7 +318,8 @@ export function ClubDetailContent({
               ) : (
                 <div />
               )}
-              <div className="pointer-events-auto">
+              <div className="pointer-events-auto flex items-center gap-2">
+                <ClubShareButton clubId={club.id} clubName={club.name} area={club.area} />
                 <FavoriteButton clubId={club.id} variant="overlay" />
               </div>
             </div>

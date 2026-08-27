@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Instagram, Disc3, Heart, Search, X, CalendarDays, ChevronRight } from "lucide-react";
+import { Disc3, Heart, Search, X, CalendarDays, ChevronRight } from "lucide-react";
 import { formatBusinessMin } from "@/lib/lineups/time";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
@@ -577,45 +577,32 @@ function DjLineupRow({
   row: DjRow;
   onOpenProfile: (dj: DjProfileTarget) => void;
 }) {
+  const openProfile = () =>
+    onOpenProfile({
+      id: row.dj.id,
+      display_name: row.dj.display_name,
+      instagram: row.dj.instagram,
+      slug: row.dj.slug,
+    });
+
   return (
     /* 이니셜 원은 두지 않는다 — DJ는 프로필 사진이 없는 운영자 등록 데이터라
-       첫 글자만 반복해 보여줄 뿐 정보를 더하지 않는다(프로필 시트와 같은 규칙). */
-    <div className="flex items-center gap-3 px-3 py-2.5 border-b border-white/5 last:border-0">
+       첫 글자만 반복해 보여줄 뿐 정보를 더하지 않는다(프로필 시트와 같은 규칙).
+       행 전체가 프로필 시트를 연다 — 클럽명은 더 이상 별도 링크가 아니다(눌러도
+       이동하지 않음). 인스타 아이콘은 모바일에서 터치 타겟이 너무 작아 빼고,
+       인스타 링크는 프로필 시트 안(DjProfileSheet)에서만 제공한다 — 찜 버튼만
+       stopPropagation으로 자기 동작 유지. */
+    <button
+      type="button"
+      onClick={openProfile}
+      className="w-full flex items-center gap-3 px-3 py-2.5 border-b border-white/5 last:border-0 text-left hover:bg-white/[0.03] transition-colors"
+    >
       <div className="min-w-0 flex-1">
-        {/* 이름 → 프로필 시트(활동 클럽), 인스타 아이콘 → 인스타 직행.
-            시트는 목록 레벨에서 하나만 두고 열 대상만 바꾼다(행마다 시트를 만들면
-            DOM에 수십 개가 쌓인다) — 그래서 DjNameButton 대신 콜백을 쓴다. */}
-        <span className="inline-flex items-center gap-1.5 max-w-full">
-          <button
-            onClick={() => onOpenProfile({
-              id: row.dj.id,
-              display_name: row.dj.display_name,
-              instagram: row.dj.instagram,
-              slug: row.dj.slug,
-            })}
-            className="truncate text-sm font-bold text-foreground hover:text-amber-400 transition-colors text-left"
-          >
-            {row.dj.display_name}
-          </button>
-          {row.dj.instagram && (
-            <a
-              href={`https://instagram.com/${row.dj.instagram}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`${row.dj.display_name} 인스타그램`}
-              className="shrink-0 inline-flex items-center justify-center text-muted-foreground hover:text-amber-400 transition-colors"
-            >
-              <Instagram className="w-3.5 h-3.5" />
-            </a>
-          )}
-        </span>
-        <Link
-          href={`/clubs/${row.club_id}/lineup/${row.event_date}`}
-          className="block text-[11px] text-muted-foreground truncate hover:text-foreground transition-colors"
-        >
+        <span className="truncate text-sm font-bold text-foreground block">{row.dj.display_name}</span>
+        <p className="text-[11px] text-muted-foreground truncate">
           {row.club_name}
           {row.club_area ? ` · ${row.club_area}` : ""}
-        </Link>
+        </p>
       </div>
 
       {row.start_min !== null && (
@@ -624,7 +611,9 @@ function DjLineupRow({
         </span>
       )}
 
-      <DjFavoriteButton djId={row.dj.id} djName={row.dj.display_name} />
-    </div>
+      <span onClick={(e) => e.stopPropagation()}>
+        <DjFavoriteButton djId={row.dj.id} djName={row.dj.display_name} />
+      </span>
+    </button>
   );
 }

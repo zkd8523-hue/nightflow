@@ -2,12 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Disc3, ChevronRight } from "lucide-react";
+import { Disc3, ChevronRight, ExternalLink, Ticket } from "lucide-react";
 import { LineupSetTable } from "@/components/lineups/LineupSetTable";
 import { getBusinessDateISO } from "@/lib/lineups/time";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { BackButton } from "@/components/ui/BackButton";
+import { LineupShareButton } from "@/components/lineups/LineupShareButton";
 import type { Metadata } from "next";
 
 // 날짜별 라인업 아카이브 — SEO 본진("클럽명 8월 30일 라인업" 류 쿼리는 이 URL이 아니면
@@ -32,6 +33,7 @@ interface DjRef {
 
 interface LineupRow {
   event_title: string | null;
+  ticket_url: string | null;
   source: string;
   lineup_sets: Array<{
     start_min: number | null;
@@ -56,7 +58,7 @@ async function fetchLineup(clubId: string, date: string) {
 
   const { data: lineup } = await supabase
     .from("club_lineups")
-    .select("event_title, source, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram))")
+    .select("event_title, ticket_url, source, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram))")
     .eq("club_id", clubId)
     .eq("event_date", date)
     .maybeSingle<LineupRow>();
@@ -80,9 +82,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const [y, m, d] = date.split("-");
   const title = `${result.club.name} ${parseInt(m, 10)}월 ${parseInt(d, 10)}일 라인업 - DJ 타임테이블`;
+  const description = `${result.club.name}(${result.club.area ?? ""}) ${y}년 ${parseInt(m, 10)}월 ${parseInt(d, 10)}일 DJ 타임테이블. 나플에서 시간대별 라인업을 확인하세요.`;
+  const url = `https://nightflow.kr/clubs/${id}/lineup/${date}`;
   return {
     title,
-    description: `${result.club.name}(${result.club.area ?? ""}) ${y}년 ${parseInt(m, 10)}월 ${parseInt(d, 10)}일 DJ 타임테이블. 나플에서 시간대별 라인업을 확인하세요.`,
+    description,
+    alternates: { canonical: url },
+    // 공유했을 때 카톡 등에서 미리보기 카드가 뜨도록 — 이 페이지엔 그동안 빠져 있었다
+    // (events/[date]/[slug] 등 다른 라인업 라우트엔 전부 있던 블록).
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      // 클럽 대표 사진이 있으면 그걸 카톡 공유 카드 이미지로 — 없으면 나플 공통
+      // 이미지로 폴백.
+      images: result.club.thumbnail_url
+        ? [{ url: result.club.thumbnail_url }]
+        : [{ url: "/og-image.png", width: 1200, height: 630 }],
+    },
   };
 }
 
@@ -138,7 +156,16 @@ export default async function ClubLineupDatePage({ params }: PageProps) {
           {/* 진입 경로가 클럽 상세만이 아니다 — /lineups(전국 라인업), 찜 목록, 검색에서도
               들어온다. 하드코딩 링크는 어디서 왔든 클럽 상세로 보내버리므로 히스토리를 쓴다.
               외부 유입(검색 결과 등)일 때만 클럽 상세로 폴백. */}
-          <BackButton fallbackHref={`/clubs/${id}`} />
+          <div className="flex items-center justify-between">
+            <BackButton fallbackHref={`/clubs/${id}`} />
+            <LineupShareButton
+              clubId={id}
+              clubName={club.name}
+              eventDate={date}
+              eventTitle={lineup.event_title}
+              djNames={sets.filter((s) => s.dj).map((s) => s.dj!.display_name)}
+            />
+          </div>
 
           <div>
             <h1 className="text-xl font-black text-foreground">
@@ -152,6 +179,25 @@ export default async function ClubLineupDatePage({ params }: PageProps) {
               </p>
             )}
           </div>
+
+          {/* 예매 링크 — 캡션에 명시된 경우만(lineup.ticket_url). 없는 라인업이
+              대다수라 조건부로만 나온다. */}
+          {lineup.ticket_url && (
+            <a
+              href={lineup.ticket_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 bg-amber-500 rounded-2xl p-3 hover:bg-amber-600 transition-colors"
+            >
+              <span className="w-11 h-11 rounded-xl bg-black/10 flex items-center justify-center flex-shrink-0">
+                <Ticket className="w-5 h-5 text-black" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-black text-black truncate">예매하기</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-black flex-shrink-0" aria-hidden="true" />
+            </a>
+          )}
 
           {/* 클럽 상세 진입 — 이 페이지는 타임테이블만 보여줘서 위치·가격·영업시간 같은
               클럽 정보가 전혀 없다. /lineups에서 바로 들어온 유저는 뒤로가기로도

@@ -273,6 +273,11 @@ export const LINEUP_EMIT_TOOL = {
               description: "metro-level region, Korean (서울/부산/...) or a city name for overseas.",
             },
             venue_type: { type: "string", enum: ["club", "venue", "other"] },
+            ticket_url: {
+              type: ["string", "null"],
+              description:
+                'A ticketing/reservation URL explicitly printed in the caption (e.g. after "예매", "티켓", "Booking", "Ticket link", a bio-link service, or a direct link to interpark/yes24/ticketlink/nol/residentadvisor/dumbs_app). Only the literal URL text — never invent one, never use an Instagram profile/post link, never use a phone number or DM handle.',
+            },
             sets: {
               type: "array",
               items: {
@@ -312,7 +317,7 @@ export const LINEUP_EMIT_TOOL = {
           },
           required: [
             "event_date", "event_title", "door_open_hhmm",
-            "venue_name", "venue_instagram", "venue_area", "venue_type", "sets",
+            "venue_name", "venue_instagram", "venue_area", "venue_type", "ticket_url", "sets",
           ],
           additionalProperties: false,
         },

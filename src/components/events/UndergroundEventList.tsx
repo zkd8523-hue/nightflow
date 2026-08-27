@@ -5,7 +5,7 @@ import Link from "next/link";
 import { eventSlug } from "@/lib/events/slug";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Instagram, Mic2, Search, X, ExternalLink, ChevronRight } from "lucide-react";
+import { Mic2, Search, X, ExternalLink, ChevronRight } from "lucide-react";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
@@ -266,28 +266,17 @@ function EventCard({ row }: { row: UndergroundEventRow }) {
         {/* 썸네일 — 등록 클럽이면 사진, 아니면 마이크 아이콘.
             공연 포스터는 저작권 때문에 저장하지 않으므로(club_events는 원본 링크만
             보관) 미등록 장소는 채울 이미지가 없다. */}
-        {/* 등록 클럽이면 썸네일도 클럽 상세로 — 이름만 링크면 눌러본 사람이
-            "왜 사진은 안 되지" 하게 된다. 미등록 장소는 갈 곳이 없으므로 그대로 둔다. */}
+        {/* 카드 전체가 이미 상세로 가는 stretched link다 — 썸네일·클럽명·출연자
+            인스타를 각각 별도 링크로 두면 터치 타겟이 잘게 쪼개져 오히려 혼란스럽다
+            (모바일 실측 피드백). 링크는 카드 하나만, 안쪽은 전부 텍스트로 통일. */}
         {row.club_thumbnail ? (
-          row.club_id ? (
-            <Link href={`/clubs/${row.club_id}`} className="relative z-10 flex-shrink-0" aria-label={`${row.venue_name} 상세`}>
-              <Image
-                src={row.club_thumbnail}
-                alt=""
-                width={44}
-                height={44}
-                className="w-11 h-11 rounded-xl object-cover"
-              />
-            </Link>
-          ) : (
-            <Image
-              src={row.club_thumbnail}
-              alt=""
-              width={44}
-              height={44}
-              className="w-11 h-11 rounded-xl object-cover flex-shrink-0"
-            />
-          )
+          <Image
+            src={row.club_thumbnail}
+            alt=""
+            width={44}
+            height={44}
+            className="w-11 h-11 rounded-xl object-cover flex-shrink-0"
+          />
         ) : (
           <span className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
             <Mic2 className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
@@ -300,17 +289,9 @@ function EventCard({ row }: { row: UndergroundEventRow }) {
           )}
 
           <div className="flex items-center gap-1 flex-wrap mt-0.5 text-[11px]">
-            {/* 등록 클럽이면 클럽 상세로, 아니면 회색 텍스트 */}
-            {row.club_id ? (
-              <Link
-                href={`/clubs/${row.club_id}`}
-                className="relative z-10 font-bold text-green-500 hover:text-green-400 transition-colors"
-              >
-                {row.venue_name}
-              </Link>
-            ) : (
-              <span className="text-muted-foreground">{row.venue_name}</span>
-            )}
+            <span className={row.club_id ? "font-bold text-green-500" : "text-muted-foreground"}>
+              {row.venue_name}
+            </span>
             {row.venue_area && <span className="text-neutral-600">· {row.venue_area}</span>}
           </div>
 
@@ -319,20 +300,7 @@ function EventCard({ row }: { row: UndergroundEventRow }) {
               {row.performers.map((p, i) => (
                 <span key={p.id}>
                   {i > 0 && <span className="text-neutral-600">, </span>}
-                  {/* 라인업 화면 공통 규칙: 인스타 있으면 이름 자체가 링크 */}
-                  {p.instagram ? (
-                    <a
-                      href={`https://instagram.com/${p.instagram}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="relative z-10 inline-flex items-center gap-0.5 hover:text-amber-400 transition-colors"
-                    >
-                      {p.display_name}
-                      <Instagram className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
-                    </a>
-                  ) : (
-                    <span>{p.display_name}</span>
-                  )}
+                  {p.display_name}
                 </span>
               ))}
               {row.extra_names.map((n, i) => (

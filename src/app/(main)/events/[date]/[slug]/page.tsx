@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Instagram, ExternalLink, ChevronLeft } from "lucide-react";
+import { Instagram, ExternalLink, ChevronLeft, ChevronRight, Disc3 } from "lucide-react";
 import { createServerClient } from "@supabase/ssr";
 import { eventSlug, normalizeSlugParam, isValidEventDate } from "@/lib/events/slug";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
@@ -69,7 +70,7 @@ async function fetchEvent(date: string, slugParam: string) {
   const { data } = await supabase
     .from("club_events")
     .select(
-      `id, event_date, title, club_id, club_name_raw, venue_area, lineup, source_url, source_account,
+      `id, event_date, title, club_id, club_name_raw, venue_area, lineup, source_url, source_account, ticket_url,
        clubs(id, name, area, address, thumbnail_url, is_test, status, deleted_at),
        club_event_performers(raw_name, sort_order, artists(id, display_name, instagram, artist_aliases(alias)))`
     )
@@ -87,6 +88,7 @@ async function fetchEvent(date: string, slugParam: string) {
     lineup: string[] | null;
     source_url: string | null;
     source_account: string | null;
+    ticket_url: string | null;
     clubs: ClubRef | ClubRef[] | null;
     club_event_performers: Array<{
       raw_name: string;
@@ -191,7 +193,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: names ? `라인업: ${names}` : `${head} ${dateLabel} 공연`,
       url,
       type: "website",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      // 클럽 대표 사진이 있으면 그걸 카톡 공유 카드 이미지로 — 없으면 나플 공통
+      // 이미지로 폴백.
+      images: club?.thumbnail_url
+        ? [{ url: club.thumbnail_url }]
+        : [{ url: "/og-image.png", width: 1200, height: 630 }],
     },
   };
 }
@@ -234,6 +240,7 @@ export default async function EventDetailPage({ params }: PageProps) {
       ...extra.map((n) => ({ "@type": "MusicGroup", name: n })),
     ],
     ...(club?.thumbnail_url ? { image: club.thumbnail_url } : {}),
+    ...(row.ticket_url ? { offers: { "@type": "Offer", url: row.ticket_url, availability: "https://schema.org/InStock" } } : {}),
   };
 
   return (
@@ -289,13 +296,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           <div className="flex gap-3 py-3">
             <dt className="shrink-0 w-[52px] text-[12px] font-bold text-muted-foreground pt-0.5">장소</dt>
             <dd className="text-[15px] min-w-0">
-              {club ? (
-                <Link href={`/clubs/${club.id}`} className="font-bold hover:text-brand-amber transition-colors">
-                  {venue}{area && ` · ${area}`}
-                </Link>
-              ) : (
-                <span>{venue}{area && ` · ${area}`}</span>
-              )}
+              <span>{venue}{area && ` · ${area}`}</span>
               {club?.address && (
                 <span className="block text-[13px] text-muted-foreground mt-0.5">{club.address}</span>
               )}
@@ -337,6 +338,40 @@ export default async function EventDetailPage({ params }: PageProps) {
           </section>
         )}
 
+        {/* 공연장 정보 카드 — "장소" 줄의 텍스트만으로는 눌러볼 이유가 잘 안
+            보였다(라인업 상세 페이지엔 이미 같은 톤의 카드가 있음). "클럽"이라
+            안 하는 이유: 이 화면의 절반은 미등록 장소·라이브홀 등 클럽이 아니다.
+            라인업 섹션 다음 배치 — 출연자를 먼저 보고, 그다음 "어디서" 열리는지로
+            자연스럽게 이어진다. */}
+        {club && (
+          <Link
+            href={`/clubs/${club.id}`}
+            aria-label={`${club.name} 공연장 정보 더보기`}
+            className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3 hover:bg-muted/40 transition-colors"
+          >
+            {club.thumbnail_url ? (
+              <Image
+                src={club.thumbnail_url}
+                alt=""
+                width={44}
+                height={44}
+                className="w-11 h-11 rounded-xl object-cover flex-shrink-0"
+              />
+            ) : (
+              <span className="w-11 h-11 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                <Disc3 className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-foreground truncate">공연장 정보 더보기</p>
+              <p className="text-[11px] text-muted-foreground">
+                위치 · 영업시간 · 가격표{area ? ` · ${area}` : ""}
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+          </Link>
+        )}
+
         {/* 원문 캡션은 싣지 않는다 — 클럽·프로모터 저작물이고, 인스타와 중복 콘텐츠가 된다.
             사실 정보만 위에 재구성하고 원문은 링크로 보낸다. */}
         <div className="rounded-2xl bg-card border border-border overflow-hidden">
@@ -376,21 +411,41 @@ export default async function EventDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* 하단 CTA — 예매·문의는 붙이지 않는다(외부 의존 + 파트너 미보장).
-          확실히 존재하는 곳으로만 보낸다. */}
+      {/* 하단 CTA — 문의는 붙이지 않는다(외부 의존 + 파트너 미보장). 확실히
+          존재하는 곳으로만 보낸다. 예매는 예외 — 캡션에 명시된 링크가 있을
+          때만(row.ticket_url) 보여준다. 없는 공연은 기존처럼 클럽/더보기만. */}
       <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
-        <div className="w-full max-w-lg mx-auto">
+        <div className="w-full max-w-lg mx-auto space-y-2">
+          {row.ticket_url && (
+            <a
+              href={row.ticket_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 w-full py-3.5 rounded-2xl bg-amber-500 text-black font-black text-[15px]"
+            >
+              예매하기
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          )}
           {club ? (
             <Link
               href={`/clubs/${club.id}`}
-              className="flex items-center justify-center w-full py-3.5 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px]"
+              className={
+                row.ticket_url
+                  ? "flex items-center justify-center w-full py-3 rounded-2xl bg-muted text-foreground font-bold text-[14px]"
+                  : "flex items-center justify-center w-full py-3.5 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px]"
+              }
             >
               {club.name} 클럽 정보 보기
             </Link>
           ) : (
             <Link
               href="/events"
-              className="flex items-center justify-center w-full py-3.5 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px]"
+              className={
+                row.ticket_url
+                  ? "flex items-center justify-center w-full py-3 rounded-2xl bg-muted text-foreground font-bold text-[14px]"
+                  : "flex items-center justify-center w-full py-3.5 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px]"
+              }
             >
               더 많은 공연 보기
             </Link>

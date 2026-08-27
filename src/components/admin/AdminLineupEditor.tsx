@@ -46,6 +46,7 @@ export interface DraftListItem {
     event_date?: string;
     door_open_min?: number | null;
     event_title?: string | null;
+    ticket_url?: string | null;
     sets?: StoredSetRow[];
   } | null;
   confidence: number | null;
@@ -634,6 +635,7 @@ function DraftEditView({
     draft.normalized?.door_open_min != null ? formatBusinessMin(draft.normalized.door_open_min) : ""
   );
   const [eventTitle, setEventTitle] = useState(draft.normalized?.event_title ?? "");
+  const [ticketUrl, setTicketUrl] = useState(draft.normalized?.ticket_url ?? "");
   const [rows, setRows] = useState<EditRow[]>(
     (draft.normalized?.sets ?? []).map((s) => ({
       rawName: s.raw_name,
@@ -738,6 +740,7 @@ function DraftEditView({
           doorOpenMin: doorOpenTime ? toBusinessMinutes(doorOpenTime) : null,
           eventTitle: eventTitle || null,
           posterUrl: draft.poster_url,
+          ticketUrl: ticketUrl || null,
           source: draft.origin === "ig" ? "ig_review" : "admin_vision",
           sets: rows.map((r) => ({
             startMin: r.startMin,
@@ -793,6 +796,15 @@ function DraftEditView({
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">파티명 (선택)</label>
             <Input value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} className="bg-[#0A0A0A] border-border" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">예매 링크 (선택)</label>
+            <Input
+              value={ticketUrl}
+              onChange={(e) => setTicketUrl(e.target.value)}
+              placeholder="https://..."
+              className="bg-[#0A0A0A] border-border"
+            />
           </div>
         </div>
 
