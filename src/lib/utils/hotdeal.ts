@@ -136,7 +136,7 @@ export function normalizeDowSlots(
 }
 
 /** "HH:00" → 영업일(새벽 6시) 기준 경과 분. 새벽 시간(0~5시)은 익일로 취급해 뒤로 정렬. */
-function toBusinessMinutes(hhmm: string): number {
+export function toBusinessMinutes(hhmm: string): number {
   const h = parseInt(hhmm.slice(0, 2), 10);
   const m = parseInt(hhmm.slice(3, 5), 10) || 0;
   const shifted = h < BUSINESS_DAY_CUTOFF_HOUR ? h + 24 : h;
@@ -144,7 +144,7 @@ function toBusinessMinutes(hhmm: string): number {
 }
 
 /** 현재 KST 시각의 영업일 기준 경과 분. */
-function nowBusinessMinutes(): number {
+export function nowBusinessMinutes(): number {
   const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const h = kst.getUTCHours();
   const m = kst.getUTCMinutes();

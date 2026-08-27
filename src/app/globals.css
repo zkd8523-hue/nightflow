@@ -408,6 +408,27 @@
   top: 45%;
 }
 
+/* ── DJ 라인업 LED 전광판 (클럽 상세 "어떤 DJ들이 올까?") ── */
+/* 트랙 안에 콘텐츠를 통째로 두 벌 이어붙이고 -50% 만큼만 밀어 이음매 없이 반복시킨다 */
+@keyframes led-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-led-scroll {
+  animation: led-scroll 32s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-led-scroll {
+    animation: none !important;
+  }
+}
+
 /* ── LIVE 영상: WebView/브라우저 기본 재생버튼·컨트롤 오버레이 완전 제거 ── */
 /* 캐러셀 썸네일(정지) + 뷰어 시작 전 프레임에 뜨는 "싸구려 재생버튼" 방지 */
 video::-webkit-media-controls,

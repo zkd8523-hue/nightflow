@@ -21,7 +21,7 @@ import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { HomePuzzleCarousel } from "@/components/home/HomePuzzleCarousel";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
-import { ShotCarousel } from "@/components/chat/ShotCarousel";
+import { LineupTicker } from "@/components/home/LineupTicker";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 import { CouponHomeStrip } from "@/components/home/CouponHomeStrip";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
@@ -903,9 +903,18 @@ export function HomeContent({
     return (
       <>
         <div className="flex flex-col">
-          {/* ── 오늘 어디갈래? — 홈 최상단 고정 배치 ── */}
+          {/* ── DJ 라인업 / 언더그라운드 공연 전광판 — 고정헤더 바로 아래 ──
+                 기존 LIVE(ShotCarousel)가 있던 자리. LIVE가 사실상 안 쓰이게 되어
+                 /lineups·/events 두 진입점을 홈 최상단에 세운다.
+                 ⚠️ 래퍼로 감싸지 않는다 — 데이터가 없으면 LineupTicker가 null인데
+                 래퍼 여백만 남아 빈 공간이 생긴다(LIVE 때와 같은 사고).
+                 여백은 컴포넌트가 자기 루트에 직접 준다. */}
+          <LineupTicker />
+
+          {/* ── 오늘 어디갈래? ── */}
           <div className="-mx-4 px-4 pb-4">
             <ClubBenefitSection />
+
             {/* MD 전용 게스트 간판 행동 유도 CTA — 일반 유저에겐 null이라 래퍼도 렌더 안 함 */}
             {isMdOrAdmin && (
               <div className="mt-3">
@@ -916,18 +925,6 @@ export function HomeContent({
             <div className="mt-3">
               <CouponHomeStrip />
             </div>
-          </div>
-
-          {/* ── LIVE — 고정헤더 바로 아래 (핵심: 실시간 클럽 분위기).
-                 LIVE 없으면 ShotCarousel이 null 반환 → 섹션·여백 모두 안 보임 (mb 없음) ── */}
-          {/* ⚠️ 여기에 음수 margin을 주면 LIVE가 없을 때(ShotCarousel이 null)
-              빈 래퍼만 남아 뒤 콘텐츠까지 끌어올려 헤더에 붙는다. */}
-          <div className="-mx-4">
-            <ShotCarousel
-              showComposeButton={false}
-              currentUserId={user?.id}
-              endCardTo="/chat"
-            />
           </div>
 
           {/* MD 팁박스 — 홈에서 제거 (상세 "더보기"에는 유지). false로 차단 */}
