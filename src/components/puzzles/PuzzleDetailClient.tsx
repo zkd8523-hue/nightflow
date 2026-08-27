@@ -16,7 +16,6 @@ import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
 import { SecretOfferCard } from "./SecretOfferCard";
-import { OfferCompareNudge } from "./OfferCompareNudge";
 import { PuzzlePiece, buildPuzzleSlotLayout } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, OfferChatMeta, GenderPref, AgePref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
@@ -45,6 +44,7 @@ import { normalizeProfileImage } from "@/lib/utils/image";
 import { ContentMoreMenu } from "@/components/moderation/ContentMoreMenu";
 import { useRecentMatchedPuzzle } from "./RecentMatchShowcaseSheet";
 import { shareViaNative } from "@/lib/native/nativeShare";
+import { getShareOrigin } from "@/lib/utils/shareOrigin";
 
 // 모달 시트는 열릴 때만 로드 — 초기 JS 번들·하이드레이션에서 제외 (동작 동일).
 const PuzzleJoinSheet = dynamic(() => import("./PuzzleJoinSheet").then((m) => ({ default: m.PuzzleJoinSheet })), { ssr: false });
@@ -247,7 +247,6 @@ export function PuzzleDetailClient({
   // 클럽 그룹 단위로 여는 가격표 비교 창 — 어느 클럽 그룹이 열려있는지 clubKey로 추적
   const [compareGroupKey, setCompareGroupKey] = useState<string | null>(null);
   // 방장이 오퍼 받고도 상담 안 시작한 채 머물 때 1회 뜨는 "정가 비교" 넛지
-  const [showCompareNudge, setShowCompareNudge] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [offers, setOffers] = useState<PuzzleOffer[]>([]);
   const [offersLoading, setOffersLoading] = useState(true);
@@ -324,7 +323,7 @@ export function PuzzleDetailClient({
   const recentMatchedPuzzle = useRecentMatchedPuzzle(showMatchedShowcase);
 
   const handleShare = useCallback(async () => {
-    const url = `${window.location.origin}/flags/${puzzle.id}${lq}`;
+    const url = `${getShareOrigin()}/flags/${puzzle.id}${lq}`;
     const totalBudget =
       puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count;
     const title = isForeigner ? `NightFlow Request · ${areaLabel(puzzle.area, lang)}` : `나플 깃발 · ${puzzle.area}`;
@@ -571,20 +570,6 @@ export function PuzzleDetailClient({
     () => pendingOffers.some((o) => o.leader_chat_started_at),
     [pendingOffers],
   );
-
-  // 방장이 오퍼를 받고도 상담을 시작하지 않고 잠깐 머물면 비교 넛지 1회 노출.
-  // (localStorage로 깃발당 1회 제한 · 정가표 있는 클럽이 있을 때만)
-  useEffect(() => {
-    // 어드민 모니터링 화면에는 넛지 제외 — 실제 방장 본인에게만.
-    if (!isLeader || isRealAdmin || isAccepted) return;
-    if (pendingOffers.length === 0 || !firstCompareGroupKey || anyChatStarted) return;
-    try {
-      if (localStorage.getItem(`flag_compare_nudge_${puzzle.id}`) === "1") return;
-    } catch {}
-    // 진입 후 5초 뒤 1회 노출 (아직 상담 안 시작한 방장에게만)
-    const timer = setTimeout(() => setShowCompareNudge(true), 5000);
-    return () => clearTimeout(timer);
-  }, [isLeader, isAccepted, pendingOffers.length, firstCompareGroupKey, anyChatStarted, puzzle.id]);
 
   // 방장이 본인 깃발 상세를 열면 현재 오퍼 수를 "확인함"으로 기록.
   // MY 목록의 "NEW +N"(확인 안 한 오퍼 수) 계산 기준. (localStorage 키: profile과 동일)
@@ -909,7 +894,7 @@ export function PuzzleDetailClient({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* 첫 진입 안내 — 깃발은 파트너에게 크레딧 구조를, 파트너 파티는 유저에게 "앱에서 결제 없음"을.
+      {/* 첫 진입 안내 — 깃발은 파트너에게 크레딧 구조를, 파티는 "전액 무료"를.
           방장 본인에게는 띄우지 않는다(자기 글에서 볼 안내가 아니다). */}
       {(isMd || isAdmin) && !isLeader && !(isRecruitingParty && puzzle.host_is_md) && (
         <OfferCreditGuideSheet isParty={isRecruitingParty} />
@@ -1098,12 +1083,13 @@ export function PuzzleDetailClient({
               {isRecruitingParty ? (
                 <>
                   <div className="flex items-center gap-2 flex-wrap">
-                    {/* 예산 표시 — 전원 동일하게 1인/현재 (역할 구분 없음) */}
-                    <span className="text-[19px] font-bold text-money">
-                      1인 {perPersonBudget.toLocaleString()}원
-                    </span>
+                    {/* 예산 표시 — 전원 동일하게 1인/현재 (역할 구분 없음).
+                        실제 지불 총액인 "현재"가 주 정보라 크게, "1인"은 참고치라 작게 표시. */}
                     <span className="text-[13px] text-muted-foreground">
-                      / 현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
+                      1인 {perPersonBudget.toLocaleString()}원 /
+                    </span>
+                    <span className="text-[19px] font-bold text-money">
+                      현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
                     </span>
                     {puzzle.leader && !puzzle.host_is_md && (
                       <button
@@ -1670,9 +1656,23 @@ export function PuzzleDetailClient({
               <div className="flex items-center gap-2">
                 <span className="text-[16px] leading-none">💌</span>
                 <h2 className="text-[16px] font-bold text-foreground">
-                  {isRecruitingParty ? t("오퍼", "Offers") : t("시크릿오퍼", "Secret Offers")}
-                  {pendingOffers.length > 0 && !isAccepted && (
-                    <span className="ml-1.5 text-foreground">{pendingOffers.length}{t("건", "")}</span>
+                  {isRecruitingParty ? (
+                    pendingOffers.length > 0 && !isAccepted ? (
+                      <>
+                        {t("파트너 ", "")}
+                        <span className="text-brand-amber">{pendingOffers.length}</span>
+                        {t("명이 메시지를 남겼어요", " partners left a message")}
+                      </>
+                    ) : (
+                      t("파트너 메시지", "Messages")
+                    )
+                  ) : (
+                    <>
+                      {t("시크릿오퍼", "Secret Offers")}
+                      {pendingOffers.length > 0 && !isAccepted && (
+                        <span className="ml-1.5 text-foreground">{pendingOffers.length}{t("건", "")}</span>
+                      )}
+                    </>
                   )}
                 </h2>
               </div>
@@ -1684,8 +1684,9 @@ export function PuzzleDetailClient({
                 )}
             </div>
 
-            {/* 오퍼 첫 로드 동안 빈 화면 대신 골격 표시 (loadOffers 완료 시 사라짐) */}
-            {offersLoading && pendingOffers.length === 0 && !isAccepted && (
+            {/* 오퍼 첫 로드 동안 빈 화면 대신 골격 표시 (loadOffers 완료 시 사라짐).
+                파티는 블러 카드를 안 그리므로 스켈레톤도 띄우지 않는다 — 잔상처럼 보인다. */}
+            {!isRecruitingParty && offersLoading && pendingOffers.length === 0 && !isAccepted && (
               <div className="space-y-3" aria-hidden>
                 {[0, 1].map((i) => (
                   <div key={i} className="bg-card rounded-2xl border border-border p-4 space-y-2 animate-pulse">
@@ -1764,8 +1765,8 @@ export function PuzzleDetailClient({
                           className="block px-1 pt-1 text-[13px] font-semibold text-foreground/90 underline decoration-dotted decoration-neutral-600 underline-offset-4 hover:text-brand-amber hover:decoration-amber-300 transition-colors"
                         >
                           {isForeigner
-                            ? t("나플 패키지 vs 정가 비교하기", "Compare NightFlow package vs list price")
-                            : "나플 패키지 vs 정가 비교하기"}
+                            ? t("주대 확인하기", "Check drink prices")
+                            : "주대 확인하기"}
                         </button>
                       )}
                       <div className="divide-y divide-neutral-700 pt-3">
@@ -1802,8 +1803,9 @@ export function PuzzleDetailClient({
               </div>
             )}
 
-            {/* 비방장: 테이블타입 공개 + 주류/extras blur 처리 */}
-            {!isLeader && !isAccepted && (
+            {/* 비방장: 테이블타입 공개 + 주류/extras blur 처리.
+                파티는 "파트너 N명이 메시지를 남겼어요" 헤더만 남기고 블러 카드를 노출하지 않는다. */}
+            {!isLeader && !isAccepted && !isRecruitingParty && (
               <div className="space-y-3 -mt-2">
                 {/* 시크릿 오퍼 이유 + 소비자 이득 (왜 비공개인지 궁금증 해소) */}
                 <details className="group rounded-xl bg-card/50 border border-border overflow-hidden">
@@ -2225,24 +2227,14 @@ export function PuzzleDetailClient({
                     💳 <strong>{t(isRecruitingParty ? "외국인 파티" : "외국인 깃발", isRecruitingParty ? "International Share" : "International Flag")}</strong> — {t("매칭 시 사용자가 즉시 선결제, 방문 확정 후 정산 (NightFlow 9% 차감 후 송금)", "Prepaid instantly on match, settled after the visit is confirmed (9% NightFlow fee deducted)")}
                   </div>
                 )}
+                {/* 1:1 메시지 버튼 제거 — 파티는 "메시지 남기기" 하나로 통일한다.
+                    유저가 그 메시지를 보고 채팅을 시작하면 단톡방에서 상담이 이어진다. */}
                 <div className="flex items-stretch gap-2">
-                  {/* 깃발(경매)엔 1:1 없음 — 경쟁 입찰 우회 방지. 조각/파티(고정가)만 허용 */}
-                  {isRecruitingParty && (
-                    <button
-                      type="button"
-                      onClick={handleOpenDm}
-                      disabled={openingDm}
-                      className="shrink-0 h-13 px-3.5 flex items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-card border border-border text-foreground text-[13px] font-black active:scale-[0.98] transition-all disabled:opacity-50"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      1:1메시지
-                    </button>
-                  )}
                   <Button
                     onClick={() => setShowOffer(true)}
                     className="flex-1 py-3.5 h-auto rounded-full bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] border border-black/60 shadow-[0_0_20px_rgba(245,158,11,0.45)] active:scale-[0.98] transition-all"
                   >
-                    오퍼하기
+                    {isRecruitingParty ? "메시지 남기기" : "오퍼하기"}
                   </Button>
                 </div>
               </div>
@@ -2346,20 +2338,8 @@ export function PuzzleDetailClient({
         />
       )}
 
-      {showCompareNudge && !isRealAdmin && firstCompareGroupKey && !compareGroupKey && !anyChatStarted && (
-        <OfferCompareNudge
-          lang={lang}
-          onCompare={() => {
-            try { localStorage.setItem(`flag_compare_nudge_${puzzle.id}`, "1"); } catch {}
-            setShowCompareNudge(false);
-            setCompareGroupKey(firstCompareGroupKey);
-          }}
-          onClose={() => {
-            try { localStorage.setItem(`flag_compare_nudge_${puzzle.id}`, "1"); } catch {}
-            setShowCompareNudge(false);
-          }}
-        />
-      )}
+      {/* 비교 유도 팝업 제거 — 진입을 가로막는 인터럽트라 없앤다.
+          비교는 오퍼 목록의 "주대 확인하기" 버튼으로 직접 들어간다. */}
 
       <RecentMatchShowcaseSheet
         open={showMatchedShowcase}

@@ -402,13 +402,14 @@ export const PuzzleCard = memo(function PuzzleCard({
       <div className="flex flex-col gap-1.5 mt-1">
         {isRecruitingParty ? (
           <>
-            {/* 파티원 모집 중: 예산 표시 — 전원 동일하게 1인/현재 (역할 구분 없음) */}
+            {/* 파티원 모집 중: 예산 표시 — 전원 동일하게 1인/현재 (역할 구분 없음).
+                실제 지불 총액인 "현재"가 주 정보라 크게, "1인"은 참고치라 작게 표시. */}
             <div className="flex items-baseline gap-1">
-              <span className="text-[18px] font-black text-money">
+              <span className="text-[14px] font-bold text-foreground/80">
                 1인 {perPersonBudget.toLocaleString()}원
               </span>
               <span className="text-[14px] font-bold text-muted-foreground">/</span>
-              <span className="text-[14px] font-bold text-foreground/80">
+              <span className="text-[18px] font-black text-money">
                 현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
               </span>
             </div>
@@ -532,7 +533,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                 className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500/15 border border-amber-500/30 text-brand-amber pointer-events-none"
               >
-                오퍼 완료
+                메시지 완료
               </Button>
             ) : puzzle.host_is_md ? (
               /* MD 직통 조각엔 다른 MD가 오퍼 불가 (남의 클럽 직통) → 자세히로 대체해 CTA 높이 통일 */
@@ -549,7 +550,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
                 className="text-[13px] font-bold text-brand-amber hover:text-amber-100 active:scale-[0.97] transition-all shrink-0 [text-shadow:0_0_10px_rgba(245,158,11,0.65)]"
               >
-                {offerCount > 0 ? "나도 오퍼하기 →" : "먼저 오퍼하기 →"}
+                {offerCount > 0 ? "나도 메시지 →" : "먼저 메시지 →"}
               </button>
             )}
           </div>
