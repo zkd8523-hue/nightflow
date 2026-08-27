@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { PartyChatRoom } from "@/components/messages/PartyChatRoom";
-import type { PartyParticipant } from "@/types/database";
+import type { PartyParticipant, PartyRoom } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -73,32 +73,60 @@ export default async function PartyChatPage({ params }: PageProps) {
 
   const members = (memberRows ?? []) as MemberRow[];
 
-  // 초대된 MD (조각당 1명)
-  const { data: partyMd } = await supabase
+  // 초대된 파트너(MD) 전원 — ⚠️ maybeSingle() 금지: 2명 이상이면 PGRST116으로
+  // 페이지 전체가 죽는다 (Migration 589부터 다중 파트너 초대 가능).
+  const { data: partyMdRows } = await supabase
     .from("puzzle_party_md")
-    .select("md_id, offer_id, consented_at, md:public_user_profiles!puzzle_party_md_md_id_fkey(id, display_name, profile_image)")
+    .select("md_id, offer_id, consented_at, invited_at, md:public_user_profiles!puzzle_party_md_md_id_fkey(id, display_name, profile_image)")
     .eq("puzzle_id", puzzleId)
-    .maybeSingle();
-  const invitedMdId = partyMd?.md_id ?? null;
-  // MD가 아직 상담에 동의하지 않았으면 입장 시 동의 모달 노출 (Migration 587부터 무료)
-  const mdConsented = !!(partyMd as { consented_at?: string | null } | null)?.consented_at;
-
-  // MD의 클럽명 (초대 오퍼 기준)
-  let invitedMdClub: string | null = null;
-  if (partyMd?.offer_id) {
-    const { data: off } = await supabase
-      .from("puzzle_offers")
-      .select("club:clubs(name)")
-      .eq("id", partyMd.offer_id)
-      .maybeSingle();
-    const club = off ? (Array.isArray(off.club) ? off.club[0] : off.club) : null;
-    invitedMdClub = (club as { name?: string } | null)?.name ?? null;
-  }
+    .order("invited_at", { ascending: true });
+  const partyMds = partyMdRows ?? [];
 
   const isLeader = puzzle.leader_id === user.id;
   const isMember = members.some((m) => m.user_id === user.id);
-  const isInvitedMd = invitedMdId === user.id;
+  const myMdRow = partyMds.find((r) => r.md_id === user.id) ?? null;
+  const isInvitedMd = !!myMdRow;
   if (!isLeader && !isMember && !isInvitedMd) redirect(`/flags/${puzzleId}`); // 참여자 아님 → 상세로
+
+  // 파트너의 클럽명 — 초대 오퍼 기준, 한 번에 일괄 조회 (건당 쿼리 방지)
+  const offerIds = partyMds.map((r) => r.offer_id).filter((id): id is string => !!id);
+  const clubByOfferId = new Map<string, string | null>();
+  if (offerIds.length > 0) {
+    const { data: offerRows } = await supabase
+      .from("puzzle_offers")
+      .select("id, club:clubs(name)")
+      .in("id", offerIds);
+    for (const o of offerRows ?? []) {
+      const club = Array.isArray(o.club) ? o.club[0] : o.club;
+      clubByOfferId.set(o.id, (club as { name?: string } | null)?.name ?? null);
+    }
+  }
+
+  // 같은 클럽이 2개 이상이면 초대 순서로 번호를 붙인다 ("버뮤다 1", "버뮤다 2")
+  const clubNameCounts = new Map<string, number>();
+  for (const r of partyMds) {
+    const name = r.offer_id ? clubByOfferId.get(r.offer_id) ?? null : null;
+    if (name) clubNameCounts.set(name, (clubNameCounts.get(name) ?? 0) + 1);
+  }
+  const clubNameSeen = new Map<string, number>();
+  const rooms: PartyRoom[] = partyMds.map((r) => {
+    const mdProfile = pickUser((r as { md?: MemberRow["user"] }).md ?? null);
+    const clubName = r.offer_id ? clubByOfferId.get(r.offer_id) ?? null : null;
+    let chipLabel = clubName ?? "파트너";
+    if (clubName && (clubNameCounts.get(clubName) ?? 0) > 1) {
+      const idx = (clubNameSeen.get(clubName) ?? 0) + 1;
+      clubNameSeen.set(clubName, idx);
+      chipLabel = `${clubName} ${idx}`;
+    }
+    return {
+      mdId: r.md_id,
+      chipLabel,
+      clubName,
+      displayName: mdProfile?.display_name ?? null,
+      profileImage: mdProfile?.profile_image ?? null,
+      consented: !!r.consented_at,
+    };
+  });
 
   const leader = pickUser(
     (puzzle as { leader?: MemberRow["user"] }).leader ?? null
@@ -129,22 +157,30 @@ export default async function PartyChatPage({ params }: PageProps) {
       guest_count: 0,
     });
   }
-  // 초대된 MD 추가
-  if (invitedMdId && !seen.has(invitedMdId)) {
-    const mdProfile = pickUser((partyMd as { md?: MemberRow["user"] }).md ?? null);
+  // 초대된 파트너 전원 추가.
+  // ⚠️ 파트너 본인이 보는 화면엔 "자기 자신"만 MD로 노출한다 — 다른 파트너가
+  // participants 배열에 실려 나가면 그 존재가 새어나간다(격리 원칙 위반).
+  // 칩 UI에 내려줄 목록도 동일한 필터를 쓴다.
+  const visibleRooms = isInvitedMd ? rooms.filter((r) => r.mdId === user.id) : rooms;
+  for (const r of visibleRooms) {
+    if (seen.has(r.mdId)) continue;
+    seen.add(r.mdId);
     participants.push({
-      id: invitedMdId,
-      display_name: mdProfile?.display_name ?? null,
-      profile_image: mdProfile?.profile_image ?? null,
+      id: r.mdId,
+      display_name: r.displayName,
+      profile_image: r.profileImage,
       is_leader: false,
       guest_count: 0,
       is_md: true,
-      club_name: invitedMdClub,
+      club_name: r.clubName,
     });
   }
   // 정렬: 방장 → MD → 일반 멤버
   const rank = (p: PartyParticipant) => (p.is_leader ? 0 : p.is_md ? 1 : 2);
   participants.sort((a, b) => rank(a) - rank(b));
+
+  // 파트너 본인의 동의 여부 (입장 시 동의 모달 게이트)
+  const mdConsented = !!myMdRow?.consented_at;
 
   const me = participants.find((p) => p.id === user.id) ?? {
     id: user.id,
@@ -175,6 +211,7 @@ export default async function PartyChatPage({ params }: PageProps) {
       }}
       isLeader={isLeader}
       isMd={isInvitedMd}
+      myMdId={isInvitedMd ? user.id : null}
       mdConsented={mdConsented}
       puzzleStatus={puzzle.status}
       partyInfo={{
@@ -185,6 +222,7 @@ export default async function PartyChatPage({ params }: PageProps) {
         targetCount: puzzle.target_count,
       }}
       participants={participants}
+      rooms={visibleRooms}
     />
   );
 }

@@ -18,13 +18,23 @@ function pickSender(raw: unknown): PartyMessage["sender"] {
  * - puzzle_id 기준, 오래된→최신 정렬
  * - Realtime: puzzle_party_messages INSERT
  * - 시스템 메시지(sender_id=null) 포함
+ *
+ * Migration 589부터 room_md_id로 방이 나뉜다. roomMdId=null이면 파티원방.
+ * Realtime의 `filter`는 컬럼 하나만 지원해서 puzzle_id로 구독은 유지하고,
+ * room_md_id는 클라이언트에서 걸러낸다 — RLS가 이미 소켓 단에서 다른 파트너의
+ * 방을 막아주므로 안전하다(파트너 본인 세션은 애초에 남의 방 이벤트를 못 받는다).
  */
-export function usePartyMessages(puzzleId: string) {
+export function usePartyMessages(puzzleId: string, roomMdId: string | null = null) {
   const [messages, setMessages] = useState<PartyMessage[]>([]);
   const [loading, setLoading] = useState(true);
   // 멤버별 읽음 시각 (카톡식 안읽음 "N" 계산용): userId → last_read_at ISO
   const [readMap, setReadMap] = useState<Record<string, string>>({});
   const isFirstLoadRef = useRef(true);
+  // realtime 콜백 클로저가 최신 roomMdId를 보도록 ref로 미러링 (렌더 중 mutate 금지 — effect에서)
+  const roomMdIdRef = useRef(roomMdId);
+  useEffect(() => {
+    roomMdIdRef.current = roomMdId;
+  }, [roomMdId]);
 
   const loadReadState = useCallback(async () => {
     const supabase = createClient();
@@ -39,14 +49,16 @@ export function usePartyMessages(puzzleId: string) {
     const supabase = createClient();
     if (isFirstLoadRef.current) setLoading(true);
 
-    const { data: msgs, error } = await supabase
+    let query = supabase
       .from("puzzle_party_messages")
       .select(
-        `id, puzzle_id, sender_id, content, media, is_system, is_deleted, created_at, reply_to, shared_offer_id,
+        `id, puzzle_id, sender_id, content, media, is_system, is_deleted, created_at, reply_to, shared_offer_id, room_md_id,
          sender:public_user_profiles!puzzle_party_messages_sender_id_fkey(id, display_name, profile_image)`
       )
       .eq("puzzle_id", puzzleId)
-      .eq("is_deleted", false)
+      .eq("is_deleted", false);
+    query = roomMdId === null ? query.is("room_md_id", null) : query.eq("room_md_id", roomMdId);
+    const { data: msgs, error } = await query
       .order("created_at", { ascending: true })
       .limit(PAGE_SIZE);
 
@@ -68,17 +80,21 @@ export function usePartyMessages(puzzleId: string) {
         created_at: d.created_at,
         reply_to: (d as { reply_to?: string | null }).reply_to ?? null,
         shared_offer_id: (d as { shared_offer_id?: string | null }).shared_offer_id ?? null,
+        room_md_id: (d as { room_md_id?: string | null }).room_md_id ?? null,
         sender: pickSender((d as { sender?: unknown }).sender),
       }));
       setMessages(parsed);
     }
     setLoading(false);
     isFirstLoadRef.current = false;
-  }, [puzzleId]);
+  }, [puzzleId, roomMdId]);
 
+  // 방을 전환하면(activeRoomMdId 변경) 이전 방 메시지가 잠깐이라도 보이면 안 되므로
+  // 즉시 비우고 새로 로드한다.
   useEffect(() => {
     isFirstLoadRef.current = true;
-  }, [puzzleId]);
+    setMessages([]);
+  }, [puzzleId, roomMdId]);
 
   useEffect(() => {
     loadInitial();
@@ -114,8 +130,14 @@ export function usePartyMessages(puzzleId: string) {
             created_at: string;
             reply_to: string | null;
             shared_offer_id: string | null;
+            room_md_id: string | null;
           };
           if (m.is_deleted) return;
+          // puzzle 단위로 구독하므로 지금 보고 있는 방(roomMdId)의 메시지만 반영한다.
+          // RLS가 소켓에서 이미 다른 파트너의 방은 막아주지만, 방장·멤버는 모든 방의
+          // 이벤트를 받을 수 있어 클라이언트에서 한 번 더 걸러야 다른 탭 메시지가 안 섞인다.
+          const currentRoom = roomMdIdRef.current;
+          if ((m.room_md_id ?? null) !== currentRoom) return;
           let sender: SenderRel | null = null;
           if (m.sender_id) {
             const { data } = await supabase
@@ -140,6 +162,7 @@ export function usePartyMessages(puzzleId: string) {
                 created_at: m.created_at,
                 reply_to: m.reply_to ?? null,
                 shared_offer_id: m.shared_offer_id ?? null,
+                room_md_id: m.room_md_id ?? null,
                 sender,
               },
             ];

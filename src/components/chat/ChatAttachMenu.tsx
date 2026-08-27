@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, ImageIcon, MapPin, Plus, Puzzle, X } from "lucide-react";
+import { Camera, IdCard, ImageIcon, MapPin, Plus, Puzzle, X } from "lucide-react";
 import { toast } from "sonner";
 import { getCurrentCoords } from "@/lib/geo/currentCoords";
 import type { ChatMediaItem } from "@/types/database";
@@ -13,6 +13,8 @@ interface Props {
   onLocation: (item: ChatMediaItem) => void;
   /** 와글 전용 — "내 조각" 항목 추가 (Migration 471). 없으면 항목 자체가 안 보임 */
   onSharePuzzle?: () => void;
+  /** "연락처 남기기" 항목 추가 — 최초 1회 노출 후 닫으면 여기로만 다시 접근 가능 */
+  onContact?: () => void;
   disabled?: boolean;
 }
 
@@ -20,7 +22,7 @@ interface Props {
  * 채팅 입력창 좌측 "+" 첨부 메뉴 — 사진 / 카메라 / 내 위치.
  * DM·조각 단체방·와글에서 공용으로 쓴다.
  */
-export function ChatAttachMenu({ onFiles, onLocation, onSharePuzzle, disabled }: Props) {
+export function ChatAttachMenu({ onFiles, onLocation, onSharePuzzle, onContact, disabled }: Props) {
   const [open, setOpen] = useState(false);
   const [locating, setLocating] = useState(false);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -104,6 +106,19 @@ export function ChatAttachMenu({ onFiles, onLocation, onSharePuzzle, disabled }:
             onClick: () => {
               setOpen(false);
               onSharePuzzle();
+            },
+          },
+        ]
+      : []),
+    ...(onContact
+      ? [
+          {
+            key: "contact",
+            icon: IdCard,
+            label: "연락처",
+            onClick: () => {
+              setOpen(false);
+              onContact();
             },
           },
         ]

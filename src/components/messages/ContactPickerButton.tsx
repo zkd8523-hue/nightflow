@@ -19,6 +19,11 @@ interface Props {
   me: Profile;
   isMd: boolean;
   onSend: (content: string) => void;
+  /** 시트 열림 상태를 외부에서 제어할 때 (예: +메뉴에서 열기). 없으면 내부 상태로 관리 */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** 자체 트리거 칩 버튼을 숨긴다 — 외부에 이미 다른 진입점(+메뉴)이 있을 때 */
+  hideTrigger?: boolean;
 }
 
 type ContactOption =
@@ -29,8 +34,10 @@ type ContactOption =
  * "연락처 남기기" 칩 버튼 + 선택 시트 + 미등록 채널 인라인 등록 모달.
  * MessageRoom(오퍼 채팅)의 연락처 첨부 기능을 그대로 포크 — 1:1 DM에서도 동일하게 사용.
  */
-export function ContactPickerButton({ me, isMd, onSend }: Props) {
-  const [contactPickerOpen, setContactPickerOpen] = useState(false);
+export function ContactPickerButton({ me, isMd, onSend, open, onOpenChange, hideTrigger }: Props) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const contactPickerOpen = open ?? internalOpen;
+  const setContactPickerOpen = onOpenChange ?? setInternalOpen;
   const [myContact, setMyContact] = useState({
     instagram: me.instagram ?? null,
     kakao_open_chat_url: me.kakao_open_chat_url ?? null,
@@ -104,14 +111,16 @@ export function ContactPickerButton({ me, isMd, onSend }: Props) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setContactPickerOpen(true)}
-        className="shrink-0 flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-bold text-foreground whitespace-nowrap active:bg-muted"
-      >
-        <IdCard className="w-3.5 h-3.5" />
-        {isMd ? "연락처 보내기" : "연락처 남기기"}
-      </button>
+      {!hideTrigger && (
+        <button
+          type="button"
+          onClick={() => setContactPickerOpen(true)}
+          className="shrink-0 flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-bold text-foreground whitespace-nowrap active:bg-muted"
+        >
+          <IdCard className="w-3.5 h-3.5" />
+          {isMd ? "연락처 보내기" : "연락처 남기기"}
+        </button>
+      )}
 
       {contactPickerOpen && (
         <div

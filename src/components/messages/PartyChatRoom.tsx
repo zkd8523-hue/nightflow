@@ -18,8 +18,9 @@ import { useComposerNavHide } from "@/hooks/useComposerNavHide";
 import { usePartyMessages } from "@/hooks/usePartyMessages";
 import { usePartyOffers } from "@/hooks/usePartyOffers";
 import { usePartyReactions } from "@/hooks/usePartyReactions";
+import { usePartyRoomActivity } from "@/hooks/usePartyRoomActivity";
 import { CHAT_REACTION_EMOJIS, type ChatReactionEmoji } from "@/types/database";
-import type { ChatMediaItem, ContactMethodType, PartyMessage, PartyParticipant } from "@/types/database";
+import type { ChatMediaItem, ContactMethodType, PartyMessage, PartyParticipant, PartyRoom } from "@/types/database";
 
 const MAX_LEN = 500;
 
@@ -46,11 +47,15 @@ interface Props {
   me: Me;
   isLeader: boolean;
   isMd?: boolean;
+  /** 파트너 본인의 md_id (isMd일 때). 자기 방을 고정하는 데 쓴다 */
+  myMdId?: string | null;
   /** MD가 상담에 이미 동의했는지. false면 입장 시 동의 모달 노출 */
   mdConsented?: boolean;
   puzzleStatus: string;
   partyInfo: PartyInfo;
   participants: PartyParticipant[];
+  /** 초대된 파트너 방 목록 — 파트너 본인 세션엔 자기 방 1개만 내려온다 */
+  rooms: PartyRoom[];
 }
 
 
@@ -83,22 +88,65 @@ function formatDateDivider(d: Date) {
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEKDAYS[d.getDay()]}요일`;
 }
 
+/**
+ * 칩 라벨 재계산 — 같은 클럽이 2개 이상이면 "클럽명 1", "클럽명 2"로 번호를 붙인다.
+ * 서버(page.tsx)와 같은 규칙. 초대/내보내기로 방 목록이 바뀔 때마다 전체를 다시 계산해야
+ * "두 번째 파트너가 들어와서 첫 번째도 번호가 붙는" 케이스가 맞는다.
+ */
+function withChipLabels(rooms: Omit<PartyRoom, "chipLabel">[]): PartyRoom[] {
+  const counts = new Map<string, number>();
+  for (const r of rooms) {
+    if (r.clubName) counts.set(r.clubName, (counts.get(r.clubName) ?? 0) + 1);
+  }
+  const seen = new Map<string, number>();
+  return rooms.map((r) => {
+    if (!r.clubName) return { ...r, chipLabel: "파트너" };
+    if ((counts.get(r.clubName) ?? 0) <= 1) return { ...r, chipLabel: r.clubName };
+    const idx = (seen.get(r.clubName) ?? 0) + 1;
+    seen.set(r.clubName, idx);
+    return { ...r, chipLabel: `${r.clubName} ${idx}` };
+  });
+}
+
 export function PartyChatRoom({
   puzzleId,
   me,
   isLeader,
   isMd = false,
+  myMdId = null,
   mdConsented = false,
   puzzleStatus,
   partyInfo,
   participants: initialParticipants,
+  rooms,
 }: Props) {
   const router = useRouter();
   // 입력 포커스 중엔 하단 네비를 숨겨 키보드와 겹치지 않게 (와글과 동일)
   const { focused: composerFocused, onFocus: onComposerFocus, onBlur: onComposerBlur } =
     useComposerNavHide();
-  const { messages, loading, readMap, addLocalMessage, removeLocalMessage } = usePartyMessages(puzzleId);
+  // 파트너 본인은 자기 방에 고정 — 칩이 안 보이므로 방을 바꿀 수 없다.
+  // 방장·멤버는 파티원방(null)이 기본, 칩으로 파트너 방을 오간다.
+  const [activeRoomMdId, setActiveRoomMdId] = useState<string | null>(isMd ? myMdId : null);
+  const [chipsExpanded, setChipsExpanded] = useState(false);
+  // rooms를 로컬 state로 — 초대/내보내기 직후 새로고침 없이 칩이 바로 갱신되게 한다.
+  const [roomsState, setRoomsState] = useState<Omit<PartyRoom, "chipLabel">[]>(() =>
+    rooms.map((r) => ({
+      mdId: r.mdId,
+      clubName: r.clubName,
+      displayName: r.displayName,
+      profileImage: r.profileImage,
+      consented: r.consented,
+    }))
+  );
+  const chatRooms = useMemo(() => withChipLabels(roomsState), [roomsState]);
+  const { messages, loading, readMap, addLocalMessage, removeLocalMessage } = usePartyMessages(puzzleId, activeRoomMdId);
   const { offers, vote, reload: reloadOffers } = usePartyOffers(puzzleId);
+  // 칩 빨간 점 — 파트너 본인 세션엔 rooms가 비어있으므로(칩 자체를 안 그림) 무해하다.
+  const { hasUnread: roomHasUnread, markSeen: markRoomSeen } = usePartyRoomActivity(puzzleId);
+  // 지금 보고 있는 방은 곧바로 "읽음"으로 표시 (칩에서 점이 즉시 사라지게)
+  useEffect(() => {
+    if (activeRoomMdId) markRoomSeen(activeRoomMdId);
+  }, [activeRoomMdId, markRoomSeen, messages.length]);
   const reactableIds = useMemo(
     () => messages.filter((m) => !m.is_system && !m.is_deleted).map((m) => m.id),
     [messages]
@@ -142,6 +190,36 @@ export function PartyChatRoom({
   // 롱프레스 → 리액션/답글 메뉴
   const [menuMsg, setMenuMsg] = useState<PartyMessage | null>(null);
   const [replyTarget, setReplyTarget] = useState<PartyMessage | null>(null);
+  // "언급하기" 대상 오퍼 — 답장(replyTarget)과 같은 패턴: 배너를 띄우고
+  // 기존 입력창에 직접 멘트를 적어서 보낸다. 고정 문구 대신 자유롭게 쓸 수 있다.
+  const [shareOfferTarget, setShareOfferTarget] = useState<string | null>(null);
+  // 연락처 남기기 — 최초 1회만 상단에 노출, X로 닫으면 이후 "+"메뉴에서만 접근.
+  // ⚠️ localStorage는 브라우저 단위라 puzzleId만 키로 쓰면 같은 브라우저에서
+  // 계정을 바꿔가며 테스트할 때(방장→MD 등) 다른 사람이 닫은 게 그대로 적용된다.
+  // 반드시 유저(me.id)까지 키에 포함해 계정별로 독립시킨다.
+  const [contactRowDismissed, setContactRowDismissed] = useState(false);
+  const [contactPickerOpen, setContactPickerOpen] = useState(false);
+  const contactDismissKey = `party_contact_dismissed_${puzzleId}_${me.id}`;
+  useEffect(() => {
+    try {
+      setContactRowDismissed(window.localStorage.getItem(contactDismissKey) === "1");
+    } catch {
+      // localStorage 접근 불가 시 그냥 계속 보여준다
+    }
+  }, [contactDismissKey]);
+  function dismissContactRow() {
+    setContactRowDismissed(true);
+    try {
+      window.localStorage.setItem(contactDismissKey, "1");
+    } catch {
+      // 저장 실패해도 이번 세션에서는 숨김 상태 유지됨
+    }
+  }
+  // 답장 시작 — 언급하기 배너와 배타적이므로 항상 같이 정리한다
+  function startReply(m: PartyMessage) {
+    setShareOfferTarget(null);
+    setReplyTarget(m);
+  }
   // 방에서 내보내진 상태 (전송 시 참여자 아님 감지)
   const [removed, setRemoved] = useState(false);
   // 채팅방 나가기 — 기존엔 채팅 목록 롱프레스에만 있어 방 안에서는 나갈 방법이 없었다
@@ -196,17 +274,33 @@ export function PartyChatRoom({
       return;
     }
     toast.success("파트너를 단체채팅에 초대했어요");
+    // 새 파트너 칩·참여자를 새로고침 없이 즉시 반영 — offers 목록에 이미
+    // club_name/md_id가 있으니 그걸로 room/participant 엔트리를 구성한다.
+    const offer = offers.find((o) => o.offer_id === offerId);
+    if (offer) {
+      setRoomsState((prev) =>
+        prev.some((r) => r.mdId === offer.md_id)
+          ? prev
+          : [...prev, { mdId: offer.md_id, clubName: offer.club_name, displayName: null, profileImage: null, consented: false }]
+      );
+      setParticipants((prev) =>
+        prev.some((p) => p.id === offer.md_id)
+          ? prev
+          : [...prev, { id: offer.md_id, display_name: null, profile_image: null, is_leader: false, guest_count: 0, is_md: true, club_name: offer.club_name }]
+      );
+    }
     reloadOffers();
     setInvitingId(null);
   }
 
-  async function handleReleaseMd() {
+  async function handleReleaseMd(mdId: string) {
     if (releasing) return;
     if (typeof window !== "undefined" &&
-        !window.confirm("상담 중인 파트너를 내보낼까요?\n다른 파트너를 초대하려면 먼저 내보내야 해요.")) return;
+        !window.confirm("이 파트너와의 상담을 종료할까요?")) return;
     setReleasing(true);
     const { data, error } = await createClient().rpc("release_party_md", {
       p_puzzle_id: puzzleId,
+      p_md_id: mdId,
     });
     if (error || !data?.success) {
       toast.error(data?.error || error?.message || "내보내기에 실패했어요");
@@ -214,34 +308,21 @@ export function PartyChatRoom({
       return;
     }
     toast.success("파트너 상담을 종료했어요");
+    setRoomsState((prev) => prev.filter((r) => r.mdId !== mdId));
+    setParticipants((prev) => prev.filter((p) => p.id !== mdId));
+    // 지금 그 파트너의 방을 보고 있었다면 파티원방으로 되돌린다
+    setActiveRoomMdId((prev) => (prev === mdId ? null : prev));
     reloadOffers();
     setReleasing(false);
   }
 
   // 오퍼를 채팅에 공유 ("이거 어때요?")
-  async function handleShareOffer(offerId: string) {
-    const { data, error } = await createClient().rpc("share_offer_to_party", {
-      p_puzzle_id: puzzleId,
-      p_offer_id: offerId,
-    });
-    if (error || !data?.success) {
-      toast.error(data?.error || error?.message || "공유에 실패했어요");
-      return;
-    }
-    if (data.message_id) {
-      addLocalMessage({
-        id: data.message_id,
-        puzzle_id: puzzleId,
-        sender_id: me.id,
-        content: "이거 어때요? 👀",
-        media: [],
-        is_system: false,
-        is_deleted: false,
-        created_at: new Date().toISOString(),
-        shared_offer_id: offerId,
-        sender: me,
-      });
-    }
+  // "언급하기" — 바로 보내지 않고 답장(replyTarget)처럼 배너만 띄운다.
+  // 실제 전송은 handleSend가 shareOfferTarget이 있을 때 분기해서 처리한다.
+  // 답장과는 배타적 — 동시에 뜨면 어느 쪽으로 전송될지 헷갈린다.
+  function handleShareOffer(offerId: string) {
+    setReplyTarget(null);
+    setShareOfferTarget(offerId);
     setOffersOpen(false);
   }
   const [input, setInput] = useState("");
@@ -290,8 +371,18 @@ export function PartyChatRoom({
     })();
   }, [puzzleId, loading, messages.length]);
 
-  // 스크롤 맨 아래로
+  // 스크롤 맨 아래로 — 입장 시 첫 로드는 즉시 이동(smooth로 하면 맨 위에서
+  // 아래로 슬라이드하는 게 매번 보여 거슬림), 이후 새 메시지가 오면만 부드럽게.
+  const didInitialScroll = useRef(false);
   useEffect(() => {
+    didInitialScroll.current = false;
+  }, [activeRoomMdId]);
+  useEffect(() => {
+    if (!didInitialScroll.current) {
+      didInitialScroll.current = true;
+      bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+      return;
+    }
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
@@ -312,6 +403,7 @@ export function PartyChatRoom({
       p_content: "",
       p_media: [item],
       p_reply_to: null,
+      p_room_md_id: activeRoomMdId,
     });
     if (error || !data?.success) {
       toast.error(data?.error || "위치를 보내지 못했어요");
@@ -323,7 +415,8 @@ export function PartyChatRoom({
     const trimmed = (isPreset ? textOverride : input).trim();
     const useMedia = isPreset ? [] : media;
     if (sending || readOnly) return;
-    if (trimmed.length < 1 && useMedia.length === 0) return;
+    // 오퍼 언급 모드는 내용이 비어도 기본 문구로 보낼 수 있게 허용
+    if (!shareOfferTarget && trimmed.length < 1 && useMedia.length === 0) return;
     if (trimmed.length > MAX_LEN) {
       toast.error(`${MAX_LEN}자를 넘을 수 없어요`);
       return;
@@ -334,6 +427,43 @@ export function PartyChatRoom({
     const sentContent = trimmed;
     const sentMedia = useMedia;
     const replyToId = replyTarget?.id ?? null;
+
+    // 오퍼 언급 — 일반 채팅과 다른 RPC(share_offer_to_party)로 보낸다.
+    // 항상 파티원방에만 올라간다(Migration 591이 room_md_id != null이면 거부).
+    if (shareOfferTarget) {
+      const offerId = shareOfferTarget;
+      const shareContent = sentContent || "이거 어때요? 👀";
+      if (!isPreset) setInput("");
+      setShareOfferTarget(null);
+      const { data, error } = await supabase.rpc("share_offer_to_party", {
+        p_puzzle_id: puzzleId,
+        p_offer_id: offerId,
+        p_content: shareContent,
+        p_room_md_id: null,
+      });
+      if (error || !data?.success) {
+        toast.error(data?.error || error?.message || "공유에 실패했어요");
+        setSending(false);
+        return;
+      }
+      if (data.message_id) {
+        addLocalMessage({
+          id: data.message_id,
+          puzzle_id: puzzleId,
+          sender_id: me.id,
+          content: shareContent,
+          media: [],
+          is_system: false,
+          is_deleted: false,
+          created_at: new Date().toISOString(),
+          shared_offer_id: offerId,
+          sender: me,
+        });
+      }
+      setSending(false);
+      return;
+    }
+
     if (!isPreset) {
       setInput("");
       setMedia([]);
@@ -345,6 +475,7 @@ export function PartyChatRoom({
       p_content: sentContent,
       p_media: sentMedia,
       p_reply_to: replyToId,
+      p_room_md_id: activeRoomMdId,
     });
 
     if (error || !data?.success) {
@@ -382,7 +513,7 @@ export function PartyChatRoom({
       addLocalMessage(local);
     }
     setSending(false);
-  }, [input, media, sending, readOnly, puzzleId, me, addLocalMessage, replyTarget]);
+  }, [input, media, sending, readOnly, puzzleId, me, addLocalMessage, replyTarget, activeRoomMdId, shareOfferTarget]);
 
   const shownMessages = messages.filter((m) => !m.is_deleted);
   const msgById = useMemo(() => {
@@ -416,20 +547,29 @@ export function PartyChatRoom({
     // MD에겐 경쟁 오퍼 내용 마스킹 (시크릿오퍼 유지)
     if (isMd) {
       return (
-        <div className={`mt-1.5 rounded-xl border px-3 py-2 max-w-[240px] ${mine ? "border-black/15 bg-black/5" : "border-white/15 bg-white/5"}`}>
+        <div className={`mt-1.5 rounded-md border px-3 py-2 max-w-[240px] ${mine ? "border-black/30 bg-black/10" : "border-white/15 bg-white/5"}`}>
           <p className="text-[12px] opacity-70">오퍼가 공유됐어요</p>
         </div>
       );
     }
     const o = offers.find((x) => x.offer_id === m.shared_offer_id);
     return (
-      <div className={`mt-1.5 rounded-xl border px-3 py-2 max-w-[240px] ${mine ? "border-black/15 bg-black/5" : "border-white/15 bg-white/5"}`}>
+      <div className={`mt-1.5 rounded-md border px-3 py-2 max-w-[240px] ${mine ? "border-black/30 bg-black/10" : "border-white/15 bg-white/5"}`}>
         <p className="text-[13px] font-bold truncate">{o?.club_name ?? "공유된 오퍼"}</p>
         {o && (
-          <p className={`text-[13px] font-black mt-0.5 ${mine ? "text-money" : "text-money"}`}>
-            ₩{o.proposed_price.toLocaleString()}
-            {o.table_type && <span className="ml-1.5 text-[11px] font-medium opacity-70">{o.table_type}</span>}
-          </p>
+          <>
+            {/* 밝은 amber 배경(mine)에서는 기본 money 초록이 너무 튀어서 어두운 톤을 쓴다 */}
+            <p className={`text-[13px] font-black mt-0.5 ${mine ? "text-green-900" : "text-money"}`}>
+              ₩{o.proposed_price.toLocaleString()}
+            </p>
+            {/* 코멘트(파트너가 실제로 쓴 내용) — 이게 없으면 클럽명·가격만 보이고
+                내용을 보려면 매번 "받은 오퍼" 드로어를 다시 열어야 했다 */}
+            {o.comment && (
+              <p className="text-[12px] mt-1 leading-relaxed whitespace-pre-wrap break-words opacity-80">
+                {o.comment}
+              </p>
+            )}
+          </>
         )}
       </div>
     );
@@ -461,19 +601,30 @@ export function PartyChatRoom({
     );
   };
 
+  // 활성 방 기준 참여자 — 파티원방(null)은 방장+멤버만, 파트너 방은 그 파트너 한 명만 더해서.
+  // 안 그러면 "Muffin" 방을 보면서 참여자 목록엔 "운영자 테스트 클럽"까지 같이 떠서
+  // 마치 그 파트너도 이 대화에 있는 것처럼 보인다(격리 원칙 위반과 동일한 혼선).
+  const roomParticipants = useMemo(
+    () =>
+      activeRoomMdId === null
+        ? participants.filter((p) => !p.is_md)
+        : participants.filter((p) => !p.is_md || p.id === activeRoomMdId),
+    [participants, activeRoomMdId]
+  );
   // 실제 채팅 참여자 수(방장+합류 유저, 게스트 제외)
-  const memberCount = participants.length;
+  const memberCount = roomParticipants.length;
   // 참여자 목록은 "나"를 맨 위로 — 내가 이 방에 제대로 들어와 있는지 한눈에 확인시켜준다.
   // 서버 정렬(방장 → 파트너 → 멤버)은 나머지 순서로 그대로 유지.
   const sortedParticipants = useMemo(
-    () => [...participants].sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id)),
-    [participants, me.id]
+    () => [...roomParticipants].sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id)),
+    [roomParticipants, me.id]
   );
   // 내가 아직 한 마디도 안 했으면 인사말 추천 노출
   const iHaveSent = messages.some((m) => m.sender_id === me.id && !m.is_system);
-  // 이미 초대된 MD가 있으면 다른 오퍼 초대 비활성 (조각당 MD 1명)
-  const someInvited = offers.some((o) => o.is_invited);
-  // 초대된 오퍼를 맨 위로 (나머지는 서버 정렬=좋아요순 유지)
+  // 드로어는 초대 여부와 무관하게 전체 오퍼를 보여준다 — 이미 초대한 파트너끼리도
+  // 조건을 나란히 비교하고 싶을 수 있고, 그건 칩으로 하나씩 들어가서는 안 되는 일이다.
+  // 다만 "내보내기"는 그 파트너의 방(칩 펼침 패널)으로 옮겼다 — 전체 목록에 여러 개
+  // 흩어놓으면 "지금 뭘 조작하는 건지" 헷갈린다.
   const sortedOffers = [...offers].sort((a, b) => Number(b.is_invited) - Number(a.is_invited));
 
   // 시스템 메시지 맨 앞 클럽명을 강조 (오퍼 club_name과 매칭)
@@ -489,10 +640,10 @@ export function PartyChatRoom({
     );
   };
 
-  // 카톡식 안읽음 "N": 이 메시지를 아직 안 읽은 참여자 수(발신자 제외)
+  // 카톡식 안읽음 "N": 이 메시지를 아직 안 읽은 참여자 수(발신자 제외) — 이 방 사람 기준
   const unreadCountFor = (senderId: string | null, createdAt: string): number => {
     const t = new Date(createdAt).getTime();
-    return participants.filter((p) => {
+    return roomParticipants.filter((p) => {
       if (p.id === senderId) return false;
       const r = readMap[p.id];
       return !r || new Date(r).getTime() < t;
@@ -508,47 +659,114 @@ export function PartyChatRoom({
           : "h-[calc(100dvh-56px-env(safe-area-inset-bottom))]"
       }`}
     >
-      {/* 헤더 (고정) */}
+      {/* 헤더 — "파티 채팅방 N" 줄을 없애고 요약바 한 줄에 뒤로가기·참여자 아이콘을
+          같이 얹었다. 어차피 인원수는 참여자 아이콘 누르면 바로 보이니 중복이었다. */}
       <div className="shrink-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
-        <header className="flex items-center gap-2 px-3 py-3">
-          <button onClick={() => router.push("/messages")} className="p-1 -ml-1 text-foreground/80">
+        <div className="flex items-center gap-1 px-3 py-2.5">
+          <button onClick={() => router.push("/messages")} className="p-1 -ml-1 text-foreground/80 shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-bold text-foreground truncate">
-              파티 채팅방 <span className="text-muted-foreground font-medium">{memberCount}</span>
+          {/* 탭하면 파티 상세로. 클럽명은 아래 칩이 보여주므로 반복하지 않는다 */}
+          <Link href={`/flags/${puzzleId}`} className="flex items-center gap-1.5 min-w-0 flex-1 active:opacity-70">
+            <p className="text-[13px] font-bold text-foreground truncate">
+              {[
+                partyInfo.dateLabel,
+                partyInfo.area,
+                `인당 ${partyInfo.perPerson.toLocaleString()}원`,
+                `${partyInfo.currentCount}/${partyInfo.targetCount}명`,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
-            <p className="text-[11px] text-muted-foreground truncate">
-              {[partyInfo.dateLabel, partyInfo.area].filter(Boolean).join(" · ")}
-            </p>
-          </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </Link>
           <button
             onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-1 p-1.5 text-foreground/80"
+            className="flex items-center gap-1 p-1.5 text-foreground/80 shrink-0"
             aria-label="참여자 보기"
           >
             <Users className="w-5 h-5" />
           </button>
-        </header>
-        {/* 파티 요약 바 — 탭하면 파티 상세로 */}
-        <Link
-          href={`/flags/${puzzleId}`}
-          className="flex items-center gap-2 px-4 py-2.5 bg-background border-t border-border/70 active:bg-card"
-        >
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-foreground truncate">
-              {[partyInfo.dateLabel, partyInfo.area, participants.find((p) => p.is_leader && p.is_md)?.club_name, `인당 ${partyInfo.perPerson.toLocaleString()}원`]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-            <p className="text-[12px] text-muted-foreground truncate">
-              현재 {partyInfo.currentCount}/{partyInfo.targetCount}명 모임
-            </p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-        </Link>
+        </div>
 
-        {/* 받은 오퍼 드롭다운 — 멤버 좋아요/싫어요, 방장이 MD 초대. MD에겐 비노출(시크릿오퍼 유지) */}
+        {/* 파트너 방 전환 칩 — 파트너 본인에겐 절대 노출하지 않는다(다른 파트너 존재를 숨김).
+            평소엔 칩 한 줄만, ▾를 누르면 현재 방의 닉네임이 펼쳐진다. */}
+        {!isMd && chatRooms.length > 0 && (
+          <div className="border-t border-border/70 bg-background">
+            <div className="flex items-center">
+              <div className="flex-1 min-w-0 flex gap-1.5 px-4 py-2 overflow-x-auto no-scrollbar">
+                <button
+                  onClick={() => setActiveRoomMdId(null)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-colors ${
+                    activeRoomMdId === null
+                      ? "bg-inverse text-inverse-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  💬 파티원
+                </button>
+                {chatRooms.map((r) => (
+                  <button
+                    key={r.mdId}
+                    onClick={() => setActiveRoomMdId(r.mdId)}
+                    className={`relative shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-colors ${
+                      activeRoomMdId === r.mdId
+                        ? "bg-inverse text-inverse-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {r.chipLabel}
+                    {roomHasUnread(r.mdId) && activeRoomMdId !== r.mdId && (
+                      <span className="absolute top-0.5 right-1 w-1.5 h-1.5 rounded-full bg-red-500" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              {/* 파티원방엔 펼쳐서 보여줄 파트너 정보가 없으므로 파트너 방일 때만 노출 */}
+              {activeRoomMdId !== null && (
+                <button
+                  onClick={() => setChipsExpanded((v) => !v)}
+                  className="shrink-0 px-3 py-2 text-muted-foreground"
+                  aria-label="파트너 정보 펼치기"
+                >
+                  <ChevronDown className={`w-4 h-4 transition-transform ${chipsExpanded ? "rotate-180" : ""}`} />
+                </button>
+              )}
+            </div>
+            {chipsExpanded && activeRoomMdId && (
+              <div className="flex items-center gap-2 px-4 pb-2.5">
+                <div className="relative w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[11px] font-bold text-foreground shrink-0 overflow-hidden">
+                  {(() => {
+                    const room = chatRooms.find((r) => r.mdId === activeRoomMdId);
+                    return room?.profileImage ? (
+                      <Image src={room.profileImage} alt="" fill className="object-cover" sizes="28px" />
+                    ) : (
+                      <span>{(room?.clubName || room?.displayName || "?").slice(0, 1)}</span>
+                    );
+                  })()}
+                </div>
+                <span className="text-[13px] font-bold text-foreground truncate min-w-0 flex-1">
+                  {chatRooms.find((r) => r.mdId === activeRoomMdId)?.displayName ?? "파트너"}
+                </span>
+                {/* 내보내기는 "지금 보고 있는 이 파트너"에 한정 — 오퍼 드로어의 전체
+                    목록에 흩어놓으면 다른 파트너 것과 헷갈린다(관리 대상 = 활성 방). */}
+                {isLeader && (
+                  <button
+                    onClick={() => handleReleaseMd(activeRoomMdId)}
+                    disabled={releasing}
+                    className="shrink-0 px-3 py-1 rounded-full bg-muted text-foreground/80 hover:text-red-400 text-[12px] font-bold disabled:opacity-50"
+                  >
+                    {releasing ? "종료하는 중…" : "상담 종료하기"}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 받은 오퍼 드롭다운 — 초대 여부와 무관하게 전체. 초대된 것끼리도 조건을
+            나란히 비교하고 싶을 수 있어 여기선 안 뺀다. 내보내기만 칩 펼침 패널로 이동.
+            멤버 좋아요/싫어요, 방장이 MD 초대. MD에겐 비노출(시크릿오퍼 유지) */}
         {offers.length > 0 && !isMd && (
           <div className="border-t border-border/70 bg-background">
             <button
@@ -558,7 +776,7 @@ export function PartyChatRoom({
               <span className="text-[13px] font-bold text-foreground">
                 받은 오퍼 <span className="text-brand-amber">{offers.length}</span>건
                 <span className="ml-2 text-[11px] font-medium text-muted-foreground">
-                  마음에 드는 오퍼에 투표해보세요
+                  마음에 드는 오퍼에 선택해보세요
                 </span>
               </span>
               <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${offersOpen ? "rotate-180" : ""}`} />
@@ -585,13 +803,12 @@ export function PartyChatRoom({
                           )}
                           {o.is_invited && (
                             <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-brand-amber font-bold align-middle">
-                              초대됨
+                              대화중
                             </span>
                           )}
                         </p>
                         <p className="text-[13px] text-money font-black mt-0.5">
                           ₩{o.proposed_price.toLocaleString()}
-                          {o.table_type && <span className="ml-1.5 text-[11px] text-muted-foreground font-medium">{o.table_type}</span>}
                         </p>
                       </div>
                     </div>
@@ -620,37 +837,31 @@ export function PartyChatRoom({
                         <ThumbsDown className="w-3.5 h-3.5" />
                         {o.dislike_count > 0 && o.dislike_count}
                       </button>
-                      <button
-                        onClick={() => handleShareOffer(o.offer_id)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-foreground/80 hover:text-foreground text-[12px] font-bold"
-                        aria-label="채팅에 언급"
-                      >
-                        <AtSign className="w-3.5 h-3.5" />
-                        언급하기
-                      </button>
-                      {isLeader && (
-                        o.is_invited ? (
-                          <button
-                            onClick={handleReleaseMd}
-                            disabled={releasing}
-                            className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full bg-muted text-foreground/80 hover:text-red-400 text-[12px] font-bold disabled:opacity-50"
-                          >
-                            {releasing ? "내보내는 중…" : "내보내기"}
-                          </button>
-                        ) : someInvited ? (
-                          <span className="ml-auto text-[12px] text-muted-foreground px-2 py-1">
-                            다른 파트너 상담 중
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleInvite(o.offer_id)}
-                            disabled={invitingId === o.offer_id}
-                            className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full bg-inverse text-inverse-foreground text-[12px] font-black disabled:opacity-50"
-                          >
-                            <UserPlus className="w-3.5 h-3.5" />
-                            {invitingId === o.offer_id ? "초대 중…" : "초대"}
-                          </button>
-                        )
+                      {/* 언급하기는 항상 파티원방에만 올라간다(다른 파트너 방엔 절대 안 됨).
+                          그런데 지금 파트너 방을 보고 있으면 눌러도 여기 화면엔 안 보이고
+                          안 보이는 파티원방에 조용히 올라가버려 헷갈린다 — 파티원방을
+                          보고 있을 때만 노출한다. */}
+                      {activeRoomMdId === null && (
+                        <button
+                          onClick={() => handleShareOffer(o.offer_id)}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-foreground/80 hover:text-foreground text-[12px] font-bold"
+                          aria-label="채팅에 언급"
+                        >
+                          <AtSign className="w-3.5 h-3.5" />
+                          언급하기
+                        </button>
+                      )}
+                      {/* 이미 초대된 파트너는 "초대됨" 배지로 상태만 표시 —
+                          내보내기는 그 파트너의 방(칩 펼침 패널)에서 한다 */}
+                      {isLeader && !o.is_invited && (
+                        <button
+                          onClick={() => handleInvite(o.offer_id)}
+                          disabled={invitingId === o.offer_id}
+                          className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full bg-inverse text-inverse-foreground text-[12px] font-black disabled:opacity-50"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          {invitingId === o.offer_id ? "초대 중…" : "초대"}
+                        </button>
                       )}
                     </div>
                   </li>
@@ -726,10 +937,26 @@ export function PartyChatRoom({
                 {mine ? (
                   <div className="flex justify-end">
                     <div className="flex flex-col items-end max-w-[80%]">
-                      <div className="flex items-end gap-1.5 flex-row-reverse group">
-                        <div className="hidden group-hover:flex items-center gap-0.5 self-center shrink-0">
+                      <div className="relative flex items-end gap-1.5 flex-row-reverse group">
+                        {/* absolute로 뺀다 — flex 자식이면 hidden→flex 전환 때 말풍선을
+                            밀어내서 호버할 때마다 위치가 왔다갔다했다. 절대 위치라 레이아웃에
+                            영향을 안 준다. 내 메시지(오른쪽 정렬)라 반대편인 왼쪽에 띄운다. */}
+                        <div className="hidden group-hover:flex items-center gap-0.5 absolute right-full top-1/2 -translate-y-1/2 mr-1.5 z-10 bg-card rounded-full px-1 py-0.5 shadow-lg whitespace-nowrap">
+                          {/* 삭제 — 웹에선 SwipeToReply가 pointer capture를 걸어서
+                              롱프레스(400ms) 중 손이 조금만 떨려도 onMoveCancel이 취소시킨다.
+                              데스크톱은 마우스로 완벽히 정지하기 어려워 롱프레스가 사실상
+                              안 열리므로, 항상 접근 가능한 호버 버튼을 따로 둔다. */}
+                          {!m.is_system && (
+                            <button
+                              onClick={() => handleDeleteMessage(m)}
+                              className="p-1 text-muted-foreground hover:text-red-400"
+                              aria-label="삭제"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
-                            onClick={() => setReplyTarget(m)}
+                            onClick={() => startReply(m)}
                             className="p-1 text-muted-foreground hover:text-foreground"
                             aria-label="답글"
                           >
@@ -743,7 +970,7 @@ export function PartyChatRoom({
                             <SmilePlus className="w-4 h-4" />
                           </button>
                         </div>
-                        <SwipeToReply isMine onReply={() => setReplyTarget(m)} onMoveCancel={cancelPress}>
+                        <SwipeToReply isMine onReply={() => startReply(m)} onMoveCancel={cancelPress}>
                         <div
                           onContextMenu={(e) => { e.preventDefault(); setMenuMsg(m); }}
                           onDoubleClick={() => !m.is_system && toggleReaction(m.id, "❤️")}
@@ -758,6 +985,8 @@ export function PartyChatRoom({
                           {renderQuoted(m)}
                           {/* 사진 → 텍스트 순서 (와글·DM과 동일) */}
                           {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
+                          {/* 오퍼 카드가 먼저, 직접 적은 멘트는 그 아래(캡션처럼) */}
+                          {renderSharedOffer(m, true)}
                           {m.content && (
                             isContactCardContent(m.content) ? (
                               <ContactCardMessage content={m.content} mine />
@@ -765,11 +994,10 @@ export function PartyChatRoom({
                               <ChatContentText
                                 content={m.content}
                                 clubTags={[]}
-                                className="text-[14px] leading-snug whitespace-pre-wrap break-words"
+                                className={`text-[14px] leading-snug whitespace-pre-wrap break-words ${m.shared_offer_id ? "mt-1.5" : ""}`}
                               />
                             )
                           )}
-                          {renderSharedOffer(m, true)}
                         </div>
                         </SwipeToReply>
                         {(unread > 0 || showTime) && (
@@ -813,8 +1041,8 @@ export function PartyChatRoom({
                       {firstOfGroup && (
                         <span className="text-[12px] text-muted-foreground mb-0.5 ml-0.5">{senderName}</span>
                       )}
-                      <div className="flex items-end gap-1.5 max-w-full group">
-                        <SwipeToReply isMine={false} onReply={() => setReplyTarget(m)} onMoveCancel={cancelPress}>
+                      <div className="relative flex items-end gap-1.5 max-w-full group">
+                        <SwipeToReply isMine={false} onReply={() => startReply(m)} onMoveCancel={cancelPress}>
                         <div
                           onContextMenu={(e) => { e.preventDefault(); setMenuMsg(m); }}
                           onDoubleClick={() => !m.is_system && toggleReaction(m.id, "❤️")}
@@ -855,9 +1083,11 @@ export function PartyChatRoom({
                             )}
                           </div>
                         )}
-                        <div className="hidden group-hover:flex items-center gap-0.5 self-center shrink-0">
+                        {/* absolute — mine과 동일한 이유로 flex에서 뺐다. 상대 메시지(왼쪽 정렬)라
+                            반대편인 오른쪽에 띄운다. */}
+                        <div className="hidden group-hover:flex items-center gap-0.5 absolute left-full top-1/2 -translate-y-1/2 ml-1.5 z-10 bg-card rounded-full px-1 py-0.5 shadow-lg whitespace-nowrap">
                           <button
-                            onClick={() => setReplyTarget(m)}
+                            onClick={() => startReply(m)}
                             className="p-1 text-muted-foreground hover:text-foreground"
                             aria-label="답글"
                           >
@@ -910,10 +1140,75 @@ export function PartyChatRoom({
               </button>
             </div>
           )}
-          {/* 연락처 남기기(인스타/카톡/전화) — DM·오퍼 채팅과 동일 기능 */}
-          <div className="flex gap-2 px-3 pt-2.5 overflow-x-auto no-scrollbar">
-            <ContactPickerButton me={me} isMd={isMd} onSend={(content) => handleSend(content)} />
-          </div>
+          {/* 오퍼 언급 대상 미리보기 — 답장 배너와 동일한 패턴. 여기 뜨면 아래 입력창에
+              적는 멘트가 일반 채팅이 아니라 이 오퍼를 소개하는 문구로 전송된다. */}
+          {shareOfferTarget && (() => {
+            const o = offers.find((x) => x.offer_id === shareOfferTarget);
+            return (
+              <div className="flex items-start gap-2 px-4 pt-2.5">
+                {/* 드로어 카드와 동일한 정보량 — 클럽명·상태·가격·코멘트·구성까지 그대로 */}
+                <div className="flex-1 min-w-0 pl-2 border-l-2 border-brand-amber/60">
+                  <p className="text-[13px] font-bold text-foreground truncate">
+                    {o?.club_name ?? "오퍼"}
+                    {o?.is_invited && (
+                      <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-brand-amber font-bold align-middle">
+                        대화중
+                      </span>
+                    )}
+                  </p>
+                  {o && (
+                    <>
+                      <p className="text-[13px] text-money font-black mt-0.5">
+                        ₩{o.proposed_price.toLocaleString()}
+                      </p>
+                      {o.comment && (
+                        <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed whitespace-pre-wrap break-words">
+                          {o.comment}
+                        </p>
+                      )}
+                      {o.includes?.length > 0 && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                          {o.includes.join(" · ")}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+                <button onClick={() => setShareOfferTarget(null)} className="p-1 text-muted-foreground shrink-0">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })()}
+          {/* 연락처 남기기(인스타/카톡/전화) — DM·오퍼 채팅과 동일 기능.
+              최초 1회만 이 자리에 노출하고, X로 닫으면 이후 "+"메뉴에서만 연다
+              (매번 뜨면 대화창을 계속 차지해서 거슬린다). */}
+          {!contactRowDismissed ? (
+            <div className="flex items-center gap-2 px-3 pt-2.5">
+              <div className="flex-1 min-w-0 flex gap-2 overflow-x-auto no-scrollbar">
+                <ContactPickerButton
+                  me={me}
+                  isMd={isMd}
+                  onSend={(content) => handleSend(content)}
+                  open={contactPickerOpen}
+                  onOpenChange={setContactPickerOpen}
+                />
+              </div>
+              <button onClick={dismissContactRow} className="p-1 text-muted-foreground shrink-0" aria-label="연락처 안내 닫기">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            // 트리거는 숨기되 컴포넌트는 마운트 유지 — +메뉴에서 open을 true로 바꿔 시트만 연다
+            <ContactPickerButton
+              me={me}
+              isMd={isMd}
+              onSend={(content) => handleSend(content)}
+              open={contactPickerOpen}
+              onOpenChange={setContactPickerOpen}
+              hideTrigger
+            />
+          )}
           {/* 첫 진입 인사말 추천 — 한 번이라도 보내면 사라짐 */}
           {!iHaveSent && (
             <div className="flex gap-2 px-3 pt-2.5 overflow-x-auto no-scrollbar">
@@ -949,7 +1244,7 @@ export function PartyChatRoom({
             </div>
           )}
           <div className="relative flex items-end gap-2 px-3 py-3">
-            <ChatAttachMenu onFiles={handleFiles} onLocation={handleLocation} />
+            <ChatAttachMenu onFiles={handleFiles} onLocation={handleLocation} onContact={() => setContactPickerOpen(true)} />
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}

@@ -525,7 +525,13 @@ export const PuzzleCard = memo(function PuzzleCard({
         // MD: 풀 버튼 대신 작고 둥근 자세히 스타일 버튼 — 오퍼수 + 버튼 한 행
         <div className="flex items-center justify-between gap-2">
           {offerCount > 0 && (
-            <span className="text-[12px] text-brand-amber font-bold tabular-nums">{offerCount} offers</span>
+            <span className="text-[12px] text-brand-amber font-bold">
+              {isRecruitingParty ? (
+                <>💌 파트너 메시지 <span className="tabular-nums">{offerCount}</span></>
+              ) : (
+                <>오퍼 <span className="tabular-nums">{offerCount}</span></>
+              )}
+            </span>
           )}
           <div className="ml-auto flex items-center gap-2">
             {isSelecting ? (

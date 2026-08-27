@@ -154,8 +154,8 @@ export function MessagesListClient() {
   // handleDeleteChat/handleDeleteAllClosed·groups·shareGroups(깃발 1:1 오퍼 채팅 그룹핑) 제거 — 깃발 탭 UI가 없어져 미사용.
   // chats/loading/reload(useOfferChats)는 빈 상태 판정과 나가기 갱신에 계속 쓰여 유지.
 
-  // 탭 순서·기본값: 메시지(1) → 파티(2). 깃발 탭 제거. 진입 시 항상 메시지
-  const [tab, setTab] = useState<"share" | "dm">("dm");
+  // 탭 순서·기본값: 파티(1) → 메시지(2). 깃발 탭 제거. 진입 시 항상 파티
+  const [tab, setTab] = useState<"share" | "dm">("share");
   const didAutoSelect = useRef(false);
 
   // 메시지(DM) 탭: 파티에서 시작된 대화는 그 파티별로 묶고(Migration 535 context_puzzle_id),
@@ -208,14 +208,14 @@ export function MessagesListClient() {
     [partyRooms]
   );
 
-  // 메시지가 비어 있어도 다른 탭으로 튀지 않는다(기본 탭 고정).
-  // 단, 파티에 안 읽은 대화가 있으면 그쪽을 1회 먼저 보여준다. (깃발 탭 제거로 깃발 분기 삭제)
+  // 파티가 비어 있어도 다른 탭으로 튀지 않는다(기본 탭 고정 = 파티).
+  // 단, 파티는 없고 메시지에 안 읽은 대화가 있으면 그쪽을 1회 먼저 보여준다.
   useEffect(() => {
     if (didAutoSelect.current || loading || partyLoading) return;
     didAutoSelect.current = true;
-    if (dmThreads.length > 0) return; // 메시지가 있으면 그대로 메시지 탭
-    if (shareUnread > 0) setTab("share");
-  }, [loading, partyLoading, shareUnread, dmThreads]);
+    if (partyRooms.length > 0) return; // 파티가 있으면 그대로 파티 탭
+    if (dmUnread > 0) setTab("dm");
+  }, [loading, partyLoading, dmUnread, partyRooms]);
 
   // 플래그 OFF면 기능 자체가 없음 → 홈으로
   useEffect(() => {
@@ -237,9 +237,21 @@ export function MessagesListClient() {
           </button>
           <h1 className="text-[16px] font-black text-foreground">나의 채팅</h1>
         </header>
-        {/* 🚩 깃발 탭 제거 — 1:1 / 파티 2탭 구조. 인원수 축으로 갈린다(1:1 대화 vs 단체방). 기존 깃발 오퍼 대화는 /flags/[id] 상세에서 계속 접근 가능 */}
+        {/* 🚩 깃발 탭 제거 — 파티 / 1:1 2탭 구조(파티 우선). 인원수 축으로 갈린다(단체방 vs 1:1 대화). 기존 깃발 오퍼 대화는 /flags/[id] 상세에서 계속 접근 가능 */}
         {user && (
           <div className="grid grid-cols-2 gap-1 p-1 mx-4 mb-2 bg-card rounded-full">
+            <button
+              onClick={() => { didAutoSelect.current = true; setTab("share"); }}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "share" ? "bg-white/10 text-foreground" : "text-muted-foreground"}`}
+            >
+              <span>🎉 파티</span>
+              {partyRooms.length > 0 && (
+                <span className={`text-[11px] ${tab === "share" ? "text-foreground/80" : "text-muted-foreground"}`}>
+                  {partyRooms.length}
+                </span>
+              )}
+              <UnreadBadge count={shareUnread} />
+            </button>
             <button
               onClick={() => { didAutoSelect.current = true; setTab("dm"); }}
               className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "dm" ? "bg-white/10 text-foreground" : "text-muted-foreground"}`}
@@ -253,18 +265,6 @@ export function MessagesListClient() {
               {/* 수락 게이트 폐지(470) — 신청 알림점 제거.
                   안읽음은 Migration 484부터 개수로 표시. */}
               <UnreadBadge count={dmUnread} />
-            </button>
-            <button
-              onClick={() => { didAutoSelect.current = true; setTab("share"); }}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "share" ? "bg-white/10 text-foreground" : "text-muted-foreground"}`}
-            >
-              <span>🎉 파티</span>
-              {partyRooms.length > 0 && (
-                <span className={`text-[11px] ${tab === "share" ? "text-foreground/80" : "text-muted-foreground"}`}>
-                  {partyRooms.length}
-                </span>
-              )}
-              <UnreadBadge count={shareUnread} />
             </button>
           </div>
         )}

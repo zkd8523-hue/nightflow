@@ -979,6 +979,8 @@ export interface PartyMessage {
   reply_to?: string | null;
   /** Migration 357: 채팅에 공유된 오퍼 id ("이거 어때요?" 카드) */
   shared_offer_id?: string | null;
+  /** Migration 589: null=파티원방, 아니면 그 md_id의 전용 상담방 */
+  room_md_id?: string | null;
   // joined
   sender?: { id: string; display_name: string | null; profile_image: string | null } | null;
 }
@@ -994,6 +996,21 @@ export interface PartyParticipant {
   is_md?: boolean;
   /** MD의 클럽명 (is_md일 때) */
   club_name?: string | null;
+}
+
+/**
+ * Migration 591: 파티에 초대된 파트너(MD) 1명 = 방 1개.
+ * 파티원·방장에게는 전원이 내려가 칩 탭으로 전환한다.
+ * 파트너 본인에게는 자기 room만 내려간다 (다른 파트너의 존재를 모르게).
+ */
+export interface PartyRoom {
+  mdId: string;
+  /** 칩에 표시할 라벨. 같은 클럽이 2개 이상이면 서버에서 "클럽명 N"으로 번호를 붙인다 */
+  chipLabel: string;
+  clubName: string | null;
+  displayName: string | null;
+  profileImage: string | null;
+  consented: boolean;
 }
 
 /** Migration 352: 조각 단체방 오퍼 리스트 항목 (get_party_offers RPC) */

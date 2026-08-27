@@ -71,16 +71,20 @@ export function useDmThreads(currentUserId?: string) {
     }
 
     setThreads(
-      list.map((t) => {
-        const otherId = t.requester_id === currentUserId ? t.recipient_id : t.requester_id;
-        return {
-          ...t,
-          counterpart: pMap.get(otherId),
-          last_message: lastMap.get(t.id) ?? null,
-          unread_count: unreadMap.get(t.id) ?? 0,
-          puzzle: t.context_puzzle_id ? puzzleMap.get(t.context_puzzle_id) ?? null : null,
-        };
-      })
+      list
+        // open_dm()은 클릭 즉시 빈 스레드를 만든다 — 채팅을 한 번도 안 쳤으면
+        // 목록에서 숨긴다("대화는 메시지 하나 이상 있어야 생성되어 보인다").
+        .filter((t) => lastMap.has(t.id))
+        .map((t) => {
+          const otherId = t.requester_id === currentUserId ? t.recipient_id : t.requester_id;
+          return {
+            ...t,
+            counterpart: pMap.get(otherId),
+            last_message: lastMap.get(t.id) ?? null,
+            unread_count: unreadMap.get(t.id) ?? 0,
+            puzzle: t.context_puzzle_id ? puzzleMap.get(t.context_puzzle_id) ?? null : null,
+          };
+        })
     );
     setLoading(false);
   }, [currentUserId]);

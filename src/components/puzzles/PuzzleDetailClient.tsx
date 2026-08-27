@@ -258,7 +258,8 @@ export function PuzzleDetailClient({
   const [pendingAcceptOfferId, setPendingAcceptOfferId] = useState<string | null>(null);
   const [pendingInviteOfferId, setPendingInviteOfferId] = useState<string | null>(null);
   // 조각: 현재 단체채팅에 초대된 MD의 오퍼 id (puzzle_party_md, 조각당 최대 1명) — 상담중 표시용
-  const [invitedOfferId, setInvitedOfferId] = useState<string | null>(null);
+  // 초대된 파트너의 오퍼 id 목록 (Migration 588: 파티에 여러 파트너 초대 가능)
+  const [invitedOfferIds, setInvitedOfferIds] = useState<string[]>([]);
   const [acceptingMd, setAcceptingMd] = useState<NonNullable<PuzzleOffer["md"]> | null>(null);
   const [showLeaderInfo, setShowLeaderInfo] = useState(false);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
@@ -476,10 +477,10 @@ export function PuzzleDetailClient({
 
     // 조각: 현재 단체채팅에 초대된 MD의 오퍼 — 방장/비방장 모두에게 "상담중" 배지 노출
     if (isRecruitingParty) {
-      const { data: invitedOfferId } = await supabase.rpc("get_party_invited_offer_id", {
+      const { data: ids } = await supabase.rpc("get_party_invited_offer_ids", {
         p_puzzle_id: puzzle.id,
       });
-      setInvitedOfferId((invitedOfferId as string | null) ?? null);
+      setInvitedOfferIds((ids as string[] | null) ?? []);
     }
 
     if (currentUserId && (isMd || isAdmin)) {
@@ -1802,7 +1803,7 @@ export function PuzzleDetailClient({
                               actionLoading={actionLoading}
                               onAccept={handleAcceptOffer}
                               onInvite={handleInviteOffer}
-                              isInvited={offer.id === invitedOfferId}
+                              isInvited={invitedOfferIds.includes(offer.id)}
                               onReject={handleRejectOffer}
                               onWithdrawn={loadOffers}
                               onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}
@@ -1877,7 +1878,7 @@ export function PuzzleDetailClient({
                           </span>
                         ) : null}
                       </div>
-                      {(isRecruitingParty ? offer.id === invitedOfferId : offer.leader_chat_started_at) && (
+                      {(isRecruitingParty ? invitedOfferIds.includes(offer.id) : offer.leader_chat_started_at) && (
                         <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-inverse text-inverse-foreground font-bold">상담중</span>
                       )}
                     </div>
@@ -1921,7 +1922,7 @@ export function PuzzleDetailClient({
                       <p className="text-[14px] font-bold text-brand-amber">
                         Offer #{publicOffers.length + i + 1}
                       </p>
-                      {(isRecruitingParty ? offer.id === invitedOfferId : offer.leader_chat_started_at) && (
+                      {(isRecruitingParty ? invitedOfferIds.includes(offer.id) : offer.leader_chat_started_at) && (
                         <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-inverse text-inverse-foreground font-bold">상담중</span>
                       )}
                     </div>
@@ -2150,7 +2151,7 @@ export function PuzzleDetailClient({
                           )}
                           {isLeaderMember && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-brand-amber">
-                              파티장
+                              방장
                             </span>
                           )}
                           {isMe && !isLeaderMember && (

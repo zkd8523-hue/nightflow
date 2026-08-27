@@ -260,7 +260,10 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         : await supabase.rpc("submit_offer", {
             p_puzzle_id: puzzle.id,
             p_club_id: selectedClubId,
-            p_table_type: "일반석",
+            // 테이블 타입은 입력받지 않는다 — 폼에 해당 필드가 없어 "일반석"이
+            // 하드코딩돼 있었고, 실제 제안 내용과 무관한 라벨이라 화면에서도 제거했다.
+            // puzzle_offers.table_type은 NOT NULL이라 빈 문자열로 채운다.
+            p_table_type: "",
             p_proposed_price: finalPrice,
             p_includes: selectedIncludes,
             p_comment: comment.trim() || null,
