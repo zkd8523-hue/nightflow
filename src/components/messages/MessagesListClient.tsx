@@ -237,14 +237,14 @@ export function MessagesListClient() {
           </button>
           <h1 className="text-[16px] font-black text-foreground">나의 채팅</h1>
         </header>
-        {/* 🚩 깃발 탭 제거 — 메시지 / 파티 2탭 구조. 기존 깃발 오퍼 대화는 /flags/[id] 상세에서 계속 접근 가능 */}
+        {/* 🚩 깃발 탭 제거 — 1:1 / 파티 2탭 구조. 인원수 축으로 갈린다(1:1 대화 vs 단체방). 기존 깃발 오퍼 대화는 /flags/[id] 상세에서 계속 접근 가능 */}
         {user && (
           <div className="grid grid-cols-2 gap-1 p-1 mx-4 mb-2 bg-card rounded-full">
             <button
               onClick={() => { didAutoSelect.current = true; setTab("dm"); }}
               className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "dm" ? "bg-white/10 text-foreground" : "text-muted-foreground"}`}
             >
-              <span>💬 메시지</span>
+              <span>💬 1:1</span>
               {dmThreads.length > 0 && (
                 <span className={`text-[11px] ${tab === "dm" ? "text-foreground/80" : "text-muted-foreground"}`}>
                   {dmThreads.length}
@@ -283,7 +283,7 @@ export function MessagesListClient() {
         </div>
       ) : tab === "dm" ? (
         dmThreads.length === 0 ? (
-          <p className="text-center text-[13px] text-muted-foreground mt-16">메시지가 없어요</p>
+          <p className="text-center text-[13px] text-muted-foreground mt-16">1:1 대화가 없어요</p>
         ) : (
           <div className="px-2 pt-1">
             {dmFeed.items.map((item) =>

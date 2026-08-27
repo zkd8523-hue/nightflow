@@ -300,10 +300,13 @@ export async function shareLineup({
   // 카드(og:title/description)가 클럽명·날짜·라인업을 이미 보여주므로 본문은
   // 짧은 한 줄만 남긴다.
   const text = `나플에서 라인업 확인하기 👉`;
+  // 안드로이드 공유 인텐트는 text+url을 이어붙여 한 문자열로 전달한다 — 브라우저의
+  // 이어붙임 방식에 맡기지 않고 줄바꿈을 직접 넣는다(shareInvite와 동일 패턴).
+  const shareText = `${text}\n\n${url}`;
 
   // 앱(Capacitor): OS 공유 시트 우선 — WebView에서 navigator.share가 불안정해
   // 클립보드 복사로 조용히 새는 경우가 있다(실측 사고).
-  const native = await shareViaNative({ title: shareTitle, text, url });
+  const native = await shareViaNative({ title: shareTitle, text: shareText, url });
   if (native.handled) {
     trackEvent('lineup_shared', { club_id: clubId, event_date: eventDate, method: 'native' });
     return !native.cancelled;
@@ -311,7 +314,7 @@ export async function shareLineup({
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: shareTitle, text, url });
+      await navigator.share({ title: shareTitle, text: shareText, url });
       trackEvent('lineup_shared', { club_id: clubId, event_date: eventDate, method: 'web_share_api' });
       return true;
     } catch (err: unknown) {
@@ -362,8 +365,9 @@ export async function shareEvent({
   // shareLineup과 동일 이유 — title/카드가 이미 장소·날짜·라인업을 보여주므로
   // 본문은 짧은 한 줄만 남긴다(area는 title에 없어 카드/메타에서만 보여줌).
   const text = `나플에서 공연 정보 확인하기 👉`;
+  const shareText = `${text}\n\n${url}`;
 
-  const native = await shareViaNative({ title: shareTitle, text, url });
+  const native = await shareViaNative({ title: shareTitle, text: shareText, url });
   if (native.handled) {
     trackEvent('event_shared', { event_date: eventDate, slug, method: 'native' });
     return !native.cancelled;
@@ -371,7 +375,7 @@ export async function shareEvent({
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: shareTitle, text, url });
+      await navigator.share({ title: shareTitle, text: shareText, url });
       trackEvent('event_shared', { event_date: eventDate, slug, method: 'web_share_api' });
       return true;
     } catch (err: unknown) {
@@ -412,8 +416,9 @@ export async function shareClub({ clubId, clubName }: ShareClubParams): Promise<
   // title(clubName)과 카드(og:title/description)가 이미 클럽명·지역·정보를
   // 보여주므로 본문은 짧은 한 줄만 남긴다(shareLineup/shareEvent와 동일 이유).
   const text = `🌃 나플에서 위치·영업시간·가격표 확인하기 👉`;
+  const shareText = `${text}\n\n${url}`;
 
-  const native = await shareViaNative({ title: clubName, text, url });
+  const native = await shareViaNative({ title: clubName, text: shareText, url });
   if (native.handled) {
     trackEvent('club_shared', { club_id: clubId, method: 'native' });
     return !native.cancelled;
@@ -421,7 +426,7 @@ export async function shareClub({ clubId, clubName }: ShareClubParams): Promise<
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: clubName, text, url });
+      await navigator.share({ title: clubName, text: shareText, url });
       trackEvent('club_shared', { club_id: clubId, method: 'web_share_api' });
       return true;
     } catch (err: unknown) {

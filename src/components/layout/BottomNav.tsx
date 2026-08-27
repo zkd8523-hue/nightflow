@@ -73,7 +73,7 @@ export function BottomNav() {
     { label: "클럽지도", icon: Map, href: "/clubs" },
     { label: "OPEN", icon: WagleIcon, href: "/chat" },
     offerChatOn
-      ? { label: "채팅", icon: MessageCircle, href: "/messages" }
+      ? { label: "메시지", icon: MessageCircle, href: "/messages" }
       : { label: "찜", icon: Heart, href: "/favorites" },
     { label: "MY", icon: User, href: "/profile" },
   ];
@@ -85,7 +85,7 @@ export function BottomNav() {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
           // 와글 활성 시 보라 시그니처 (MUSIC 가치), 나머지는 흰색
           const activeClass = "text-foreground";
-          // "내 정보"=새 오퍼는 NEW 뱃지, "채팅"=안읽은 메시지 개수 뱃지
+          // "내 정보"=새 오퍼는 NEW 뱃지, "메시지"=안읽은 메시지 개수 뱃지
           const showNewOfferBadge = href === "/profile" && hasNewOffer;
           const chatBadgeCount = href === "/messages" ? unreadChatCount : 0;
           return (
