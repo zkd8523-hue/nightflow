@@ -149,7 +149,7 @@ function MyRequestsTab() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="text-[15px] font-bold text-foreground/80">{tr("No requests yet")}</p>
-        <p className="text-[13px] text-muted-foreground">{tr("Pick a club & we'll book it for you.")}</p>
+        <p className="text-[13px] text-muted-foreground">{tr("Pick a club & we'll help you book.")}</p>
         <Link href={`/flags/new?lang=${lang}`} className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
           {tr("Book with NightFlow")}
         </Link>
@@ -835,7 +835,7 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
             <div className="space-y-3">
               {[
                 { n: "1", title: "Pick your club", body: "Choose the clubs you want (or just tell us your vibe) — date, budget, group size." },
-                { n: "2", title: "We book it for you", body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup." },
+                { n: "2", title: "We help you book", body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup." },
                 { n: "3", title: "Walk in like a VIP", body: "Best table booked, no line, no broker. Show your passport at the door (19+)." },
               ].map((s) => (
                 <div key={s.n} className="flex gap-3">

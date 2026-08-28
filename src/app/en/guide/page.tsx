@@ -107,7 +107,7 @@ const STEPS = [
   },
   {
     n: "2",
-    title: "We book it for you",
+    title: "We help you book",
     body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup.",
   },
   {

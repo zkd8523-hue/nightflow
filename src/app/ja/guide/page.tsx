@@ -95,7 +95,7 @@ export default async function JaGuidePage() {
         <h2>NightFlowを通じた韓国クラブ予約の流れ</h2>
         <p>行きたいクラブを選んでください（または予算と雰囲気だけ伝えてください）— 日付、人数、予算と一緒に。NightFlowが直接クラブに連絡し、予算内で一番良い席を確保します。通常数時間以内に返信。到着後、クラブに直接支払い。予約手数料ゼロ、ブローカー手数料なし、デポジット不要。</p>
         <h2>ウォークインの代わりにここで韓国クラブを予約する理由</h2>
-        <p>ソウルでウォークイン予約は観光客価格と最悪の席を意味します。NightFlowは現地価格であなたの代わりに予約します — 直接クラブに連絡し、ブローカー手数料なし。本物の地元民はこの方法で予約。今、あなたもできます。</p>
+        <p>ソウルでウォークイン予約は観光客価格と最悪の席を意味します。NightFlowが現地価格での予約をお手伝いします — 直接クラブに連絡し、ブローカー手数料なし。本物の地元民はこの方法で予約。今、あなたもできます。</p>
       </div>
       <div className="max-w-lg lg:max-w-[860px] mx-auto px-6 lg:px-10 py-16 space-y-16">
         <div className="text-center">
@@ -129,7 +129,7 @@ export default async function JaGuidePage() {
           <div className="space-y-4">
             {[
               { n: "1", title: "クラブを選ぶ", body: "行きたいクラブを選んでください（または雰囲気だけ伝えてください）— 日付、予算、人数。" },
-              { n: "2", title: "私たちが直接予約します", body: "NightFlowが直接クラブに連絡し、予算内で一番良い席を確保 — 本物の価格、ブローカー手数料なし。" },
+              { n: "2", title: "予約をお手伝いします", body: "NightFlowが直接クラブに連絡し、予算内で一番良い席を確保 — 本物の価格、ブローカー手数料なし。" },
               { n: "3", title: "VIPのように入場", body: "最高のルームが予約済み、列なし、ブローカーなし。Instagramでクラブと連絡、ドアでパスポートを見せる (19+)。" },
             ].map((s) => (
               <div key={s.n} className="flex gap-4 p-5 rounded-2xl bg-card border border-border">

@@ -141,7 +141,7 @@ export default async function ZhTwGuidePage() {
           <div className="space-y-4">
             {[
               { n: "1", title: "選擇您的夜店", body: "選好想去的夜店(或者只告訴我們您的喜好) — 日期、預算、人數。" },
-              { n: "2", title: "我們直接為您預訂", body: "NightFlow 直接聯絡夜店,為您鎖定預算內最好的桌位 — 真實價格,無中介加價。" },
+              { n: "2", title: "我們協助您預訂", body: "NightFlow 直接聯絡夜店,為您鎖定預算內最好的桌位 — 真實價格,無中介加價。" },
               { n: "3", title: "像 VIP 一樣入場", body: "最佳包廂已預訂,無排隊,無中介。在 Instagram 聯絡夜店,到門口出示護照 (19+)。" },
             ].map((s) => (
               <div key={s.n} className="flex gap-4 p-5 rounded-2xl bg-card border border-border">

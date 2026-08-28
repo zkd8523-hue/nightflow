@@ -182,10 +182,11 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   // 검색으로 처음 들어온 외국인이 대부분인데(클럽 목록 도달 후 카드 클릭 14.5%),
   // 설명이 sr-only에만 있어 사람 눈엔 안 보였음 → 헤더 아래 짧은 안내 노출.
   const introHeadline = t(
-    "클럽을 고르면 저희가 대신 예약해드려요",
-    "Pick a club — we book it for you",
-    "クラブを選べば、私たちが予約します",
-    "选好夜店,我们帮你预订"
+    "클럽을 고르면 예약을 도와드려요",
+    "Pick a club — we'll help you book it",
+    "クラブを選べば、予約をお手伝いします",
+    "选好夜店,我们协助你预订",
+    "選好夜店,我們協助你預訂"
   );
   const introSub = t(
     "실제 가격 그대로, 중개 수수료 없음. 한국어 못해도 괜찮아요.",
@@ -253,7 +254,13 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
         {/* Header */}
         <header className="space-y-3">
           <Link href={homeHref} className="inline-block text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-            ← NightFlow
+            ← {t(
+              "한국 클럽 정보 더 보기",
+              "More Korea club info",
+              "韓国クラブ情報をもっと見る",
+              "更多韩国夜店信息",
+              "更多韓國夜店資訊"
+            )}
           </Link>
           {/* 제목 자리에 가치 제안을 바로 노출 — "Seoul Club Guide"는 라벨일 뿐 정보가 없어서
               처음 온 사람이 여기가 뭐 하는 곳인지 모른 채 목록만 보고 이탈했음.
@@ -301,7 +308,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   },
                   {
                     n: "2",
-                    title: t("대신 예약해드려요", "We book it for you", "私たちが予約します", "我们帮你预订"),
+                    title: t("예약을 도와드려요", "We help you book", "予約をお手伝いします", "我们协助你预订", "我們協助你預訂"),
                     body: t(
                       "저희가 클럽에 직접 연락해 예산에 맞는 최적의 테이블을 잡아드려요 — 실제 가격, 중개 수수료 없음.",
                       "We contact the club directly and lock in the best table for your budget — real price, no broker markup.",

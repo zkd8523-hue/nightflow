@@ -12,7 +12,7 @@ export const metadata: Metadata = {
       "Korea Club Booking — Gangnam, Hongdae, Itaewon VIP Tables (NightFlow Seoul)",
   },
   description:
-    "Book Korea's best clubs in Seoul — Gangnam, Hongdae, Itaewon, Apgujeong. Real prices, VIP tables, no broker, no Korean needed. Pick a club, we book it for you. Korea nightlife made easy for travelers.",
+    "Book Korea's best clubs in Seoul — Gangnam, Hongdae, Itaewon, Apgujeong. Real prices, VIP tables, no broker, no Korean needed. Pick a club, we'll help you book it. Korea nightlife made easy for travelers.",
   keywords: [
     // Country-level (검색량 큼)
     "Korea club",
@@ -388,7 +388,7 @@ export default async function EnHomePage() {
         <p>
           {flagCount} people are planning nights out in Seoul right now
           (Gangnam, Hongdae, Itaewon, Apgujeong). Pick a club and we&apos;ll
-          book it for you — most requests get a reply within hours.
+          help you book it — most requests get a reply within hours.
         </p>
 
         <h2>Browse Korea Clubs by District</h2>
