@@ -10,6 +10,7 @@ import { clubFeatureLabels } from "@/lib/clubs/tagLabelsI18n";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 // 중국어(간체)판 클럽 개별 페이지 — /en/clubs/[area]/[club] 과 동일 구조 복제.
 // 클럽 고유명사는 라틴 표기 고정 — 기존 /zh 지역 페이지도 "Club ACE", "Massive"처럼
@@ -244,6 +245,7 @@ export default async function ZhClubDetailPage({
   );
 
   return (
+    <ForeignShell lang="zh">
     <div className="min-h-screen bg-background text-foreground pb-28 pb-safe">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -266,7 +268,7 @@ export default async function ZhClubDetailPage({
         </Link>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
+      <div className="max-w-lg lg:max-w-[900px] mx-auto px-4 lg:px-8 py-6 lg:py-10 space-y-8">
         <nav className="flex items-center gap-1.5 text-[12px] text-muted-foreground flex-wrap">
           <Link href="/zh/clubs" data-nf-track="breadcrumb_index" className="hover:text-foreground">首尔夜店</Link>
           <span>/</span>
@@ -384,8 +386,8 @@ export default async function ZhClubDetailPage({
         )}
       </div>
 
-      <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
-        <div className="flex items-stretch gap-2 w-full max-w-lg mx-auto">
+      <div className="fixed bottom-0 inset-x-0 lg:left-[248px] z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
+        <div className="flex items-stretch gap-2 w-full max-w-lg lg:max-w-[900px] mx-auto">
           <Link href={bookHref}
             data-nf-track="book_cta"
             className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
@@ -400,5 +402,6 @@ export default async function ZhClubDetailPage({
         </div>
       </div>
     </div>
+    </ForeignShell>
   );
 }

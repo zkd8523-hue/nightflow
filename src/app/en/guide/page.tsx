@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { krwToAll, getKrwRates } from "@/lib/utils/currency";
+import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 export const metadata: Metadata = {
   // absolute = root layout의 "%s | 나플" template 무시 (한글 노출 차단)
@@ -270,6 +271,7 @@ export default async function EnglishLanding() {
   };
 
   return (
+    <ForeignShell lang="en">
     <div className="min-h-screen bg-background text-foreground">
       <script
         type="application/ld+json"
@@ -308,7 +310,7 @@ export default async function EnglishLanding() {
           book this way. Now you can too.
         </p>
       </div>
-      <div className="max-w-lg mx-auto px-6 py-16 space-y-16">
+      <div className="max-w-lg lg:max-w-[860px] mx-auto px-6 lg:px-10 py-16 space-y-16">
         {/* Brand */}
         <div className="text-center">
           <span className="text-2xl font-black tracking-tight text-foreground">
@@ -519,5 +521,6 @@ export default async function EnglishLanding() {
         </section>
       </div>
     </div>
+    </ForeignShell>
   );
 }

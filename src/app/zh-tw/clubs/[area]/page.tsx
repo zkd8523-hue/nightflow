@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ClubsClient } from "../../../en/clubs/ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
+import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 type AreaSlug = "gangnam" | "hongdae" | "itaewon" | "busan" | "apgujeong";
 
@@ -259,6 +260,7 @@ export default async function ZhTwClubsAreaPage({
   const clubCount = clubList.length;
 
   return (
+    <ForeignShell lang="zh-tw">
     <>
       <div className="sr-only">
         <h1>
@@ -302,7 +304,7 @@ export default async function ZhTwClubsAreaPage({
       </div>
       <ClubsClient clubs={clubList} lang="zh-tw" />
 
-      <nav className="max-w-lg mx-auto px-4 pb-10 pt-2">
+      <nav className="max-w-lg lg:max-w-[1000px] mx-auto px-4 lg:px-8 pb-10 pt-2 lg:pt-8">
         <h2 className="text-[15px] font-black text-foreground mb-2">
           {config.zh}夜店 — 營業時間・入場費・評價
         </h2>
@@ -324,5 +326,6 @@ export default async function ZhTwClubsAreaPage({
         </div>
       </nav>
     </>
+    </ForeignShell>
   );
 }

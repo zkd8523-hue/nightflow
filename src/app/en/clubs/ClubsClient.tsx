@@ -13,6 +13,7 @@ import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { trackForeignEvent } from "@/lib/analytics/events";
+import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 type Club = {
   id: string;
@@ -244,9 +245,10 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   );
 
   return (
+    <ForeignShell lang={lang}>
     <div className="min-h-screen bg-background text-foreground">
       {/* pb-24: Sticky CTA 높이만큼 하단 여백 */}
-      <div className="max-w-lg mx-auto px-4 py-12 pb-24 space-y-6">
+      <div className="max-w-lg lg:max-w-[1040px] mx-auto px-4 lg:px-8 py-12 pb-24 lg:pb-14 space-y-6">
 
         {/* Header */}
         <header className="space-y-3">
@@ -446,7 +448,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                 리스트만 바뀌고 앞쪽 클럽들이 화면 밖으로 밀려남) */}
             <div
               key={`${sortKey}-${venueType}-${genre}`}
-              className="flex gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4"
+              className="flex gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 lg:grid lg:grid-cols-5 lg:overflow-x-visible lg:mx-0 lg:px-0"
             >
               {g.items.map((club) => (
                 <button
@@ -461,9 +463,9 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                       });
                     }
                   }}
-                  className="shrink-0 w-[140px] snap-start text-left active:opacity-70 transition-opacity"
+                  className="shrink-0 w-[140px] snap-start text-left active:opacity-70 transition-opacity lg:w-full lg:shrink"
                 >
-                  <div className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden bg-muted border border-border">
+                  <div className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden bg-muted border border-border lg:w-full lg:h-[168px]">
                     {club.thumbnail_url ? (
                       <Image src={club.thumbnail_url} alt={displayClubName(club)} fill className="object-cover" sizes="140px" />
                     ) : (
@@ -472,7 +474,12 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   </div>
                   <p className="text-[13px] font-bold text-foreground mt-2 truncate">{displayClubName(club)}</p>
                   {club.google_rating != null && (
-                    <p className="text-[12px] text-brand-amber mt-0.5">⭐ {club.google_rating.toFixed(1)}</p>
+                    <p className="text-[12px] text-brand-amber mt-0.5">
+                      ⭐ {club.google_rating.toFixed(1)}
+                      {club.google_review_count != null && (
+                        <span className="text-muted-foreground ml-1">({club.google_review_count.toLocaleString()})</span>
+                      )}
+                    </p>
                   )}
                 </button>
               ))}
@@ -517,7 +524,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
       {/* Sticky CTA — 유저가 스크롤 안 해도 항상 보이도록 fixed. 외국인 트랙만. */}
       {lang !== "ko" && shownCount > 0 && (
         <div
-          className="fixed left-0 right-0 bottom-0 z-40 px-4 pb-4 pt-6 pointer-events-none
+          className="fixed left-0 right-0 bottom-0 z-40 px-4 pb-4 pt-6 pointer-events-none lg:hidden
                      bg-gradient-to-t from-background via-background via-[60%] to-transparent"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
         >
@@ -665,5 +672,6 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
         </SheetContent>
       </Sheet>
     </div>
+    </ForeignShell>
   );
 }

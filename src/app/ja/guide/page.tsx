@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { krwToAll, getKrwRates } from "@/lib/utils/currency";
+import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 // 外国人観光客向け 詐欺注意アコーディオン（英語版 TIPS と同じ内容）
 const TIPS = [
@@ -85,6 +86,7 @@ export default async function JaGuidePage() {
   };
 
   return (
+    <ForeignShell lang="ja">
     <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <div className="sr-only">
@@ -95,7 +97,7 @@ export default async function JaGuidePage() {
         <h2>ウォークインの代わりにここで韓国クラブを予約する理由</h2>
         <p>ソウルでウォークイン予約は観光客価格と最悪の席を意味します。NightFlowは現地価格であなたの代わりに予約します — 直接クラブに連絡し、ブローカー手数料なし。本物の地元民はこの方法で予約。今、あなたもできます。</p>
       </div>
-      <div className="max-w-lg mx-auto px-6 py-16 space-y-16">
+      <div className="max-w-lg lg:max-w-[860px] mx-auto px-6 lg:px-10 py-16 space-y-16">
         <div className="text-center">
           <Link href="/ja" className="text-2xl font-black tracking-tight text-foreground">NightFlow</Link>
         </div>
@@ -202,5 +204,6 @@ export default async function JaGuidePage() {
         </section>
       </div>
     </div>
+    </ForeignShell>
   );
 }

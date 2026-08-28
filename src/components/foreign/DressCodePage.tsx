@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { createClient } from "@/lib/supabase/server";
 import { type Lang, makeT } from "@/lib/i18n";
@@ -131,12 +132,13 @@ export async function DressCodePage({ lang }: { lang: Lang }) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-28 pb-safe">
+    <ForeignShell lang={lang}>
+    <div className="min-h-screen bg-background text-foreground pb-28 pb-safe lg:pb-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
       <ForeignPageTracker kind="guide" lang={lang} meta={{ guide: "dress_code" }} />
 
-      <div className="max-w-lg mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-lg lg:max-w-[900px] mx-auto px-4 lg:px-8 py-8 lg:py-10 space-y-8">
         <nav className="flex items-center gap-1.5 text-[12px] text-muted-foreground flex-wrap">
           <Link data-nf-track="breadcrumb_home" href={`/${lang}`} className="hover:text-foreground">NightFlow</Link>
           <span>/</span>
@@ -268,11 +270,12 @@ export async function DressCodePage({ lang }: { lang: Lang }) {
         </nav>
       </div>
 
-      <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
+      <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border lg:hidden">
         <Link data-nf-track="book_cta" href={`/flags/new?lang=${lang}`} className="flex items-center justify-center w-full max-w-lg mx-auto py-3.5 rounded-2xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
           🍾 {t("나플로 예약하기", "Book with NightFlow", "NightFlowで予約", "用 NightFlow 预订", "用 NightFlow 預訂")}
         </Link>
       </div>
     </div>
+    </ForeignShell>
   );
 }

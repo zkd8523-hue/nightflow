@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { krwToAll, getKrwRates } from "@/lib/utils/currency";
+import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 export const metadata: Metadata = {
   title: {
@@ -79,6 +80,7 @@ export default async function ZhGuidePage() {
   };
 
   return (
+    <ForeignShell lang="zh">
     <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <div className="sr-only">
@@ -95,7 +97,7 @@ export default async function ZhGuidePage() {
           在首尔 walk-in 预订意味着游客价格和最差座位。NightFlow 以本地价格为您代订 — 我们直接联系夜店，无中介加价。真正的本地人这样预订，现在您也可以。
         </p>
       </div>
-      <div className="max-w-lg mx-auto px-6 py-16 space-y-16">
+      <div className="max-w-lg lg:max-w-[860px] mx-auto px-6 lg:px-10 py-16 space-y-16">
         <div className="text-center">
           <Link href="/zh" className="text-2xl font-black tracking-tight text-foreground">NightFlow</Link>
         </div>
@@ -249,5 +251,6 @@ export default async function ZhGuidePage() {
         </section>
       </div>
     </div>
+    </ForeignShell>
   );
 }

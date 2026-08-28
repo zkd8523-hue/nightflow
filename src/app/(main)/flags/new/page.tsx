@@ -7,6 +7,7 @@ import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
 import { ForeignRequestForm } from "@/components/foreign/ForeignRequestForm";
 import type { ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
 import { getLang, makeT } from "@/lib/i18n";
+import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 export const dynamic = "force-dynamic";
 
@@ -131,8 +132,9 @@ export default async function PuzzleNewPage({
   }
 
   return (
+    <ForeignShell lang={lang}>
     <div className="min-h-screen bg-background pb-20">
-      <div className="max-w-lg mx-auto px-4 py-6">
+      <div className="max-w-lg lg:max-w-[900px] mx-auto px-4 lg:px-8 py-6 lg:py-10">
         {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 외국인 홈(/en, /ja, /zh) 복귀 링크 제공 */}
         {isForeigner && (
           <Link
@@ -182,5 +184,6 @@ export default async function PuzzleNewPage({
         )}
       </div>
     </div>
+    </ForeignShell>
   );
 }

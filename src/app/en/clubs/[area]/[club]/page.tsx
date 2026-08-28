@@ -10,6 +10,7 @@ import { clubFeatureLabels } from "@/lib/clubs/tagLabelsI18n";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 // 클럽 개별 페이지 — 외국인 롱테일 SEO의 핵심.
 //
@@ -263,6 +264,7 @@ export default async function EnClubDetailPage({
 
   return (
     // 하단 sticky 예약바에 안 가리도록 실제 콘텐츠 높이만큼 여백 확보 (pb-safe: 아이폰 홈 인디케이터).
+    <ForeignShell lang="en">
     <div className="min-h-screen bg-background text-foreground pb-28 pb-safe">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -288,7 +290,7 @@ export default async function EnClubDetailPage({
         </Link>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
+      <div className="max-w-lg lg:max-w-[900px] mx-auto px-4 lg:px-8 py-6 lg:py-10 space-y-8">
         {/* 브레드크럼 — 크롤러 경로이자 유저 탈출구 */}
         <nav className="flex items-center gap-1.5 text-[12px] text-muted-foreground flex-wrap">
           <Link href="/en/clubs" data-nf-track="breadcrumb_index" className="hover:text-foreground">Seoul Clubs</Link>
@@ -411,8 +413,8 @@ export default async function EnClubDetailPage({
       </div>
 
       {/* 예약(8) : 찜(2) — ForeignClubDetailPanel의 하단 sticky CTA와 같은 패턴·비율. */}
-      <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
-        <div className="flex items-stretch gap-2 w-full max-w-lg mx-auto">
+      <div className="fixed bottom-0 inset-x-0 lg:left-[248px] z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
+        <div className="flex items-stretch gap-2 w-full max-w-lg lg:max-w-[900px] mx-auto">
           <Link href={bookHref}
             data-nf-track="book_cta"
             className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
@@ -427,5 +429,6 @@ export default async function EnClubDetailPage({
         </div>
       </div>
     </div>
+    </ForeignShell>
   );
 }

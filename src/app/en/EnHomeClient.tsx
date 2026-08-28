@@ -15,6 +15,7 @@ import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from 
 import { SavedClubsButton } from "@/components/clubs/SavedClubsButton";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { trackForeignEvent } from "@/lib/analytics/events";
+import { ForeignSidebar, type ForeignNavKey } from "@/components/foreign/ForeignShell";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
@@ -1008,85 +1009,6 @@ export function EnHomeClient({
   );
 }
 
-// ── 데스크톱 사이드바 ─────────────────────────────────────────────
-// 외국인 트래픽은 데스크톱 비중이 한국어(25%)의 두 배 안팎이다(ZH 63%·JA 51%·ZH-TW 39%·EN 38%).
-// 하단 탭 바는 모바일 전용 패턴이라 lg 이상에선 좌측 세로 레일로 바꾼다.
-// /en·/ja·/zh·/zh-tw 홈이 이 컴포넌트 하나를 공유하므로 네 언어에 동시 적용된다.
-// 언어 전환(LangSwitcher)은 지금까지 푸터 끝에만 있어 데스크톱에서 사실상 안 보였다 → 레일 하단에 상시 노출.
-function DesktopSidebar({
-  tabs,
-  tab,
-  setTab,
-}: {
-  tabs: { code: Tab; label: string; icon: React.ReactNode }[];
-  tab: Tab;
-  setTab: (t: Tab) => void;
-}) {
-  const { lang, t, tr } = useTr();
-
-  const guides = [
-    { href: `/${lang}/dress-code`, label: t("드레스코드", "Dress code", "ドレスコード", "着装要求", "著裝要求") },
-    { href: `/${lang}/club-prices`, label: t("클럽 가격", "Club prices", "クラブ料金", "夜店价格", "夜店價格") },
-    { href: `/${lang}/club-hours`, label: t("영업시간", "Opening hours", "営業時間", "营业时间", "營業時間") },
-    { href: `/${lang}/club-entry-rules`, label: t("입장 규정", "Entry rules", "入場ルール", "入场规定", "入場規定") },
-  ];
-
-  return (
-    <aside className="hidden lg:flex lg:flex-col lg:shrink-0 lg:w-[248px] lg:h-screen border-r border-border px-4 py-6">
-      <div className="px-2.5 pb-6">
-        <p className="text-[18px] font-black tracking-tight leading-none">NightFlow</p>
-        <p className="text-[11px] text-muted-foreground leading-none mt-1">{tr("Korea Club Guide")}</p>
-      </div>
-
-      <nav className="flex flex-col gap-1">
-        {tabs.map(({ code, label, icon }) => (
-          <button
-            key={code}
-            onClick={() => setTab(code)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-bold transition-colors ${
-              tab === code ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {icon}
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      <div className="h-px bg-border my-5 mx-3" />
-
-      <p className="px-3 mb-2.5 text-[11px] font-black text-muted-foreground uppercase tracking-widest">
-        {tr("Know before you go")}
-      </p>
-      <nav className="flex flex-col gap-0.5">
-        {guides.map((g) => (
-          <Link
-            key={g.href}
-            href={g.href}
-            className="px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            {g.label}
-          </Link>
-        ))}
-      </nav>
-
-      <div className="flex-1" />
-
-      <div className="flex flex-col gap-3 px-1">
-        <div className="flex justify-center">
-          <LangSwitcher />
-        </div>
-        <Link
-          href={`/flags/new?lang=${lang}`}
-          className="block text-center py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors"
-        >
-          {tr("Book with NightFlow")}
-        </Link>
-      </div>
-    </aside>
-  );
-}
-
 function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubItem[] }) {
   const [tab, setTab] = useState<Tab>("flags");
   const { lang, tr } = useTr();
@@ -1099,6 +1021,13 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
     trackForeignEvent(`${key}_home_view` as Parameters<typeof trackForeignEvent>[0], { lang });
   }, [lang]);
 
+  // 다른 페이지(SEO·클럽·폼)의 좌측 레일에서 넘어올 때 ?tab= 로 탭을 지정한다.
+  // 그 페이지들은 탭 state를 공유할 수 없어 홈으로 보낸 뒤 여기서 열어준다.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("tab");
+    if (q === "my" || q === "qa" || q === "map") setTab(q);
+  }, []);
+
   const tabs: { code: Tab; label: string; icon: React.ReactNode }[] = [
     { code: "flags", label: tr("Home"),  icon: <Home className="w-4 h-4" /> },
     { code: "my",    label: tr("My"),    icon: <User className="w-4 h-4" /> },
@@ -1108,7 +1037,12 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
 
   return (
     <div className="lg:flex lg:h-screen bg-background text-foreground">
-      <DesktopSidebar tabs={tabs} tab={tab} setTab={setTab} />
+      <ForeignSidebar
+        lang={lang}
+        activeKey={tab === "flags" ? "home" : tab}
+        onSelect={(k: ForeignNavKey) => setTab(k === "home" ? "flags" : k)}
+        navLabels={{ home: tr("Home"), my: tr("My"), qa: tr("Q&A"), map: tr("Map") }}
+      />
       <div className="flex flex-col h-screen bg-background text-foreground max-w-lg mx-auto lg:max-w-none lg:mx-0 lg:flex-1 lg:min-w-0">
       {/* 헤더 */}
       <header className="shrink-0 px-4 pt-3 pb-2 flex items-center justify-between border-b border-border lg:px-8 lg:pt-5 lg:pb-4">

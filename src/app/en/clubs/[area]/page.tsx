@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ClubsClient } from "../ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
+import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 // 동네별 단독 페이지 — 외국인 SEO 핵심 라우트.
 // "Gangnam club booking", "Hongdae nightclub", "Itaewon club" 등
@@ -331,6 +332,7 @@ export default async function EnClubsAreaPage({
   };
 
   return (
+    <ForeignShell lang="en">
     <>
       <script
         type="application/ld+json"
@@ -406,7 +408,7 @@ export default async function EnClubsAreaPage({
       {/* 클럽별 상세 페이지 인덱스 — 눈에 보이는 내부 링크.
           숨은(sr-only) 링크만으로는 크롤러가 가중치를 낮게 보고, 유저에게도
           "각 클럽의 영업시간·입장료 페이지가 따로 있다"는 발견 경로가 된다. */}
-      <nav className="max-w-lg mx-auto px-4 pb-10 pt-2">
+      <nav className="max-w-lg lg:max-w-[1000px] mx-auto px-4 lg:px-8 pb-10 pt-2 lg:pt-8">
         <h2 className="text-[15px] font-black text-foreground mb-2">
           {config.en} clubs — hours, entry fee &amp; reviews
         </h2>
@@ -428,5 +430,6 @@ export default async function EnClubsAreaPage({
         </div>
       </nav>
     </>
+    </ForeignShell>
   );
 }
