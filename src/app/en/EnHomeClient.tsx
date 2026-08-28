@@ -247,9 +247,9 @@ function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity text-left"
+      className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity text-left lg:w-full lg:shrink"
     >
-      <div className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-muted border border-border">
+      <div className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-muted border border-border lg:w-full lg:h-[112px]">
         {club.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={club.thumbnail_url} alt={name} loading="lazy" className="w-full h-full object-cover" />
@@ -257,7 +257,7 @@ function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[11px] font-bold">{tr("No image")}</div>
         )}
       </div>
-      <p className="text-[12px] font-bold text-foreground mt-1.5 truncate">{name}</p>
+      <p className="text-[12px] font-bold text-foreground mt-1.5 truncate lg:text-[13px] lg:mt-2">{name}</p>
     </button>
   );
 }
@@ -461,7 +461,7 @@ function GuideIndex() {
         )}
       </p>
 
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {cards.map((c, i) => (
           <Link
             key={c.href}
@@ -510,6 +510,41 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
   const bookAtClubLabel = (name: string) =>
     t(`🍾 ${name} 예약하기`, `🍾 Book ${name}`, `🍾 ${name}を予約`, `🍾 预订 ${name}`);
 
+  // 필터(지역·음악·추천) — 데스크톱 전용. 모바일은 지금처럼 전 지역을 세로로 훑는 흐름을 유지한다
+  // (좁은 화면에서 칩 줄이 늘면 첫 화면에서 클럽이 밀려난다).
+  const [activeArea, setActiveArea] = useState<string | null>(null);
+  const [activeGenre, setActiveGenre] = useState<string | null>(null);
+  const [onlyRecommended, setOnlyRecommended] = useState(false);
+  const visibleRegions = REGIONS.filter((r) => !activeArea || r.ko === activeArea);
+  const hasFilter = !!activeGenre || onlyRecommended;
+
+  // 추천 기준: 구글 평점 4.0 이상 + 리뷰 30건 이상.
+  // featured_rank는 77곳 중 76곳이 0이라 신호로 쓸 수 없어 평점·리뷰수로 대체했다.
+  const isRecommended = (c: ClubItem) =>
+    (c.google_rating ?? 0) >= 4 && (c.google_review_count ?? 0) >= 30;
+
+  const matchesFilters = (c: ClubItem) =>
+    (!activeGenre || (c.tags ?? []).includes(`genre:${activeGenre}`)) &&
+    (!onlyRecommended || isRecommended(c));
+
+  // 실제 태그 분포 기준 상위 장르만 노출(hiphop 37·techno 18·house 13·edm 11·rnb 11·kpop 6).
+  // 1~2곳뿐인 롱테일(rock·indie·funk 등)은 칩을 눌러도 빈 화면이 되어 제외.
+  const GENRES: { code: string; label: string }[] = [
+    { code: "hiphop", label: t("힙합", "Hip-hop", "ヒップホップ", "嘻哈", "嘻哈") },
+    { code: "techno", label: "Techno" },
+    { code: "house", label: "House" },
+    { code: "edm", label: "EDM" },
+    { code: "rnb", label: "R&B" },
+    { code: "kpop", label: "K-pop" },
+  ];
+
+  const chipCls = (on: boolean) =>
+    `px-4 py-2 rounded-full text-[13px] transition-colors ${
+      on
+        ? "bg-inverse text-inverse-foreground font-black"
+        : "bg-card border border-border text-foreground font-bold hover:border-amber-500/50"
+    }`;
+
   return (
     <div className="pt-5 pb-6 border-b border-border space-y-5">
       <div className="px-4 flex items-center justify-between gap-2">
@@ -522,8 +557,48 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
         </Link>
       </div>
 
-      {REGIONS.map((r) => {
-        const regionClubs = clubs.filter((c) => c.area === r.ko);
+      {/* 필터 칩 (lg 이상). 데스크톱은 전 지역·전 클럽이 한 화면에 안 들어와 좁히는 수단이 필요하다. */}
+      <div className="hidden lg:flex lg:flex-col gap-2.5 px-4">
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setActiveArea(null)} className={chipCls(activeArea === null)}>
+            {t("서울 전체", "All Seoul", "すべて", "全部", "全部")}
+          </button>
+          {REGIONS.map((r) => (
+            <button key={r.ko} type="button" onClick={() => setActiveArea(r.ko)} className={chipCls(activeArea === r.ko)}>
+              {r.emoji} {areaLabel(r.ko, lang)}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setActiveGenre(null)} className={chipCls(activeGenre === null)}>
+            {t("전체 장르", "All genres", "すべての音楽", "全部曲风", "全部曲風")}
+          </button>
+          {GENRES.map((g) => (
+            <button key={g.code} type="button" onClick={() => setActiveGenre(g.code)} className={chipCls(activeGenre === g.code)}>
+              {g.label}
+            </button>
+          ))}
+
+          {/* 추천 토글 — 다른 칩과 성격이 달라(좁히기가 아니라 품질 기준) 앰버로 구분한다. */}
+          <button
+            type="button"
+            onClick={() => setOnlyRecommended((v) => !v)}
+            className={`ml-1 px-4 py-2 rounded-full text-[13px] transition-colors ${
+              onlyRecommended
+                ? "bg-amber-500 text-black font-black"
+                : "bg-card border border-amber-500/40 text-brand-amber font-bold hover:border-amber-500"
+            }`}
+          >
+            ⭐ {t("추천", "Recommended", "おすすめ", "推荐", "推薦")}
+          </button>
+        </div>
+      </div>
+
+      {visibleRegions.map((r) => {
+        const regionClubs = clubs.filter((c) => c.area === r.ko && matchesFilters(c));
+        // 필터를 걸었을 때만 빈 지역을 감춘다(필터 없는 모바일 화면은 기존 동작 그대로).
+        if (regionClubs.length === 0 && hasFilter) return null;
         return (
           <div key={r.ko} className="space-y-2.5">
             <div className="px-4">
@@ -533,13 +608,29 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
               </p>
             </div>
             {regionClubs.length > 0 && (
-              <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x">
+              <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x lg:grid lg:grid-cols-6 lg:overflow-x-visible lg:px-0">
                 {regionClubs.map((c) => <ClubThumb key={c.id} club={c} onOpen={() => openDetail(regionClubs, c)} />)}
               </div>
             )}
           </div>
         );
       })}
+
+      {hasFilter &&
+        visibleRegions.every((r) => clubs.filter((c) => c.area === r.ko && matchesFilters(c)).length === 0) && (
+          <div className="hidden lg:block px-4 py-12 text-center">
+            <p className="text-[14px] font-bold text-foreground/80">
+              {t("조건에 맞는 클럽이 없어요", "No clubs match these filters", "条件に合うクラブがありません", "没有符合条件的夜店", "沒有符合條件的夜店")}
+            </p>
+            <button
+              type="button"
+              onClick={() => { setActiveGenre(null); setOnlyRecommended(false); }}
+              className="mt-3 px-5 py-2.5 rounded-full bg-card border border-border text-[13px] font-bold hover:border-amber-500/50 transition-colors"
+            >
+              {t("필터 초기화", "Clear filters", "フィルターをリセット", "清除筛选", "清除篩選")}
+            </button>
+          </div>
+        )}
 
       {/* 클럽 상세 모달 — 클릭 시 이탈 없이 제자리에서 오픈, 화살표/스와이프로 같은 지역 내 이동 */}
       <Sheet open={!!detailClub} onOpenChange={(o) => !o && closeDetail()}>
@@ -710,6 +801,8 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
 
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
+      {/* 데스크톱 폭 제한 — 모바일에선 클래스가 비어 기존 레이아웃 그대로. */}
+      <div className="lg:px-6 lg:pt-4">
       {/* ① 타겟 후킹 + 설명 (헤더 아래) */}
       <div className="px-5 pt-6 pb-5 text-center space-y-3">
         <h1 className="text-[24px] font-black leading-[1.18] tracking-tight">
@@ -771,6 +864,7 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
       {/* Safety tips */}
       <div className="px-4 pb-6 space-y-3">
         <p className="text-[13px] font-black text-foreground/80 uppercase tracking-widest">{tr("Know before you go")}</p>
+        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
         {[
           {
             title: "🚩 Common scams to watch for",
@@ -801,6 +895,7 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
             </div>
           </details>
         ))}
+        </div>
       </div>
 
       {/* 가이드 인덱스 — 외국인이 실제로 불안해하는 것들(비용·복장·입장거부·혼자오기)에
@@ -831,11 +926,13 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
         <BusinessInfo lang={lang} />
       </footer>
 
+      </div>
+
       {/* Sticky "Book with NightFlow" CTA — 원본 CTA(RegionSection 하단)가 화면 밖일 때만 표시.
           스크롤 컨테이너 하단에 sticky 배치. IntersectionObserver로 원본 가시성 감지. */}
       <div
         aria-hidden={!showStickyCta}
-        className={`sticky bottom-4 px-4 pointer-events-none z-20 transition-all duration-300 ${
+        className={`sticky bottom-4 px-4 pointer-events-none z-20 transition-all duration-300 lg:hidden ${
           showStickyCta
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-3"
@@ -911,6 +1008,85 @@ export function EnHomeClient({
   );
 }
 
+// ── 데스크톱 사이드바 ─────────────────────────────────────────────
+// 외국인 트래픽은 데스크톱 비중이 한국어(25%)의 두 배 안팎이다(ZH 63%·JA 51%·ZH-TW 39%·EN 38%).
+// 하단 탭 바는 모바일 전용 패턴이라 lg 이상에선 좌측 세로 레일로 바꾼다.
+// /en·/ja·/zh·/zh-tw 홈이 이 컴포넌트 하나를 공유하므로 네 언어에 동시 적용된다.
+// 언어 전환(LangSwitcher)은 지금까지 푸터 끝에만 있어 데스크톱에서 사실상 안 보였다 → 레일 하단에 상시 노출.
+function DesktopSidebar({
+  tabs,
+  tab,
+  setTab,
+}: {
+  tabs: { code: Tab; label: string; icon: React.ReactNode }[];
+  tab: Tab;
+  setTab: (t: Tab) => void;
+}) {
+  const { lang, t, tr } = useTr();
+
+  const guides = [
+    { href: `/${lang}/dress-code`, label: t("드레스코드", "Dress code", "ドレスコード", "着装要求", "著裝要求") },
+    { href: `/${lang}/club-prices`, label: t("클럽 가격", "Club prices", "クラブ料金", "夜店价格", "夜店價格") },
+    { href: `/${lang}/club-hours`, label: t("영업시간", "Opening hours", "営業時間", "营业时间", "營業時間") },
+    { href: `/${lang}/club-entry-rules`, label: t("입장 규정", "Entry rules", "入場ルール", "入场规定", "入場規定") },
+  ];
+
+  return (
+    <aside className="hidden lg:flex lg:flex-col lg:shrink-0 lg:w-[248px] lg:h-screen border-r border-border px-4 py-6">
+      <div className="px-2.5 pb-6">
+        <p className="text-[18px] font-black tracking-tight leading-none">NightFlow</p>
+        <p className="text-[11px] text-muted-foreground leading-none mt-1">{tr("Korea Club Guide")}</p>
+      </div>
+
+      <nav className="flex flex-col gap-1">
+        {tabs.map(({ code, label, icon }) => (
+          <button
+            key={code}
+            onClick={() => setTab(code)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-bold transition-colors ${
+              tab === code ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {icon}
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="h-px bg-border my-5 mx-3" />
+
+      <p className="px-3 mb-2.5 text-[11px] font-black text-muted-foreground uppercase tracking-widest">
+        {tr("Know before you go")}
+      </p>
+      <nav className="flex flex-col gap-0.5">
+        {guides.map((g) => (
+          <Link
+            key={g.href}
+            href={g.href}
+            className="px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            {g.label}
+          </Link>
+        ))}
+      </nav>
+
+      <div className="flex-1" />
+
+      <div className="flex flex-col gap-3 px-1">
+        <div className="flex justify-center">
+          <LangSwitcher />
+        </div>
+        <Link
+          href={`/flags/new?lang=${lang}`}
+          className="block text-center py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors"
+        >
+          {tr("Book with NightFlow")}
+        </Link>
+      </div>
+    </aside>
+  );
+}
+
 function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubItem[] }) {
   const [tab, setTab] = useState<Tab>("flags");
   const { lang, tr } = useTr();
@@ -931,9 +1107,13 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground max-w-lg mx-auto">
+    <div className="lg:flex lg:h-screen bg-background text-foreground">
+      <DesktopSidebar tabs={tabs} tab={tab} setTab={setTab} />
+      <div className="flex flex-col h-screen bg-background text-foreground max-w-lg mx-auto lg:max-w-none lg:mx-0 lg:flex-1 lg:min-w-0">
       {/* 헤더 */}
-      <header className="shrink-0 px-4 pt-3 pb-2 flex items-center justify-between border-b border-border">
+      <header className="shrink-0 px-4 pt-3 pb-2 flex items-center justify-between border-b border-border lg:px-8 lg:pt-5 lg:pb-4">
+        {/* 데스크톱에선 로고·뒤로가기를 사이드바가 대신한다. 찜 진입점만 남긴다. */}
+        <div className="lg:hidden">
         {tab === "flags" ? (
           <div>
             <span className="text-[17px] font-black tracking-tight">NightFlow</span>
@@ -948,6 +1128,7 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
             <span className="text-[15px] font-black">NightFlow</span>
           </button>
         )}
+        </div>
         {/* 상단 예약 버튼은 제거 — 하단 sticky "Book with NightFlow" CTA와 중복이라
             같은 화면에 예약 버튼이 두 개 떠 있었다. 찜 진입점만 남긴다(0개면 스스로 숨음). */}
         <div className="flex items-center gap-2">
@@ -956,7 +1137,9 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
       </header>
 
       {/* 콘텐츠 */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      {/* lg: 사이드바 오른쪽 영역이 초광폭 모니터에서 끝까지 늘어나지 않도록 가운데 정렬 + 최대폭.
+          4개 탭(홈/내 요청/Q&A/지도)에 공통 적용된다. */}
+      <div className="flex-1 overflow-hidden flex flex-col lg:w-full lg:max-w-[1100px] lg:mx-auto">
         {tab === "flags" && <FlagsTab flags={flags} clubs={clubs} />}
         {tab === "my" && <MyRequestsTab />}
         {tab === "qa" && <FaqTab />}
@@ -964,7 +1147,7 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
       </div>
 
       {/* 하단 탭 바 */}
-      <nav className="shrink-0 border-t border-border bg-background grid grid-cols-4">
+      <nav className="shrink-0 border-t border-border bg-background grid grid-cols-4 lg:hidden">
         {tabs.map(({ code, label, icon }) => (
           <button
             key={code}
@@ -978,6 +1161,7 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
           </button>
         ))}
       </nav>
+      </div>
     </div>
   );
 }
