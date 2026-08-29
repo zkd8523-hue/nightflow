@@ -5,9 +5,9 @@ import Link from "next/link";
 import { eventSlug } from "@/lib/events/slug";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mic2, Search, X, ExternalLink, ChevronRight, ThumbsUp, CalendarDays, Heart } from "lucide-react";
+import { Mic2, Search, X, ExternalLink, ChevronRight, ThumbsUp, CalendarDays, Heart, ChevronDown } from "lucide-react";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
-import { AREA_OPTIONS } from "@/lib/clubs/tags";
+import { EVENT_REGIONS, type EventRegion } from "@/lib/events/area";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 import { useLineupLikes } from "@/hooks/useLineupLikes";
@@ -40,6 +40,10 @@ export interface UndergroundEventRow {
   /** 클럽 원문 표기(미등록 장소 포함). 화면에 항상 이 이름을 쓴다 */
   venue_name: string;
   venue_area: string | null;
+  /** 공연 탭 전용 광역 지역(eventRegionOf) — 클럽 동네 단위(AREA_OPTIONS)와 달리
+   *  서울 구 단위를 "수도권"으로 묶고 해외까지 포괄한다. 지역 칩·필터·달력은
+   *  전부 이걸 쓰고, 카드에 보이는 텍스트는 원문(venue_area)을 그대로 쓴다. */
+  venue_region: EventRegion | null;
   /** 인스타 원본 게시물 — 클럽 미등록일 때의 유일한 출처 */
   source_url: string | null;
   performers: EventPerformer[];
@@ -50,6 +54,9 @@ export interface UndergroundEventRow {
   /** clubs.aliases — 검색 전용(화면 미노출) */
   club_aliases: string[];
 }
+
+/** 찜한 아티스트 섹션 접힘 상태 — 뷰어별 편의라 localStorage로 충분하다 */
+const FAV_SECTION_KEY = "events.favSectionOpen";
 
 function groupByDate(rows: UndergroundEventRow[]): Array<[string, UndergroundEventRow[]]> {
   const map = new Map<string, UndergroundEventRow[]>();
@@ -85,6 +92,31 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
   // 달력은 기본이 닫힘이다. 예정 공연이 10일치뿐이라 항상 펼쳐두면 빈 격자가
   // 목록을 화면 밖으로 밀어낸다(/lineups의 날짜 칩과 같은 토글 규칙).
   const [calOpen, setCalOpen] = useState(false);
+  // 찜한 아티스트 섹션 — 기본은 열림이다. 이 섹션은 본인이 찜을 해야만 나타나므로
+  // 접힌 채로 시작하면 방금 요청한 걸 숨기는 꼴이 된다.
+  // 접었다는 건 "지금은 전체를 보고 싶다"는 뜻이라 그 선택은 기억한다.
+  const [favOpen, setFavOpen] = useState(true);
+
+  // SSR HTML과 어긋나지 않도록 마운트 후에 읽는다(기존 localStorage 사용부와 같은 패턴).
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(FAV_SECTION_KEY) === "0") setFavOpen(false);
+    } catch {
+      // 사생활 보호 모드 등에서 접근 자체가 throw할 수 있다 — 기본값(열림)으로 둔다
+    }
+  }, []);
+
+  const toggleFavSection = () => {
+    setFavOpen((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(FAV_SECTION_KEY, next ? "1" : "0");
+      } catch {
+        // 저장 실패는 무시 — 이번 세션 동안만 유지된다
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -94,22 +126,26 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
   }, [area, router]);
 
   // 데이터에 실제로 있는 지역만 칩으로 — 눌러도 빈 화면이 되는 칩을 만들지 않는다
+  // 데이터에 실제로 있는 지역만 칩으로 — 눌러도 빈 화면이 되는 칩을 만들지 않는다.
+  // 클럽 동네 단위(AREA_OPTIONS)가 아니라 광역 지역(EVENT_REGIONS)을 쓴다 — 공연은
+  // "서울"·"인천"처럼 시 단위로도 찍히고 해외 도시까지 나와서 구 단위 목록으론 대부분이
+  // 걸러진다(실측: 예정 공연 13건 중 8건이 서울/인천이라 강남·이태원·부산만 칩에 남았었다).
   const availableAreas = useMemo(() => {
-    const present = new Set(rows.map((r) => r.venue_area).filter(Boolean) as string[]);
-    return AREA_OPTIONS.filter((a) => present.has(a));
+    const present = new Set(rows.map((r) => r.venue_region).filter(Boolean) as string[]);
+    return EVENT_REGIONS.filter((a) => present.has(a));
   }, [rows]);
 
   // 달력 점·건수 — 지역 칩은 반영하고 검색어는 반영하지 않는다. 타이핑할 때마다
   // 격자가 깜빡이면 달력이 목록의 곁다리처럼 보인다.
   const countsByDate = useMemo(() => {
-    const src = area ? rows.filter((r) => r.venue_area === area) : rows;
+    const src = area ? rows.filter((r) => r.venue_region === area) : rows;
     const m = new Map<string, number>();
     for (const r of src) m.set(r.event_date, (m.get(r.event_date) ?? 0) + 1);
     return m;
   }, [rows, area]);
 
   const groups = useMemo(() => {
-    let out = area ? rows.filter((r) => r.venue_area === area) : rows;
+    let out = area ? rows.filter((r) => r.venue_region === area) : rows;
     if (selectedDate) out = out.filter((r) => r.event_date === selectedDate);
     if (query.trim()) {
       // 클럽은 별칭까지 본다 — "제제"로 JEJE 공연이, "볼레로"로 Bolero 공연이 나와야 한다.
@@ -139,6 +175,16 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
         ] as [string, UndergroundEventRow[]]
     );
   }, [rows, area, query, selectedDate, isFavoritedArtist]);
+
+  // 찜한 아티스트가 나오는 공연 — 날짜 그룹 위에 따로 얹는다.
+  // 날짜 그룹 안에서만 위로 올리면 다음 달 공연은 한참 스크롤해야 보인다.
+  // 그룹에서 빼지는 않는다 — 섹션은 지름길이고, 아래 날짜순 목록이 정본이다.
+  const favoriteEvents = useMemo(() => {
+    const flat = groups.flatMap(([, list]) => list);
+    return flat
+      .filter((r) => r.performers.some((p) => isFavoritedArtist(p.id)))
+      .sort((a, b) => a.event_date.localeCompare(b.event_date));
+  }, [groups, isFavoritedArtist]);
 
   // 검색 실패 로깅용 — 지역 칩을 빼고 "검색어만" 적용한 결과 수.
   const queryOnlyMatchCount = useMemo(() => {
@@ -302,6 +348,35 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
           </div>
         ) : (
           <div className="space-y-5">
+            {favoriteEvents.length > 0 && (
+              <section className="space-y-2">
+                <button
+                  onClick={toggleFavSection}
+                  aria-expanded={favOpen}
+                  className="flex items-center gap-1.5 text-[15px] font-black text-foreground w-full"
+                >
+                  <Heart className="w-4 h-4 fill-red-500 text-red-500" aria-hidden="true" />
+                  찜한 아티스트
+                  <span className="text-[12px] font-normal text-muted-foreground">
+                    {favoriteEvents.length}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-muted-foreground transition-transform ${
+                      favOpen ? "" : "-rotate-90"
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+                {favOpen && (
+                  <div className="space-y-2">
+                    {favoriteEvents.map((r) => (
+                      <EventCard key={`fav-${r.id}`} row={r} like={getLike(r.id)} showDate />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
             {groups.map(([date, list]) => (
               <section key={date} className="space-y-2">
                 <DateHeader date={date} />
@@ -347,9 +422,12 @@ function DateHeader({ date }: { date: string }) {
 function EventCard({
   row,
   like,
+  showDate = false,
 }: {
   row: UndergroundEventRow;
   like: { count: number; likedByMe: boolean };
+  /** 날짜 그룹 밖(찜한 아티스트 섹션)에서는 카드가 며칠 공연인지 스스로 밝혀야 한다 */
+  showDate?: boolean;
 }) {
   // 부모(UndergroundEventList)에서 내려받지 않고 여기서 다시 읽는다 — Context라
   // 추가 요청이 없고, prop으로 함수를 내리면 카드마다 시그니처가 늘어난다.
@@ -421,6 +499,13 @@ function EventCard({
         )}
 
         <div className="min-w-0 flex-1">
+          {/* 날짜 그룹 밖에서는 위에 날짜 헤더가 없다 — 카드가 직접 밝힌다 */}
+          {showDate && (
+            <p className="text-[11px] font-bold text-amber-400 mb-0.5">
+              {formatLineupDate(row.event_date)}
+            </p>
+          )}
+
           {row.title && (
             <p className="text-sm font-bold text-foreground leading-snug pr-1">
               {row.title}

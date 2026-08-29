@@ -169,7 +169,13 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
         )
       : filtered;
 
-    if (favOnly) searched = searched.filter((r) => isFavorited(r.club_id));
+    // "찜한 것만 보기"는 찜한 클럽뿐 아니라 찜한 DJ가 뛰는 클럽도 잡는다 —
+    // 클럽 탭에서 이 버튼을 누르는 사람은 "내가 관심있는 것"을 걸러보려는 것이지
+    // 클럽만으로 좁힐 이유가 없다(정렬에서도 DJ 기준을 2순위로 쓰는 것과 같은 원칙).
+    if (favOnly)
+      searched = searched.filter(
+        (r) => isFavorited(r.club_id) || r.sets.some((s) => s.dj && isFavoritedDj(s.dj.id))
+      );
 
     return groupByDate(searched).map(([date, list]) => [
       date,
@@ -178,10 +184,15 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
       [...list].sort((a, b) => {
         const fav = Number(isFavorited(b.club_id)) - Number(isFavorited(a.club_id));
         if (fav !== 0) return fav;
+        // 찜한 클럽 다음은 "찜한 DJ가 오늘 트는 클럽". 클럽을 안 찜했어도
+        // 따라다니는 DJ가 있으면 그 클럽을 먼저 봐야 한다.
+        const hasFavDj = (r: LineupClubRow) => r.sets.some((x) => x.dj && isFavoritedDj(x.dj.id));
+        const dj = Number(hasFavDj(b)) - Number(hasFavDj(a));
+        if (dj !== 0) return dj;
         return a.club_name.localeCompare(b.club_name);
       }),
     ]) as Array<[string, LineupClubRow[]]>;
-  }, [filtered, isFavorited, query, favOnly]);
+  }, [filtered, isFavorited, isFavoritedDj, query, favOnly]);
 
   // 검색 실패 로깅용 — 지역·날짜·찜 칩을 빼고 "검색어만" 적용한 결과 수.
   // 탭별로 세지 않고 클럽·DJ 양쪽을 합산한다: DJ 탭에서 클럽명을 쳐서 0건인 건
@@ -538,11 +549,13 @@ function ClubLineupRow({
   like: { count: number; likedByMe: boolean };
 }) {
   const { isFavorited, toggleFavorite } = useFavoritesContext();
+  const { isFavoritedDj } = useDjFavoritesContext();
   const favorited = isFavorited(row.club_id);
-  const preview = row.sets
-    .map((s) => s.dj?.display_name)
-    .filter(Boolean)
-    .join(" · ");
+  // 찜한 DJ는 이 클럽이 왜 위로 올라왔는지를 설명하는 근거다 — 하트 + 다른 색으로
+  // 표시해 나머지 이름과 구분한다(문자열 join이었던 걸 노드 배열로 바꾼다).
+  const previewDjs = row.sets.map((s) => s.dj).filter(Boolean) as NonNullable<
+    LineupClubRow["sets"][number]["dj"]
+  >[];
 
   return (
     <Link
@@ -590,8 +603,24 @@ function ClubLineupRow({
             <span className="text-[11px] text-muted-foreground flex-shrink-0">{row.club_area}</span>
           )}
         </div>
-        {preview && (
-          <p className="text-[11px] font-mono text-[#39ff6a]/80 truncate mt-0.5">{preview}</p>
+        {previewDjs.length > 0 && (
+          <p className="text-[11px] font-mono text-[#39ff6a]/80 truncate mt-0.5">
+            {previewDjs.map((dj, i) => {
+              const fav = isFavoritedDj(dj.id);
+              return (
+                <span key={dj.id} className={fav ? "text-red-400 font-bold" : ""}>
+                  {i > 0 && <span className="text-[#39ff6a]/50"> · </span>}
+                  {fav && (
+                    <Heart
+                      className="inline w-2.5 h-2.5 mr-0.5 -mt-0.5 fill-red-400 text-red-400"
+                      aria-label="찜한 DJ"
+                    />
+                  )}
+                  {dj.display_name}
+                </span>
+              );
+            })}
+          </p>
         )}
       </div>
 
