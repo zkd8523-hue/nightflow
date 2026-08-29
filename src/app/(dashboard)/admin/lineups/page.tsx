@@ -47,10 +47,23 @@ export default async function AdminLineupsPage() {
   ]);
 
   // Supabase JS는 1:1 조인도 배열 타입으로 추론한다 — 단일 객체로 정리
-  const normalizedDrafts = (drafts ?? []).map((d) => ({
-    ...d,
-    clubs: Array.isArray(d.clubs) ? d.clubs[0] ?? null : d.clubs,
-  }));
+  //
+  // normalized 가 비어 있는 draft 는 큐에서 뺀다(2026-08-30 실측): 수집 실행이
+  // 파싱 후 정규화 전에 끊기면 pending 인 채로 남는데, 검토 화면은 normalized 를
+  // 읽으므로 열어도 빈 폼만 뜬다("알맹이 없는 검토 대기"). 실제로 40건이 그렇게
+  // 쌓여 있었다. 이런 행은 수집기의 6시간 회수 로직이 걷어가 재수집되므로,
+  // 사람이 손댈 게 없는 동안 목록에서만 감춘다.
+  const hasSets = (n: unknown) => {
+    const rows = (n as { sets?: unknown[]; rows?: unknown[] } | null)?.sets
+      ?? (n as { rows?: unknown[] } | null)?.rows;
+    return Array.isArray(rows) && rows.length > 0;
+  };
+  const normalizedDrafts = (drafts ?? [])
+    .filter((d) => hasSets(d.normalized))
+    .map((d) => ({
+      ...d,
+      clubs: Array.isArray(d.clubs) ? d.clubs[0] ?? null : d.clubs,
+    }));
 
   const normalizedReports = (reports ?? []).map((r) => {
     const u = Array.isArray(r.users) ? r.users[0] ?? null : r.users;

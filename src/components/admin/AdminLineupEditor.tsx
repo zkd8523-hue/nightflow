@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,15 +111,35 @@ export function AdminLineupEditor({
   const [drafts, setDrafts] = useState<DraftListItem[]>(initialDrafts);
   const [activeDraft, setActiveDraft] = useState<DraftListItem | null>(null);
 
+  // 상세는 라우트가 아니라 상태로 열린다 — 그대로 두면 브라우저 뒤로가기가
+  // /admin/lineups 를 통째로 벗어나 /admin 으로 빠진다(실측 피드백).
+  // 열 때 히스토리 항목을 하나 쌓고, popstate 로 목록에 되돌린다.
+  const openDraft = useCallback((d: DraftListItem) => {
+    setActiveDraft(d);
+    window.history.pushState({ lineupDraft: d.id }, "");
+  }, []);
+
+  const closeDraft = useCallback(() => {
+    setActiveDraft(null);
+    // 우리가 쌓은 항목이 아직 위에 있으면 걷어낸다(버튼으로 닫은 경우).
+    if (window.history.state?.lineupDraft) window.history.back();
+  }, []);
+
+  useEffect(() => {
+    const onPop = () => setActiveDraft(null);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   if (activeDraft) {
     return (
       <DraftEditView
         draft={activeDraft}
         clubs={clubs}
-        onBack={() => setActiveDraft(null)}
+        onBack={closeDraft}
         onPublished={(draftId) => {
           setDrafts((prev) => prev.filter((d) => d.id !== draftId));
-          setActiveDraft(null);
+          closeDraft();
         }}
       />
     );
@@ -129,10 +149,10 @@ export function AdminLineupEditor({
     <QueueListView
       clubs={clubs}
       drafts={drafts}
-      onOpenDraft={setActiveDraft}
+      onOpenDraft={openDraft}
       onNewDraft={(draft) => {
         setDrafts((prev) => [draft, ...prev]);
-        setActiveDraft(draft);
+        openDraft(draft);
       }}
     />
   );
@@ -368,8 +388,6 @@ function QueueListView({
 
         {/* 업로드 */}
         <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
-          <label className="text-xs text-muted-foreground block">클럽</label>
-
           {selectedClub && !clubSearchOpen ? (
             // 선택 완료 상태 — 다시 누르면 검색으로 돌아간다
             <button
