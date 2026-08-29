@@ -209,7 +209,9 @@ for (const [i, r] of targets.entries()) {
       kept++;
     } else {
       // 공연 탭에서 내린다. 행은 남겨야 다음 수집이 같은 게시물을 또 안 잡는다
-      await sb.from("club_events").update({ status: "rejected" }).eq("id", r.id);
+      await sb.from("club_events")
+        .update({ status: "rejected", status_reason: "reclassified_dj" })
+        .eq("id", r.id);
       demoted++;
     }
   } else {

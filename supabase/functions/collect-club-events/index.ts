@@ -49,10 +49,41 @@ const APIFY_API_TOKEN = Deno.env.get("APIFY_API_TOKEN")!;
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 
 const CURATION_ACCOUNT = "hiphopplayacalendar";
-// Apify Starter($29/월 선불 크레딧, 이월 없음)로 매일 수집한다. 클럽 ~100곳 ×
-// 깊이 3 × 매일 ≈ 월 $22 — 한도 안이고, 안 쓰면 소멸하는 크레딧이라 낭비가 아니다.
-// 중복 재수집은 LLM을 안 태우므로(아래 draft-claim/knownPosts 스킵) 추가 비용이 없다.
-const POSTS_PER_CLUB = 3;
+// Apify Starter($29/월 선불 크레딧, 이월 없음)로 매일 수집한다.
+//
+// ⚠️ 이 값은 "상한"이지 "청구 건수"가 아니다(2026-08-30 실측).
+// 아래 onlyPostsNewerThan이 액터 쪽에서 먼저 적용되므로, 그 기간에 올라온 글이
+// 없으면 깊이를 올려도 결과가 늘지 않는다. 5개 계정으로 깊이 3·5·8을 돌린 결과
+// 셋 다 청구 8건으로 동일했다. 즉 실제 비용은 클럽들의 게시 빈도가 정한다.
+//
+// 그래서 깊이는 넉넉히 잡는다 — 게시가 잦은 클럽을 놓치지 않기 위해서다.
+// 실측: Shape가 사흘 새 3건, Box Seoul이 주 2~3회 타임테이블을 올린다.
+// 깊이 3이면 이런 클럽에서 최신 글이 잘려나간다.
+//
+// ⚠️ skipPinnedPosts는 이 액터에서 실제로 동작하지 않는다(true/false 결과가
+//    동일함을 실측). 고정글은 대부분 오래된 글이라 날짜 필터가 대신 걸러준다 —
+//    HIVE는 고정글 3개(📌)가 맨 위에 있어 깊이 3으로는 진짜 라인업이 안 보였는데,
+//    날짜 필터를 넣으니 8/27 주말 라인업이 정상적으로 잡혔다.
+const POSTS_PER_CLUB = 8;
+
+// 게시된 지 이보다 오래된 글은 수집·파싱하지 않는다.
+//
+// 왜 3일인가: 수집기는 매일 돈다. 어제·오늘 글만 보면 충분하지만, 실행이 하루
+// 밀리면(장애·배포·Apify 오류) 그 사이 게시물을 영영 놓친다 — ig_permalink가
+// UNIQUE라 한 번 건너뛴 글은 다시 수집되지 않는다. 하루치 여유를 둔 값이다.
+//
+// 더 늘려도 얻는 게 거의 없다(실측 2026-08-30): 8/27~29 수집에서 3일 이상 된
+// 게시물 6건 중 5건이 not_timetable이었다. 반대로 이 값이 곧 Apify 청구 건수를
+// 정한다 — 아래 POSTS_PER_CLUB이 아니라 이 기간이 실제 비용을 좌우한다.
+const CLUB_POST_MAX_AGE_DAYS = 3;
+
+/** 게시물이 너무 오래됐나. timestamp가 없으면(=알 수 없음) 통과시킨다. */
+function isStalePost(timestamp: string | null | undefined): boolean {
+  if (!timestamp) return false;
+  const posted = new Date(timestamp);
+  if (Number.isNaN(posted.getTime())) return false;
+  return (Date.now() - posted.getTime()) / 86_400_000 > CLUB_POST_MAX_AGE_DAYS;
+}
 // waitUntil 백그라운드 실행이라 HTTP 150초 제한과 무관. 다만 무한정 돌 수는 없으므로
 // 상한을 둔다. 미처리 게시물은 아직 draft/이벤트가 안 만들어졌으므로 다음 실행에서
 // 자동으로 다시 잡힌다.
@@ -130,19 +161,26 @@ function normalizeClubName(raw: string): string {
   return s;
 }
 
-// club_events 자동 승인/플래그 판정
-function decideEventStatus(ev: { event_date: string | null; lineup: string[]; venue_area: string | null }): string {
-  if (!ev.event_date) return "flagged";
+// club_events 자동 승인/플래그 판정.
+// 사유를 함께 돌려준다 — 안 남기면 나중에 "왜 묻혔는지"를 캡션·코드 대조로
+// 역추적해야 한다(Migration 609 참조).
+function decideEventStatus(ev: {
+  event_date: string | null;
+  lineup: string[];
+  venue_area: string | null;
+}): { status: string; reason: string | null } {
+  const flag = (reason: string) => ({ status: "flagged", reason });
+  if (!ev.event_date) return flag("no_date");
   const d = new Date(ev.event_date);
-  if (isNaN(d.getTime())) return "flagged";
+  if (isNaN(d.getTime())) return flag("no_date");
   const now = new Date();
   const sixMonths = new Date(now.getTime() + 183 * 24 * 3600 * 1000);
-  if (d < new Date(now.getTime() - 24 * 3600 * 1000)) return "flagged"; // 어제 이전
-  if (d > sixMonths) return "flagged";
-  if (ev.lineup.length === 0) return "flagged";
+  if (d < new Date(now.getTime() - 24 * 3600 * 1000)) return flag("past");
+  if (d > sixMonths) return flag("too_far");
+  if (ev.lineup.length === 0) return flag("no_lineup");
   const area = (ev.venue_area ?? "").toUpperCase();
-  if (OVERSEAS.some((k) => area.includes(k.toUpperCase()))) return "flagged";
-  return "approved";
+  if (OVERSEAS.some((k) => area.includes(k.toUpperCase()))) return flag("overseas");
+  return { status: "approved", reason: null };
 }
 
 // club_lineups 무인 자동 게시 여부 — 판독 품질이 약하면 사람이 보게 한다.
@@ -215,6 +253,34 @@ function countSets(raw: RawExtraction | null): number {
 }
 
 /**
+ * 캡션만으로는 부족해 포스터를 더 봐야 하는가.
+ *
+ * 왜 필요한가(2026-08-30 실측): 클럽은 캡션에 DJ 명단만 적고 날짜·시간표는
+ * 포스터에만 넣는 일이 흔하다. 셋을 뽑았다고 Vision을 건너뛰면 둘 다 영영 못 읽는다.
+ *
+ *   날짜 누락 — 라인업은 뽑혔는데 날짜가 없어 통째로 버려진 게시물 19건.
+ *              ADD("FRI 08.28 / SAT 08.29"), Shape(세로로 회전된 "28"),
+ *              Box Seoul("8.28 FRIDAY"). resolveLineupDate가 null을 반환해
+ *              저장 자체가 안 된다.
+ *   시간 누락 — 셋 있는 이벤트 130건 중 81건이 시간 0개, lineup_sets 781건 중
+ *              482건이 start_min null. Box Seoul·Times·LUKA·RING 전부 포스터에
+ *              타임테이블이 있는데 캡션엔 이름만 있다. 저장은 되지만 "몇 시에
+ *              누가 트는지"가 사라져 DJ 라인업 탭의 핵심 정보가 빈다.
+ */
+function needsPosterPass(raw: RawExtraction | null): boolean {
+  if (!raw) return false;
+  const events = raw.events ?? [];
+  if (events.length === 0) return false;
+  return events.some((ev) => {
+    if (!ev.event_date) return true;
+    const sets = ev.sets ?? [];
+    if (sets.length === 0) return false;
+    // 셋이 있는데 시작 시각이 하나도 없으면 타임테이블이 포스터에 있을 수 있다.
+    return !sets.some((st) => st.start_hhmm && st.start_hhmm !== "<UNKNOWN>");
+  });
+}
+
+/**
  * 게시물 하나 → RawExtraction. 캡션만으로 안 되면 포스터도 같이 본다.
  *
  * "부족하다"의 정의 = 홍보물도 아닌데 출연자를 한 명도 못 뽑았다. 정규식으로
@@ -231,7 +297,9 @@ async function extractLineup(
   const stage1 = await callExtract(LINEUP_TEXT_MODEL, caption, null, sourceHint);
   if (!stage1) return null;
   if (stage1.is_promo_only) return stage1;
-  if (countSets(stage1) > 0) return stage1;
+  // 셋을 뽑았어도 날짜나 시간표가 비면 Vision으로 넘어간다(needsPosterPass 참조).
+  // 캡션에 이름만 적고 날짜·타임테이블은 포스터에 넣는 클럽이 흔하다.
+  if (countSets(stage1) > 0 && !needsPosterPass(stage1)) return stage1;
 
   // 캡션만으론 안 됨 — 포스터가 있으면 Vision으로 한 번 더. 미디어 종류 체크는
   // 여기서만 한다(캡션 단계는 Reel이든 뭐든 항상 시도한다 — 동영상이라고 캡션까지
@@ -239,10 +307,60 @@ async function extractLineup(
   if (!passesPreVisionGate(mediaType, mediaUrl, caption)) return stage1;
   try {
     const stage2 = await callExtract(LINEUP_VISION_MODEL, caption, mediaUrl, sourceHint);
-    return stage2 ?? stage1;
+    if (!stage2) return stage1;
+    // 캡션이 이미 셋을 뽑았다면 이름은 그쪽이 정본이다 — 캡션은 이름과 핸들이
+    // 텍스트로 정확히 적혀 있고, Vision은 포스터 디자인(회전·겹침·흐림)에 따라
+    // 일부만 읽거나 오독한다(실측: "RAW BLOOM"→"BAM BLOOM", "MUSE"→"MUSC").
+    // 이 경우 Vision은 빠진 날짜·시간을 채우는 데만 쓴다.
+    if (countSets(stage1) > 0 && countSets(stage2) < countSets(stage1)) {
+      return mergeFromVision(stage1, stage2);
+    }
+    return stage2;
   } catch {
     return stage1; // Vision 실패해도 1단계 결과(보통 빈 값)는 살린다
   }
+}
+
+/**
+ * 캡션(stage1)의 라인업 이름은 그대로 두고, 비어 있는 날짜·시간만 Vision(stage2)에서 채운다.
+ *
+ * 날짜: 이벤트 순서가 양쪽에서 같다는 보장이 없어 1:1로 맞추지 않는다. Vision이
+ *       읽은 날짜를 순서대로 꺼내 날짜 없는 이벤트에 차례로 넣는다. 대부분의
+ *       게시물은 이벤트가 1~2개(하루치 또는 금·토 이틀치)라 이 정도로 충분하다.
+ *
+ * 시간: 순서가 아니라 **이름으로 맞춘다**. 포스터 타임테이블과 캡션 명단은 순서가
+ *       달라질 수 있지만 같은 사람은 같은 이름으로 적힌다. 이름이 안 맞으면
+ *       시간을 넣지 않는다 — 엉뚱한 DJ에 시간이 붙는 것보다 비는 게 낫다.
+ */
+function mergeFromVision(stage1: RawExtraction, stage2: RawExtraction): RawExtraction {
+  const visionDates = (stage2.events ?? []).map((ev) => ev.event_date).filter(Boolean) as string[];
+
+  // 이름 → 시간. 여러 이벤트에 같은 이름이 나오면(금·토 양일 출연) 첫 것만 쓴다.
+  const key = (n: string) => normalizeDjName(n);
+  const timeByName = new Map<string, { start: string | null; end: string | null }>();
+  for (const ev of stage2.events ?? []) {
+    for (const st of ev.sets ?? []) {
+      const k = key(st.dj_name ?? "");
+      if (!k || timeByName.has(k)) continue;
+      if (!st.start_hhmm || st.start_hhmm === "<UNKNOWN>") continue;
+      timeByName.set(k, { start: st.start_hhmm, end: st.end_hhmm ?? null });
+    }
+  }
+
+  let i = 0;
+  return {
+    ...stage1,
+    events: (stage1.events ?? []).map((ev) => ({
+      ...ev,
+      event_date: ev.event_date ?? visionDates[i++] ?? null,
+      sets: (ev.sets ?? []).map((st) => {
+        const hasTime = st.start_hhmm && st.start_hhmm !== "<UNKNOWN>";
+        if (hasTime) return st;
+        const t = timeByName.get(key(st.dj_name ?? ""));
+        return t ? { ...st, start_hhmm: t.start, end_hhmm: st.end_hhmm ?? t.end } : st;
+      }),
+    })),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -251,7 +369,6 @@ async function extractLineup(
 interface ClubRef {
   id: string | null;
   name: string;
-  hipHop: boolean;
 }
 
 function matchClub(
@@ -395,7 +512,6 @@ async function saveArtistRows(
   event: NormalizedExtractionEvent,
   eventDate: string | null,
   artistRows: NormalizedExtractionSetRow[],
-  isHipHopVenue: boolean,
   postId: string,
   caption: string,
   ctx: SaveCtx
@@ -404,10 +520,26 @@ async function saveArtistRows(
   const { supabase, results } = ctx;
 
   const lineup = artistRows.map((r) => r.raw_name);
-  let status = decideEventStatus({ event_date: eventDate, lineup, venue_area: event.venueArea });
-  // 힙합 큐레이션·힙합 클럽이 아닌데 가수(artist)가 나오면 오분류일 수 있다 —
-  // 데이터는 저장하되 사람이 보게 강제로 내린다.
-  if (!isCuration && !isHipHopVenue) status = "flagged";
+  const decided = decideEventStatus({ event_date: eventDate, lineup, venue_area: event.venueArea });
+  let status = decided.status;
+  let statusReason = decided.reason;
+  // 등록되지 않은 장소에서 가수(artist)가 나오면 오분류일 수 있다 —
+  // 데이터는 저장하되 사람이 보게 내린다.
+  //
+  // 예전 기준은 isHipHopVenue("힙합플레이야가 다룬 적 있는 클럽인가")였는데
+  // 순환 참조였다(2026-08-30 실측): 그 계정이 안 다룬 클럽은 공식 계정이 직접
+  // 올려도 전부 flagged로 숨었다. 그렇게 묻힌 31건이 **전부 진짜 공연**이었고
+  // 전부 우리가 등록·승인한 클럽이었다 — NAFLA 프리리스닝(Grain Haus),
+  // Colde·Khakii 릴리즈 파티, PALOALTO @CLUB LOOPY, BE'O @Round Lounge.
+  // 새 클럽을 등록해도 힙합플레이야가 다뤄주기 전까지는 영영 안 열리는 구조였다.
+  //
+  // 우리가 승인해 등록한 클럽(clubId != null)이면 그 자체가 사람의 판단이므로
+  // 통과시키고, 캡션에서 이름만 읽힌 미등록 장소만 사람이 확인하게 남긴다
+  // (국일관 성인나이트류가 여기서 걸린다).
+  if (!isCuration && !clubId) {
+    status = "flagged";
+    statusReason = statusReason ?? "unregistered_venue";
+  }
 
   // 사람이 이미 판단한 행은 status 를 건드리지 않는다.
   //
@@ -446,7 +578,10 @@ async function saveArtistRows(
     ticket_url: event.ticketUrl,
   };
   // status 는 사람 판단이 없을 때만 싣는다(빼면 upsert 가 기존 값을 보존한다).
-  if (!humanDecided) payload.status = status;
+  if (!humanDecided) {
+    payload.status = status;
+    payload.status_reason = statusReason;
+  }
 
   let { data: savedEvent, error: insErr } = await supabase
     .from("club_events")
@@ -547,6 +682,14 @@ async function processClubAccountPost(post: any, sourceClub: ClubRef & { id: str
   if (draftErr || !draft) return;
   results.lineup_drafts_created++;
 
+  // 오래된 게시물은 파싱하지 않는다(위 CLUB_POST_MAX_AGE_DAYS 참조).
+  // draft는 이미 만들었으므로 permalink가 선점돼 다음 실행에서 또 걸리지 않는다.
+  if (isStalePost(post.timestamp)) {
+    results.posts_skipped_stale++;
+    await supabase.from("lineup_drafts").update({ status: "stale" }).eq("id", draft.id);
+    return;
+  }
+
   if (!passesPromoPrefilter(caption)) {
     results.posts_skipped_prefilter++;
     await supabase.from("lineup_drafts").update({ status: "not_timetable" }).eq("id", draft.id);
@@ -618,7 +761,7 @@ async function processClubAccountPost(post: any, sourceClub: ClubRef & { id: str
     if (artistRows.length > 0) {
       const clubNameRaw = event.venueName || sourceClub.name;
       await saveArtistRows(
-        post, false, post.ownerUsername, sourceClub.id, clubNameRaw, event, eventDate, artistRows, sourceClub.hipHop,
+        post, false, post.ownerUsername, sourceClub.id, clubNameRaw, event, eventDate, artistRows,
         String(post.id ?? post.shortCode ?? permalink), caption, ctx
       );
       anySaved = true;
@@ -710,7 +853,7 @@ async function processCurationPost(post: any, ctx: SaveCtx, venueHint?: string):
       const clubNameRaw = event.venueName || "(미상)";
       const venueClub = clubId ? ctx.handleToClub.get((event.venueInstagram ?? "").toLowerCase()) : null;
       await saveArtistRows(
-        post, true, CURATION_ACCOUNT, clubId, clubNameRaw, event, eventDate, artistRows, venueClub?.hipHop ?? true,
+        post, true, CURATION_ACCOUNT, clubId, clubNameRaw, event, eventDate, artistRows,
         postId, caption, ctx
       );
     }
@@ -732,6 +875,14 @@ async function runApify(urls: string[]): Promise<any[]> {
         directUrls: urls,
         resultsType: "posts",
         resultsLimit: POSTS_PER_CLUB,
+        // 고정글 제외 요청. ⚠️ 실측상 이 액터에서는 동작하지 않는다(true/false
+        // 결과 동일). 액터가 고치면 바로 효과를 보도록 남겨둔다 — 실제로 고정글을
+        // 걸러주는 건 아래 onlyPostsNewerThan이다.
+        skipPinnedPosts: true,
+        // 오래된 글은 Apify 단계에서 잘라 결과 건수 자체를 줄인다(= 과금 감소).
+        // 액터는 고정글을 먼저 걷어낸 뒤 이 날짜 필터를 적용하므로, 옛 고정글이
+        // 최근 결과에 섞이지 않는다.
+        onlyPostsNewerThan: `${CLUB_POST_MAX_AGE_DAYS} days`,
       }),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     }
@@ -761,6 +912,108 @@ async function runApify(urls: string[]): Promise<any[]> {
   return await itemsRes.json();
 }
 
+// ---------------------------------------------------------------------------
+// 18+ 제한 계정 보조 수집
+// ---------------------------------------------------------------------------
+/**
+ * 일부 클럽 계정은 인스타 연령 제한(18+/21+)이 걸려 있어 기본 액터가
+ * "Restricted profile" 에러만 돌려준다(실측 2026-08-30: BELPOS·OUTPUT·
+ * Veil Social Club). 로그인 없이는 볼 수 없는 계정이라 apify~instagram-scraper
+ * 로는 우회가 불가능했고, 다른 무료 액터(instagram-post-scraper)도 같은 에러였다.
+ *
+ * intropix 액터는 이 계정들을 읽어낸다(3곳 모두 10건씩 정상 수집 확인).
+ * 비용은 pay-per-event 로 결과당 $0.0019 + 프로필당 $0.002 + 실행당 $0.005 —
+ * 3곳 매일 조회해도 월 $0.4 수준이다.
+ *
+ * ⚠️ 기본 액터와 필드명이 완전히 다르다. 아래에서 기본 액터 형식으로 변환해
+ *    돌려주므로 호출부는 두 액터를 구분할 필요가 없다.
+ * ⚠️ maxPosts 는 계정별이 아니라 "전체 합산" 상한이다. 3곳에 3을 주면 첫 계정이
+ *    다 써버려 나머지가 0건이 된다(실측). 계정 수를 곱해서 넘긴다.
+ */
+const RESTRICTED_HANDLES = ["belpos_official", "outputbusan", "veil_social_club"];
+
+async function runApifyRestricted(handles: string[]): Promise<any[]> {
+  if (handles.length === 0) return [];
+  const FETCH_TIMEOUT_MS = 30_000;
+  const since = new Date(Date.now() - CLUB_POST_MAX_AGE_DAYS * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+
+  const startRes = await fetch(
+    `https://api.apify.com/v2/acts/intropix~instagram-posts-reels-scraper/runs?token=${APIFY_API_TOKEN}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        usernames: handles,
+        maxPosts: POSTS_PER_CLUB * handles.length, // 전체 합산 상한이다
+        sinceDate: since,
+      }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    }
+  );
+  if (!startRes.ok) {
+    console.error(`⚠️ 제한계정 액터 시작 실패 HTTP ${startRes.status}`);
+    return [];
+  }
+  const run = (await startRes.json()).data;
+  console.log(`🔒 제한계정 run 시작: ${run.id} (${handles.length}곳, since=${since})`);
+
+  const deadline = Date.now() + APIFY_POLL_MAX_MS;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, APIFY_POLL_INTERVAL_MS));
+    const st = await fetch(`https://api.apify.com/v2/actor-runs/${run.id}?token=${APIFY_API_TOKEN}`, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!st.ok) continue;
+    const status = (await st.json()).data.status;
+    if (status === "SUCCEEDED") break;
+    if (["FAILED", "ABORTED", "TIMED-OUT"].includes(status)) {
+      console.error(`⚠️ 제한계정 run ${status}`);
+      return [];
+    }
+  }
+
+  const itemsRes = await fetch(
+    `https://api.apify.com/v2/actor-runs/${run.id}/dataset/items?token=${APIFY_API_TOKEN}`,
+    { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
+  );
+  if (!itemsRes.ok) {
+    console.error(`⚠️ 제한계정 데이터셋 조회 실패 HTTP ${itemsRes.status}`);
+    return [];
+  }
+  const raw: any[] = await itemsRes.json();
+
+  // 기본 액터 형식으로 변환 — 호출부가 두 액터를 구분하지 않게 한다.
+  return raw
+    .filter((p) => p && !p.error && p.shortcode)
+    .map((p) => ({
+      id: p.post_pk ?? p.shortcode,
+      shortCode: p.shortcode,
+      url: p.permalink ?? `https://www.instagram.com/p/${p.shortcode}/`,
+      // taken_at 은 유닉스 초 또는 ISO 문자열로 온다 — 둘 다 받는다.
+      timestamp:
+        typeof p.taken_at === "number"
+          ? new Date(p.taken_at * 1000).toISOString()
+          : (p.taken_at ?? null),
+      // post_type: "image" | "video" | "carousel" → 기본 액터 표기로
+      type:
+        String(p.post_type ?? "").toLowerCase() === "video"
+          ? "Video"
+          : String(p.post_type ?? "").toLowerCase() === "carousel"
+            ? "Sidecar"
+            : "Image",
+      // media[0].media_url 이 실제 필드명이다(실측). carousel 이면 첫 장이
+      // 포스터인 경우가 대부분이고, video 는 이 URL이 썸네일이라 Vision 이 읽는다.
+      displayUrl: Array.isArray(p.media)
+        ? (p.media[0]?.media_url ?? p.media[0]?.thumbnail_url ?? p.media[0]?.url ?? null)
+        : null,
+      ownerUsername: p.username ?? null,
+      caption: p.caption ?? "",
+      inputUrl: p.username ? `https://www.instagram.com/${p.username}/` : null,
+    }));
+}
+
 // 실제 수집 작업. HTTP 응답과 분리해 EdgeRuntime.waitUntil로 백그라운드 실행한다.
 async function runCollection() {
   const startedAt = Date.now();
@@ -769,6 +1022,7 @@ async function runCollection() {
     posts_seen: 0,
     posts_new: 0,
     posts_skipped_prefilter: 0,
+    posts_skipped_stale: 0,
     events_approved: 0,
     events_flagged: 0,
     events_dj_only: 0,
@@ -837,25 +1091,13 @@ async function runCollection() {
       .neq("instagram_handle", "");
     if (regErr) throw regErr;
 
-    // 힙합 씬 클럽 판별 — 힙합플레이야 캘린더가 다룬 적 있는 클럽. artist 저장 시
-    // "이 클럽에서 가수 공연이 나오는 게 정상인가"의 판단 근거로 쓴다(비힙합
-    // 클럽에서 artist가 나오면 오분류 의심 → flagged로 사람이 보게 한다).
-    const { data: hipHopRows } = await supabase
-      .from("club_events")
-      .select("club_id, club_name_raw")
-      .eq("source_account", CURATION_ACCOUNT);
-    const hipHopClubIds = new Set((hipHopRows ?? []).map((r: any) => r.club_id).filter(Boolean));
-    const hipHopNames = new Set((hipHopRows ?? []).map((r: any) => r.club_name_raw));
-    const isHipHop = (id: string | null, name: string) =>
-      (id !== null && hipHopClubIds.has(id)) || hipHopNames.has(name);
-
     const handleToClub = new Map<string, ClubRef>();
     const urls = [`https://www.instagram.com/${CURATION_ACCOUNT}/`];
 
     for (const c of clubs ?? []) {
       const handle = (c.instagram ?? "").trim().replace(/^@/, "");
       if (!handle) continue;
-      handleToClub.set(handle.toLowerCase(), { id: c.id, name: c.name, hipHop: isHipHop(c.id, c.name) });
+      handleToClub.set(handle.toLowerCase(), { id: c.id, name: c.name });
     }
     for (const r of registryHandles ?? []) {
       const handle = (r.instagram_handle ?? "").trim().replace(/^@/, "");
@@ -863,13 +1105,11 @@ async function runCollection() {
       handleToClub.set(handle.toLowerCase(), {
         id: r.matched_club_id,
         name: r.name_raw,
-        hipHop: isHipHop(r.matched_club_id, r.name_raw),
       });
     }
     for (const handle of handleToClub.keys()) urls.push(`https://www.instagram.com/${handle}/`);
     results.accounts = urls.length;
-    const hipHopCount = [...handleToClub.values()].filter((v) => v.hipHop).length;
-    console.log(`🎯 감시 대상: 큐레이션 1 + 클럽 ${urls.length - 1}곳 (힙합 ${hipHopCount}곳)`);
+    console.log(`🎯 감시 대상: 큐레이션 1 + 클럽 ${urls.length - 1}곳`);
 
     // 클럽 자기 핸들 집합 — DJ/아티스트 인스타를 채울 때 클럽 계정으로 오연결되는 걸 막는다
     const clubHandleSet = new Set(handleToClub.keys());
@@ -893,8 +1133,28 @@ async function runCollection() {
     const { data: existingPosts } = await supabase.from("club_events").select("source_post_id");
     const knownPosts = new Set((existingPosts ?? []).map((r: any) => r.source_post_id));
 
-    // 2) Apify 수집
-    const rawItems = await runApify(urls);
+    // 2) Apify 수집 — 기본 액터 + 18+ 제한 계정 보조 액터
+    //
+    // 제한 계정은 기본 액터가 "Restricted profile" 에러만 돌려주므로 URL 목록에서
+    // 빼고(넣어봐야 에러만 받고 그것도 과금된다) 보조 액터로 따로 가져온다.
+    const restricted = RESTRICTED_HANDLES.filter((h) => handleToClub.has(h));
+    const mainUrls = urls.filter((u) => {
+      const m = u.match(/instagram\.com\/([^/?#]+)/i);
+      return !(m && restricted.includes(m[1].toLowerCase()));
+    });
+
+    const [mainItems, restrictedItems] = await Promise.all([
+      runApify(mainUrls),
+      // 보조 액터가 죽어도 전체 수집은 계속되어야 한다.
+      runApifyRestricted(restricted).catch((e) => {
+        console.error(`⚠️ 제한계정 수집 실패: ${String(e).slice(0, 150)}`);
+        return [] as any[];
+      }),
+    ]);
+    if (restrictedItems.length > 0) {
+      console.log(`🔒 제한계정에서 ${restrictedItems.length}건 수집`);
+    }
+    const rawItems = [...mainItems, ...restrictedItems];
 
     // 계정별 결과 집계 — 실행 합계로는 절대 안 보이는 것들을 여기서 남긴다.
     // (그루브가 왜 영영 안 들어오는지 같은 건 "요청한 계정 vs 받은 글의 주인"을
@@ -945,8 +1205,14 @@ async function runCollection() {
     for (const item of rawItems) {
       const req = requestedOf(item);
       if (item.error) {
-        // Restricted profile / not_found 등 — 이 계정은 자동 수집 자체가 불가능하다
-        if (req) { const s = statFor(req); s.errorMsg = String(item.error).slice(0, 300); }
+        // "no_items"는 에러가 아니다 — onlyPostsNewerThan 범위 안에 새 글이
+        // 없었을 뿐이다(액터가 빈 결과에도 이 코드를 붙여 돌려준다). 이걸
+        // errorMsg로 남기면 멀쩡한 클럽이 "수집 불가"로 보인다.
+        // 그 외(Restricted profile / not_found 등)는 진짜로 자동 수집이 안 되는 계정.
+        if (req && String(item.error) !== "no_items") {
+          const s = statFor(req);
+          s.errorMsg = String(item.error).slice(0, 300);
+        }
         continue;
       }
       const owner = String(item.ownerUsername ?? "").toLowerCase();

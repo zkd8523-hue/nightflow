@@ -213,9 +213,16 @@ export function canAutoPublish(result: ConfidenceResult, sets: ConfidenceSetInpu
 const NEGATIVE_CAPTION_RE = /채용|모집|공지|휴무|생일|후기|당첨/;
 const POSITIVE_CAPTION_RE = /라인업|LINEUP|LINE\s*UP|타임테이블|TIME\s*TABLE|DJ\s|게스트|GUEST\s*DJ|OPEN\s*22|@/i;
 
-/** true면 Vision 호출 진행, false면 스킵(Vision 비용 자체를 아낀다). */
+/** true면 Vision 호출 진행, false면 스킵(Vision 비용 자체를 아낀다).
+ *
+ * VIDEO(Reel)도 통과시킨다(2026-08-30). Apify가 주는 displayUrl은 동영상이어도
+ * 썸네일 이미지 URL이고, 클럽이 타임테이블을 Reel로 올리면 그 썸네일에 날짜가
+ * 박혀 있다 — Box Seoul이 "8.28 FRIDAY / 8.29 SATURDAY" 타임테이블을 매주
+ * Reel로 올리는데, VIDEO를 막고 있어서 포스터를 저장도 판독도 못 했다.
+ * 캡션 단계에서 Reel을 이미 통과시키고 있으므로(SOUNDCLASH 사고) 여기만
+ * 막아둘 이유가 없다. */
 export function passesPreVisionGate(mediaType: string, mediaUrl: string | null, caption: string | null): boolean {
-  if (mediaType !== "IMAGE" && mediaType !== "CAROUSEL_ALBUM") return false;
+  if (mediaType !== "IMAGE" && mediaType !== "CAROUSEL_ALBUM" && mediaType !== "VIDEO") return false;
   if (!mediaUrl) return false;
   const text = caption ?? "";
   const hasNegative = NEGATIVE_CAPTION_RE.test(text);
@@ -237,9 +244,9 @@ export function passesPreVisionGate(mediaType: string, mediaUrl: string | null, 
  *
  * 규칙:
  *   1) 연말연시 경계 보정 (12월에 올린 1월 포스터 → 다음 해, 그 반대도)
- *   2) 게시일 기준 과거 3일 ~ 미래 90일을 벗어나면 신뢰하지 않는다.
- *      클럽 포스터는 보통 며칠 전에 올라오므로 이 범위를 벗어난 값은
- *      월을 잘못 읽었을 확률이 훨씬 높다 → null 을 돌려 호출부가 게시 시각으로 폴백.
+ *   2) 게시일 기준 과거 3일 ~ 미래 90일을 벗어나면 월을 잘못 읽은 것으로 본다.
+ *      이때 날짜를 버리지 않고 **일자는 유지한 채 월만 게시일 기준으로 보정**한다
+ *      (게시월 → 다음 달 순으로 시도). 그래도 범위 밖이면 null.
  *
  * @returns YYYY-MM-DD, 또는 신뢰할 수 없으면 null
  */
@@ -258,14 +265,52 @@ export function resolveLineupDate(
   if (posted.getUTCMonth() === 11 && mm === 1) year += 1; // 12월에 올린 1월 포스터
   if (posted.getUTCMonth() === 0 && mm === 12) year -= 1; // 1월에 올린 12월 포스터
 
-  const iso = `${year}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
-
-  // 게시 시각 대조 — 너무 멀면 월을 잘못 읽은 것으로 본다
   const dayMs = 24 * 60 * 60 * 1000;
-  const diffDays = (new Date(`${iso}T00:00:00Z`).getTime() - posted.getTime()) / dayMs;
-  if (diffDays < -3 || diffDays > 90) return null;
+  const isoOf = (y: number, m: number, d: number) =>
+    `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const daysFromPost = (iso: string) =>
+    (new Date(`${iso}T00:00:00Z`).getTime() - posted.getTime()) / dayMs;
 
-  return iso;
+  const iso = isoOf(year, mm, dd);
+  const diffDays = daysFromPost(iso);
+  if (diffDays >= -3 && diffDays <= 90) return iso;
+
+  // 범위를 벗어났다 — 월을 잘못 읽었을 가능성이 높다.
+  //
+  // 일자만 적힌 캡션("28th 29th", "[28. FRI]")에서 모델이 월을 지어내는 게
+  // 실측으로 반복됐다(2026-08-30): Box Seoul 8/28 게시물이 "12-28"로,
+  // 8/21 게시물이 "12-21"로 파싱돼 90일 상한에 걸렸고, 그때마다 DJ 9명짜리
+  // 타임테이블이 통째로 버려졌다. 프롬프트에 "게시일의 월을 쓰라"고 적혀 있어도
+  // 지켜지지 않는다.
+  //
+  // 일자(dd)는 캡션에 실제로 찍혀 있으므로 신뢰한다. 월만 게시일 기준으로
+  // 되돌려 보고, 그 값이 합리적 범위에 들면 그걸 쓴다. 날짜를 통째로 버리는
+  // 것보다 낫다 — 버리면 라인업 전체가 사라진다.
+  //
+  // ⚠️ 미래로 벗어난 경우에만 보정한다. 과거로 벗어난 건 대개 "지난 공연 회고글"
+  //    이고, 그건 캡션에 월이 제대로 적혀 있다(JEJE 8/13 게시글의 "26.07.11
+  //    ILHOON LIVE — Moments in @jeje_busan"). 그걸 게시월로 당기면 열리지도
+  //    않은 8/11 공연을 만들어낸다. 회고글은 저장하지 않는 게 맞다.
+  //
+  // 트레이드오프: 정말로 3개월 뒤 공연을 예고한 글이라면 이 보정이 날짜를
+  // 망가뜨린다. 그런데 실측(2026-08-30, draft 320건)에서 미래로 90일 넘게
+  // 벗어난 파싱 7건은 **전부 오독**이었고 진짜 예고는 0건이었다. 그중 하나는
+  // 캡션에 "SATURDAY - AUGUST 29"라고 월이 영어로 적혀 있는데도 12-29로
+  // 파싱됐다. 클럽 라인업은 길어야 2~3주 전에 올라오므로 이쪽이 안전하다.
+  if (diffDays < -3) return null; // 과거로 벗어남 = 회고글. 보정하지 않는다.
+
+  const pm = posted.getUTCMonth() + 1;
+  const py = posted.getUTCFullYear();
+  for (const [y, m] of [
+    [py, pm],                                   // 게시월
+    pm === 12 ? [py + 1, 1] : [py, pm + 1],     // 다음 달(월말에 올린 다음 달 포스터)
+  ] as [number, number][]) {
+    const alt = isoOf(y, m, dd);
+    const d = daysFromPost(alt);
+    if (d >= -3 && d <= 90) return alt;
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
