@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // (테스트 클럽이 대부분 pending이라 개발 중 상세를 못 보는 문제).
   const metaQuery = supabase
     .from("clubs")
-    .select("name, area, thumbnail_url")
+    .select("name, area, thumbnail_url, dresscode")
     .eq("id", id)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) metaQuery.eq("status", "approved");
@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     // 키워드 어디에도 없어서, 클럽명으로 들어온 사람에게 라인업의 존재 자체가
     // 안 보였다.
     title: `${headName} 라인업·테이블 가격 - 입장료·영업시간`,
-    description: `${headName}${descAliases} DJ 라인업과 공연 일정, 테이블 가격·주대·영업시간·입장료 확인. 무료입장·프리드링크 게스트 간판 혜택까지 나플에서 한 번에.`,
+    description: `${headName}${descAliases} DJ 라인업과 공연 일정, 테이블 가격·주대·영업시간·입장료·드레스코드 확인. 무료입장·프리드링크 게스트 간판 혜택까지 나플에서 한 번에.`,
     keywords: [
       club.name,
       ...aliases,
@@ -73,6 +73,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       `${club.name} 테이블`,
       `${club.name} 입장료`,
       `${club.name} 예약`,
+      // 드레스코드는 실제로 채워진 클럽에만. 현재 106곳 중 3곳뿐이라 전부에 걸면
+      // 검색해서 들어온 사람이 답을 못 찾고 나간다.
+      ...(club.dresscode ? [`${club.name} 드레스코드`] : []),
       ...aliases.map((a) => `${a} 라인업`),
       ...aliases.map((a) => `${a} 클럽`),
       ...aliases.map((a) => `${a} 테이블`),
