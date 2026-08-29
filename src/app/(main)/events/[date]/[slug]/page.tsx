@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Instagram, ExternalLink, ChevronLeft, ChevronRight, MapPin, Clock, Disc3, Mic2 } from "lucide-react";
+import { Instagram, ExternalLink, ChevronLeft, ChevronRight, MapPin, Clock, Disc3 } from "lucide-react";
 import { createServerClient } from "@supabase/ssr";
 import { eventSlug, normalizeSlugParam, isValidEventDate } from "@/lib/events/slug";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
@@ -418,9 +418,6 @@ export default async function EventDetailPage({ params }: PageProps) {
                   className="block group"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-13 h-13 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                      <Mic2 className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
-                    </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-baseline gap-1.5">
                         <span className="text-2xl font-black tracking-tight truncate group-hover:text-[#ff2f92] transition-colors">

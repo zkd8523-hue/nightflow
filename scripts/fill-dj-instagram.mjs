@@ -59,6 +59,12 @@ for (const cap of captions) {
     const rawName = m[1].trim().replace(/[:\-–—]+$/, "").trim();
     const handle = m[2].toLowerCase();
     if (!rawName || clubHandles.has(handle)) continue;
+    // "이름 뒤에 핸들이 연달아 여러 개" = 개인 태그가 아니라 **소속 명단 블록**이다.
+    //   예) "DEEP OCEAN / @dada_hyeeeee / @justgerila / @moro_from_gard…"
+    //       → DEEP OCEAN 은 광주의 클럽이고 아래는 그 클럽 DJ들이다. 첫 핸들을
+    //         DEEP OCEAN 에 붙이면 남의 개인 계정을 클럽 이름에 다는 오연결이 된다.
+    // 뒤따르는 공백/줄바꿈을 건너뛴 다음 글자가 또 @ 면 그 쌍은 통째로 버린다.
+    if (/^[\s)\]}]*@/.test(cap.slice(m.index + m[0].length))) continue;
     const key = normalizeDjName(rawName);
     if (!key || key.length < 2) continue;
     if (!pairs.has(key)) pairs.set(key, new Map());
@@ -69,7 +75,8 @@ for (const cap of captions) {
 console.log(`캡션 ${captions.length}건에서 "이름 @핸들" 쌍 ${pairs.size}개 추출\n`);
 
 // djs + 별칭 로드
-const { data: djs } = await sb.from("djs").select("id, display_name, instagram");
+// 소프트 삭제된 행(중복 병합으로 정리된 패자)은 채워봐야 아무 데도 안 보인다 — 제외
+const { data: djs } = await sb.from("djs").select("id, display_name, instagram").is("deleted_at", null);
 const { data: aliases } = await sb.from("dj_aliases").select("dj_id, normalized");
 const aliasByDj = new Map();
 for (const a of aliases ?? []) {
@@ -78,6 +85,7 @@ for (const a of aliases ?? []) {
 }
 
 let filled = 0, skipped = 0;
+const ambiguous = [];
 for (const dj of djs ?? []) {
   if (dj.instagram) { skipped++; continue; }
   const keys = [normalizeDjName(dj.display_name), ...(aliasByDj.get(dj.id) ?? [])];
@@ -85,8 +93,14 @@ for (const dj of djs ?? []) {
   for (const k of keys) {
     const hm = pairs.get(k);
     if (!hm) continue;
-    // 같은 이름에 핸들이 여럿이면 가장 자주 함께 등장한 것을 택한다
-    picked = [...hm.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    // 같은 이름이 서로 다른 핸들로 잡히면 어느 쪽이 맞는지 알 수 없다 → 둘 다 버린다.
+    // (예전엔 "가장 자주 등장한 핸들"을 택했는데, 이건 오연결이 미입력보다 나쁘다는
+    //  이 프로젝트의 원칙과 어긋난다 — @ash.island 사고와 같은 계열의 위험이다)
+    if (hm.size > 1) {
+      ambiguous.push(`${dj.display_name} → ${[...hm.keys()].map((h) => "@" + h).join(" vs ")}`);
+      continue;
+    }
+    picked = [...hm.keys()][0];
     break;
   }
   if (!picked) continue;
@@ -97,4 +111,8 @@ for (const dj of djs ?? []) {
 
 console.log(`\n${"=".repeat(52)}`);
 console.log(`📊 ${DRY_RUN ? "예상" : "완료"} — 채움 ${filled}명 / 이미 있음 ${skipped}명 / 전체 ${(djs ?? []).length}명`);
+if (ambiguous.length) {
+  console.log(`\n⚠ 핸들이 충돌해 건너뜀 ${ambiguous.length}건 (사람이 확인):`);
+  for (const a of ambiguous) console.log(`   ${a}`);
+}
 console.log("=".repeat(52));

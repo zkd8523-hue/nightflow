@@ -5,7 +5,7 @@ import {
   type UndergroundEventRow,
   type EventPerformer,
 } from "@/components/events/UndergroundEventList";
-import { eventRegionOf } from "@/lib/events/area";
+import { eventAreaOf } from "@/lib/events/area";
 
 // SEO가 이 화면의 존재 이유 중 하나다("이번주 홍대 힙합 공연" 류 쿼리).
 // 크롤러가 공연명·아티스트명을 HTML에서 봐야 하므로 서버 렌더 + 짧은 재검증.
@@ -164,7 +164,7 @@ export default async function EventsPage() {
       club_name: club?.name ?? null,
       club_aliases: club?.aliases ?? [],
       venue_area: r.venue_area,
-      venue_region: eventRegionOf(r.venue_area),
+      venue_area_chip: eventAreaOf(r.venue_area),
       source_url: r.source_url,
       performers: linked,
       extra_names: extra,

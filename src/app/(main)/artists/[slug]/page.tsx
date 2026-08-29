@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Instagram, Ticket } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
 import { ArtistFavoriteButton } from "@/components/artists/ArtistFavoriteButton";
+import { PerformerNames } from "@/components/artists/PerformerNames";
 import { eventSlug } from "@/lib/events/slug";
 import { splitLineupDate } from "@/lib/lineups/formatDate";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
@@ -61,7 +62,7 @@ interface EventRow {
   ticket_url: string | null;
   locationLabel: string;
   locationHref: string | null;
-  withNames: { name: string; slug: string | null }[];
+  withNames: { id: string | null; name: string; slug: string | null }[];
 }
 
 function firstOf<T>(v: T | T[] | null): T | null {
@@ -184,7 +185,7 @@ async function fetchArtist(slug: string) {
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((p) => {
         const a = firstOf(p.artists);
-        return { name: a?.display_name ?? p.raw_name, slug: a?.slug ?? null };
+        return { id: p.artist_id ?? null, name: a?.display_name ?? p.raw_name, slug: a?.slug ?? null };
       });
 
     return {
@@ -284,7 +285,9 @@ export default async function ArtistPage({ params }: PageProps) {
 
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-black text-foreground leading-tight">{name} 공연 일정</h1>
+            {/* 화면엔 이름만. "공연 일정"은 아래 섹션 제목이 이미 말해주고,
+                붙이면 긴 이름에서 두 줄로 넘어간다. SEO title 은 그대로 유지. */}
+            <h1 className="text-2xl font-black text-foreground leading-tight">{name}</h1>
             {igHandle && (
               <a
                 href={`https://instagram.com/${igHandle}`}
@@ -364,46 +367,28 @@ function EventSection({ title, events }: { title: string; events: EventRow[] }) 
           const href = slug ? `/events/${e.event_date}/${encodeURIComponent(slug)}` : null;
 
           const body = (
-            <div className="flex gap-3 py-3 border-b border-white/[0.06] last:border-0">
-              <div className="w-11 flex-shrink-0 text-center">
-                <p className="font-mono text-[10px] text-muted-foreground">{parseInt(m, 10)}월</p>
-                <p className="font-mono text-[19px] font-black leading-none text-foreground">{d}</p>
-                <p className="text-[9.5px] text-muted-foreground">{dow}</p>
+            <div className="flex items-center gap-3 py-3 border-b border-white/[0.06] last:border-0">
+              {/* 날짜는 "9/26" 한 줄로. 월·일·요일 3층으로 쌓으면 폭 11에 갇혀
+                  세 줄이 되고, 정작 제목이 밀린다(실측 피드백). 요일만 아래 작게. */}
+              <div className="w-12 flex-shrink-0 text-center">
+                <p className="font-mono text-[17px] font-black leading-none text-foreground">
+                  {parseInt(m, 10)}/{parseInt(d, 10)}
+                </p>
+                <p className="text-[9.5px] text-muted-foreground mt-1">{dow}</p>
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-foreground leading-snug line-clamp-2">
                   {e.title ?? "(제목 없음)"}
                 </p>
-                {e.locationHref ? (
-                  <Link
-                    href={e.locationHref}
-                    className="relative z-10 inline-block text-[11.5px] text-[#39ff6a] hover:text-[#39ff6a]/80 mt-0.5"
-                  >
-                    {e.locationLabel}
-                  </Link>
-                ) : (
-                  <p className="text-[11.5px] text-muted-foreground mt-0.5">{e.locationLabel}</p>
-                )}
-                {e.withNames.length > 0 && (
-                  <p className="text-[11.5px] text-neutral-400 mt-0.5 line-clamp-2">
-                    with{" "}
-                    {e.withNames.map((w, i) => (
-                      <span key={`${w.slug ?? w.name}-${i}`}>
-                        {i > 0 && ", "}
-                        {w.slug ? (
-                          <Link
-                            href={`/artists/${w.slug}`}
-                            className="relative z-10 text-[#8ec5ff] hover:text-[#8ec5ff]/80"
-                          >
-                            {w.name}
-                          </Link>
-                        ) : (
-                          w.name
-                        )}
-                      </span>
-                    ))}
-                  </p>
-                )}
+                {/* 장소도 링크로 두지 않는다 — 카드를 누르려다 초록 글자를 밟으면
+                    공연이 아니라 클럽으로 새는 오클릭이 났다(출연자 이름과 같은 축).
+                    카드는 공연 상세 하나로만 가고, 장소는 거기서 큰 블록으로 누른다. */}
+                <p
+                  className={`text-[11.5px] mt-0.5 ${e.locationHref ? "text-[#39ff6a]" : "text-muted-foreground"}`}
+                >
+                  {e.locationLabel}
+                </p>
+                <PerformerNames performers={e.withNames} prefix="with " />
                 {e.ticket_url && (
                   <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-brand-amber">
                     <Ticket className="w-2.5 h-2.5" aria-hidden="true" />

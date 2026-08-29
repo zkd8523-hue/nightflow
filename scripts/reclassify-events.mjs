@@ -22,6 +22,8 @@ import { readFileSync } from "fs";
 
 const DRY_RUN = process.env.DRY_RUN === "1";
 const SINCE = process.env.SINCE ?? "2026-08-01";
+// 특정 클럽만 재분류할 때. 미지정이면 전체.
+const ONLY_CLUB = process.env.ONLY_CLUB ?? null;
 
 const env = {};
 for (const l of readFileSync(".env.local", "utf8").split("\n")) {
@@ -120,12 +122,13 @@ const { data: rows, error } = await sb
   .order("event_date");
 if (error) { console.error(error.message); process.exit(1); }
 
-console.log(DRY_RUN ? "🧪 [DRY RUN]" : "🚀 [실행]", `대상 ${rows.length}건 (${SINCE} 이후 approved)\n`);
+const targets = ONLY_CLUB ? rows.filter((r) => r.club_id === ONLY_CLUB) : rows;
+console.log(DRY_RUN ? "🧪 [DRY RUN]" : "🚀 [실행]", `대상 ${targets.length}건 (${SINCE} 이후 approved${ONLY_CLUB ? ", 클럽 한정" : ""})\n`);
 
 let demoted = 0, kept = 0, djSaved = 0, handles = 0, failed = 0;
 const cache = new Map();
 
-for (const [i, r] of rows.entries()) {
+for (const [i, r] of targets.entries()) {
   const key = `${r.title}::${String(r.raw_caption).slice(0, 200)}`;
   let out = cache.get(key);
   if (!out) {

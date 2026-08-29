@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /**
@@ -40,11 +40,14 @@ export function EventMonthCalendar({
   countsByDate,
   selectedDate,
   onSelectDate,
+  onMonthChange,
 }: {
   /** "2026-08-29" → 그날 공연 수 */
   countsByDate: Map<string, number>;
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
+  /** 지금 보고 있는 달("2026-09") — 목록을 이 달로 좁히는 데 쓴다 */
+  onMonthChange?: (ym: string) => void;
 }) {
   const today = todayKST();
   // 처음 열 때 어느 달을 보여줄지.
@@ -58,18 +61,14 @@ export function EventMonthCalendar({
     return upcoming[0]?.slice(0, 7) ?? thisMonth;
   });
 
+  // 보고 있는 달을 부모에 알린다. 첫 렌더의 자동 건너뜀(위 useState 초기화)도
+  // 포함해야 한다 — 8월 말에 열면 격자는 9월인데 목록만 8월에 남는 어긋남이 난다.
+  useEffect(() => {
+    onMonthChange?.(ym);
+  }, [ym, onMonthChange]);
+
   const { firstDow, daysInMonth } = useMemo(() => monthShape(ym), [ym]);
   const [year, month] = ym.split("-").map(Number);
-
-  // 이 달에 공연이 있는 날 수 — 범례에 "31칸 중 10칸"으로 보여준다.
-  // 데이터가 얇다는 걸 숨기지 않는다(빈 격자를 그냥 두면 버그처럼 보인다).
-  const filledCount = useMemo(() => {
-    let n = 0;
-    for (let d = 1; d <= daysInMonth; d++) {
-      if (countsByDate.get(`${ym}-${String(d).padStart(2, "0")}`)) n++;
-    }
-    return n;
-  }, [countsByDate, ym, daysInMonth]);
 
   const cells: (number | null)[] = [
     ...Array.from({ length: firstDow }, () => null),
@@ -179,13 +178,6 @@ export function EventMonthCalendar({
             </button>
           );
         })}
-      </div>
-
-      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#ff2f92]" aria-hidden="true" />
-        <span>
-          공연 · {daysInMonth}칸 중 {filledCount}칸
-        </span>
       </div>
     </div>
   );

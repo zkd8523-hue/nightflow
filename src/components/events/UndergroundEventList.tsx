@@ -5,9 +5,9 @@ import Link from "next/link";
 import { eventSlug } from "@/lib/events/slug";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mic2, Search, X, ExternalLink, ChevronRight, ThumbsUp, CalendarDays, Heart, ChevronDown } from "lucide-react";
+import { Search, X, ExternalLink, ChevronRight, ThumbsUp, CalendarDays, Heart, ChevronDown } from "lucide-react";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
-import { EVENT_REGIONS, type EventRegion } from "@/lib/events/area";
+import { EVENT_AREAS, type EventArea } from "@/lib/events/area";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 import { useLineupLikes } from "@/hooks/useLineupLikes";
@@ -40,10 +40,9 @@ export interface UndergroundEventRow {
   /** 클럽 원문 표기(미등록 장소 포함). 화면에 항상 이 이름을 쓴다 */
   venue_name: string;
   venue_area: string | null;
-  /** 공연 탭 전용 광역 지역(eventRegionOf) — 클럽 동네 단위(AREA_OPTIONS)와 달리
-   *  서울 구 단위를 "수도권"으로 묶고 해외까지 포괄한다. 지역 칩·필터·달력은
-   *  전부 이걸 쓰고, 카드에 보이는 텍스트는 원문(venue_area)을 그대로 쓴다. */
-  venue_region: EventRegion | null;
+  /** 칩으로 쓸 수 있는 지역(eventAreaOf). 구 단위를 유지하고 공연 전용 값만 덧붙인다.
+   *  칩·필터·달력이 이걸 쓰고, 카드에 보이는 텍스트는 원문(venue_area)을 그대로 쓴다. */
+  venue_area_chip: EventArea | null;
   /** 인스타 원본 게시물 — 클럽 미등록일 때의 유일한 출처 */
   source_url: string | null;
   performers: EventPerformer[];
@@ -92,6 +91,9 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
   // 달력은 기본이 닫힘이다. 예정 공연이 10일치뿐이라 항상 펼쳐두면 빈 격자가
   // 목록을 화면 밖으로 밀어낸다(/lineups의 날짜 칩과 같은 토글 규칙).
   const [calOpen, setCalOpen] = useState(false);
+  // 달력이 보고 있는 달("2026-09"). 격자는 9월인데 목록은 8월 30일부터 흐르면
+  // 무엇을 보고 있는 건지 읽을 수 없어서, 열려 있는 동안은 목록도 그 달만 남긴다.
+  const [visibleMonth, setVisibleMonth] = useState<string | null>(null);
   // 찜한 아티스트 섹션 — 기본은 열림이다. 이 섹션은 본인이 찜을 해야만 나타나므로
   // 접힌 채로 시작하면 방금 요청한 걸 숨기는 꼴이 된다.
   // 접었다는 건 "지금은 전체를 보고 싶다"는 뜻이라 그 선택은 기억한다.
@@ -127,26 +129,28 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
 
   // 데이터에 실제로 있는 지역만 칩으로 — 눌러도 빈 화면이 되는 칩을 만들지 않는다
   // 데이터에 실제로 있는 지역만 칩으로 — 눌러도 빈 화면이 되는 칩을 만들지 않는다.
-  // 클럽 동네 단위(AREA_OPTIONS)가 아니라 광역 지역(EVENT_REGIONS)을 쓴다 — 공연은
-  // "서울"·"인천"처럼 시 단위로도 찍히고 해외 도시까지 나와서 구 단위 목록으론 대부분이
-  // 걸러진다(실측: 예정 공연 13건 중 8건이 서울/인천이라 강남·이태원·부산만 칩에 남았었다).
+  // 구 단위(홍대·이태원·강남)를 유지하고, 공연에만 나오는 값("서울"·"인천"·해외)을
+  // EVENT_AREAS에서 덧붙인다. 지금 칩이 적게 보이는 건 분류 탓이 아니라 예정 공연이
+  // 13건뿐이기 때문이다 — 지난 공연까지 보면 홍대 137 · 이태원 87 · 강남 37이다.
   const availableAreas = useMemo(() => {
-    const present = new Set(rows.map((r) => r.venue_region).filter(Boolean) as string[]);
-    return EVENT_REGIONS.filter((a) => present.has(a));
+    const present = new Set(rows.map((r) => r.venue_area_chip).filter(Boolean) as string[]);
+    return EVENT_AREAS.filter((a) => present.has(a));
   }, [rows]);
 
   // 달력 점·건수 — 지역 칩은 반영하고 검색어는 반영하지 않는다. 타이핑할 때마다
   // 격자가 깜빡이면 달력이 목록의 곁다리처럼 보인다.
   const countsByDate = useMemo(() => {
-    const src = area ? rows.filter((r) => r.venue_region === area) : rows;
+    const src = area ? rows.filter((r) => r.venue_area_chip === area) : rows;
     const m = new Map<string, number>();
     for (const r of src) m.set(r.event_date, (m.get(r.event_date) ?? 0) + 1);
     return m;
   }, [rows, area]);
 
   const groups = useMemo(() => {
-    let out = area ? rows.filter((r) => r.venue_region === area) : rows;
+    let out = area ? rows.filter((r) => r.venue_area_chip === area) : rows;
+    // 날짜를 콕 집었으면 그게 우선이다 — 달 필터는 격자를 넘길 때의 넓은 범위다.
     if (selectedDate) out = out.filter((r) => r.event_date === selectedDate);
+    else if (calOpen && visibleMonth) out = out.filter((r) => r.event_date.startsWith(visibleMonth));
     if (query.trim()) {
       // 클럽은 별칭까지 본다 — "제제"로 JEJE 공연이, "볼레로"로 Bolero 공연이 나와야 한다.
       // club_id가 없는 미등록 장소는 붙일 별칭이 없어 캡션 원문(venue_name)으로만 걸린다.
@@ -174,7 +178,7 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
           ),
         ] as [string, UndergroundEventRow[]]
     );
-  }, [rows, area, query, selectedDate, isFavoritedArtist]);
+  }, [rows, area, query, selectedDate, calOpen, visibleMonth, isFavoritedArtist]);
 
   // 찜한 아티스트가 나오는 공연 — 날짜 그룹 위에 따로 얹는다.
   // 날짜 그룹 안에서만 위로 올리면 다음 달 공연은 한참 스크롤해야 보인다.
@@ -307,6 +311,7 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
             countsByDate={countsByDate}
             selectedDate={selectedDate}
             onSelectDate={setSelectedDate}
+            onMonthChange={setVisibleMonth}
           />
         )}
 
@@ -317,9 +322,11 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
                 ? `'${query.trim()}' 검색 결과가 없어요`
                 : selectedDate
                   ? `${formatLineupDate(selectedDate)}에는 등록된 공연이 없어요`
-                  : area
-                    ? `${area}는 아직 등록된 공연이 없어요`
-                    : "아직 등록된 공연이 없어요"}
+                  : calOpen && visibleMonth
+                    ? `${Number(visibleMonth.slice(5, 7))}월에는 등록된 공연이 없어요`
+                    : area
+                      ? `${area}는 아직 등록된 공연이 없어요`
+                      : "아직 등록된 공연이 없어요"}
             </p>
             {query.trim() ? (
               <button
@@ -478,13 +485,14 @@ function EventCard({
       )}
 
       <div className={`flex items-start gap-3 ${detailHref ? (like.count > 0 ? "pr-24" : "pr-9") : (like.count > 0 ? "pr-14" : "")}`}>
-        {/* 썸네일 — 등록 클럽이면 사진, 아니면 마이크 아이콘.
+        {/* 썸네일 — 등록 클럽이면 사진, 없으면 아무것도 그리지 않는다.
             공연 포스터는 저작권 때문에 저장하지 않으므로(club_events는 원본 링크만
-            보관) 미등록 장소는 채울 이미지가 없다. */}
+            보관) 미등록 장소는 채울 이미지가 없다. 예전엔 그 자리에 회색 마이크
+            아이콘을 뒀는데, 정보가 0인 빈 상자가 제목 앞을 밀어내기만 해서 뺐다. */}
         {/* 카드 전체가 이미 상세로 가는 stretched link다 — 썸네일·클럽명·출연자
             인스타를 각각 별도 링크로 두면 터치 타겟이 잘게 쪼개져 오히려 혼란스럽다
             (모바일 실측 피드백). 링크는 카드 하나만, 안쪽은 전부 텍스트로 통일. */}
-        {row.club_thumbnail ? (
+        {row.club_thumbnail && (
           <Image
             src={row.club_thumbnail}
             alt=""
@@ -492,10 +500,6 @@ function EventCard({
             height={44}
             className="w-11 h-11 rounded-xl object-cover flex-shrink-0"
           />
-        ) : (
-          <span className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
-            <Mic2 className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-          </span>
         )}
 
         <div className="min-w-0 flex-1">

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Instagram, MapPin, ExternalLink, Ticket } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
+import { PerformerNames } from "@/components/artists/PerformerNames";
 import { eventSlug } from "@/lib/events/slug";
 import { splitLineupDate } from "@/lib/lineups/formatDate";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
@@ -17,6 +18,7 @@ interface PageProps {
 }
 
 interface PerformerRef {
+  artist_id: string | null;
   raw_name: string;
   sort_order: number;
   artists: { display_name: string; slug: string | null } | { display_name: string; slug: string | null }[] | null;
@@ -29,7 +31,7 @@ interface EventRow {
   lineup: string[] | null;
   ticket_url: string | null;
   source_url: string | null;
-  performers: { name: string; slug: string | null }[];
+  performers: { id: string | null; name: string; slug: string | null }[];
 }
 
 /** KST 오늘 (events/[date] 와 같은 규약) */
@@ -65,7 +67,7 @@ async function fetchVenue(slug: string) {
     .from("club_events")
     .select(
       `id, event_date, title, lineup, ticket_url, source_url,
-       club_event_performers(raw_name, sort_order, artists(display_name, slug))`
+       club_event_performers(artist_id, raw_name, sort_order, artists(display_name, slug))`
     )
     .eq("venue_id", venue.id)
     .eq("status", "approved")
@@ -79,7 +81,7 @@ async function fetchVenue(slug: string) {
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((p) => {
         const a = Array.isArray(p.artists) ? (p.artists[0] ?? null) : p.artists;
-        return { name: a?.display_name ?? p.raw_name, slug: a?.slug ?? null };
+        return { id: p.artist_id ?? null, name: a?.display_name ?? p.raw_name, slug: a?.slug ?? null };
       });
     const { club_event_performers: _drop, ...rest } = e;
     return { ...rest, performers };
@@ -292,38 +294,23 @@ function EventSection({ title, events }: { title: string; events: EventRow[] }) 
           const [, m, d] = e.event_date.split("-");
           const slug = e.title ? eventSlug(e.title) : "";
           const href = slug ? `/events/${e.event_date}/${encodeURIComponent(slug)}` : null;
-          const performers = e.performers.length > 0 ? e.performers : (e.lineup ?? []).filter(Boolean).map((n) => ({ name: n, slug: null }));
+          const performers = e.performers.length > 0 ? e.performers : (e.lineup ?? []).filter(Boolean).map((n) => ({ id: null, name: n, slug: null }));
 
           const body = (
-            <div className="flex gap-3 py-3 border-b border-white/[0.06] last:border-0">
-              <div className="w-11 flex-shrink-0 text-center">
-                <p className="font-mono text-[10px] text-muted-foreground">{parseInt(m, 10)}월</p>
-                <p className="font-mono text-[19px] font-black leading-none text-foreground">{d}</p>
-                <p className="text-[9.5px] text-muted-foreground">{dow}</p>
+            <div className="flex items-center gap-3 py-3 border-b border-white/[0.06] last:border-0">
+              {/* 날짜는 "9/6" 한 줄 + 요일만 아래 작게. 월·일·요일 3층으로 쌓으면
+                  폭 11에 갇혀 세 줄이 되고 제목이 밀린다(artists/[slug]와 동일). */}
+              <div className="w-12 flex-shrink-0 text-center">
+                <p className="font-mono text-[17px] font-black leading-none text-foreground">
+                  {parseInt(m, 10)}/{parseInt(d, 10)}
+                </p>
+                <p className="text-[9.5px] text-muted-foreground mt-1">{dow}</p>
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-bold text-foreground leading-snug line-clamp-2">
                   {e.title ?? "(제목 없음)"}
                 </p>
-                {performers.length > 0 && (
-                  <p className="text-[11.5px] text-neutral-400 mt-0.5 line-clamp-2">
-                    {performers.map((p, i) => (
-                      <span key={`${p.slug ?? p.name}-${i}`}>
-                        {i > 0 && ", "}
-                        {p.slug ? (
-                          <Link
-                            href={`/artists/${p.slug}`}
-                            className="relative z-10 text-[#8ec5ff] hover:text-[#8ec5ff]/80"
-                          >
-                            {p.name}
-                          </Link>
-                        ) : (
-                          p.name
-                        )}
-                      </span>
-                    ))}
-                  </p>
-                )}
+                <PerformerNames performers={performers} />
                 {e.ticket_url && (
                   <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-brand-amber">
                     <Ticket className="w-2.5 h-2.5" aria-hidden="true" />
