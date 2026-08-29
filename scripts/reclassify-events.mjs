@@ -199,6 +199,20 @@ for (const [i, r] of targets.entries()) {
   // 이 플래그가 파티 성격(클럽 파티)에 끌려 false 로 나오는 경우가 있는데
   // (실측: Cakeshop 'Summer of LEMON' 은 LOBOTOME 라이브가 있는데도 false),
   // 실제 가수 이름이 나왔다면 공연 탭에서 빼는 게 더 큰 손실이다.
+  // 판정 근거가 아예 없는 건 건드리지 않는다(2026-08-30 실측).
+  //
+  // 출연진을 한 명도 못 뽑았다는 건 "DJ 파티"라는 뜻이 아니라 "판단할 재료가
+  // 없다"는 뜻이다. 그런데 singers=0 이면 무조건 DJ로 내려가는 구조라, 수동
+  // 입력분처럼 라인업이 비어 있는 공연이 통째로 묻혔다 — HIPHOPPLAYA SHOW
+  // Vol.63, 2026 대구힙합페스티벌, 경희대·성결대 축제, CROSS THE NIGHT 등
+  // 10건이 실제로 그렇게 내려갔다. 근거 없이 내리느니 그대로 두는 게 맞다.
+  if (singers.length === 0 && djNames.length === 0) {
+    kept++;
+    console.log(`⏭️  ${r.event_date} ${r.club_name_raw} | ${r.title}`);
+    console.log(`     출연진 없음 — 판정 근거가 없어 건너뜀`);
+    continue;
+  }
+
   const isLive = singers.length > 0;
 
   console.log(`${isLive ? "🎤" : "🎧"} ${r.event_date} ${r.club_name_raw} | ${r.title}`);
