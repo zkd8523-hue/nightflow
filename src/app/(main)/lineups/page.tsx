@@ -11,13 +11,16 @@ import {
 // 크롤러가 클럽명·DJ명을 HTML에서 봐야 하므로 서버 렌더 + 짧은 재검증.
 export const revalidate = 300;
 
+// "전국 DJ 라인업"은 검색 수요가 거의 없는 추상어다(실측: 네이버·구글 TOP 30
+// 어디에도 없음). 실제 검색은 거의 전부 지역명이 붙는다("홍대 클럽"이 구글 노출
+// 최대 3,527). 제목 앞에 상위 지역을 박아 그 자리를 노린다.
 export const metadata: Metadata = {
-  title: "전국 DJ 라인업 - 오늘 밤 어느 클럽에 누가 트는지",
+  title: "홍대·강남·이태원 클럽 DJ 라인업 - 오늘 밤 타임테이블",
   description:
     "서울 홍대·강남·이태원부터 부산·대구까지 전국 클럽 DJ 타임테이블. 날짜별 라인업과 DJ 인스타그램을 한눈에.",
   alternates: { canonical: "https://nightflow.kr/lineups" },
   openGraph: {
-    title: "전국 DJ 라인업 - 오늘 밤 어느 클럽에 누가 트는지",
+    title: "홍대·강남·이태원 클럽 DJ 라인업 - 오늘 밤 타임테이블",
     description: "전국 클럽 DJ 타임테이블을 날짜별로 한눈에. 나플.",
     url: "https://nightflow.kr/lineups",
     type: "website",

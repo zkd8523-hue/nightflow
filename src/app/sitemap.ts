@@ -48,6 +48,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily" as const,
       priority: 0.9,
     })),
+    // 지역별 라인업/공연 — /lineups(전국)와 /clubs/[id]/lineup(클럽 하나)의 중간 계층.
+    // 목록은 각 페이지의 SUPPORTED_AREAS 화이트리스트와 반드시 일치해야 한다(다르면
+    // 사이트맵엔 있는데 페이지는 404, 혹은 그 반대가 된다). 라인업 5건 미만 지역은
+    // thin content라 제외(실측 2026-08-29: 대전 1·광주 4).
+    ...(["이태원", "홍대", "강남", "부산", "대구", "수원"] as const).map((area) => ({
+      url: `${BASE_URL}/lineups/${encodeURIComponent(area)}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.75,
+    })),
+    // 공연 5건 미만 지역 제외(실측: 광주 4·대구 4), 외국 도시(타이페이·도쿄)는
+    // 한국어 트랙 소관이 아니라 제외.
+    ...(["홍대", "이태원", "서울", "강남", "대전", "부산"] as const).map((area) => ({
+      url: `${BASE_URL}/events/area/${encodeURIComponent(area)}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.75,
+    })),
     { url: `${BASE_URL}/vision`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE_URL}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
@@ -154,7 +172,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const lineupTo = new Date(kstNow.getTime() + 14 * dayMs).toISOString().slice(0, 10);
 
     const [auctionsRes, clubsRes, puzzlesRes, mdsRes, lineupsRes,
-      eventsRes, djsRes,
+      eventsRes, djsRes, venuesRes,
     ] = await Promise.all([
       supabase
         .from("auctions")
@@ -224,6 +242,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq("is_test", false)
         .is("deleted_at", null)
         .limit(500),
+      // 공연장(/venues/{slug}) — 공연 0건인 곳은 thin content 라 제외.
+      // club_events!inner 조인이 그 필터를 겸한다.
+      supabase
+        .from("venues")
+        .select("slug, updated_at, club_events!inner(id)")
+        .eq("is_test", false)
+        .is("deleted_at", null)
+        .limit(200),
     ]);
 
     const auctionRoutes: MetadataRoute.Sitemap = (auctionsRes.data ?? []).map((a) => {
@@ -289,6 +315,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.65,
     }));
 
+    // 클럽별 라인업 허브(/clubs/[id]/lineup) — 위 날짜별 라인업의 부모. 부모가 없으면
+    // 크롤러가 날짜 페이지에서 한 단계 올라왔을 때 404를 맞는다(events/[date]가 이미
+    // 같은 이유로 존재하는 것과 동일한 문제). lineupsRes에서 club_id만 중복 제거.
+    const lineupClubIds = [...new Set((lineupsRes.data ?? []).map((l) => l.club_id))];
+    const clubLineupHubRoutes: MetadataRoute.Sitemap = lineupClubIds.map((clubId) => ({
+      url: `${BASE_URL}/clubs/${clubId}/lineup`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
     // 공연 상세 — 테스트/미승인 클럽에 붙은 건 제외. club_id 없는 공연(283건)은 그대로 싣는다.
     const eventRoutes: MetadataRoute.Sitemap = (eventsRes.data ?? [])
       .filter((e) => {
@@ -313,6 +350,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6,
       }));
 
+    const venueRoutes: MetadataRoute.Sitemap = (venuesRes.data ?? [])
+      .filter((v) => v.slug)
+      .map((v) => ({
+        url: `${BASE_URL}/venues/${v.slug}`,
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      }));
+
     return [
       ...staticRoutes,
       ...auctionRoutes,
@@ -321,8 +367,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...puzzleRoutes,
       ...mdRoutes,
       ...lineupRoutes,
+      ...clubLineupHubRoutes,
       ...eventRoutes,
       ...djRoutes,
+      ...venueRoutes,
     ];
   } catch {
     return staticRoutes;

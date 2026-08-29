@@ -162,9 +162,43 @@ export default async function ClubLineupDatePage({ params }: PageProps) {
       .map((s) => ({ "@type": "Person", name: s.dj!.display_name })),
   };
 
+  // 계층을 만들어도 검색엔진이 관계를 모르면 소용없다 — 홈 > 라인업 > {지역} > {클럽} > {날짜}.
+  // 지역·클럽 허브는 각각 /lineups/{지역}·/clubs/{id}/lineup로 실제 존재하는 페이지다.
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "홈", item: "https://nightflow.kr/" },
+      { "@type": "ListItem", position: 2, name: "전국 DJ 라인업", item: "https://nightflow.kr/lineups" },
+      ...(club.area
+        ? [
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: `${club.area} 클럽 라인업`,
+              item: `https://nightflow.kr/lineups/${encodeURIComponent(club.area)}`,
+            },
+          ]
+        : []),
+      {
+        "@type": "ListItem",
+        position: club.area ? 4 : 3,
+        name: `${club.name} 라인업`,
+        item: `https://nightflow.kr/clubs/${id}/lineup`,
+      },
+      {
+        "@type": "ListItem",
+        position: club.area ? 5 : 4,
+        name: `${dateLabel} 라인업`,
+        item: `https://nightflow.kr/clubs/${id}/lineup/${date}`,
+      },
+    ],
+  };
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
       <div className="min-h-screen bg-[#0A0A0A] pb-24">
         <div className="max-w-lg mx-auto px-4 pt-6 space-y-5">

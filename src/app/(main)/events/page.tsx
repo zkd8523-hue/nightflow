@@ -10,13 +10,15 @@ import {
 // 크롤러가 공연명·아티스트명을 HTML에서 봐야 하므로 서버 렌더 + 짧은 재검증.
 export const revalidate = 300;
 
+// "언더그라운드 공연"도 마찬가지로 추상 카테고리어다(실측 0건). 실제로 검색되는
+// 건 아티스트명·지역명(블랙넛·박재범·홍대 등)이라 제목에 상위 지역을 앞세운다.
 export const metadata: Metadata = {
-  title: "언더그라운드 공연 - 이번주 힙합 공연·게스트 파티",
+  title: "홍대·강남·이태원 클럽 공연 일정 - 힙합·라이브 라인업",
   description:
     "서울 홍대·강남·이태원부터 부산·대구까지 클럽 힙합 공연 일정. 래퍼 라인업과 아티스트 인스타그램을 한눈에.",
   alternates: { canonical: "https://nightflow.kr/events" },
   openGraph: {
-    title: "언더그라운드 공연 - 이번주 힙합 공연·게스트 파티",
+    title: "홍대·강남·이태원 클럽 공연 일정 - 힙합·라이브 라인업",
     description: "전국 클럽 힙합 공연 일정을 날짜별로 한눈에. 나플.",
     url: "https://nightflow.kr/events",
     type: "website",
