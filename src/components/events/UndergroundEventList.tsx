@@ -16,6 +16,7 @@ import { matchesQuery } from "@/lib/search/normalize";
 import { clubMatchesQuery } from "@/lib/search/clubMatch";
 import { useSearchMissLogger } from "@/lib/search/logMiss";
 import { performerMatchesQuery } from "@/lib/search/performerMatch";
+import { EventMonthCalendar } from "@/components/events/EventMonthCalendar";
 
 export interface EventPerformer {
   id: string;
@@ -74,6 +75,9 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  // 달력에서 고른 날짜. 지역과 달리 URL에 싣지 않는다 — 달력은 목록을 좁히는
+  // 임시 조작이고, 날짜별 착지 URL은 /events/[date]가 따로 맡는다.
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -88,8 +92,18 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
     return AREA_OPTIONS.filter((a) => present.has(a));
   }, [rows]);
 
+  // 달력 점·건수 — 지역 칩은 반영하고 검색어는 반영하지 않는다. 타이핑할 때마다
+  // 격자가 깜빡이면 달력이 목록의 곁다리처럼 보인다.
+  const countsByDate = useMemo(() => {
+    const src = area ? rows.filter((r) => r.venue_area === area) : rows;
+    const m = new Map<string, number>();
+    for (const r of src) m.set(r.event_date, (m.get(r.event_date) ?? 0) + 1);
+    return m;
+  }, [rows, area]);
+
   const groups = useMemo(() => {
     let out = area ? rows.filter((r) => r.venue_area === area) : rows;
+    if (selectedDate) out = out.filter((r) => r.event_date === selectedDate);
     if (query.trim()) {
       // 클럽은 별칭까지 본다 — "제제"로 JEJE 공연이, "볼레로"로 Bolero 공연이 나와야 한다.
       // club_id가 없는 미등록 장소는 붙일 별칭이 없어 캡션 원문(venue_name)으로만 걸린다.
@@ -105,7 +119,7 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
       );
     }
     return groupByDate(out);
-  }, [rows, area, query]);
+  }, [rows, area, query, selectedDate]);
 
   // 검색 실패 로깅용 — 지역 칩을 빼고 "검색어만" 적용한 결과 수.
   const queryOnlyMatchCount = useMemo(() => {
@@ -203,14 +217,26 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
           </div>
         )}
 
+        {/* 달력 — 검색 중에는 감춘다. 검색은 날짜를 가로지르는 조작이라
+            격자와 같이 두면 무엇이 목록을 좁혔는지 알 수 없다. */}
+        {!query.trim() && rows.length > 0 && (
+          <EventMonthCalendar
+            countsByDate={countsByDate}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+          />
+        )}
+
         {groups.length === 0 ? (
           <div className="bg-[#1C1C1E] rounded-2xl px-4 py-10 text-center space-y-3">
             <p className="text-sm text-muted-foreground">
               {query.trim()
                 ? `'${query.trim()}' 검색 결과가 없어요`
-                : area
-                  ? `${area}는 아직 등록된 공연이 없어요`
-                  : "아직 등록된 공연이 없어요"}
+                : selectedDate
+                  ? `${formatLineupDate(selectedDate)}에는 등록된 공연이 없어요`
+                  : area
+                    ? `${area}는 아직 등록된 공연이 없어요`
+                    : "아직 등록된 공연이 없어요"}
             </p>
             {query.trim() ? (
               <button
@@ -218,6 +244,13 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
                 className="text-xs font-bold text-amber-400 hover:text-amber-300"
               >
                 검색어 지우기 →
+              </button>
+            ) : selectedDate ? (
+              <button
+                onClick={() => setSelectedDate(null)}
+                className="text-xs font-bold text-amber-400 hover:text-amber-300"
+              >
+                전체 날짜 보기 →
               </button>
             ) : (
               area && (
