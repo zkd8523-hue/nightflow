@@ -37,13 +37,25 @@ function todayKST(): string {
   return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
+/**
+ * URL 세그먼트 → DB slug 비교값. 비ASCII 슬러그는 params에 퍼센트 인코딩된 채로
+ * 들어와 그대로 eq() 하면 안 걸린다(/artists/[slug]와 같은 규약).
+ */
+function decodeSlugParam(raw: string): string {
+  try {
+    return decodeURIComponent(raw).normalize("NFC");
+  } catch {
+    return raw.normalize("NFC");
+  }
+}
+
 async function fetchVenue(slug: string) {
   const supabase = await createClient();
 
   const vq = supabase
     .from("venues")
     .select("id, name, slug, instagram, area, address, latitude, longitude, description, venue_type")
-    .eq("slug", slug)
+    .eq("slug", decodeSlugParam(slug))
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) vq.eq("is_test", false);
   const { data: venue } = await vq.maybeSingle();
@@ -301,7 +313,6 @@ function EventSection({ title, events }: { title: string; events: EventRow[] }) 
                         {p.slug ? (
                           <Link
                             href={`/artists/${p.slug}`}
-                            onClick={(ev) => ev.stopPropagation()}
                             className="relative z-10 text-[#8ec5ff] hover:text-[#8ec5ff]/80"
                           >
                             {p.name}

@@ -94,6 +94,20 @@ function todayKST(): string {
   return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
+/**
+ * URL 세그먼트 → DB slug 비교값.
+ * 한글 슬러그(다이나믹-듀오 등 309명 중 다수)는 params에 퍼센트 인코딩된 채로 들어와
+ * 그대로 eq() 하면 아무것도 안 걸린다. NFC 정규화까지 해야 자모 분리(NFD)로 들어온
+ * 요청도 DB 값과 맞는다.
+ */
+function decodeSlugParam(raw: string): string {
+  try {
+    return decodeURIComponent(raw).normalize("NFC");
+  } catch {
+    return raw.normalize("NFC");
+  }
+}
+
 function isVisibleClub(c: ClubRef | null): c is ClubRef {
   if (!c || c.deleted_at) return false;
   if (!SHOW_TEST_DATA && (c.is_test || c.status !== "approved")) return false;
@@ -109,10 +123,12 @@ function isVisibleVenue(v: VenueRef | null): v is VenueRef {
 async function fetchArtist(slug: string) {
   const supabase = await createClient();
 
+  const wanted = decodeSlugParam(slug);
+
   const aq = supabase
     .from("artists")
     .select("id, display_name, slug, instagram, bio, photo_url, is_test, deleted_at, artist_aliases(alias)")
-    .eq("slug", slug)
+    .eq("slug", wanted)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) aq.eq("is_test", false);
   const { data: artistRaw } = await aq.maybeSingle();
@@ -357,7 +373,6 @@ function EventSection({ title, events }: { title: string; events: EventRow[] }) 
                 {e.locationHref ? (
                   <Link
                     href={e.locationHref}
-                    onClick={(ev) => ev.stopPropagation()}
                     className="relative z-10 inline-block text-[11.5px] text-[#39ff6a] hover:text-[#39ff6a]/80 mt-0.5"
                   >
                     {e.locationLabel}
@@ -374,7 +389,6 @@ function EventSection({ title, events }: { title: string; events: EventRow[] }) 
                         {w.slug ? (
                           <Link
                             href={`/artists/${w.slug}`}
-                            onClick={(ev) => ev.stopPropagation()}
                             className="relative z-10 text-[#8ec5ff] hover:text-[#8ec5ff]/80"
                           >
                             {w.name}
