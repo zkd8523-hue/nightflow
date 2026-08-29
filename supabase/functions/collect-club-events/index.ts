@@ -790,6 +790,37 @@ async function runCollection() {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // 0) 끊긴 초안 회수 — 이걸 안 하면 게시물이 영구히 유실된다.
+    //
+    // lineup_drafts 는 게시물을 처리하기 "전에" pending 으로 INSERT 해서
+    // ig_permalink(UNIQUE)를 선점한다. 그 뒤 프리필터·Vision 파싱을 거쳐
+    // not_timetable / auto_published / parse_failed 중 하나로 반드시 떨어져야
+    // 하는데, 실행이 중간에 끊기면(타임아웃·Vision 오류·크래시) pending 인 채로
+    // 남는다. 그러면 다음 실행에서 같은 게시물을 INSERT 하려다 23505 로 걸려
+    // 조용히 스킵되고(`if (draftErr || !draft) return;`), 그 게시물은 두 번 다시
+    // 수집되지 않는다.
+    //
+    // 실측(2026-08-28): 이 상태로 20건이 쌓여 있었고, 그중 16건은 포스터·캡션이
+    // 멀쩡히 있는데도 파싱이 안 된 채 영구 차단돼 있었다(Modeci·Times·Sevens 등).
+    //
+    // 6시간을 기준으로 삼는 이유: 정상 실행은 수 분 내에 끝나므로 그보다 오래
+    // pending 인 건 확실히 죽은 것이고, 하루 1회 수집 주기보다는 짧아야 다음
+    // 실행에서 바로 회수된다. confidence 가 채워진 건(사람이 검토 중일 수 있는
+    // 초안)은 건드리지 않는다 — 파싱까지 끝난 뒤 대기 중인 정상 상태다.
+    const staleBefore = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+    const { data: staleDrafts, error: staleErr } = await supabase
+      .from("lineup_drafts")
+      .delete()
+      .eq("status", "pending")
+      .is("confidence", null)
+      .lt("created_at", staleBefore)
+      .select("id");
+    if (staleErr) {
+      console.error("⚠️ 끊긴 초안 회수 실패 (수집은 계속):", staleErr.message);
+    } else if (staleDrafts?.length) {
+      console.log(`♻️ 끊긴 pending 초안 ${staleDrafts.length}건 회수 — 해당 게시물 재수집 가능`);
+    }
+
     // 1) 수집 대상 계정
     const { data: clubs, error: clubErr } = await supabase
       .from("clubs")
@@ -1131,8 +1162,16 @@ async function runCollection() {
 
       const rows = [...acct.values()].map((s) => {
         // outcome 판정 — 조치가 갈리는 지점이라 순서가 중요하다.
+        //
+        // ⚠️ 에러 메시지보다 "실제로 본인 글을 받았는가"가 우선이다.
+        //    Apify 는 글을 정상적으로 돌려주면서도 restricted_page 같은 경고를
+        //    같이 실어보내는 경우가 있다(실측: lionseoul 이 posts_own=2 인데도
+        //    'restricted' 로 찍혀 관리자 화면에 "차단 — 수동 등록" 으로 떴다).
+        //    에러를 무조건 앞에 두면 "정말 못 긁는 곳"과 "가끔 새는 곳"이 한 칸에
+        //    섞여서, 수동 등록이 필요 없는 계정까지 운영자 작업 목록에 남는다.
         let outcome: string;
-        if (s.errorMsg) {
+        if (s.errorMsg && s.own === 0) {
+          // 본인 글을 한 건도 못 받았을 때만 에러를 그대로 결론으로 쓴다.
           outcome = /restricted/i.test(s.errorMsg) ? "restricted"
             : /not.?found|no results|does not exist/i.test(s.errorMsg) ? "not_found"
             : "error";
