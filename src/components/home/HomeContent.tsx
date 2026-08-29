@@ -24,6 +24,7 @@ import { groupPuzzlesByClub } from "@/components/puzzles/ClubDirectCard";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { LineupTicker } from "@/components/home/LineupTicker";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
+import type { ClubBenefitItem } from "@/lib/home/clubBenefitData";
 import { CouponHomeStrip } from "@/components/home/CouponHomeStrip";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
@@ -270,6 +271,9 @@ interface HomeContentProps {
   puzzles?: Puzzle[];
   puzzleOfferCounts?: Record<string, number>;
   clubs?: { id: string; name: string; area: string; thumbnail_url: string | null }[];
+  lineupDjNames?: string[];
+  lineupEventLabels?: string[];
+  clubBenefitItems?: ClubBenefitItem[];
 }
 
 export function HomeContent({
@@ -277,6 +281,9 @@ export function HomeContent({
   puzzles = [],
   puzzleOfferCounts = {},
   clubs = [],
+  lineupDjNames = [],
+  lineupEventLabels = [],
+  clubBenefitItems = [],
 }: HomeContentProps) {
   const activeAuctions = useMemo(() => {
     return rawActiveAuctions.map(adjustMockAuctionDates);
@@ -904,11 +911,11 @@ export function HomeContent({
                  ⚠️ 래퍼로 감싸지 않는다 — 데이터가 없으면 LineupTicker가 null인데
                  래퍼 여백만 남아 빈 공간이 생긴다(LIVE 때와 같은 사고).
                  여백은 컴포넌트가 자기 루트에 직접 준다. */}
-          <LineupTicker />
+          <LineupTicker djNames={lineupDjNames} eventLabels={lineupEventLabels} />
 
           {/* ── 오늘 어디갈래? ── */}
           <div className="-mx-4 px-4 pb-4">
-            <ClubBenefitSection />
+            <ClubBenefitSection items={clubBenefitItems} />
 
             {/* MD 전용 게스트 간판 행동 유도 CTA — 일반 유저에겐 null이라 래퍼도 렌더 안 함 */}
             {isMdOrAdmin && (

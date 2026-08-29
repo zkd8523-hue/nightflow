@@ -4,6 +4,10 @@ import { HomeContent } from "@/components/home/HomeContent";
 import { LangAutoRedirect } from "@/components/layout/LangAutoRedirect";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
 import { hideTestData, hideForeignerFlags } from "@/lib/utils/testData";
+import { getBusinessDateISO } from "@/lib/lineups/time";
+import { getActiveWeekStartISO } from "@/lib/utils/hotdeal";
+import { buildLineupTickerData, type LineupSetRow, type ClubEventRow } from "@/lib/home/lineupTickerData";
+import { buildClubBenefitItems, type ClubBenefitClubRow, type ClubBenefitSlotRow, type ClubBenefitFavoriteRow } from "@/lib/home/clubBenefitData";
 
 export const revalidate = 10; // 10초마다 재검증
 
@@ -20,14 +24,24 @@ export default async function HomePage() {
   const supabase = createAnonClient();
 
   const nowIso = new Date().toISOString();
+  const lineupFromDate = getBusinessDateISO();
+  const activeWeekStartISO = getActiveWeekStartISO();
 
-  // 서로 독립적인 4개 SSR 쿼리를 병렬 실행 — 직렬 await(4 RTT) → 1 RTT 로 단축.
+  // 서로 독립적인 SSR 쿼리를 병렬 실행 — 직렬 await(N RTT) → 1 RTT 로 단축.
   // offerCount 만 puzzles 결과에 의존하므로 이 그룹 이후 순차 처리.
+  // 뒤 5개(lineupSets~favorites)는 DJ라인업 티커/"오늘 어디갈래?" 섹션용 — 예전엔 클라이언트
+  // useEffect로 hydration 이후에 따로 가져와 화면 상단이 하단(파티/클럽다이렉트)보다 늦게
+  // 채워지는 원인이었다. 나머지와 동일하게 SSR로 당겨와 최초 페인트부터 함께 채운다.
   const [
     { data: shareAuctions },
     { data: legacyAuctions },
     { data: rawClubs },
     { data: puzzlesRaw },
+    { data: lineupSetsRaw },
+    { data: clubEventsRaw },
+    { data: hotdealSlotsRaw },
+    { data: benefitClubsRaw },
+    { data: favoriteClubsRaw },
   ] = await Promise.all([
     // 조각(share) 매물 조회 — 메인 카탈로그 기본
     // hideTestData(clubs): 프로덕션에서만 테스트/운영자 클럽 매물 제외, 로컬·프리뷰는 노출
@@ -94,6 +108,34 @@ export default async function HomePage() {
       ),
       "public_user_profiles"
     ),
+    // DJ 라인업 티커 — 가까운 날짜 셋 (LineupTicker.tsx와 동일한 select/필터)
+    supabase
+      .from("lineup_sets")
+      .select(
+        "start_min, djs!inner(display_name), club_lineups!inner(event_date, clubs!inner(name, is_test, status, deleted_at))"
+      )
+      .gte("club_lineups.event_date", lineupFromDate)
+      .limit(60),
+    // 언더그라운드 공연 (LineupTicker.tsx와 동일한 select/필터)
+    supabase
+      .from("club_events")
+      .select("event_date, title, club_name_raw, lineup")
+      .eq("status", "approved")
+      .gte("event_date", lineupFromDate)
+      .order("event_date", { ascending: true })
+      .limit(20),
+    // "오늘 어디갈래?" 이번 주 게스트 간판 슬롯 (ClubBenefitSection.tsx와 동일한 select/필터)
+    supabase
+      .from("weekly_hotdeal_slots")
+      .select("club_id, benefits_by_dow, expires_at")
+      .eq("week_start", activeWeekStartISO),
+    // "오늘 어디갈래?" 전용 클럽 조회 — ClubStrip용 rawClubs와 컬럼 셋이 달라 별도 쿼리로 유지
+    supabase
+      .from("clubs")
+      .select("id, name, area, thumbnail_url, operating_hours, tags, seed_favorite_count, club_partners(md_id)")
+      .is("deleted_at", null),
+    // "오늘 어디갈래?" 좋아요(찜) 카운트
+    supabase.from("user_favorite_clubs").select("club_id"),
   ]);
 
   const activeAuctions = [...(shareAuctions ?? []), ...(legacyAuctions ?? [])];
@@ -149,6 +191,16 @@ export default async function HomePage() {
   const ssrActiveCount = activeAuctions.length;
   const ssrPuzzleCount = puzzles.length;
 
+  const { djNames: lineupDjNames, eventLabels: lineupEventLabels } = buildLineupTickerData(
+    (lineupSetsRaw ?? []) as unknown as LineupSetRow[],
+    (clubEventsRaw ?? []) as ClubEventRow[]
+  );
+  const clubBenefitItems = buildClubBenefitItems(
+    (hotdealSlotsRaw ?? []) as ClubBenefitSlotRow[],
+    (benefitClubsRaw ?? []) as unknown as ClubBenefitClubRow[],
+    (favoriteClubsRaw ?? []) as ClubBenefitFavoriteRow[]
+  );
+
   return (
     <div className="container mx-auto max-w-lg lg:max-w-4xl px-4 pt-2 pb-4">
       {/* 기기 언어 자동 감지 → 외국어면 해당 언어 진입 (국제 앱 표준) */}
@@ -185,6 +237,9 @@ export default async function HomePage() {
           puzzles={puzzles || []}
           puzzleOfferCounts={offerCountMap}
           clubs={clubs || []}
+          lineupDjNames={lineupDjNames}
+          lineupEventLabels={lineupEventLabels}
+          clubBenefitItems={clubBenefitItems}
         />
       </Suspense>
     </div>

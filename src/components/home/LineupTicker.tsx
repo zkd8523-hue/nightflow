@@ -1,10 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { getBusinessDateISO } from "@/lib/lineups/time";
-import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 
 /**
  * 홈 상단 LED 전광판 — 기존 LIVE(ShotCarousel) 자리.
@@ -15,103 +9,19 @@ import { SHOW_TEST_DATA } from "@/lib/utils/testData";
  *
  * 한쪽 데이터가 비면 그 줄만 빠지고, 둘 다 비면 컴포넌트 자체가 null이라
  * 빈 껍데기가 남지 않는다(LIVE가 그랬듯 여백만 남는 사고 방지).
+ *
+ * 데이터는 page.tsx(RSC)에서 SSR로 미리 가져와 props로 넘어온다 — 파티/클럽다이렉트와
+ * 같은 최초 페인트에 함께 채워지도록(예전엔 클라이언트 useEffect라 hydration 이후에야
+ * 채워져 화면 상단이 하단보다 늦게 뜨는 문제가 있었다). 가공 로직은
+ * @/lib/home/lineupTickerData의 buildLineupTickerData 참고.
  */
-export function LineupTicker() {
-  const [djNames, setDjNames] = useState<string[]>([]);
-  const [eventLabels, setEventLabels] = useState<string[]>([]);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      const supabase = createClient();
-      const fromDate = getBusinessDateISO();
-
-      // 두 소스는 서로 독립이라 병렬로. 한쪽이 실패해도 다른 줄은 살린다.
-      const [lineupRes, eventRes] = await Promise.all([
-        supabase
-          .from("lineup_sets")
-          .select(
-            "start_min, djs!inner(display_name), club_lineups!inner(event_date, clubs!inner(name, is_test, status, deleted_at))"
-          )
-          .gte("club_lineups.event_date", fromDate)
-          .limit(60),
-        supabase
-          .from("club_events")
-          .select("event_date, title, club_name_raw, lineup")
-          .eq("status", "approved")
-          .gte("event_date", fromDate)
-          .order("event_date", { ascending: true })
-          .limit(20),
-      ]);
-
-      if (cancelled) return;
-
-      // ── DJ 라인업 ──
-      type SetRow = {
-        start_min: number | null;
-        djs: { display_name: string } | { display_name: string }[] | null;
-        club_lineups:
-          | { event_date: string; clubs: ClubRef | ClubRef[] }
-          | { event_date: string; clubs: ClubRef | ClubRef[] }[]
-          | null;
-      };
-      type ClubRef = { name: string; is_test: boolean; status: string; deleted_at: string | null };
-      const one = <T,>(v: T | T[] | null): T | null =>
-        Array.isArray(v) ? v[0] ?? null : v;
-
-      const rows: Array<{ date: string; start: number; name: string }> = [];
-      for (const r of (lineupRes.data ?? []) as unknown as SetRow[]) {
-        const dj = one(r.djs);
-        const lineup = one(r.club_lineups);
-        if (!dj || !lineup) continue;
-        const club = one(lineup.clubs);
-        // club_lineups에는 is_test가 없어 clubs 조인으로 거른다(558 규약)
-        if (!club || club.deleted_at || club.status !== "approved") continue;
-        if (!SHOW_TEST_DATA && club.is_test) continue;
-        rows.push({ date: lineup.event_date, start: r.start_min, name: dj.display_name });
-      }
-      // 가장 가까운 날짜의 셋만, 시간순으로 — 여러 날짜를 섞으면 순서가 뒤죽박죽이 된다
-      rows.sort(
-        (a, b) =>
-          a.date.localeCompare(b.date) ||
-          (a.start ?? Number.MAX_SAFE_INTEGER) - (b.start ?? Number.MAX_SAFE_INTEGER)
-      );
-      const firstDate = rows[0]?.date;
-      const names = rows
-        .filter((r) => r.date === firstDate)
-        .map((r) => r.name);
-      setDjNames([...new Set(names)].slice(0, 12));
-
-      // ── 언더그라운드 공연 ──
-      type EventRow = {
-        event_date: string | null;
-        title: string | null;
-        club_name_raw: string | null;
-        lineup: string[] | null;
-      };
-      const labels: string[] = [];
-      for (const e of (eventRes.data ?? []) as EventRow[]) {
-        if (!e.event_date) continue;
-        const [, m, d] = e.event_date.split("-");
-        // 아티스트명이 있으면 그게 제일 눈에 띈다. 없으면 공연 제목, 그것도 없으면 클럽명.
-        const who = e.lineup?.[0]?.trim() || e.title?.trim() || e.club_name_raw?.trim();
-        if (!who) continue;
-        labels.push(`${parseInt(m, 10)}/${parseInt(d, 10)} ${who}`);
-      }
-      setEventLabels(labels.slice(0, 12));
-
-      setLoaded(true);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // 로딩 중엔 아무것도 안 그린다 — 빈 전광판이 깜빡였다 채워지면 더 어수선하다
-  if (!loaded) return null;
+export function LineupTicker({
+  djNames,
+  eventLabels,
+}: {
+  djNames: string[];
+  eventLabels: string[];
+}) {
   if (djNames.length === 0 && eventLabels.length === 0) return null;
 
   return (
