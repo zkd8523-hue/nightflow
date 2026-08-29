@@ -8,6 +8,7 @@ import { DjLedShowList, type DjShowRow } from "@/components/djs/DjLedShowList";
 import { DjUpdateLineupButton } from "@/components/djs/DjUpdateLineupButton";
 import { getBusinessDateISO } from "@/lib/lineups/time";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
+import { clubDisplayAlias } from "@/lib/clubs/seoAliases";
 import type { Metadata } from "next";
 
 // 없는 slug는 notFound() — force-dynamic 필수. 없으면 Soft 404가 되어
@@ -25,6 +26,7 @@ interface ClubRef {
   is_test: boolean;
   status: string;
   deleted_at: string | null;
+  aliases: string[] | null;
 }
 
 interface RawSetRow {
@@ -41,8 +43,11 @@ function isVisibleClub(c: ClubRef | null): c is ClubRef {
   return true;
 }
 
-function toRows(raw: RawSetRow[] | null): DjShowRow[] {
+/** DjShowRow[] 외에 클럽 원본(aliases 포함)도 같이 뽑는다 — SEO 설명·키워드에
+ *  쓸 뿐 화면(DjLedShowList)엔 안 넘긴다. DjShowRow 타입은 그대로 둔다. */
+function toRows(raw: RawSetRow[] | null): { rows: DjShowRow[]; clubs: ClubRef[] } {
   const rows: DjShowRow[] = [];
+  const clubs: ClubRef[] = [];
   for (const r of raw ?? []) {
     const lineup = Array.isArray(r.club_lineups) ? r.club_lineups[0] : r.club_lineups;
     if (!lineup) continue;
@@ -55,8 +60,9 @@ function toRows(raw: RawSetRow[] | null): DjShowRow[] {
       event_date: lineup.event_date,
       start_min: r.start_min,
     });
+    clubs.push(club);
   }
-  return rows;
+  return { rows, clubs };
 }
 
 async function fetchDj(slug: string) {
@@ -76,13 +82,13 @@ async function fetchDj(slug: string) {
   const [{ data: upcomingRaw }, { data: pastRaw }, { count: favoriteCount }, { data: auth }] = await Promise.all([
     supabase
       .from("lineup_sets")
-      .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at))")
+      .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at, aliases))")
       .eq("dj_id", dj.id)
       .gte("club_lineups.event_date", today)
       .limit(60),
     supabase
       .from("lineup_sets")
-      .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at))")
+      .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at, aliases))")
       .eq("dj_id", dj.id)
       .lt("club_lineups.event_date", today)
       .limit(60),
@@ -90,19 +96,27 @@ async function fetchDj(slug: string) {
     supabase.auth.getUser(),
   ]);
 
-  const upcoming = toRows(upcomingRaw as unknown as RawSetRow[])
+  const upcomingParsed = toRows(upcomingRaw as unknown as RawSetRow[]);
+  const upcoming = upcomingParsed.rows
     .sort((a, b) => a.event_date.localeCompare(b.event_date) || (a.start_min ?? 0) - (b.start_min ?? 0));
 
   // 최근 20건 — 78%가 라인업 1건뿐인 현재는 상한이 작동할 일이 없지만, 수집이
   // 쌓이면 필요해진다(예정만 보여주면 SEO 본문이 얇고, 예정 0건 DJ는 빈 페이지가 됨).
-  const past = toRows(pastRaw as unknown as RawSetRow[])
+  const pastParsed = toRows(pastRaw as unknown as RawSetRow[]);
+  const past = pastParsed.rows
     .sort((a, b) => b.event_date.localeCompare(a.event_date) || (b.start_min ?? 0) - (a.start_min ?? 0))
     .slice(0, 20);
+
+  // 중복 제거한 소속 클럽 원본(aliases 포함) — generateMetadata에서 "볼레로(Bolero)"
+  // 형태로 설명·키워드에 쓴다. DjShowRow는 club_name만 있어 이걸로는 별칭이 안 실렸다.
+  const clubsSeenMap = new Map<string, ClubRef>();
+  for (const c of [...upcomingParsed.clubs, ...pastParsed.clubs]) clubsSeenMap.set(c.id, c);
 
   return {
     dj,
     upcoming,
     past,
+    clubsSeen: Array.from(clubsSeenMap.values()),
     favoriteCount: favoriteCount ?? 0,
     isOwner: dj.claimed_by_user_id === (auth.user?.id ?? null) && dj.claimed_by_user_id !== null,
   };
@@ -112,19 +126,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const result = await fetchDj(slug);
   if (!result) return {};
-  const { dj, upcoming, past } = result;
+  const { dj, upcoming, past, clubsSeen } = result;
   const nextShow = upcoming[0];
   const name = dj.display_name;
   const title = `${name} 라인업 - DJ 공연 일정·타임테이블`;
 
   // 설명엔 실제로 뛰는 클럽 이름을 넣는다. "프로필과 지난 이력을 확인하세요" 같은
   // 빈 문장은 검색 결과에서 클릭할 이유를 못 준다(CTR 2%대 페이지들의 공통 증상).
-  const venues = Array.from(
-    new Set([...upcoming, ...past].map((s) => s.club_name))
-  ).slice(0, 3);
-  const venueText = venues.length > 0 ? ` ${venues.join(", ")} 등에서 플레이.` : "";
+  // 한글 별칭이 있으면 "볼레로(Bolero)" 형태로 — 등록명 단독보다 검색에 유리하다.
+  const venueLabels = clubsSeen.slice(0, 3).map((c) => {
+    const primary = clubDisplayAlias({ id: c.id, name: c.name, aliases: c.aliases });
+    return primary ? `${primary}(${c.name})` : c.name;
+  });
+  const venueText = venueLabels.length > 0 ? ` ${venueLabels.join(", ")} 등에서 플레이.` : "";
+  const nextShowClub = clubsSeen.find((c) => c.id === nextShow?.club_id);
+  const nextShowPrimary = nextShowClub
+    ? clubDisplayAlias({ id: nextShowClub.id, name: nextShowClub.name, aliases: nextShowClub.aliases })
+    : null;
+  const nextShowLabel = nextShow
+    ? nextShowPrimary
+      ? `${nextShowPrimary}(${nextShow.club_name})`
+      : nextShow.club_name
+    : null;
   const description = nextShow
-    ? `${name} DJ 공연 일정. 다음 무대는 ${nextShow.club_name} ${nextShow.event_date}입니다.${venueText} 라인업과 타임테이블을 나플에서 확인하세요.`
+    ? `${name} DJ 공연 일정. 다음 무대는 ${nextShowLabel} ${nextShow.event_date}입니다.${venueText} 라인업과 타임테이블을 나플에서 확인하세요.`
     : `${name} DJ 라인업 기록과 공연 이력.${venueText} 클럽별 타임테이블을 나플에서 확인하세요.`;
 
   const url = `https://nightflow.kr/dj/${slug}`;
@@ -138,7 +163,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       `${name} DJ`,
       `${name} 공연`,
       `${name} 타임테이블`,
-      ...venues.flatMap((v) => [`${v} 라인업`, `${v} DJ`]),
+      ...clubsSeen.flatMap((c) => {
+        const primary = clubDisplayAlias({ id: c.id, name: c.name, aliases: c.aliases });
+        return primary
+          ? [`${c.name} 라인업`, `${c.name} DJ`, `${primary} 라인업`, `${primary} DJ`]
+          : [`${c.name} 라인업`, `${c.name} DJ`];
+      }),
     ],
     alternates: { canonical: url },
     // canonical·openGraph는 클럽/라인업/공연 라우트엔 전부 있는데 DJ 페이지만 빠져 있었다.

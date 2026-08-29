@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatBusinessMin, toBusinessMinutes } from "@/lib/lineups/time";
 import { getClubAliases } from "@/lib/clubs/aliases";
+// clubMatchesQuery의 haystack(정적+DB)과 같은 규칙으로 검색되도록 DB aliases도 본다.
 import { DjPickerSheet, type DjPickerResult } from "@/components/admin/DjPickerSheet";
 import { toast } from "sonner";
 import { Loader2, Upload, X, ChevronLeft, Search } from "lucide-react";
@@ -19,6 +20,7 @@ export interface ClubOption {
   id: string;
   name: string;
   area: string | null;
+  aliases: string[] | null;
 }
 
 /**
@@ -165,7 +167,7 @@ function QueueListView({
     return clubs
       .filter((c) => {
         // 이름 + 지역 + 하드코딩 별칭("버뮤다" 같은 한글 통칭)까지 검색 대상
-        const haystack = [c.name, c.area ?? "", ...getClubAliases(c.id)].map(normalizeClubSearch);
+        const haystack = [c.name, c.area ?? "", ...(c.aliases ?? []), ...getClubAliases(c.id)].map(normalizeClubSearch);
         return haystack.some((h) => h.includes(q));
       })
       .slice(0, 60);
@@ -544,7 +546,7 @@ function UnresolvedItemCard({
     if (!q) return clubs.slice(0, 30);
     return clubs
       .filter((c) => {
-        const haystack = [c.name, c.area ?? "", ...getClubAliases(c.id)].map(normalizeClubSearch);
+        const haystack = [c.name, c.area ?? "", ...(c.aliases ?? []), ...getClubAliases(c.id)].map(normalizeClubSearch);
         return haystack.some((h) => h.includes(q));
       })
       .slice(0, 30);

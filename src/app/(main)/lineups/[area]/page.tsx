@@ -7,6 +7,7 @@ import { getBusinessDateISO } from "@/lib/lineups/time";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
+import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import type { Metadata } from "next";
 
 // 지역별 라인업 — /lineups(전국, 1개)와 /clubs/[id]/lineup(클럽 하나)의 중간 계층.
@@ -48,6 +49,7 @@ interface ClubRef {
   is_test: boolean;
   status: string;
   deleted_at: string | null;
+  aliases: string[] | null;
 }
 
 interface DjRef {
@@ -103,7 +105,7 @@ async function fetchAreaLineups(area: string) {
   const today = getBusinessDateISO();
 
   const selectCols = `id, event_date, club_id, event_title,
-       clubs(id, name, area, thumbnail_url, is_test, status, deleted_at),
+       clubs(id, name, area, thumbnail_url, is_test, status, deleted_at, aliases),
        lineup_sets(sort_order, djs(id, display_name))`;
 
   // 예정만 보여주면 대구·강남·수원처럼 라인업이 적은 지역은 날짜가 지나면서
@@ -139,8 +141,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const area = decodeURIComponent(rawArea);
   if (!isSupportedArea(area)) notFound();
 
+  // 이 지역 클럽들의 한글 대표명을 몇 개 뽑아 제목·설명에 자연스럽게 실어준다.
+  // 감사 결과 이 페이지는 클럽 별칭을 정적·DB 어느 쪽도 안 읽어서 "이태원 볼레로"
+  // 같은 클럽별 롱테일을 하나도 못 받고 있었다.
+  const { upcoming, past } = await fetchAreaLineups(area);
+  const clubsInArea = Array.from(
+    new Map([...upcoming, ...past].map((r) => [r.club.id, r.club])).values()
+  );
+  const displayAliases = clubsInArea
+    .map((c) => clubDisplayAlias({ id: c.id, name: c.name, aliases: c.aliases }))
+    .filter((a): a is string => !!a)
+    .slice(0, 6);
+  const aliasText = displayAliases.length > 0 ? ` ${displayAliases.join(", ")} 등.` : "";
+
   const title = `${area} 클럽 라인업 - 오늘 밤 DJ 타임테이블`;
-  const description = `${area} 클럽의 DJ 라인업과 공연 일정을 날짜별로 모았습니다. 클럽별 타임테이블, 오늘 누가 트는지 나플에서 확인하세요.`;
+  const description = `${area} 클럽의 DJ 라인업과 공연 일정을 날짜별로 모았습니다.${aliasText} 클럽별 타임테이블, 오늘 누가 트는지 나플에서 확인하세요.`;
   const canonical = `https://nightflow.kr/lineups/${encodeURIComponent(area)}`;
   return {
     title,
@@ -156,6 +171,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       "클럽 타임테이블",
       "나플",
       "나이트플로우",
+      ...clubsInArea.flatMap((c) => clubAllAliases({ id: c.id, name: c.name, aliases: c.aliases })),
     ],
     openGraph: {
       title,
@@ -232,6 +248,19 @@ export default async function AreaLineupsPage({ params }: PageProps) {
   const pastGroups = groupByDate(past);
   const isEmpty = upcoming.length === 0 && past.length === 0;
 
+  // SEO용 sr-only 문구 — 화면엔 안 보이지만 검색엔진은 읽는다. 카드는 영문
+  // 등록명 그대로 두고(화면 UI는 안 바꾸기로 결정), 여기서만 이 지역 클럽들의
+  // 한글 대표명을 문장으로 노출해 "이태원 볼레로" 같은 클럽별 롱테일을 받는다.
+  const clubsInArea = Array.from(
+    new Map([...upcoming, ...past].map((r) => [r.club.id, r.club])).values()
+  );
+  const areaClubSentence = clubsInArea
+    .map((c) => {
+      const primary = clubDisplayAlias({ id: c.id, name: c.name, aliases: c.aliases });
+      return primary ? `${primary}(${c.name})` : c.name;
+    })
+    .join(", ");
+
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -254,6 +283,13 @@ export default async function AreaLineupsPage({ params }: PageProps) {
       <div className="min-h-screen bg-[#0A0A0A] pb-24">
         <div className="max-w-lg lg:max-w-4xl mx-auto px-4 pt-6 space-y-5">
           <LineupPageHeader active="lineups" />
+
+          {areaClubSentence && (
+            <p className="sr-only">
+              {area} 클럽 라인업 — {areaClubSentence} 등 {area} 클럽의 DJ 타임테이블을
+              나플에서 날짜별로 확인하세요.
+            </p>
+          )}
 
           <div>
             <h1 className="text-[26px] font-black tracking-tight leading-tight break-keep text-foreground">

@@ -5,6 +5,7 @@ import { ChevronRight, Mic2 } from "lucide-react";
 import { eventSlug } from "@/lib/events/slug";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
+import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import type { Metadata } from "next";
 
 // 지역별 공연 — /events(전국)와 /events/{date}/{slug}(공연 하나)의 중간 계층.
@@ -41,6 +42,7 @@ interface ClubRef {
   is_test: boolean;
   status: string;
   deleted_at: string | null;
+  aliases: string[] | null;
 }
 
 interface PerformerRef {
@@ -78,6 +80,8 @@ type EventRow = {
   title: string;
   venueName: string;
   performerNames: string[];
+  /** club_id가 있는 공연만 — 미등록 장소(약 60%)는 붙일 별칭이 없다 */
+  club: { id: string; name: string; aliases: string[] | null } | null;
 };
 
 function toRows(raw: RawRow[]): EventRow[] {
@@ -98,6 +102,7 @@ function toRows(raw: RawRow[]): EventRow[] {
       title: r.title,
       venueName: club?.name ?? r.club_name_raw,
       performerNames,
+      club: club ? { id: club.id, name: club.name, aliases: club.aliases } : null,
     });
   }
   return rows;
@@ -115,7 +120,7 @@ async function fetchAreaEvents(area: string) {
     .slice(0, 10);
 
   const selectCols = `id, event_date, title, club_id, club_name_raw, venue_area,
-       clubs(id, name, is_test, status, deleted_at),
+       clubs(id, name, is_test, status, deleted_at, aliases),
        club_event_performers(raw_name, sort_order, artists(display_name))`;
 
   const [{ data: upcomingRaw }, { data: pastRaw }] = await Promise.all([
@@ -149,8 +154,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const area = decodeURIComponent(rawArea);
   if (!isSupportedArea(area)) notFound();
 
+  // 이 지역에서 공연이 열리는 클럽(등록된 곳만)의 한글 대표명을 제목·설명에
+  // 실어준다. 감사 결과 이 페이지는 클럽 별칭을 정적·DB 어느 쪽도 안 읽고 있었다.
+  const { upcoming, past } = await fetchAreaEvents(area);
+  const clubsAtVenue = Array.from(
+    new Map(
+      [...upcoming, ...past].filter((r) => r.club).map((r) => [r.club!.id, r.club!])
+    ).values()
+  );
+  const displayAliases = clubsAtVenue
+    .map((c) => clubDisplayAlias({ id: c.id, name: c.name, aliases: c.aliases }))
+    .filter((a): a is string => !!a)
+    .slice(0, 6);
+  const aliasText = displayAliases.length > 0 ? ` ${displayAliases.join(", ")} 등.` : "";
+
   const title = `${area} 공연 일정 - 클럽 힙합·라이브 라인업`;
-  const description = `${area} 클럽·공연장의 힙합·라이브 공연 일정. 대형 기획사 홍보가 안 붙는 공연까지 나플에서 날짜별로 확인하세요.`;
+  const description = `${area} 클럽·공연장의 힙합·라이브 공연 일정.${aliasText} 대형 기획사 홍보가 안 붙는 공연까지 나플에서 날짜별로 확인하세요.`;
   const canonical = `https://nightflow.kr/events/area/${encodeURIComponent(area)}`;
   return {
     title,
@@ -165,6 +184,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       "언더그라운드 공연",
       "나플",
       "나이트플로우",
+      ...clubsAtVenue.flatMap((c) => clubAllAliases({ id: c.id, name: c.name, aliases: c.aliases })),
     ],
     openGraph: {
       title,
@@ -225,6 +245,20 @@ export default async function AreaEventsPage({ params }: PageProps) {
   const pastGroups = groupByDate(past); // 이미 내림차순 정렬된 상태로 들어온다
   const isEmpty = upcoming.length === 0 && past.length === 0;
 
+  // SEO용 sr-only 문구 — 카드는 영문 등록명 그대로 두고(화면 UI는 안 바꾸기로
+  // 결정), 여기서만 이 지역에서 공연이 열리는 클럽들의 한글 대표명을 노출한다.
+  const clubsAtVenue = Array.from(
+    new Map(
+      [...upcoming, ...past].filter((r) => r.club).map((r) => [r.club!.id, r.club!])
+    ).values()
+  );
+  const venueClubSentence = clubsAtVenue
+    .map((c) => {
+      const primary = clubDisplayAlias({ id: c.id, name: c.name, aliases: c.aliases });
+      return primary ? `${primary}(${c.name})` : c.name;
+    })
+    .join(", ");
+
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -247,6 +281,13 @@ export default async function AreaEventsPage({ params }: PageProps) {
       <div className="min-h-screen bg-[#0A0A0A] pb-24">
         <div className="max-w-lg lg:max-w-4xl mx-auto px-4 pt-6 space-y-5">
           <LineupPageHeader active="events" />
+
+          {venueClubSentence && (
+            <p className="sr-only">
+              {area} 공연 일정 — {venueClubSentence} 등에서 열리는 공연을 나플에서
+              날짜별로 확인하세요.
+            </p>
+          )}
 
           <div>
             <h1 className="text-[26px] font-black tracking-tight leading-tight break-keep text-foreground">

@@ -7,6 +7,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
 import { getBusinessDateISO } from "@/lib/lineups/time";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
+import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import type { Metadata } from "next";
 
 // 클럽별 라인업 허브 — 날짜별 라인업(/clubs/[id]/lineup/[date], 148개)의 부모.
@@ -64,7 +65,7 @@ async function fetchClubLineups(clubId: string) {
 
   const clubQuery = supabase
     .from("clubs")
-    .select("id, name, area, thumbnail_url")
+    .select("id, name, area, thumbnail_url, aliases")
     .eq("id", clubId)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) clubQuery.eq("status", "approved");
@@ -102,16 +103,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!result) return {};
   const { club, upcoming, past } = result;
 
+  // 정적 큐레이션 우선 → DB 첫 한글 폴백. 없으면 등록명만 쓴다(폴백은
+  // clubDisplayAlias 내부에서 처리).
+  const primary = clubDisplayAlias({ id, name: club.name, aliases: club.aliases });
+  const areaPrefix = club.area ? `${club.area} ` : "";
+  const headName = primary
+    ? `${areaPrefix}${primary}(${club.name})`
+    : `${areaPrefix}${club.name}`;
+  const aliases = clubAllAliases({ id, name: club.name, aliases: club.aliases });
+
   const allDjNames = Array.from(
     new Set([...upcoming, ...past].flatMap((r) => r.djNames))
   ).slice(0, 6);
   const djText = allDjNames.length > 0 ? ` ${allDjNames.join(", ")} 등이 뛴다.` : "";
 
-  const title = `${club.name} 라인업 - DJ 타임테이블·공연 일정`;
+  const title = `${headName} 라인업 - DJ 타임테이블·공연 일정`;
   const description =
     upcoming.length > 0
-      ? `${club.name}(${club.area ?? ""}) DJ 라인업. 다가오는 무대 ${upcoming.length}건.${djText} 날짜별 타임테이블을 나플에서 확인하세요.`
-      : `${club.name}(${club.area ?? ""}) DJ 라인업 기록.${djText} 지난 타임테이블을 나플에서 확인하세요.`;
+      ? `${headName} DJ 라인업. 다가오는 무대 ${upcoming.length}건.${djText} 날짜별 타임테이블을 나플에서 확인하세요.`
+      : `${headName} DJ 라인업 기록.${djText} 지난 타임테이블을 나플에서 확인하세요.`;
 
   const url = `https://nightflow.kr/clubs/${id}/lineup`;
   return {
@@ -119,11 +129,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description,
     keywords: [
       club.name,
+      ...aliases,
       `${club.name} 라인업`,
       `${club.name} DJ`,
       `${club.name} 타임테이블`,
       `${club.name} 공연`,
       ...(club.area ? [`${club.area} 클럽 라인업`, `${club.area} DJ 공연`] : []),
+      ...aliases.map((a) => `${a} 라인업`),
       ...allDjNames.map((n) => `${n} 라인업`),
     ],
     alternates: { canonical: url },

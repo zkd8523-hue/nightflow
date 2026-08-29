@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ClubDetailContent } from "@/components/clubs/ClubDetailContent";
-import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
+import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { normalizeDowSlots, summarizeSlots, pickUpcomingBenefit, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import { getBusinessDateISO } from "@/lib/lineups/time";
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // (테스트 클럽이 대부분 pending이라 개발 중 상세를 못 보는 문제).
   const metaQuery = supabase
     .from("clubs")
-    .select("name, area, thumbnail_url, dresscode")
+    .select("id, name, area, thumbnail_url, dresscode, aliases")
     .eq("id", id)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) metaQuery.eq("status", "approved");
@@ -38,13 +38,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const area = club.area || "";
-  const aliases = getClubAliases(id);
-  const primary = getPrimaryAlias(id);
+  // clubDisplayAlias: 정적 큐레이션(57곳) 우선 → DB clubs.aliases 첫 한글 표기
+  // 폴백(나머지 49곳). 감사 결과 DB 한글 별칭이 SEO 메타로 흐르는 페이지가
+  // 0곳이었다 — 이 호출이 그 배선을 처음 잇는다.
+  const primary = clubDisplayAlias({ id, name: club.name, aliases: club.aliases });
   // 메인 별칭이 있으면 "강남 에이스(Club Ace)" 형태로 노출.
   // 없으면 등록명을 그대로 사용.
   const headName = primary
     ? `${area ? `${area} ` : ""}${primary}(${club.name})`
     : `${area ? `${area} ` : ""}${club.name}`;
+  // keywords·JSON-LD alternateName·sr-only 본문에 실을 전체 별칭 — 정적 + DB
+  // 합집합, 중복 제거(대소문자 무시). 예전엔 정적 57곳만 실려서 나머지 49곳은
+  // "볼레로"로 검색해도 페이지 어디에도 그 단어가 없었다.
+  const aliases = clubAllAliases({ id, name: club.name, aliases: club.aliases });
   const descAliases = aliases.length > 0 ? ` (${aliases.join(", ")})` : "";
 
   return {
@@ -52,8 +58,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     // 새 모델의 핵심인 "라인업"을 제목에 넣는다. 기존 제목엔 라인업이 제목·설명·
     // 키워드 어디에도 없어서, 클럽명으로 들어온 사람에게 라인업의 존재 자체가
     // 안 보였다.
-    title: `${headName} 라인업·테이블 가격 - 입장료·영업시간`,
-    description: `${headName}${descAliases} DJ 라인업과 공연 일정, 테이블 가격·주대·영업시간·입장료·드레스코드 확인. 무료입장·프리드링크 게스트 간판 혜택까지 나플에서 한 번에.`,
+    title: `${headName} 위치·영업시간·입장료·라인업`,
+    description: `${headName}${descAliases} 위치·영업시간·입장료·드레스코드, DJ 라인업과 공연 일정, 테이블 가격·주대 확인. 무료입장·프리드링크 게스트 간판 혜택까지 나플에서 한 번에.`,
     keywords: [
       club.name,
       ...aliases,
@@ -67,6 +73,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         : []),
       // 헤드(클럽명 단독)는 인스타·플레이스에 밀린다. 이기는 자리는 수식어가
       // 붙은 롱테일 — 네이버·구글 양쪽에서 독립적으로 확인된 패턴이다.
+      // 위치·영업시간은 데이터 커버리지 100%(전 클럽 보유)라 우선순위 최상 —
+      // "OO 위치"가 같은 페이지에서 헤드보다 CTR 3.6배 높았다(실측).
+      `${club.name} 위치`,
+      `${club.name} 영업시간`,
       `${club.name} 라인업`,
       `${club.name} DJ`,
       `${club.name} 공연`,
@@ -77,14 +87,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       // 검색해서 들어온 사람이 답을 못 찾고 나간다.
       ...(club.dresscode ? [`${club.name} 드레스코드`] : []),
       ...aliases.map((a) => `${a} 라인업`),
+      ...aliases.map((a) => `${a} 위치`),
       ...aliases.map((a) => `${a} 클럽`),
       ...aliases.map((a) => `${a} 테이블`),
       ...aliases.map((a) => `${a} 입장료`),
     ],
     alternates: { canonical: `https://nightflow.kr/clubs/${id}` },
     openGraph: {
-      title: `${headName} 라인업·테이블 가격·무료입장`,
-      description: `${headName}${descAliases} DJ 라인업과 공연 일정, 테이블 가격·영업시간 확인, 무료입장·프리드링크 게스트 간판 혜택까지.`,
+      title: `${headName} 위치·영업시간·라인업·무료입장`,
+      description: `${headName}${descAliases} 위치·영업시간·DJ 라인업과 공연 일정, 테이블 가격 확인, 무료입장·프리드링크 게스트 간판 혜택까지.`,
       url: `https://nightflow.kr/clubs/${id}`,
       type: "website",
       // 클럽 대표 사진이 있으면 그걸 카톡 공유 카드 이미지로 — 없으면 나플 공통
@@ -344,7 +355,9 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     });
   }
 
-  const aliases = getClubAliases(id);
+  // JSON-LD alternateName용 전체 별칭 — 정적 + DB 합집합. 예전엔 getClubAliases만
+  // 써서 정적 미등록 49곳은 alternateName이 아예 안 실렸다.
+  const aliases = clubAllAliases({ id, name: club.name, aliases: club.aliases });
   // operating_hours 자유 텍스트(예: "금/토 22:00-05:00")를 OpeningHoursSpecification으로
   // 시도. 정규식 매칭 실패하면 description으로 폴백.
   const DOW_TO_SCHEMA: Record<string, string> = {
@@ -471,6 +484,11 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
   };
 
   // 별칭을 본문에 자연 문장으로 노출 ("에이스", "강남 에이스", "버뮤다" 등)
+  //
+  // ⚠️ 중복 제거 필수: clubs.aliases에 이제 "이태원 볼레로"처럼 지역 조합이
+  // DB에 직접 들어있는 클럽이 많다(2026-08-30 정비). 이 함수가 "볼레로"에서
+  // "이태원 볼레로"를 다시 만들어내면 이미 DB에 있는 것과 겹쳐 문장에
+  // "강남 에이스"가 두 번 나오는 식의 중복이 생긴다(실제로 발생했던 회귀).
   const ssrAliasSentence = (() => {
     if (aliases.length === 0) return null;
     const aliasesWithArea = club.area
@@ -478,11 +496,21 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
           a.startsWith(club.area as string) ? [a] : [a, `${club.area} ${a}`]
         )
       : aliases;
-    return aliasesWithArea.join(", ");
+    const deduped: string[] = [];
+    const seen = new Set<string>();
+    for (const a of aliasesWithArea) {
+      const key = a.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduped.push(a);
+      }
+    }
+    return deduped.join(", ");
   })();
 
-  // 메인 검색 이름 ("에이스" 등). 없으면 등록명으로 폴백.
-  const ssrPrimary = getPrimaryAlias(id);
+  // 메인 검색 이름 ("에이스" 등). 없으면 등록명으로 폴백. generateMetadata와
+  // 같은 규칙(정적 우선 → DB 첫 한글 폴백)이라야 title과 sr-only H1이 어긋나지 않는다.
+  const ssrPrimary = clubDisplayAlias({ id, name: club.name, aliases: club.aliases });
   // 본문/H1 head 라벨: "강남 에이스(Club Ace)" 형태
   const ssrHead = ssrPrimary
     ? `${ssrAreaPrefix}${ssrPrimary}(${club.name})`

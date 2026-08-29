@@ -5,6 +5,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { distanceKm, type VerifiableArea } from "@/lib/chat/areas";
+import { clubMatchesQuery } from "@/lib/search/clubMatch";
 
 /** Migration 341 트리거의 area 매핑과 일치 */
 const AREA_CODE_TO_KR: Record<VerifiableArea, string> = {
@@ -116,6 +117,10 @@ export async function fetchNearestClubsAnyArea(
 /**
  * 이름/별칭으로 클럽 검색 (LIVE 클럽 픽 — 가까운 순 목록에 없을 때 직접 검색).
  * 좌표가 있으면 거리도 함께 계산해 표시.
+ *
+ * ⚠️ 예전엔 name ILIKE만 써서 별칭이 아예 안 걸렸다 — "볼레로"로 쳐도 Bolero가
+ * 안 나왔다. 클럽이 106곳뿐이라 전체를 가져와 clubMatchesQuery(lib/search의
+ * 단일 매칭 규칙)로 거른다.
  */
 export async function searchClubsByName(
   query: string,
@@ -128,19 +133,21 @@ export async function searchClubsByName(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("clubs")
-    .select("id, name, area, latitude, longitude")
+    .select("id, name, area, latitude, longitude, aliases")
     .eq("is_test", false)
     .eq("status", "approved")
     .is("deleted_at", null)
-    .ilike("name", `%${q}%`)
-    .limit(max);
+    .limit(500);
 
   if (error || !data) {
     console.error("[searchClubs] fetch error", error);
     return [];
   }
 
-  return data.map((c) => {
+  return data
+    .filter((c) => clubMatchesQuery({ id: c.id, name: c.name, area: c.area, aliases: c.aliases }, q))
+    .slice(0, max)
+    .map((c) => {
     const lat = c.latitude as number | null;
     const lng = c.longitude as number | null;
     const hasCoords = lat != null && lng != null && userLat != null && userLng != null;

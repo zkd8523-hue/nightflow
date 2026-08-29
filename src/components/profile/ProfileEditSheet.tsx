@@ -16,7 +16,7 @@ import {
   MAX_FAVORITE_CLUBS,
 } from "@/lib/users/musicGenres";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
-import { findClubIdsByAlias } from "@/lib/clubs/aliases";
+import { clubMatchesQuery } from "@/lib/search/clubMatch";
 
 const MAX_BIO_LENGTH = 160;
 
@@ -198,37 +198,19 @@ export function ProfileEditSheet({
       const q = clubQuery.trim();
       const supabase = createClient();
 
-      const aliasMatchIds = findClubIdsByAlias(q);
-      const baseSelect = "id, name, area, thumbnail_url";
+      // 클럽이 106곳뿐이라 전체를 가져와 clubMatchesQuery(lib/search의 단일
+      // 매칭 규칙)로 거른다 — 예전엔 정적 CLUB_ALIASES(57곳)만 봐서 DB 전용
+      // 별칭 49곳("볼레로" 등)은 여기서 안 잡혔다.
+      const { data } = await supabase
+        .from("clubs")
+        .select("id, name, area, thumbnail_url, aliases")
+        .is("deleted_at", null)
+        .limit(500);
 
-      const [nameRes, aliasRes] = await Promise.all([
-        supabase
-          .from("clubs")
-          .select(baseSelect)
-          .ilike("name", `%${q}%`)
-          .is("deleted_at", null)
-          .limit(8),
-        aliasMatchIds.length > 0
-          ? supabase
-              .from("clubs")
-              .select(baseSelect)
-              .in("id", aliasMatchIds)
-              .is("deleted_at", null)
-          : Promise.resolve({ data: [] as PinnedClubLite[] }),
-      ]);
-
-      // 중복 제거 + 최대 8개
-      const seen = new Set<string>();
-      const merged: PinnedClubLite[] = [];
-      for (const c of [
-        ...((nameRes.data ?? []) as PinnedClubLite[]),
-        ...((aliasRes.data ?? []) as PinnedClubLite[]),
-      ]) {
-        if (seen.has(c.id)) continue;
-        seen.add(c.id);
-        merged.push(c);
-        if (merged.length >= 8) break;
-      }
+      const merged: PinnedClubLite[] = (data ?? [])
+        .filter((c) => clubMatchesQuery({ id: c.id, name: c.name, area: c.area, aliases: c.aliases }, q))
+        .slice(0, 8)
+        .map((c) => ({ id: c.id, name: c.name, area: c.area ?? "", thumbnail_url: c.thumbnail_url }));
 
       setSearching(false);
       setClubResults(merged);

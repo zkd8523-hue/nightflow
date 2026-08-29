@@ -5,6 +5,7 @@ import { ClubList } from "@/components/clubs/ClubList";
 import { ClubsAdminFab } from "@/components/clubs/ClubsAdminFab";
 import { pickUpcomingBenefit, getActiveWeekStartISO } from "@/lib/utils/hotdeal";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
+import { clubDisplayAlias } from "@/lib/clubs/seoAliases";
 import { hideTestData } from "@/lib/utils/testData";
 import type { HotdealBenefitsByDow } from "@/types/database";
 
@@ -171,16 +172,20 @@ export default async function ClubsIndexPage() {
             const area = (c.area as string | null) ?? "";
             const dbAliases = (c.aliases as string[] | undefined) ?? [];
             const staticAliases = getClubAliases(id);
-            const primary = getPrimaryAlias(id);
+            // clubDisplayAlias: 정적 큐레이션 우선 → DB 첫 한글 폴백. 예전엔
+            // getPrimaryAlias(정적 57곳만)라서 나머지 49곳은 이 목록에서도 항상
+            // 등록명만 보였다.
+            const primary = clubDisplayAlias({ id, name, aliases: dbAliases });
             // 정적·DB 별칭 통합 + 중복 제거 + 클럽명·메인별칭 제외 (나머지 보조 별칭)
             const restAliases = Array.from(
               new Set([...staticAliases, ...dbAliases])
             ).filter((a) => a && a !== name && a !== primary);
-            // 목록에는 대표 별칭 3개만. 예전엔 여기서 지역명까지 조합해(`이태원 데이앤나잇`)
+            // 목록에는 대표 별칭 5개까지. 예전엔 여기서 지역명까지 조합해(`이태원 데이앤나잇`)
             // 별칭을 2배로 불렸는데, 98개 클럽이 쌓이니 본문의 60%가 오타 변형 나열이 되어
-            // 구글이 /clubs를 "크롤링됨-색인 안 됨"으로 떨궜다(키워드 스터핑 판정).
-            // 오타·변형 검색어 커버리지는 클럽 개별 페이지(/clubs/[id])가 담당한다.
-            const aliasesShown = restAliases.slice(0, 3);
+            // 구글이 /clubs를 "크롤링됨-색인 안 됨"으로 떨궜다(키워드 스터핑 판정). 그 지역
+            // 조합 재생성은 다시 하지 않는다 — 이제 DB clubs.aliases에 이미 들어있다
+            // (2026-08-30 정비). 3→5로만 완화한다.
+            const aliasesShown = restAliases.slice(0, 5);
             // head: "강남 에이스(Club Ace)" / 메인 별칭 없으면 "강남 Club Ace"
             const areaPrefix = area ? `${area} ` : "";
             const head = primary

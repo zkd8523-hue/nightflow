@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Search, X, Plus, Check, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { findClubIdsByAlias } from "@/lib/clubs/aliases";
+import { clubMatchesQuery } from "@/lib/search/clubMatch";
 import { recommendCompare } from "@/lib/clubs/foreignSort";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -169,24 +169,21 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT, area 
       setSearching(true);
       const q = query.trim();
       const supabase = createClient();
-      const aliasIds = findClubIdsByAlias(q);
-      const sel = "id, name, area, thumbnail_url";
 
-      const [nameRes, aliasRes] = await Promise.all([
-        supabase.from("clubs").select(sel).ilike("name", `%${q}%`).is("deleted_at", null).limit(8),
-        aliasIds.length > 0
-          ? supabase.from("clubs").select(sel).in("id", aliasIds).is("deleted_at", null)
-          : Promise.resolve({ data: [] as ClubLite[] }),
-      ]);
+      // 클럽이 106곳뿐이라 전체를 가져와 clubMatchesQuery(lib/search의 단일
+      // 매칭 규칙)로 거른다 — 예전엔 정적 CLUB_ALIASES(57곳)만 봐서 DB 전용
+      // 별칭 49곳("볼레로" 등)은 여기서 안 잡혔다.
+      const { data } = await supabase
+        .from("clubs")
+        .select("id, name, area, thumbnail_url, aliases")
+        .is("deleted_at", null)
+        .limit(500);
 
-      const seen = new Set<string>();
-      const merged: ClubLite[] = [];
-      for (const c of [...((nameRes.data ?? []) as ClubLite[]), ...((aliasRes.data ?? []) as ClubLite[])]) {
-        if (seen.has(c.id)) continue;
-        seen.add(c.id);
-        merged.push(c);
-        if (merged.length >= 8) break;
-      }
+      const merged: ClubLite[] = (data ?? [])
+        .filter((c) => clubMatchesQuery({ id: c.id, name: c.name, area: c.area, aliases: c.aliases }, q))
+        .slice(0, 8)
+        .map((c) => ({ id: c.id, name: c.name, area: c.area ?? "", thumbnail_url: c.thumbnail_url }));
+
       setResults(merged);
       setSearching(false);
     }, 250);

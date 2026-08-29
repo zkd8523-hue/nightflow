@@ -7,6 +7,7 @@ import { ChevronLeft, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { clubDisplayAlias } from "@/lib/clubs/seoAliases";
 
 type Surface = "clubs" | "lineups" | "events";
 
@@ -38,6 +39,7 @@ interface ClubOption {
   id: string;
   name: string;
   area: string | null;
+  aliases: string[] | null;
 }
 
 export default function AdminSearchMissesPage() {
@@ -71,7 +73,7 @@ export default function AdminSearchMissesPage() {
         }),
         supabase
           .from("clubs")
-          .select("id, name, area")
+          .select("id, name, area, aliases")
           .is("deleted_at", null)
           .order("name"),
       ]);
@@ -295,11 +297,18 @@ function ResolveControl({
         className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-[13px] text-foreground focus:outline-none focus:border-amber-500/50"
       >
         <option value="">클럽 선택...</option>
-        {clubs.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name} {c.area ? `· ${c.area}` : ""}
-          </option>
-        ))}
+        {clubs.map((c) => {
+          // 방금 miss 큐에서 별칭을 등록해도 이 드롭다운은 등록명만 보여줘서
+          // "볼레로"를 등록한 관리자가 Bolero를 다시 못 찾는 문제가 있었다.
+          // 한글 대표명을 앞에 붙여 스캔·타이핑 둘 다 되게 한다.
+          const primary = clubDisplayAlias({ id: c.id, name: c.name, aliases: c.aliases });
+          const label = primary ? `${primary}(${c.name})` : c.name;
+          return (
+            <option key={c.id} value={c.id}>
+              {label} {c.area ? `· ${c.area}` : ""}
+            </option>
+          );
+        })}
       </select>
       <button
         type="button"

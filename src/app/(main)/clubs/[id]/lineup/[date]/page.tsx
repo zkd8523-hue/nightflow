@@ -8,6 +8,7 @@ import { LineupLikeButton } from "@/components/lineups/LineupLikeButton";
 import { getBusinessDateISO } from "@/lib/lineups/time";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
+import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import { BackButton } from "@/components/ui/BackButton";
 import { LineupShareButton } from "@/components/lineups/LineupShareButton";
 import type { Metadata } from "next";
@@ -52,7 +53,7 @@ async function fetchLineup(clubId: string, date: string) {
 
   const clubQuery = supabase
     .from("clubs")
-    .select("id, name, area, thumbnail_url")
+    .select("id, name, area, thumbnail_url, aliases")
     .eq("id", clubId)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) clubQuery.eq("status", "approved");
@@ -84,8 +85,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!result?.club) return {};
 
   const [y, m, d] = date.split("-");
-  const title = `${result.club.name} ${parseInt(m, 10)}월 ${parseInt(d, 10)}일 라인업 - DJ 타임테이블`;
-  const description = `${result.club.name}(${result.club.area ?? ""}) ${y}년 ${parseInt(m, 10)}월 ${parseInt(d, 10)}일 DJ 타임테이블. 나플에서 시간대별 라인업을 확인하세요.`;
+  const { club } = result;
+  const primary = clubDisplayAlias({ id, name: club.name, aliases: club.aliases });
+  const areaPrefix = club.area ? `${club.area} ` : "";
+  const headName = primary ? `${areaPrefix}${primary}(${club.name})` : `${areaPrefix}${club.name}`;
+  const aliases = clubAllAliases({ id, name: club.name, aliases: club.aliases });
+
+  const title = `${headName} ${parseInt(m, 10)}월 ${parseInt(d, 10)}일 라인업 - DJ 타임테이블`;
+  const description = `${headName} ${y}년 ${parseInt(m, 10)}월 ${parseInt(d, 10)}일 DJ 타임테이블. 나플에서 시간대별 라인업을 확인하세요.`;
   const url = `https://nightflow.kr/clubs/${id}/lineup/${date}`;
   return {
     title,
@@ -93,14 +100,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     // 페이지별 keywords를 안 주면 레이아웃 기본값(강남 클럽·홍대 클럽…)이 그대로
     // 나가서 정작 이 페이지의 클럽명·DJ명이 하나도 안 실린다.
     keywords: [
-      result.club.name,
-      `${result.club.name} 라인업`,
-      `${result.club.name} DJ`,
-      `${result.club.name} 타임테이블`,
-      `${result.club.name} 공연`,
-      ...(result.club.area
-        ? [`${result.club.area} 클럽 라인업`, `${result.club.area} DJ 공연`]
-        : []),
+      club.name,
+      ...aliases,
+      `${club.name} 라인업`,
+      `${club.name} DJ`,
+      `${club.name} 타임테이블`,
+      `${club.name} 공연`,
+      ...(club.area ? [`${club.area} 클럽 라인업`, `${club.area} DJ 공연`] : []),
+      ...aliases.map((a) => `${a} 라인업`),
     ],
     alternates: { canonical: url },
     // 공유했을 때 카톡 등에서 미리보기 카드가 뜨도록 — 이 페이지엔 그동안 빠져 있었다

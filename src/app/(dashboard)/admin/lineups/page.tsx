@@ -24,7 +24,7 @@ export default async function AdminLineupsPage() {
   const [{ data: clubs }, { data: drafts }, { data: reports }] = await Promise.all([
     supabase
       .from("clubs")
-      .select("id, name, area")
+      .select("id, name, area, aliases")
       .is("deleted_at", null)
       .eq("status", "approved")
       .order("name"),
