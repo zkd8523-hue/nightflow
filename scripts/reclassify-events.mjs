@@ -31,6 +31,28 @@ for (const l of readFileSync(".env.local", "utf8").split("\n")) {
   if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, "");
 }
 const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+
+// ── 가수 사전 1차 필터 ──────────────────────────────────────────────────
+// 위키백과 가수/래퍼 분류 + 문서 별칭(리다이렉트) 7,257개.
+// data/known-singers.json — scripts/build-singer-dict.mjs 로 갱신한다.
+//
+// 왜 필요한가(2026-08-30 실측): LLM 판정만 쓰면 아티스트가 자기 릴리즈 파티에서
+// DJ도 트는 밤을 통째로 DJ 파티로 내린다. NAFLA "INSTINCT" PRE-LISTENING PARTY,
+// Colde "ICE BREAK CLUB" EP RELEASE PARTY 가 그렇게 묻혔다.
+//
+// ⚠️ "걸리면 가수 확정"으로만 쓴다. 안 걸린다고 DJ로 단정하면 안 된다 —
+// 박재범·김하온처럼 위키 분류에 빠진 가수가 있어 재현율은 낮다(정밀도만 높다).
+// 실측: DJ 8명(ANU·YETSUBY·SEESEA·LUF·BOOGIE·STONER·PAVIE·MINKY) 전원을
+// 정확히 걸러냈다 — 오탐 0. 1차 가드레일에 필요한 성질이 이것이다.
+const normName = (n) =>
+  String(n ?? "").toUpperCase().replace(/^(DJ|MC)\s*/i, "").replace(/[^\p{L}\p{N}]/gu, "");
+const KNOWN_SINGERS = new Set(
+  JSON.parse(readFileSync("data/known-singers.json", "utf8")).map(normName).filter((n) => n.length >= 2)
+);
+const isKnownSinger = (name) => {
+  const k = normName(name);
+  return k.length >= 2 && KNOWN_SINGERS.has(k);
+};
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const normalizeDjName = (s) =>
@@ -153,10 +175,24 @@ for (const [i, r] of targets.entries()) {
   // 가수로 남았다. 클럽 게시물에서 performance 는 DJ 셋을 가리키는 말로도
   // 그냥 쓰인다 — 프롬프트에도 "(LIVE)는 DJ 라이브셋"이라 써놓고 여기 가드만
   // 반대로 짜서 서로 모순이었다.
+  //
+  // 릴리즈/프리리스닝 파티를 신호에 넣은 이유(2026-08-30 실측): 아티스트 본인이
+  // 자기 앨범 파티에서 DJ도 트는 밤이 흔한데, 이 가드가 그걸 통째로 DJ로 밀어냈다.
+  //   NAFLA "INSTINCT" PRE-LISTENING PARTY → DJ[..., NAFLA]
+  //   Colde "ICE BREAK CLUB" NEW EP RELEASE PARTY → DJ[..., Colde, Khakii]
+  // 둘 다 "그 사람 보러 가는 밤"이라 공연이 맞다. 가수가 한 명이라도 있으면
+  // 공연으로 본다는 아래 규칙이 이 가드 때문에 무력화되고 있었다.
   const SINGER_SIGNAL_RE = /콘서트|단독공연|쇼케이스|보컬|랩(?:을|하는|퍼)|가수|아티스트|SPECIAL\s*CYPHER|CONCERT|SHOWCASE/i;
+  // 사전에 있는 이름은 캡션 신호와 무관하게 가수로 확정한다(위 KNOWN_SINGERS).
+  // 이 보정이 없으면 아래 가드가 NAFLA·Colde 같은 실제 가수까지 DJ로 밀어낸다.
+  const dictSingers = [...singers, ...djNames].filter(isKnownSinger);
   if (singers.length > 0 && !SINGER_SIGNAL_RE.test(String(r.raw_caption ?? ""))) {
     djNames = [...djNames, ...singers];
     singers = [];
+  }
+  if (dictSingers.length > 0) {
+    const seen = new Set(singers.map((n) => String(n).toUpperCase()));
+    for (const n of dictSingers) if (!seen.has(String(n).toUpperCase())) singers.push(n);
   }
 
   // 가수가 한 명이라도 잡히면 공연으로 남긴다. is_live_show 는 참고만 —
