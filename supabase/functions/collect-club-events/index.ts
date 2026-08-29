@@ -996,13 +996,17 @@ async function runApifyRestricted(handles: string[]): Promise<any[]> {
         typeof p.taken_at === "number"
           ? new Date(p.taken_at * 1000).toISOString()
           : (p.taken_at ?? null),
-      // post_type: "image" | "video" | "carousel" → 기본 액터 표기로
+      // post_type: "image" | "video" | "carousel"
+      // ⚠️ APIFY_TYPE_MAP 을 거친 "후"의 값을 넣어야 한다. 기본 액터의 원시 표기
+      //    ("Image"/"Sidecar"/"Video")를 넣으면 passesPreVisionGate 가 대문자만
+      //    받으므로 Vision 을 통째로 건너뛴다(실측: BELPOS·OUTPUT·Veil 3곳의
+      //    포스터 타임테이블이 이것 때문에 전부 유실됐다).
       type:
         String(p.post_type ?? "").toLowerCase() === "video"
-          ? "Video"
+          ? "VIDEO"
           : String(p.post_type ?? "").toLowerCase() === "carousel"
-            ? "Sidecar"
-            : "Image",
+            ? "CAROUSEL_ALBUM"
+            : "IMAGE",
       // media[0].media_url 이 실제 필드명이다(실측). carousel 이면 첫 장이
       // 포스터인 경우가 대부분이고, video 는 이 URL이 썸네일이라 Vision 이 읽는다.
       displayUrl: Array.isArray(p.media)
