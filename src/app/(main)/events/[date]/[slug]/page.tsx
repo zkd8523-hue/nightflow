@@ -143,7 +143,20 @@ async function fetchEvent(date: string, slugParam: string) {
   const linkedNames = new Set(performers.map((p) => p.raw_name));
   const extra = (row.lineup ?? []).filter((n) => n && !linkedNames.has(n));
 
-  return { row, club: club ?? null, venueRow, performers, extra };
+  // 이 공연장의 다른 공연 수 — 카드에 "그 외 N개"로 적어 누를 이유를 만든다.
+  // 이름·주소만 있는 카드는 눌러도 뭐가 나올지 몰라 아무도 안 누른다.
+  let venueOtherCount = 0;
+  if (venueRow) {
+    const { count } = await supabase
+      .from("club_events")
+      .select("id", { count: "exact", head: true })
+      .eq("venue_id", venueRow.id)
+      .eq("status", "approved")
+      .neq("id", row.id);
+    venueOtherCount = count ?? 0;
+  }
+
+  return { row, club: club ?? null, venueRow, venueOtherCount, performers, extra };
 }
 
 /**
@@ -226,7 +239,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   const found = await fetchEvent(date, slug);
   if (!found) notFound();
 
-  const { row, club, venueRow, performers, extra } = found;
+  const { row, club, venueRow, venueOtherCount, performers, extra } = found;
   const title = row.title ?? "공연";
   const venue = normalizeVenueName(row.club_name_raw) || club?.name || "(장소 미상)";
   const area = club?.area ?? row.venue_area ?? "";
@@ -429,6 +442,14 @@ export default async function EventDetailPage({ params }: PageProps) {
                     <p className="flex items-center gap-1.5 mt-2 text-[12px] text-muted-foreground">
                       <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                       <span className="truncate">{venueRow.address}</span>
+                    </p>
+                  )}
+
+                  {/* 이름·주소만 있는 카드는 눌러도 뭐가 나올지 몰라 아무도 안 누른다.
+                      "그 외 N개"로 여기 뭐가 더 있는지 먼저 알려준다. */}
+                  {venueOtherCount > 0 && (
+                    <p className="mt-2 text-[13px] font-bold text-[#ff7ab5] group-hover:text-[#ff2f92] transition-colors">
+                      그 외 {venueOtherCount}개 공연 일정 보기 →
                     </p>
                   )}
                 </Link>

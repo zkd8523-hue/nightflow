@@ -5,7 +5,7 @@ import Link from "next/link";
 import { eventSlug } from "@/lib/events/slug";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mic2, Search, X, ExternalLink, ChevronRight, ThumbsUp } from "lucide-react";
+import { Mic2, Search, X, ExternalLink, ChevronRight, ThumbsUp, CalendarDays } from "lucide-react";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
@@ -78,6 +78,9 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
   // 달력에서 고른 날짜. 지역과 달리 URL에 싣지 않는다 — 달력은 목록을 좁히는
   // 임시 조작이고, 날짜별 착지 URL은 /events/[date]가 따로 맡는다.
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  // 달력은 기본이 닫힘이다. 예정 공연이 10일치뿐이라 항상 펼쳐두면 빈 격자가
+  // 목록을 화면 밖으로 밀어낸다(/lineups의 날짜 칩과 같은 토글 규칙).
+  const [calOpen, setCalOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -171,6 +174,24 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
               ))}
             </div>
 
+            {/* 달력 토글 — /lineups의 날짜 칩 버튼과 같은 규약(닫을 때 선택을 푼다.
+                격자만 접히고 필터가 남으면 왜 걸러졌는지 안 보인다). */}
+            <button
+              onClick={() => {
+                if (calOpen) setSelectedDate(null);
+                setCalOpen(!calOpen);
+              }}
+              aria-pressed={calOpen}
+              aria-label={calOpen ? "달력 닫기" : "달력 열기"}
+              className={`shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-full transition-colors ${
+                calOpen || selectedDate
+                  ? "bg-amber-500/15 text-amber-400"
+                  : "bg-[#1C1C1E] text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <CalendarDays className="w-4 h-4" />
+            </button>
+
             <button
               onClick={() => {
                 // 닫을 때 검색어를 비운다 — 창만 사라지고 목록이 걸러진 채 남으면 원인을 못 찾는다
@@ -217,9 +238,9 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
           </div>
         )}
 
-        {/* 달력 — 검색 중에는 감춘다. 검색은 날짜를 가로지르는 조작이라
-            격자와 같이 두면 무엇이 목록을 좁혔는지 알 수 없다. */}
-        {!query.trim() && rows.length > 0 && (
+        {/* 달력 — 버튼으로 연 때만. 검색 중에는 감춘다(검색은 날짜를 가로지르는
+            조작이라 격자와 같이 두면 무엇이 목록을 좁혔는지 알 수 없다). */}
+        {calOpen && !query.trim() && rows.length > 0 && (
           <EventMonthCalendar
             countsByDate={countsByDate}
             selectedDate={selectedDate}

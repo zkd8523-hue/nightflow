@@ -47,8 +47,16 @@ export function EventMonthCalendar({
   onSelectDate: (date: string | null) => void;
 }) {
   const today = todayKST();
-  // 선택된 날이 있으면 그 달을, 없으면 오늘이 속한 달을 연다.
-  const [ym, setYm] = useState<string>(() => (selectedDate ?? today).slice(0, 7));
+  // 처음 열 때 어느 달을 보여줄지.
+  // 그냥 "오늘의 달"로 두면 월말(8/30)에 열었을 때 31칸 중 1칸만 찬 격자가 뜬다.
+  // 이번 달에 남은 공연이 없으면 공연이 있는 가장 이른 달로 건너뛴다.
+  const [ym, setYm] = useState<string>(() => {
+    if (selectedDate) return selectedDate.slice(0, 7);
+    const thisMonth = today.slice(0, 7);
+    const upcoming = [...countsByDate.keys()].filter((d) => d >= today).sort();
+    if (upcoming.some((d) => d.startsWith(thisMonth))) return thisMonth;
+    return upcoming[0]?.slice(0, 7) ?? thisMonth;
+  });
 
   const { firstDow, daysInMonth } = useMemo(() => monthShape(ym), [ym]);
   const [year, month] = ym.split("-").map(Number);
