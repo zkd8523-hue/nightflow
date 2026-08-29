@@ -189,9 +189,15 @@ function decideEventStatus(ev: {
 // 하고 게시를 막진 않았다). 이제 게스트 1명 공지도 정당한 라인업으로 받아들이면서
 // (sets.length<2 게이트를 없앰) 무조건 자동 게시하면 오판이 그대로 공개될 위험이
 // 커진다 — 그래서 "판독이 의심스러운" 경우만 좁게 걸러 pending으로 보낸다.
+//
+// ⚠️ "1명 + 시간 없음"은 약한 판독이 아니다(2026-08-30 정정). 게스트 DJ 공지는
+//    원래 한 명이고 시간을 안 적는 게 정상 형태다 — Round Lounge
+//    "08/29 (Sat) SPECIAL GUEST ENDUKE @djenduke" 가 그 예다. 그 조건으로
+//    거르면 위 주석이 말한 "게스트 1명 공지도 받아들인다"가 무력화돼, 정상
+//    라인업이 매번 검토 큐에 쌓인다. 이름을 못 읽은 경우(droppedRowCount)만
+//    사람이 본다.
 function isWeakLineup(rows: NormalizedExtractionSetRow[], droppedRowCount: number): boolean {
   if (droppedRowCount > 0) return true; // 이름을 통째로 못 읽은 행이 있었다
-  if (rows.length === 1 && rows[0].start_min === null) return true; // 가장 근거가 약한 케이스
   return false;
 }
 

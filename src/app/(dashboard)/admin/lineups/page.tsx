@@ -31,7 +31,7 @@ export default async function AdminLineupsPage() {
     supabase
       .from("lineup_drafts")
       .select(
-        "id, club_id, origin, poster_url, normalized, confidence, confidence_detail, status, created_at, clubs(name, area)"
+        "id, club_id, origin, poster_url, normalized, confidence, confidence_detail, status, created_at, ig_permalink, clubs(name, area)"
       )
       .eq("status", "pending")
       .order("confidence", { ascending: false, nullsFirst: false })

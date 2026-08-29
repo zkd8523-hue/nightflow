@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
     ticketUrl?: unknown;
     sets?: unknown;
     source?: unknown;
+    /** "lineup"(기본) = DJ 라인업 / "event" = 공연 탭으로 보낸다 */
+    publishAs?: unknown;
   };
   try {
     body = await req.json();
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
-  const { draftId, clubId, eventDate, doorOpenMin, eventTitle, posterUrl, ticketUrl, sets, source } = body;
+  const { draftId, clubId, eventDate, doorOpenMin, eventTitle, posterUrl, ticketUrl, sets, source, publishAs } = body;
 
   if (typeof clubId !== "string" || !clubId) {
     return NextResponse.json({ error: "clubId required" }, { status: 400 });
@@ -174,6 +176,45 @@ export async function POST(req: NextRequest) {
       end_min: s.endMin,
       raw_name: s.rawName ?? null,
     });
+  }
+
+  // 3-a) 공연으로 보내기 — 관리자가 검토 큐에서 "공연"을 고른 경우.
+  //
+  // 왜 필요한가(2026-08-30): 자동 판정은 출연자마다 role(dj/artist) 하나로
+  // 갈리는데, 그게 틀리면 밴드 공연이 DJ 탭에 올라간다. Club FF "82nd Live
+  // Club day"(인디록 밴드 공지)가 실제로 DJ 라인업으로 잡혔다. 클럽 하나가
+  // 밴드 공연도 하고 DJ 파티도 하므로 클럽 단위로는 못 정한다 — 사람이 이
+  // 게시물 단위로 고르는 게 유일한 해법이다.
+  if (publishAs === "event") {
+    const lineupNames = resolvedSets
+      .map((s) => (s as { raw_name?: string | null }).raw_name)
+      .filter((n): n is string => typeof n === "string" && n.trim().length > 0);
+
+    const { error: evErr } = await supabaseAdmin.from("club_events").upsert(
+      {
+        club_id: clubId,
+        club_name_raw: null,
+        event_date: eventDate,
+        title: typeof eventTitle === "string" ? eventTitle : null,
+        lineup: lineupNames,
+        ticket_url: typeof ticketUrl === "string" ? ticketUrl : null,
+        source_account: "admin_review",
+        source_post_id: `draft:${typeof draftId === "string" ? draftId : eventDate}`,
+        status: "approved",
+        status_reason: null,
+      },
+      { onConflict: "source_post_id,club_name_raw,event_date" }
+    );
+    if (evErr) {
+      return NextResponse.json({ error: `공연 저장 실패: ${evErr.message}` }, { status: 500 });
+    }
+    if (typeof draftId === "string") {
+      await supabaseAdmin
+        .from("lineup_drafts")
+        .update({ status: "published", reviewed_at: new Date().toISOString() })
+        .eq("id", draftId);
+    }
+    return NextResponse.json({ success: true, publishedAs: "event" });
   }
 
   // 3) upsert_club_lineup RPC

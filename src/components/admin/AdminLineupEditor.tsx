@@ -9,7 +9,7 @@ import { getClubAliases } from "@/lib/clubs/aliases";
 // clubMatchesQuery의 haystack(정적+DB)과 같은 규칙으로 검색되도록 DB aliases도 본다.
 import { DjPickerSheet, type DjPickerResult } from "@/components/admin/DjPickerSheet";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ChevronLeft, Search } from "lucide-react";
+import { Loader2, Upload, X, ChevronLeft, Search, ExternalLink } from "lucide-react";
 
 /** 클럽 검색 정규화 — 공백·특수문자 제거 후 소문자. "club bermuda" == "CLUBBERMUDA" */
 function normalizeClubSearch(s: string): string {
@@ -55,6 +55,8 @@ export interface DraftListItem {
   confidence_detail: Record<string, number> & { blockers?: string[] } | null;
   status: string;
   created_at: string;
+  /** 인스타 원본 게시물 — 검토할 때 캡션·포스터를 직접 보려고 쓴다 */
+  ig_permalink: string | null;
   clubs: { name: string; area: string | null } | null;
 }
 
@@ -183,7 +185,10 @@ function QueueListView({
 
   const filteredClubs = useMemo(() => {
     const q = normalizeClubSearch(clubQuery);
-    if (!q) return clubs.slice(0, 60);
+    // 검색어가 없으면 아무것도 안 보여준다. 포스터를 올리면 클럽은 자동으로
+    // 찾으므로(아래 안내 문구) 목록을 미리 펼칠 이유가 없다 — 100곳 가까운
+    // 목록이 검색창 아래를 덮어 정작 필요한 업로드 영역을 밀어냈다.
+    if (!q) return [];
     return clubs
       .filter((c) => {
         // 이름 + 지역 + 하드코딩 별칭("버뮤다" 같은 한글 통칭)까지 검색 대상
@@ -221,6 +226,7 @@ function QueueListView({
       club_id: clubId,
       origin: "manual",
       poster_url: null,
+      ig_permalink: null, // 관리자 직접 업로드라 원본 게시물이 없다
       normalized: {
         event_date: data.normalized.eventDate,
         door_open_min: data.normalized.doorOpenMin,
@@ -668,6 +674,9 @@ function DraftEditView({
   const [autoLink, setAutoLink] = useState(true);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  // 이 draft 를 DJ 라인업으로 볼지 공연으로 볼지. 자동 판정(role)이 틀릴 때
+  // 사람이 여기서 바로잡는다 — 밴드 공연이 DJ 탭에 올라가는 걸 막는 유일한 지점.
+  const [publishAs, setPublishAs] = useState<"lineup" | "event">("lineup");
   // 일괄 등록 직후 "인스타 못 찾은 DJ 목록"을 보여줄지
   const [showUnregisteredList, setShowUnregisteredList] = useState(false);
 
@@ -762,6 +771,7 @@ function DraftEditView({
           posterUrl: draft.poster_url,
           ticketUrl: ticketUrl || null,
           source: draft.origin === "ig" ? "ig_review" : "admin_vision",
+          publishAs,
           sets: rows.map((r) => ({
             startMin: r.startMin,
             endMin: r.endMin,
@@ -779,7 +789,7 @@ function DraftEditView({
         setSaving(false);
         return;
       }
-      toast.success("라인업이 게시됐어요.");
+      toast.success(publishAs === "event" ? "공연으로 게시됐어요." : "라인업이 게시됐어요.");
       onPublished(draft.id);
     } catch {
       toast.error("저장 중 오류가 발생했어요.");
@@ -794,7 +804,44 @@ function DraftEditView({
           <ChevronLeft className="w-4 h-4" /> 목록으로
         </button>
 
-        <h1 className="text-lg font-black text-foreground">{club?.name ?? "?"}</h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-lg font-black text-foreground">{club?.name ?? "?"}</h1>
+          {/* 원본 게시물 — 캡션·포스터를 직접 봐야 DJ인지 밴드인지 판단이 된다.
+              (Club FF "82nd Live Club day"처럼 캡션만으로는 안 갈리는 게 있다) */}
+          {draft.ig_permalink && (
+            <a
+              href={draft.ig_permalink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-brand-amber hover:underline"
+            >
+              원본 게시물 <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </div>
+
+        {/* DJ 라인업 / 공연 — 클럽이 밴드 공연도 하고 DJ 파티도 한다.
+            자동 판정이 role 하나로 가르는데 그게 틀릴 때 여기서 사람이 정한다. */}
+        <div className="bg-[#1C1C1E] rounded-2xl p-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setPublishAs("lineup")}
+            className={`flex-1 py-2 rounded-xl text-sm font-bold transition-colors ${
+              publishAs === "lineup" ? "bg-white text-black" : "bg-[#0A0A0A] text-muted-foreground"
+            }`}
+          >
+            DJ 라인업
+          </button>
+          <button
+            type="button"
+            onClick={() => setPublishAs("event")}
+            className={`flex-1 py-2 rounded-xl text-sm font-bold transition-colors ${
+              publishAs === "event" ? "bg-white text-black" : "bg-[#0A0A0A] text-muted-foreground"
+            }`}
+          >
+            공연
+          </button>
+        </div>
 
         {draft.poster_url && (
           <div className="relative w-full aspect-[3/4] max-h-64 rounded-2xl overflow-hidden bg-[#1C1C1E]">
