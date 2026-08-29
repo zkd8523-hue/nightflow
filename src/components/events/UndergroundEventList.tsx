@@ -21,6 +21,8 @@ export interface EventPerformer {
   id: string;
   display_name: string;
   instagram: string | null;
+  /** 있으면 이름이 /artists/{slug}로 링크된다(공연 2건 미만은 페이지가 sitemap엔 없지만 라우트 자체는 살아있다) */
+  slug: string | null;
   /** artist_aliases — 검색 전용(화면 미노출) */
   aliases?: string[];
 }
@@ -360,11 +362,21 @@ function EventCard({
           </div>
 
           {total > 0 && (
-            <p className="mt-1.5 text-[12px] leading-relaxed text-neutral-300">
+            <p className="mt-1.5 text-[12px] leading-relaxed text-neutral-300 line-clamp-2">
               {row.performers.map((p, i) => (
                 <span key={p.id}>
                   {i > 0 && <span className="text-neutral-600">, </span>}
-                  {p.display_name}
+                  {p.slug ? (
+                    <Link
+                      href={`/artists/${p.slug}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="relative z-10 hover:text-foreground transition-colors"
+                    >
+                      {p.display_name}
+                    </Link>
+                  ) : (
+                    p.display_name
+                  )}
                 </span>
               ))}
               {row.extra_names.map((n, i) => (

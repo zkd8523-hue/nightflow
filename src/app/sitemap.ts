@@ -172,7 +172,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const lineupTo = new Date(kstNow.getTime() + 14 * dayMs).toISOString().slice(0, 10);
 
     const [auctionsRes, clubsRes, puzzlesRes, mdsRes, lineupsRes,
-      eventsRes, djsRes, venuesRes,
+      eventsRes, djsRes, venuesRes, artistPerfRes,
     ] = await Promise.all([
       supabase
         .from("auctions")
@@ -250,6 +250,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq("is_test", false)
         .is("deleted_at", null)
         .limit(200),
+      // 아티스트(/artists/{slug}) 카운트용 — 공연 1건뿐(1,129명 중 823명, 73%)은
+      // thin content라 제외한다. count>=2 필터는 PostgREST가 직접 못 하므로
+      // 출연 행을 다 받아 이후 JS에서 집계한다(2,003행 — limit 넉넉히).
+      supabase
+        .from("club_event_performers")
+        .select("artist_id, club_events!inner(status)")
+        .eq("club_events.status", "approved")
+        .limit(5000),
     ]);
 
     const auctionRoutes: MetadataRoute.Sitemap = (auctionsRes.data ?? []).map((a) => {
@@ -359,6 +367,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6,
       }));
 
+    // 공연 2건 이상인 아티스트만 — thin content 제외 기준은 공연장(venueRoutes)과 동일 원칙.
+    const artistEventCounts = new Map<string, number>();
+    for (const p of artistPerfRes.data ?? []) {
+      artistEventCounts.set(p.artist_id, (artistEventCounts.get(p.artist_id) ?? 0) + 1);
+    }
+    const qualifyingArtistIds = Array.from(artistEventCounts.entries())
+      .filter(([, count]) => count >= 2)
+      .map(([id]) => id);
+
+    let artistRoutes: MetadataRoute.Sitemap = [];
+    if (qualifyingArtistIds.length > 0) {
+      const { data: artistsData } = await supabase
+        .from("artists")
+        .select("slug, updated_at")
+        .in("id", qualifyingArtistIds)
+        .eq("is_test", false)
+        .is("deleted_at", null)
+        .limit(1000);
+      artistRoutes = (artistsData ?? [])
+        .filter((a) => a.slug)
+        .map((a) => ({
+          url: `${BASE_URL}/artists/${a.slug}`,
+          lastModified: now,
+          changeFrequency: "weekly" as const,
+          priority: 0.6,
+        }));
+    }
+
     return [
       ...staticRoutes,
       ...auctionRoutes,
@@ -371,6 +407,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...eventRoutes,
       ...djRoutes,
       ...venueRoutes,
+      ...artistRoutes,
     ];
   } catch {
     return staticRoutes;

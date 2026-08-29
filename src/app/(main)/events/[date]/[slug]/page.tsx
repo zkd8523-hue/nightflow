@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Instagram, ExternalLink, ChevronLeft, ChevronRight, MapPin, Clock, Disc3 } from "lucide-react";
+import { Instagram, ExternalLink, ChevronLeft, ChevronRight, MapPin, Clock, Disc3, Mic2 } from "lucide-react";
 import { createServerClient } from "@supabase/ssr";
 import { eventSlug, normalizeSlugParam, isValidEventDate } from "@/lib/events/slug";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
+import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { EventShareButton } from "@/components/events/EventShareButton";
 import { LineupLikeButton } from "@/components/lineups/LineupLikeButton";
@@ -24,6 +25,8 @@ interface ArtistRef {
   id: string;
   display_name: string;
   instagram: string | null;
+  /** 있으면 이름이 /artists/{slug}로 링크된다 */
+  slug: string | null;
   // 래퍼는 한글/영문 표기가 둘 다 통용된다("팔로알토" vs "Paloalto").
   // 별칭을 metadata keywords에만 넣는다 — 본문에 나열하면 /clubs가 색인 거부됐던
   // 키워드 스터핑과 같은 문제가 된다.
@@ -42,6 +45,16 @@ interface ClubRef {
   instagram: string | null;
   is_test: boolean;
   status: string;
+  deleted_at: string | null;
+}
+
+interface VenueRef {
+  id: string;
+  name: string;
+  slug: string;
+  area: string | null;
+  address: string | null;
+  is_test: boolean;
   deleted_at: string | null;
 }
 
@@ -80,7 +93,8 @@ async function fetchEvent(date: string, slugParam: string) {
     .select(
       `id, event_date, title, club_id, club_name_raw, venue_area, lineup, source_url, source_account, ticket_url,
        clubs(id, name, area, address, thumbnail_url, tags, operating_hours, instagram, is_test, status, deleted_at),
-       club_event_performers(raw_name, sort_order, artists(id, display_name, instagram, artist_aliases(alias)))`
+       venues(id, name, slug, area, address, is_test, deleted_at),
+       club_event_performers(raw_name, sort_order, artists(id, display_name, instagram, slug, artist_aliases(alias)))`
     )
     .eq("status", "approved")
     .eq("event_date", date)
@@ -98,6 +112,7 @@ async function fetchEvent(date: string, slugParam: string) {
     source_account: string | null;
     ticket_url: string | null;
     clubs: ClubRef | ClubRef[] | null;
+    venues: VenueRef | VenueRef[] | null;
     club_event_performers: Array<{
       raw_name: string;
       sort_order: number;
@@ -115,6 +130,11 @@ async function fetchEvent(date: string, slugParam: string) {
   // club_id가 없는 공연(미등록 장소, 492건 중 283건)은 그대로 살린다.
   if (club && (club.is_test || club.deleted_at || club.status !== "approved")) return null;
 
+  // 공연장(venues)은 클럽과 배타적이다 — 클럽이 없을 때만 본다.
+  const venueRaw = firstOf(row.venues);
+  const venueRow =
+    venueRaw && !venueRaw.deleted_at && (SHOW_TEST_DATA || !venueRaw.is_test) ? venueRaw : null;
+
   const performers = (row.club_event_performers ?? [])
     .slice()
     .sort((a, b) => a.sort_order - b.sort_order)
@@ -123,7 +143,7 @@ async function fetchEvent(date: string, slugParam: string) {
   const linkedNames = new Set(performers.map((p) => p.raw_name));
   const extra = (row.lineup ?? []).filter((n) => n && !linkedNames.has(n));
 
-  return { row, club: club ?? null, performers, extra };
+  return { row, club: club ?? null, venueRow, performers, extra };
 }
 
 /**
@@ -206,7 +226,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   const found = await fetchEvent(date, slug);
   if (!found) notFound();
 
-  const { row, club, performers, extra } = found;
+  const { row, club, venueRow, performers, extra } = found;
   const title = row.title ?? "공연";
   const venue = normalizeVenueName(row.club_name_raw) || club?.name || "(장소 미상)";
   const area = club?.area ?? row.venue_area ?? "";
@@ -375,6 +395,43 @@ export default async function EventDetailPage({ params }: PageProps) {
                     </p>
                   )}
                 </Link>
+              ) : venueRow ? (
+                /* 공연장(venues)에서 열린 공연 — 클럽이 아니라 라이브홀이라 주대·영업시간
+                   개념이 없다. 이름·지역·주소까지만 보여주고 공연장 상세로 보낸다. */
+                <Link
+                  href={`/venues/${venueRow.slug}`}
+                  aria-label={`${venueRow.name} 공연장 정보 보기`}
+                  className="block group"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-13 h-13 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                      <Mic2 className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="text-2xl font-black tracking-tight truncate group-hover:text-[#ff2f92] transition-colors">
+                          {venueRow.name}
+                        </span>
+                        {(venueRow.area || area) && (
+                          <span className="text-[13px] text-muted-foreground shrink-0">
+                            {venueRow.area || area}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                    <ChevronRight
+                      className="w-5 h-5 shrink-0 text-muted-foreground group-hover:text-[#ff2f92] transition-colors"
+                      aria-hidden="true"
+                    />
+                  </div>
+
+                  {venueRow.address && (
+                    <p className="flex items-center gap-1.5 mt-2 text-[12px] text-muted-foreground">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{venueRow.address}</span>
+                    </p>
+                  )}
+                </Link>
               ) : (
                 <span className="block text-2xl font-black tracking-tight truncate">
                   {venue}
@@ -394,9 +451,16 @@ export default async function EventDetailPage({ params }: PageProps) {
               {performers.map((p, i) => {
                 const nm = p.artist?.display_name ?? p.raw_name;
                 const ig = p.artist?.instagram;
+                const artistSlug = p.artist?.slug;
                 return (
                   <div key={`${p.raw_name}-${i}`} className="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0">
-                    <span className="text-[15px] font-bold min-w-0 truncate">{nm}</span>
+                    {artistSlug ? (
+                      <Link href={`/artists/${artistSlug}`} className="text-[15px] font-bold min-w-0 truncate hover:text-brand-amber transition-colors">
+                        {nm}
+                      </Link>
+                    ) : (
+                      <span className="text-[15px] font-bold min-w-0 truncate">{nm}</span>
+                    )}
                     {ig && (
                       <a
                         href={`https://instagram.com/${ig}`}

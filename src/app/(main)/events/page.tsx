@@ -75,7 +75,7 @@ export default async function EventsPage() {
     .select(
       `id, event_date, title, club_id, club_name_raw, venue_area, lineup, source_url,
        clubs(id, name, thumbnail_url, is_test, status, deleted_at, aliases),
-       club_event_performers(raw_name, sort_order, artists(id, display_name, instagram))`
+       club_event_performers(raw_name, sort_order, artists(id, display_name, instagram, slug))`
     )
     .eq("status", "approved")
     .gte("event_date", todayKST())
