@@ -749,6 +749,32 @@ export interface UserFavoriteDj {
   dj?: Pick<Dj, "id" | "display_name" | "slug" | "instagram" | "photo_url">;
 }
 
+/** 공연 아티스트(래퍼/가수) 마스터 (Migration 568). DJ는 djs로 따로 관리한다. */
+export interface Artist {
+  id: string;
+  display_name: string;
+  slug: string;
+  instagram: string | null;
+  soundcloud_url: string | null;
+  youtube_url: string | null;
+  bio: string | null;
+  photo_url: string | null;
+  label: string | null;
+  is_test: boolean;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 아티스트 찜 (Migration 608). /events에서 날짜 그룹 내 정렬 우선순위로 쓴다(필터 아님). */
+export interface UserFavoriteArtist {
+  id: string;
+  user_id: string;
+  artist_id: string;
+  created_at: string;
+  artist?: Pick<Artist, "id" | "display_name" | "slug" | "instagram" | "photo_url">;
+}
+
 /** DJ 인증 신청 (Migration 583). dj_id가 NULL이면 신규 등록 요청. */
 export interface DjClaim {
   id: string;

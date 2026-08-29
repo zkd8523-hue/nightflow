@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Instagram, Ticket } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
+import { ArtistFavoriteButton } from "@/components/artists/ArtistFavoriteButton";
 import { eventSlug } from "@/lib/events/slug";
 import { splitLineupDate } from "@/lib/lineups/formatDate";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
@@ -281,7 +282,8 @@ export default async function ArtistPage({ params }: PageProps) {
         <div className="max-w-lg mx-auto px-4 pt-4 space-y-5">
           <BackButton fallbackHref="/events" />
 
-          <div>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-black text-foreground leading-tight">{name} 공연 일정</h1>
             {igHandle && (
               <a
@@ -293,6 +295,8 @@ export default async function ArtistPage({ params }: PageProps) {
                 <Instagram className="w-3.5 h-3.5" aria-hidden="true" />@{igHandle}
               </a>
             )}
+            </div>
+            <ArtistFavoriteButton artistId={artist.id} artistName={artist.display_name} />
           </div>
 
           {next && (

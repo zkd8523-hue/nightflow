@@ -7,6 +7,7 @@ import { useTouchLastSeen } from "@/hooks/useTouchLastSeen";
 import { useFavoriteClubs } from "@/hooks/useFavoriteClubs";
 import { useFavoriteMds } from "@/hooks/useFavoriteMds";
 import { useFavoriteDjs } from "@/hooks/useFavoriteDjs";
+import { useFavoriteArtists } from "@/hooks/useFavoriteArtists";
 import { initAnalytics } from "@/lib/analytics";
 import { identifyUser } from "@/lib/analytics/events";
 import { WinAlertBanner } from "@/components/auctions/WinAlertBanner";
@@ -104,17 +105,39 @@ export function useDjFavoritesContext() {
   return ctx;
 }
 
+// 아티스트 찜 Context — DJ 찜(570)과 같은 구조 (Migration 608)
+type ArtistFavoritesContextType = ReturnType<typeof useFavoriteArtists>;
+
+const ArtistFavoritesContext = createContext<ArtistFavoritesContextType | null>(null);
+
+export function useArtistFavoritesContext() {
+  const ctx = useContext(ArtistFavoritesContext);
+  // Provider 밖에서 호출돼도 throw하지 않고 no-op을 준다(클럽·MD·DJ와 동일 방어).
+  if (!ctx) {
+    return {
+      favoriteArtists: [],
+      isLoading: false,
+      isFavoritedArtist: () => false,
+      toggleFavoriteArtist: async () => {},
+    } as ArtistFavoritesContextType;
+  }
+  return ctx;
+}
+
 function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useCurrentUser();
   const favoritesValue = useFavoriteClubs(user?.id);
   const mdFavoritesValue = useFavoriteMds(user?.id);
   const djFavoritesValue = useFavoriteDjs(user?.id);
+  const artistFavoritesValue = useFavoriteArtists(user?.id);
 
   return (
     <FavoritesContext.Provider value={favoritesValue}>
       <MdFavoritesContext.Provider value={mdFavoritesValue}>
         <DjFavoritesContext.Provider value={djFavoritesValue}>
-          {children}
+          <ArtistFavoritesContext.Provider value={artistFavoritesValue}>
+            {children}
+          </ArtistFavoritesContext.Provider>
         </DjFavoritesContext.Provider>
       </MdFavoritesContext.Provider>
     </FavoritesContext.Provider>

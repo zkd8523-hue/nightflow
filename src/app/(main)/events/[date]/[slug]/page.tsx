@@ -11,6 +11,7 @@ import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { EventShareButton } from "@/components/events/EventShareButton";
 import { LineupLikeButton } from "@/components/lineups/LineupLikeButton";
 import { EventCommentSection } from "@/components/events/EventCommentSection";
+import { ArtistNameWithHeart } from "@/components/artists/ArtistNameWithHeart";
 
 // 공연 상세 — "SENSI SOUND", "팔로알토 공연" 류 고유명사 검색의 착지점.
 // 없는 조합은 notFound() → force-dynamic 필수. 없으면 Suspense 경계가 200을 먼저
@@ -475,13 +476,11 @@ export default async function EventDetailPage({ params }: PageProps) {
                 const artistSlug = p.artist?.slug;
                 return (
                   <div key={`${p.raw_name}-${i}`} className="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0">
-                    {artistSlug ? (
-                      <Link href={`/artists/${artistSlug}`} className="text-[15px] font-bold min-w-0 truncate hover:text-brand-amber transition-colors">
-                        {nm}
-                      </Link>
-                    ) : (
-                      <span className="text-[15px] font-bold min-w-0 truncate">{nm}</span>
-                    )}
+                    <ArtistNameWithHeart
+                      artistId={p.artist?.id ?? null}
+                      name={nm}
+                      slug={artistSlug ?? null}
+                    />
                     {ig && (
                       <a
                         href={`https://instagram.com/${ig}`}

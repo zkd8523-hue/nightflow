@@ -5,7 +5,7 @@ import Link from "next/link";
 import { eventSlug } from "@/lib/events/slug";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mic2, Search, X, ExternalLink, ChevronRight, ThumbsUp, CalendarDays } from "lucide-react";
+import { Mic2, Search, X, ExternalLink, ChevronRight, ThumbsUp, CalendarDays, Heart } from "lucide-react";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
@@ -17,6 +17,7 @@ import { clubMatchesQuery } from "@/lib/search/clubMatch";
 import { useSearchMissLogger } from "@/lib/search/logMiss";
 import { performerMatchesQuery } from "@/lib/search/performerMatch";
 import { EventMonthCalendar } from "@/components/events/EventMonthCalendar";
+import { useArtistFavoritesContext } from "@/components/providers";
 
 export interface EventPerformer {
   id: string;
@@ -70,6 +71,9 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
   const eventIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const { getLike } = useLineupLikes(eventIds, undefined, "event");
 
+  // 찜한 아티스트 — 날짜 그룹 안에서 정렬 우선순위로 쓴다(필터 아님, Migration 608).
+  const { isFavoritedArtist } = useArtistFavoritesContext();
+
   const [area, setArea] = useState<string | null>(() => searchParams.get("area"));
   // 검색어는 URL에 싣지 않는다(/lineups와 동일 규칙 — 타이핑마다 히스토리가 더러워진다)
   const [query, setQuery] = useState("");
@@ -121,8 +125,20 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
           r.performers.some((p) => performerMatchesQuery(p, query))
       );
     }
-    return groupByDate(out);
-  }, [rows, area, query, selectedDate]);
+    // 날짜 그룹 안에서 찜한 아티스트가 나오는 공연을 위로. 그룹(날짜) 순서 자체는
+    // 건드리지 않는다 — 날짜를 뒤섞으면 "언제 뭐가 있나"를 못 읽는다.
+    return groupByDate(out).map(
+      ([date, list]) =>
+        [
+          date,
+          [...list].sort(
+            (a, b) =>
+              Number(b.performers.some((p) => isFavoritedArtist(p.id))) -
+              Number(a.performers.some((p) => isFavoritedArtist(p.id)))
+          ),
+        ] as [string, UndergroundEventRow[]]
+    );
+  }, [rows, area, query, selectedDate, isFavoritedArtist]);
 
   // 검색 실패 로깅용 — 지역 칩을 빼고 "검색어만" 적용한 결과 수.
   const queryOnlyMatchCount = useMemo(() => {
@@ -335,6 +351,9 @@ function EventCard({
   row: UndergroundEventRow;
   like: { count: number; likedByMe: boolean };
 }) {
+  // 부모(UndergroundEventList)에서 내려받지 않고 여기서 다시 읽는다 — Context라
+  // 추가 요청이 없고, prop으로 함수를 내리면 카드마다 시그니처가 늘어난다.
+  const { isFavoritedArtist } = useArtistFavoritesContext();
   const total = row.performers.length + row.extra_names.length;
 
   const slug = eventSlug(row.title);
@@ -417,22 +436,38 @@ function EventCard({
 
           {total > 0 && (
             <p className="mt-1.5 text-[12px] leading-relaxed text-neutral-300 line-clamp-2">
-              {row.performers.map((p, i) => (
-                <span key={p.id}>
-                  {i > 0 && <span className="text-neutral-600">, </span>}
-                  {p.slug ? (
-                    <Link
-                      href={`/artists/${p.slug}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="relative z-10 hover:text-foreground transition-colors"
-                    >
-                      {p.display_name}
-                    </Link>
-                  ) : (
-                    p.display_name
-                  )}
-                </span>
-              ))}
+              {row.performers.map((p, i) => {
+                const fav = isFavoritedArtist(p.id);
+                const label = (
+                  <>
+                    {fav && (
+                      <Heart
+                        className="inline w-3 h-3 mr-0.5 -mt-0.5 fill-red-500 text-red-500"
+                        aria-label="찜한 아티스트"
+                      />
+                    )}
+                    {p.display_name}
+                  </>
+                );
+                return (
+                  <span key={p.id}>
+                    {i > 0 && <span className="text-neutral-600">, </span>}
+                    {p.slug ? (
+                      <Link
+                        href={`/artists/${p.slug}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`relative z-10 transition-colors ${
+                          fav ? "text-foreground font-bold" : "hover:text-foreground"
+                        }`}
+                      >
+                        {label}
+                      </Link>
+                    ) : (
+                      label
+                    )}
+                  </span>
+                );
+              })}
               {row.extra_names.map((n, i) => (
                 <span key={`x-${i}`}>
                   {(row.performers.length > 0 || i > 0) && <span className="text-neutral-600">, </span>}
