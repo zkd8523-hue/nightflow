@@ -90,6 +90,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title,
     description,
+    // 페이지별 keywords를 안 주면 레이아웃 기본값(강남 클럽·홍대 클럽…)이 그대로
+    // 나가서 정작 이 페이지의 클럽명·DJ명이 하나도 안 실린다.
+    keywords: [
+      result.club.name,
+      `${result.club.name} 라인업`,
+      `${result.club.name} DJ`,
+      `${result.club.name} 타임테이블`,
+      `${result.club.name} 공연`,
+      ...(result.club.area
+        ? [`${result.club.area} 클럽 라인업`, `${result.club.area} DJ 공연`]
+        : []),
+    ],
     alternates: { canonical: url },
     // 공유했을 때 카톡 등에서 미리보기 카드가 뜨도록 — 이 페이지엔 그동안 빠져 있었다
     // (events/[date]/[slug] 등 다른 라인업 라우트엔 전부 있던 블록).

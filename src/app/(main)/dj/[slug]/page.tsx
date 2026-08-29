@@ -112,13 +112,46 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const result = await fetchDj(slug);
   if (!result) return {};
-  const { dj, upcoming } = result;
+  const { dj, upcoming, past } = result;
   const nextShow = upcoming[0];
-  const title = `${dj.display_name} — DJ 프로필 · 라인업`;
+  const name = dj.display_name;
+  const title = `${name} 라인업 - DJ 공연 일정·타임테이블`;
+
+  // 설명엔 실제로 뛰는 클럽 이름을 넣는다. "프로필과 지난 이력을 확인하세요" 같은
+  // 빈 문장은 검색 결과에서 클릭할 이유를 못 준다(CTR 2%대 페이지들의 공통 증상).
+  const venues = Array.from(
+    new Set([...upcoming, ...past].map((s) => s.club_name))
+  ).slice(0, 3);
+  const venueText = venues.length > 0 ? ` ${venues.join(", ")} 등에서 플레이.` : "";
   const description = nextShow
-    ? `${dj.display_name} DJ 프로필. 다음 무대: ${nextShow.club_name} ${nextShow.event_date}. 나플에서 라인업을 확인하세요.`
-    : `${dj.display_name} DJ 프로필과 지난 플레이 이력을 나플에서 확인하세요.`;
-  return { title, description };
+    ? `${name} DJ 공연 일정. 다음 무대는 ${nextShow.club_name} ${nextShow.event_date}입니다.${venueText} 라인업과 타임테이블을 나플에서 확인하세요.`
+    : `${name} DJ 라인업 기록과 공연 이력.${venueText} 클럽별 타임테이블을 나플에서 확인하세요.`;
+
+  const url = `https://nightflow.kr/dj/${slug}`;
+  return {
+    title,
+    description,
+    // 클럽명 단독은 인스타·플레이스에 밀리지만 "DJ명 + 라인업/공연"은 경쟁이 비어 있다.
+    keywords: [
+      name,
+      `${name} 라인업`,
+      `${name} DJ`,
+      `${name} 공연`,
+      `${name} 타임테이블`,
+      ...venues.flatMap((v) => [`${v} 라인업`, `${v} DJ`]),
+    ],
+    alternates: { canonical: url },
+    // canonical·openGraph는 클럽/라인업/공연 라우트엔 전부 있는데 DJ 페이지만 빠져 있었다.
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "profile",
+      images: dj.photo_url
+        ? [{ url: dj.photo_url }]
+        : [{ url: "/og-image.png", width: 1200, height: 630 }],
+    },
+  };
 }
 
 export default async function DjProfilePage({ params }: PageProps) {

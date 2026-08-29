@@ -48,32 +48,40 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const descAliases = aliases.length > 0 ? ` (${aliases.join(", ")})` : "";
 
   return {
-    title: `${headName} - 클럽 테이블 가격·예약`,
-    description: `${headName}${descAliases} 테이블 가격·주대·영업시간·드레스코드 확인. 무료입장·프리드링크 게스트 간판 혜택까지 나플에서 한 번에.`,
+    // "테이블 가격"은 구글에서 CTR 32.5%로 검증된 승리 키워드라 유지하고,
+    // 새 모델의 핵심인 "라인업"을 제목에 넣는다. 기존 제목엔 라인업이 제목·설명·
+    // 키워드 어디에도 없어서, 클럽명으로 들어온 사람에게 라인업의 존재 자체가
+    // 안 보였다.
+    title: `${headName} 라인업·테이블 가격 - 입장료·영업시간`,
+    description: `${headName}${descAliases} DJ 라인업과 공연 일정, 테이블 가격·주대·영업시간·입장료 확인. 무료입장·프리드링크 게스트 간판 혜택까지 나플에서 한 번에.`,
     keywords: [
       club.name,
       ...aliases,
       ...(area
         ? [
             `${area} 클럽`,
+            `${area} 클럽 라인업`,
             `${area} 클럽 테이블`,
             `${area} 클럽 파티`,
-            `${area} 클럽 합석`,
           ]
         : []),
+      // 헤드(클럽명 단독)는 인스타·플레이스에 밀린다. 이기는 자리는 수식어가
+      // 붙은 롱테일 — 네이버·구글 양쪽에서 독립적으로 확인된 패턴이다.
+      `${club.name} 라인업`,
+      `${club.name} DJ`,
+      `${club.name} 공연`,
       `${club.name} 테이블`,
+      `${club.name} 입장료`,
       `${club.name} 예약`,
-      `${club.name} 파티`,
-      `${club.name} 합석`,
+      ...aliases.map((a) => `${a} 라인업`),
       ...aliases.map((a) => `${a} 클럽`),
       ...aliases.map((a) => `${a} 테이블`),
-      ...aliases.map((a) => `${a} 파티`),
-      ...aliases.map((a) => `${a} 합석`),
+      ...aliases.map((a) => `${a} 입장료`),
     ],
     alternates: { canonical: `https://nightflow.kr/clubs/${id}` },
     openGraph: {
-      title: `${headName} - 클럽 테이블 가격·예약·무료입장`,
-      description: `${headName}${descAliases} 테이블 가격·주대·영업시간 확인, 무료입장·프리드링크 게스트 간판 혜택까지.`,
+      title: `${headName} 라인업·테이블 가격·무료입장`,
+      description: `${headName}${descAliases} DJ 라인업과 공연 일정, 테이블 가격·영업시간 확인, 무료입장·프리드링크 게스트 간판 혜택까지.`,
       url: `https://nightflow.kr/clubs/${id}`,
       type: "website",
       // 클럽 대표 사진이 있으면 그걸 카톡 공유 카드 이미지로 — 없으면 나플 공통
