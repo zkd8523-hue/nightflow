@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { BadgeCheck, Heart } from "lucide-react";
+import { GENRE_LABEL, type DjGenre } from "@/lib/djCup/fetchTasteReport";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
 import { getBusinessDateISO } from "@/lib/lineups/time";
@@ -83,6 +84,7 @@ function DjProfileBody({
     bio: string | null;
     verified: boolean;
     favoriteCount: number;
+    genre: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -105,7 +107,7 @@ function DjProfileBody({
           .limit(30),
         supabase
           .from("djs")
-          .select("photo_url, bio, claimed_by_user_id")
+          .select("photo_url, bio, claimed_by_user_id, genre")
           .eq("id", dj.id)
           .maybeSingle(),
         supabase
@@ -121,6 +123,7 @@ function DjProfileBody({
         bio: djRow?.bio ?? null,
         verified: !!djRow?.claimed_by_user_id,
         favoriteCount: favCount ?? 0,
+        genre: djRow?.genre ?? null,
       });
 
       type Raw = {
@@ -243,6 +246,14 @@ function DjProfileBody({
                   >
                     @{dj.instagram}
                   </a>
+                )}
+                {/* 장르 해시태그 (Migration 616). 핸들 아래가 비어 있어 이름 블록이
+                    허전했다 — 클럽 태그로 추정한 값도 섞여 있으므로 단정적인
+                    문장 대신 태그 형태로 가볍게 둔다. */}
+                {profile?.genre && GENRE_LABEL[profile.genre as DjGenre] && (
+                  <p className="text-[12px] font-bold text-muted-foreground mt-1">
+                    #{GENRE_LABEL[profile.genre as DjGenre]}
+                  </p>
                 )}
                 {/* 0이면 부풀린 숫자로 오해받지 않도록 숨긴다(프로필 페이지와 같은 규칙) */}
                 {!!profile?.favoriteCount && profile.favoriteCount > 0 && (

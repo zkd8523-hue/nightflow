@@ -281,17 +281,15 @@ export default async function DjProfilePage({ params }: PageProps) {
                     출처(본인이 트랙에 단 태그)일 때만 확정으로 쓰고, 클럽
                     추정은 물음표 없이 조용히 같은 칩으로 두되 title로 근거를 남긴다. */}
                 {djGenreLabel && (
-                  <p className="mt-1.5">
-                    <span
-                      title={
-                        dj.genre_source === "soundcloud"
-                          ? "사운드클라우드 업로드 트랙 기준"
-                          : "플레이한 클럽 기준 추정"
-                      }
-                      className="inline-block text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
-                    >
-                      {djGenreLabel}
-                    </span>
+                  <p
+                    title={
+                      dj.genre_source === "soundcloud"
+                        ? "사운드클라우드 업로드 트랙 기준"
+                        : "플레이한 클럽 기준 추정"
+                    }
+                    className="text-[12px] font-bold text-muted-foreground mt-1"
+                  >
+                    #{djGenreLabel}
                   </p>
                 )}
                 {/* 팔로움 숫자 — 시드 없음(진짜 찜 개수만). 0이면 부풀린 숫자로 오해받지

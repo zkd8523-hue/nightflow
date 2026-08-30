@@ -19,6 +19,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       closeButton
       duration={4000}
+      // 하단 네비(BottomNav)가 fixed bottom-0 · 높이 60px · z-50 이라, 기본 위치의
+      // 토스트가 네비에 가려 글씨가 반쯤 잘렸다. 네비 높이 + 안전영역만큼 띄운다.
+      offset={{ bottom: "calc(60px + env(safe-area-inset-bottom) + 12px)" }}
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,
