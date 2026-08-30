@@ -16,60 +16,45 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-background">
       <div className="container mx-auto px-4 pt-5 pb-8">
-        <div className="flex flex-col items-center gap-4 text-sm text-muted-foreground">
-          <Link
-            href="/vision"
-            className="text-base font-bold text-foreground tracking-wide hover:text-foreground/80 transition-colors"
-          >
-            Vision
-          </Link>
+        <div className="flex flex-col items-center gap-3.5 text-sm text-muted-foreground">
           <LangSwitcher />
           {/* Google 발견용 — 크롤러가 볼 수 있는 언어 링크 (LangSwitcher는 open 상태에서만 링크 노출).
               hreflang을 명시해 국가별 SERP에서 올바른 URL이 매칭되도록 함.
-              국기 이모지 + 호버 시 국가 상징색으로 시각적 구분. */}
-          <nav aria-label="Language versions" className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+              바로 위 LangSwitcher와 기능이 겹쳐 화면에서는 sr-only로 숨기되,
+              DOM에는 남겨 크롤러의 언어 버전 발견 경로를 유지한다. */}
+          <nav aria-label="Language versions" className="sr-only">
             <a
               href="/"
-              hrefLang="ko-KR"
-              className="inline-flex items-center gap-1 hover:text-red-400 transition-colors"
-            >
+              hrefLang="ko-KR">
               <span aria-hidden="true">🇰🇷</span>
               <span>한국어</span>
             </a>
             <a
               href="/en"
-              hrefLang="en-US"
-              className="inline-flex items-center gap-1 hover:text-blue-400 transition-colors"
-            >
+              hrefLang="en-US">
               <span aria-hidden="true">🇺🇸</span>
               <span>English</span>
             </a>
             <a
               href="/ja"
-              hrefLang="ja-JP"
-              className="inline-flex items-center gap-1 hover:text-rose-400 transition-colors"
-            >
+              hrefLang="ja-JP">
               <span aria-hidden="true">🇯🇵</span>
               <span>日本語</span>
             </a>
             <a
               href="/zh"
-              hrefLang="zh-CN"
-              className="inline-flex items-center gap-1 hover:text-red-500 transition-colors"
-            >
+              hrefLang="zh-CN">
               <span aria-hidden="true">🇨🇳</span>
               <span>简体中文</span>
             </a>
             <a
               href="/zh-tw"
-              hrefLang="zh-TW"
-              className="inline-flex items-center gap-1 hover:text-sky-400 transition-colors"
-            >
+              hrefLang="zh-TW">
               <span aria-hidden="true">🇹🇼</span>
               <span>繁體中文</span>
             </a>
           </nav>
-          <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
+          <nav className="flex flex-wrap justify-center items-center gap-x-5 gap-y-2">
             <Link href="/terms" className="hover:text-foreground transition-colors">
               이용약관
             </Link>
@@ -126,7 +111,7 @@ export function Footer() {
             </svg>
             @nightflow.kr · 문의
           </Link>
-          <BusinessInfo />
+          <BusinessInfo collapsible />
           <p className="text-muted-foreground text-xs text-center leading-relaxed">
             &copy; {new Date().getFullYear()} 나플 | 나이트플로우 · 밤을 더 아름답게
           </p>
