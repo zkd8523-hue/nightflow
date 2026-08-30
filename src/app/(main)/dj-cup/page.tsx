@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     description: "나만의 최애 Sound & Spot 찾기",
     url: "https://nightflow.kr/dj-cup",
     type: "website",
-    images: [{ url: "/og-djcup.jpg", width: 1200, height: 630 }],
+    images: [{ url: "https://nightflow.kr/og-djcup-v2.jpg", width: 1200, height: 630 }],
   },
 };
 

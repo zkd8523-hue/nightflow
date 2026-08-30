@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     description: "전체 유저가 뽑은 DJ 랭킹.",
     url: "https://nightflow.kr/dj-cup/ranking",
     type: "website",
-    images: [{ url: "/og-djcup.jpg", width: 1200, height: 630 }],
+    images: [{ url: "https://nightflow.kr/og-djcup-v2.jpg", width: 1200, height: 630 }],
   },
 };
 
