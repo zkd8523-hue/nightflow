@@ -45,7 +45,38 @@ export function getCurrentHashtagToken(
 export type ChatToken =
   | { type: "text"; value: string }
   | { type: "tag"; value: string; raw: string }
-  | { type: "club"; name: string; raw: string };
+  | { type: "club"; name: string; raw: string }
+  | { type: "link"; href: string; raw: string };
+
+/** 본문에서 URL 시작 위치 매칭 (http(s):// 또는 www.)
+ *  - 뒤따르는 문장부호(.,!?)나 닫는 괄호는 URL에서 제외
+ */
+const URL_RE = /^(https?:\/\/|www\.)[^\s<>"']+/i;
+
+/** URL 끝에 붙은 문장부호 잘라내기 — "링크는 https://a.com/b 입니다." 같은 케이스 */
+function trimUrlTail(url: string): string {
+  let end = url.length;
+  while (end > 0) {
+    const ch = url[end - 1];
+    if (".,!?;:'\"".includes(ch)) {
+      end--;
+      continue;
+    }
+    // 짝이 맞지 않는 닫는 괄호만 제거
+    if (ch === ")" || ch === "]" || ch === "}") {
+      const open = ch === ")" ? "(" : ch === "]" ? "[" : "{";
+      const slice = url.slice(0, end);
+      const opens = slice.split(open).length - 1;
+      const closes = slice.split(ch).length - 1;
+      if (closes > opens) {
+        end--;
+        continue;
+      }
+    }
+    break;
+  }
+  return url.slice(0, end);
+}
 
 export function tokenizeChatContent(
   text: string,
@@ -69,6 +100,29 @@ export function tokenizeChatContent(
   }
 
   while (i < text.length) {
+    // 0) URL 매칭 — # 보다 먼저 (URL 안의 #fragment 가 해시태그로 잘리는 것 방지)
+    //    단어 중간(예: 이메일 a@www.x.com)에서는 시작하지 않도록 직전 문자 확인
+    const prevCh = i > 0 ? text[i - 1] : " ";
+    if (
+      (text[i] === "h" || text[i] === "H" || text[i] === "w" || text[i] === "W") &&
+      /[\s(\[{]/.test(prevCh)
+    ) {
+      const m = text.slice(i).match(URL_RE);
+      if (m) {
+        const raw = trimUrlTail(m[0]);
+        if (raw.length > 0) {
+          flushText();
+          tokens.push({
+            type: "link",
+            href: /^www\./i.test(raw) ? `https://${raw}` : raw,
+            raw,
+          });
+          i += raw.length;
+          continue;
+        }
+      }
+    }
+
     if (text[i] === "#") {
       // 1) 클럽명 매칭 (가장 긴 것부터)
       let matched: string | null = null;
@@ -108,4 +162,12 @@ export function tokenizeChatContent(
   }
   flushText();
   return tokens;
+}
+
+/** 본문에서 첫 번째 링크 URL 추출 (미리보기 카드용). 없으면 null. */
+export function firstLinkInContent(text: string): string | null {
+  for (const t of tokenizeChatContent(text)) {
+    if (t.type === "link") return t.href;
+  }
+  return null;
 }

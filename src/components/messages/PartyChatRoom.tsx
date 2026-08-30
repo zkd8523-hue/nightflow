@@ -14,6 +14,8 @@ import { ContactCardMessage, isContactCardContent } from "@/components/messages/
 import { ContactPickerButton } from "@/components/messages/ContactPickerButton";
 import { SwipeToReply } from "@/components/chat/SwipeToReply";
 import { ChatContentText } from "@/components/chat/ChatContentText";
+import { ChatLinkPreview } from "@/components/chat/ChatLinkPreview";
+import { firstLinkInContent } from "@/lib/chat/hashtag";
 import { useComposerNavHide } from "@/hooks/useComposerNavHide";
 import { usePartyMessages } from "@/hooks/usePartyMessages";
 import { usePartyOffers } from "@/hooks/usePartyOffers";
@@ -998,11 +1000,16 @@ export function PartyChatRoom({
                             isContactCardContent(m.content) ? (
                               <ContactCardMessage content={m.content} mine />
                             ) : (
-                              <ChatContentText
-                                content={m.content}
-                                clubTags={[]}
-                                className={`text-[14px] leading-snug whitespace-pre-wrap break-words ${m.shared_offer_id ? "mt-1.5" : ""}`}
-                              />
+                              <>
+                                <ChatContentText
+                                  content={m.content}
+                                  clubTags={[]}
+                                  className={`text-[14px] leading-snug whitespace-pre-wrap break-words ${m.shared_offer_id ? "mt-1.5" : ""}`}
+                                />
+                                {!m.shared_offer_id && firstLinkInContent(m.content) && (
+                                  <ChatLinkPreview url={firstLinkInContent(m.content)!} />
+                                )}
+                              </>
                             )
                           )}
                         </div>
@@ -1068,11 +1075,16 @@ export function PartyChatRoom({
                             isContactCardContent(m.content) ? (
                               <ContactCardMessage content={m.content} />
                             ) : (
-                              <ChatContentText
-                                content={m.content}
-                                clubTags={[]}
-                                className="text-[14px] leading-snug whitespace-pre-wrap break-words"
-                              />
+                              <>
+                                <ChatContentText
+                                  content={m.content}
+                                  clubTags={[]}
+                                  className="text-[14px] leading-snug whitespace-pre-wrap break-words"
+                                />
+                                {!m.shared_offer_id && firstLinkInContent(m.content) && (
+                                  <ChatLinkPreview url={firstLinkInContent(m.content)!} />
+                                )}
+                              </>
                             )
                           )}
                           {renderSharedOffer(m, false)}

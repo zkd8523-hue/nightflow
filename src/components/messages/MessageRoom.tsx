@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
 import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
 import { ChatContentText } from "@/components/chat/ChatContentText";
+import { ChatLinkPreview } from "@/components/chat/ChatLinkPreview";
+import { firstLinkInContent } from "@/lib/chat/hashtag";
 import { ContactCardMessage, isContactCardContent, encodeContactCard, type ContactCardMethod } from "@/components/messages/ContactCardMessage";
 import { useComposerNavHide } from "@/hooks/useComposerNavHide";
 import { useOfferMessages } from "@/hooks/useOfferMessages";
@@ -652,11 +654,16 @@ export function MessageRoom({
                           <ContactCardMessage content={m.content} />
                         )
                       ) : m.content ? (
-                        <ChatContentText
-                          content={m.content}
-                          clubTags={[]}
-                          className="text-[14px] leading-snug whitespace-pre-wrap break-words"
-                        />
+                        <>
+                          <ChatContentText
+                            content={m.content}
+                            clubTags={[]}
+                            className="text-[14px] leading-snug whitespace-pre-wrap break-words"
+                          />
+                          {firstLinkInContent(m.content) && (
+                            <ChatLinkPreview url={firstLinkInContent(m.content)!} />
+                          )}
+                        </>
                       ) : null}
                       {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                     </div>

@@ -88,6 +88,21 @@ export function ChatContentText({ content, clubTags, className }: Props) {
         if (t.type === "text") {
           return <span key={i}>{t.value}</span>;
         }
+        if (t.type === "link") {
+          return (
+            <a
+              key={i}
+              href={t.href}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="text-[#1D4ED8] underline underline-offset-2 break-all"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {t.raw}
+            </a>
+          );
+        }
         if (t.type === "club") {
           const clubId = nameToId.get(t.name);
           if (clubId) {

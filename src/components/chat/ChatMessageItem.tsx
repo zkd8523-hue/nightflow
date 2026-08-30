@@ -1,13 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { CornerDownRight, MapPin, MessageCircle, SmilePlus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { ROOM_LABEL } from "@/lib/chat/areas";
+import { firstLinkInContent } from "@/lib/chat/hashtag";
 import { ChatMediaGrid } from "./ChatMediaGrid";
 import { ChatContentText } from "./ChatContentText";
+import { ChatLinkPreview } from "./ChatLinkPreview";
 import { ChatQuotedBox } from "./ChatQuotedBox";
 import { ChatSharedPuzzleCard } from "./ChatSharedPuzzleCard";
 import { ChatActionSheet } from "./ChatActionSheet";
@@ -74,6 +76,12 @@ export function ChatMessageItem({
   const author = message.author;
   const displayName = author?.display_name ?? "익명";
   // 프사/이름 탭 → 바로 이동하지 않고 미리보기 팝업(정보 + 메시지/프로필 선택)
+
+  // 본문 첫 링크 → OG 미리보기 카드
+  const previewUrl = useMemo(
+    () => (message.content ? firstLinkInContent(message.content) : null),
+    [message.content]
+  );
 
   const [peekOpen, setPeekOpen] = useState(false);
   const [actionOpen, setActionOpen] = useState(false);
@@ -335,6 +343,10 @@ export function ChatMessageItem({
                     data-chat-body-text
                   />
                 </div>
+              )}
+              {/* 링크 OG 미리보기 — 파티 카드가 있으면 생략 (카드 두 장 겹침 방지) */}
+              {message.content && !message.shared_puzzle_id && previewUrl && (
+                <ChatLinkPreview url={previewUrl} />
               )}
               {/* 공유된 파티 카드 (Migration 471) */}
               {message.shared_puzzle_id && (
