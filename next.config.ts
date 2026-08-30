@@ -48,6 +48,12 @@ const nextConfig: NextConfig = {
         hostname: "picsum.photos",
         pathname: "/**",
       },
+      {
+        // 사운드클라우드 아트워크 (oEmbed thumbnail_url) — DJ 발견 카드
+        protocol: "https",
+        hostname: "i1.sndcdn.com",
+        pathname: "/**",
+      },
     ],
     formats: ["image/avif", "image/webp"],
   },

@@ -48,10 +48,22 @@ function normalizeClubName(raw) {
   }
   return s;
 }
-const normalizeDjName = (s) =>
-  String(s ?? "").toUpperCase()
-    .replace(/^(DJ|LIVE|GUEST|HOST|MC|VJ)\s*[-:]?\s*/i, "")
-    .replace(/[^\p{L}\p{N}]/gu, "").trim();
+/**
+ * ⚠️ src/lib/lineups/djName.ts 의 normalizeDjName() 정본과 반드시 같아야 한다.
+ *
+ * 전에는 toUpperCase() 를 써서 "ARKINS" 같은 대문자 키를 만들었다. 정본은
+ * 소문자라 수집기가 "arkins" 로 조회하면 그 별칭을 못 찾아 같은 DJ 를 새 행으로
+ * 또 만든다 — 8/30 하루에만 11쌍이 이렇게 갈라졌다(실측).
+ * dj_aliases.normalized UNIQUE 도 대소문자를 다른 값으로 보므로 DB 가 못 막는다.
+ */
+const normalizeDjName = (s) => {
+  const stripped = String(s ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]/g, "");
+  const noLead = stripped.startsWith("dj") ? stripped.slice(2) : stripped;
+  const noTrail = noLead.endsWith("dj") ? noLead.slice(0, -2) : noLead;
+  return noTrail || stripped;
+};
 
 const OVERSEAS = ["도쿄","타이페이","하노이","홍콩","상하이","방콕","오사카","TOKYO","TAIPEI","HANOI","HONG KONG","BANGKOK"];
 function decideStatus(ev) {

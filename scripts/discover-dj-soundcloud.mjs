@@ -83,6 +83,25 @@ async function apifyWithRetry(actor, body, tries = 3) {
   return null;
 }
 
+/** 유튜브 채널 주소만 골라낸다.
+ *  @handle / channel/UC... / c/name / user/name 네 형태를 인정하고,
+ *  채널을 우선 쓰되, 없으면 개별 영상(watch?v=, youtu.be/, shorts/, live/)도 받는다 —
+ *  이 칸의 목적은 "들을 수 있는 링크"라 영상 하나여도 쓸모가 있다.
+ *  쿼리스트링(?si=... 추적 파라미터)은 떼고 저장한다. */
+function toYoutubeUrl(raw) {
+  if (!raw) return null;
+  const str = String(raw);
+  // 채널이 우선 — "이 사람의 유튜브"로는 채널이 가장 정확하다
+  const ch = /https?:\/\/(?:www\.|m\.)?youtube\.com\/(@[A-Za-z0-9._-]+|channel\/[A-Za-z0-9_-]+|c\/[A-Za-z0-9._-]+|user\/[A-Za-z0-9._-]+)/i.exec(str);
+  if (ch) return `https://www.youtube.com/${ch[1]}`;
+  // 채널이 없으면 개별 영상도 받는다 — 미리듣기 용도라 "들을 수 있는 링크"면 충분하고,
+  // 자기 믹스 영상 하나만 바이오에 걸어두는 DJ 가 실제로 많다.
+  // 추적 파라미터(?si=…)는 떼고 표준 watch 주소로 통일한다.
+  const v = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|live\/))([A-Za-z0-9_-]{11})/i.exec(str);
+  if (v) return `https://www.youtube.com/watch?v=${v[1]}`;
+  return null;
+}
+
 /** 인스타 externalUrls 의 lynx_url 은 추적 래퍼다 — 원본만 꺼낸다.
  *  https://l.instagram.com/?u=<encoded>&e=... */
 function unwrapLynx(u) {
@@ -145,6 +164,28 @@ async function verify(profileUrl) {
 }
 
 // ── 1) 대상 DJ 선정 ──────────────────────────────────────────────────────
+// UPCOMING=1 이면 "오늘 이후 라인업에 실제로 올라간 DJ"만 본다.
+// 전체(400여명)를 돌리면 대부분이 지난 라인업이라, 유저가 지금 마주칠 DJ만
+// 골라 조회량을 1/5로 줄이는 용도다.
+const UPCOMING = process.env.UPCOMING === "1";
+let upcomingIds = null;
+if (UPCOMING) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: ups, error: upErr } = await sb
+    .from("club_lineups")
+    .select("clubs!inner(is_test,status,deleted_at), lineup_sets(dj_id)")
+    .gte("event_date", today)
+    .limit(300);
+  if (upErr) throw new Error(`예정 라인업 조회 실패: ${upErr.message}`);
+  upcomingIds = new Set();
+  for (const l of ups ?? []) {
+    const c = Array.isArray(l.clubs) ? l.clubs[0] : l.clubs;
+    if (!c || c.is_test || c.deleted_at || c.status !== "approved") continue;
+    for (const s of l.lineup_sets ?? []) if (s.dj_id) upcomingIds.add(s.dj_id);
+  }
+  console.log(`📅 오늘 이후 라인업 DJ ${upcomingIds.size}명으로 범위 제한\n`);
+}
+
 const { data: sets, error: setsErr } = await sb.from("lineup_sets").select("dj_id");
 if (setsErr) throw new Error(`lineup_sets 조회 실패: ${setsErr.message}`);
 
@@ -156,14 +197,16 @@ const djs = [];
 for (let i = 0; i < ids.length; i += 200) {
   const { data, error } = await sb
     .from("djs")
-    .select("id, display_name, instagram, soundcloud_url, is_test, deleted_at")
+    .select("id, display_name, instagram, soundcloud_url, youtube_url, is_test, deleted_at")
     .in("id", ids.slice(i, i + 200));
   if (error) throw new Error(`djs 조회 실패: ${error.message}`);
   djs.push(...(data ?? []));
 }
 
 let targets = djs
-  .filter((d) => !d.deleted_at && !d.is_test && d.instagram && !d.soundcloud_url)
+  .filter((d) => !upcomingIds || upcomingIds.has(d.id))
+  // 사클이 없거나 유튜브가 없으면 대상 — 한 번 조회로 둘 다 챙긴다
+  .filter((d) => !d.deleted_at && !d.is_test && d.instagram && (!d.soundcloud_url || !d.youtube_url))
   .map((d) => ({ ...d, sets: setCount.get(d.id) ?? 0 }))
   .filter((d) => d.sets >= MIN_SETS)
   .sort((a, b) => b.sets - a.sets); // 많이 나오는 DJ부터 — 중단해도 가치가 큰 순
@@ -209,6 +252,7 @@ const shortLinked = [];
 const youtubeOnly = [];
 const viaLinktree = [];
 const nothing = [];
+const foundYoutube = [];
 
 for (const dj of targets) {
   const p = profiles.get(String(dj.instagram).toLowerCase());
@@ -236,6 +280,14 @@ for (const dj of targets) {
       if (profileUrl) shortLinked.push(dj.display_name);
       await sleep(300);
     }
+  }
+
+  // 사클과 무관하게, 같은 응답에 유튜브 채널이 있으면 같이 챙긴다.
+  // 이 프로필 조회는 어차피 사클 때문에 이미 한 번 한 것이라 추가 비용이 0이다.
+  // (전에는 "유튜브만 있음 N명" 하고 세기만 하고 링크를 버리고 있었다)
+  if (!dj.youtube_url) {
+    const yt = toYoutubeUrl(urls.find((u) => toYoutubeUrl(u))) ?? toYoutubeUrl(/https?:\/\/[^\s]*youtube\.com\/[^\s"']+/i.exec(blob)?.[0]);
+    if (yt) foundYoutube.push({ dj_id: dj.id, name: dj.display_name, url: yt });
   }
 
   if (!profileUrl) {
@@ -271,6 +323,12 @@ for (const f of found) {
 console.log(`\n  소계 ${found.length}명`);
 if (shortLinked.length) console.log(`  (그중 단축링크 해제: ${shortLinked.join(", ")})`);
 
+if (foundYoutube.length) {
+  console.log(`\n=== 📺 유튜브 채널도 같이 확보 (추가 비용 0) ===`);
+  for (const y of foundYoutube) console.log(`  ${y.name.padEnd(18)} → ${y.url}`);
+  console.log(`  소계 ${foundYoutube.length}명`);
+}
+
 console.log(`\n=== ⏭  못 찾음 ===`);
 console.log(`  유튜브만 있음     ${youtubeOnly.length}명: ${youtubeOnly.slice(0, 12).join(", ")}`);
 console.log(`  링크트리 경유     ${viaLinktree.length}명: ${viaLinktree.slice(0, 12).join(", ")}`);
@@ -292,7 +350,14 @@ if (DRY_RUN) {
     if (error) console.log(`  ❌ ${f.name}: ${error.message}`);
     else saved++;
   }
-  console.log(`\n💾 ${saved}건 저장 완료`);
+  let savedYt = 0;
+  for (const y of foundYoutube) {
+    // 이미 있는 값은 덮지 않는다(대상 필터에서 youtube_url 이 빈 것만 담았지만 방어)
+    const { error } = await sb.from("djs").update({ youtube_url: y.url }).eq("id", y.dj_id).is("youtube_url", null);
+    if (error) console.log(`  ❌ ${y.name} (yt): ${error.message}`);
+    else savedYt++;
+  }
+  console.log(`\n💾 사클 ${saved}건 / 유튜브 ${savedYt}건 저장 완료`);
 }
 
 const { count } = await sb

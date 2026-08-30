@@ -21,6 +21,14 @@ function SearchLinks({ name, hint, kind }: { name: string; hint: string | null; 
   const role = kind === "dj" ? "DJ" : "래퍼";
   const q = encodeURIComponent(`${name} ${role}`);
   const igq = encodeURIComponent(name);
+  // 유튜브·사운드클라우드는 구글과 규칙이 반대다 — **출연 장소를 넣는 게 맞다.**
+  // 셋 영상 제목이 "NAME @ CLUB" 꼴이라 클럽명이 동명이인을 갈라주는 열쇠가 된다
+  // (구글에선 클럽 공식 계정이 상위로 올라와 방해가 되므로 빼는 것과 정반대).
+  // 짧은 영단어 이름(YUUKI·IMPACT·RABI 등)은 이 두 곳이 사실상 유일한 활로다:
+  // 인스타 팔로잉과 달리 두 사이트는 공개 색인되고, 프로필·설명란에 본인 인스타를
+  // 직접 적어두는 경우가 많다.
+  const ytq = encodeURIComponent([name, role, hint].filter(Boolean).join(" "));
+  const scq = encodeURIComponent(name);
   return (
     <span className="flex items-center gap-2 text-[11px]">
       <a
@@ -38,6 +46,22 @@ function SearchLinks({ name, hint, kind }: { name: string; hint: string | null; 
         className="text-neutral-500 hover:text-green-500 inline-flex items-center gap-0.5"
       >
         인스타 <ExternalLink className="w-2.5 h-2.5" aria-hidden />
+      </a>
+      <a
+        href={`https://www.youtube.com/results?search_query=${ytq}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-neutral-500 hover:text-green-500 inline-flex items-center gap-0.5"
+      >
+        유튜브 <ExternalLink className="w-2.5 h-2.5" aria-hidden />
+      </a>
+      <a
+        href={`https://soundcloud.com/search/people?q=${scq}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-neutral-500 hover:text-green-500 inline-flex items-center gap-0.5"
+      >
+        SC <ExternalLink className="w-2.5 h-2.5" aria-hidden />
       </a>
     </span>
   );

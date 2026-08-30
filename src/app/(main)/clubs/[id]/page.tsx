@@ -173,7 +173,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     supabase
       .from("club_lineups")
       .select(
-        "door_open_min, event_title, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url))"
+        "door_open_min, event_title, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))"
       )
       .eq("club_id", id)
       .eq("event_date", todayBusinessDateISO)
@@ -182,7 +182,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     // 오늘 것만 보여주면 게시일과 실제 방문일 사이에 확인할 방법이 없다.
     supabase
       .from("club_lineups")
-      .select("event_date, door_open_min, event_title, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url))")
+      .select("event_date, door_open_min, event_title, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))")
       .eq("club_id", id)
       .gte("event_date", todayBusinessDateISO)
       .order("event_date", { ascending: true })
@@ -214,7 +214,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
       start_min: number | null;
       end_min: number | null;
       sort_order: number;
-      djs: { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null } | { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null }[] | null;
+      djs: { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null; youtube_url: string | null } | { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null; youtube_url: string | null }[] | null;
     }>;
     if (rawSets.length === 0) return null;
     const sets = rawSets
@@ -240,7 +240,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         start_min: number | null;
         end_min: number | null;
         sort_order: number;
-        djs: { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null } | { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null }[] | null;
+        djs: { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null; youtube_url: string | null } | { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null; youtube_url: string | null }[] | null;
       }>;
       const sets = rawSets
         .map((s) => ({

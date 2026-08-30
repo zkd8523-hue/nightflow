@@ -17,6 +17,8 @@ export interface DjProfileTarget {
   instagram: string | null;
   /** 있으면 이름 옆에 미리듣기(▶) 버튼이 뜬다. optional — 기존 호출부는 안 넘겨도 됨. */
   soundcloud_url?: string | null;
+  /** 사클이 없을 때의 대체 재생원 */
+  youtube_url?: string | null;
   /** 있으면 시트 하단에 전체 프로필(/dj/[slug]) 링크가 뜬다. optional — 기존 호출부는 안 넘겨도 됨. */
   slug?: string;
 }
@@ -210,9 +212,21 @@ function DjProfileBody({
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <p className="font-black text-foreground truncate leading-tight text-lg">
-                    {dj.display_name}
-                  </p>
+                  {/* 이름이 곧 전체 프로필로 가는 문이다 — 버튼을 따로 두면
+                      한 줄을 통째로 먹는데, 그 자리는 라인업이 쓰는 게 낫다. */}
+                  {dj.slug ? (
+                    <Link
+                      href={`/dj/${dj.slug}`}
+                      onClick={onClose}
+                      className="font-black text-foreground truncate leading-tight text-lg hover:text-amber-400 transition-colors"
+                    >
+                      {dj.display_name}
+                    </Link>
+                  ) : (
+                    <p className="font-black text-foreground truncate leading-tight text-lg">
+                      {dj.display_name}
+                    </p>
+                  )}
                   {profile?.verified && (
                     <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-black leading-none">
                       <BadgeCheck className="w-3 h-3" strokeWidth={2.5} />
@@ -253,20 +267,11 @@ function DjProfileBody({
             {!hidePreview && (
               <DjPreviewButton
                 soundcloudUrl={dj.soundcloud_url}
+                youtubeUrl={dj.youtube_url}
                 djName={dj.display_name}
                 variant="inline"
                 autoOpen
               />
-            )}
-
-            {dj.slug && (
-              <Link
-                href={`/dj/${dj.slug}`}
-                onClick={onClose}
-                className="mt-4 w-full h-10 rounded-xl border border-border text-muted-foreground hover:text-foreground font-bold text-[13px] inline-flex items-center justify-center gap-1.5 transition-colors"
-              >
-                전체 프로필 보기
-              </Link>
             )}
 
             <div className="mt-5">

@@ -43,6 +43,7 @@ interface DjRef {
   display_name: string;
   instagram: string | null;
   soundcloud_url: string | null;
+  youtube_url: string | null;
 }
 
 interface ClubRef {
@@ -88,7 +89,7 @@ export default async function LineupsPage() {
     .select(
       `id, event_date, club_id, door_open_min, event_title,
        clubs(id, name, area, thumbnail_url, is_test, status, deleted_at, aliases),
-       lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url))`
+       lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))`
     )
     .gte("event_date", getBusinessDateISO())
     .order("event_date", { ascending: true })

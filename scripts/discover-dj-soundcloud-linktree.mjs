@@ -109,6 +109,22 @@ async function verify(profileUrl) {
   }
 }
 
+/** 유튜브 채널 주소만 골라낸다(개별 영상은 버린다).
+ *  discover-dj-soundcloud.mjs 의 toYoutubeUrl 과 동일 규약 — 한쪽을 고치면 같이 고칠 것. */
+function toYoutubeUrl(raw) {
+  if (!raw) return null;
+  const str = String(raw);
+  // 채널이 우선 — "이 사람의 유튜브"로는 채널이 가장 정확하다
+  const ch = /https?:\/\/(?:www\.|m\.)?youtube\.com\/(@[A-Za-z0-9._-]+|channel\/[A-Za-z0-9_-]+|c\/[A-Za-z0-9._-]+|user\/[A-Za-z0-9._-]+)/i.exec(str);
+  if (ch) return `https://www.youtube.com/${ch[1]}`;
+  // 채널이 없으면 개별 영상도 받는다 — 미리듣기 용도라 "들을 수 있는 링크"면 충분하고,
+  // 자기 믹스 영상 하나만 바이오에 걸어두는 DJ 가 실제로 많다.
+  // 추적 파라미터(?si=…)는 떼고 표준 watch 주소로 통일한다.
+  const v = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|live\/))([A-Za-z0-9_-]{11})/i.exec(str);
+  if (v) return `https://www.youtube.com/watch?v=${v[1]}`;
+  return null;
+}
+
 /** 링크트리류 페이지 HTML 에서 사운드클라우드 주소를 캔다.
  *  링크트리는 링크를 JSON(__NEXT_DATA__)에 넣어두므로 HTML 전체를 정규식으로 훑는다.
  *  단축링크가 나오면 한 번 더 푼다. */
@@ -123,13 +139,17 @@ async function digLinkPage(pageUrl) {
     // JSON 안에서는 슬래시가 \/ 로 이스케이프돼 있다
     html = html.replace(/\\\//g, "/");
 
+    // 링크트리 페이지에는 사클과 유튜브가 나란히 걸려 있는 경우가 많다.
+    // 페이지는 이미 한 번 받아왔으니 유튜브도 같이 캐면 추가 비용이 0이다.
+    const yt = toYoutubeUrl(/https?:\/\/(?:www\.|m\.)?youtube\.com\/[^\s"'<\\]+/i.exec(html)?.[0]);
+
     const direct = /https?:\/\/(?:www\.|m\.)?soundcloud\.com\/[A-Za-z0-9_-]+/i.exec(html);
-    if (direct) return toProfileUrl(direct[0]);
+    if (direct) return { sc: toProfileUrl(direct[0]), yt };
 
     const short = /https?:\/\/(?:on\.soundcloud\.com|soundcloud\.app\.goo\.gl)\/[A-Za-z0-9_-]+/i.exec(html);
-    if (short) return await resolveShort(short[0]);
+    if (short) return { sc: await resolveShort(short[0]), yt };
 
-    return null;
+    return { sc: null, yt };
   } catch {
     return null;
   }
@@ -146,7 +166,7 @@ const djs = [];
 for (let i = 0; i < ids.length; i += 200) {
   const { data, error } = await sb
     .from("djs")
-    .select("id, display_name, instagram, soundcloud_url, is_test, deleted_at")
+    .select("id, display_name, instagram, soundcloud_url, youtube_url, is_test, deleted_at")
     .in("id", ids.slice(i, i + 200));
   if (error) throw new Error(`djs 조회 실패: ${error.message}`);
   djs.push(...(data ?? []));
@@ -161,6 +181,7 @@ console.log(`🎯 1차에서 못 찾은 ${targets.length}명 재조회 (링크�
 
 // ── 인스타 프로필 재조회 → 링크트리 URL 수집 ────────────────────────────
 const linkPages = [];
+const directYoutube = [];
 for (let i = 0; i < targets.length; i += CHUNK) {
   const slice = targets.slice(i, i + CHUNK);
   const rows = await apifyWithRetry("apify~instagram-scraper", {
@@ -178,6 +199,11 @@ for (let i = 0; i < targets.length; i += CHUNK) {
       p.externalUrl ?? "",
       ...(p.externalUrls ?? []).map((u) => unwrapLynx(u?.lynx_url ?? u?.url ?? u)),
     ].join(" ");
+    // 링크트리를 타기 전에, 바이오·외부링크에 유튜브가 바로 있으면 그것부터 챙긴다
+    if (!d.youtube_url) {
+      const yt = toYoutubeUrl(/https?:\/\/(?:www\.|m\.)?youtube\.com\/[^\s"']+/i.exec(blob)?.[0]);
+      if (yt) directYoutube.push({ dj_id: d.id, name: d.display_name, url: yt });
+    }
     const lt = /https?:\/\/(?:linktr\.ee|bio\.link|lnk\.bio|campsite\.bio|taplink\.[a-z]+|litelink\.[a-z]+|url\.kr)\/[A-Za-z0-9_.\-]+/i.exec(blob);
     if (lt) linkPages.push({ ...d, page: lt[0] });
   }
@@ -189,15 +215,21 @@ console.log(`\n링크트리 보유 ${linkPages.length}명 — 각 페이지 파�
 
 // ── 링크트리 페이지 파기 ────────────────────────────────────────────────
 const found = [];
+const foundYoutube = [];
 for (const d of linkPages) {
-  const url = await digLinkPage(d.page);
+  const dug = await digLinkPage(d.page);
   await sleep(400);
-  if (!url) continue;
-  const meta = await verify(url);
+  if (!dug) continue;
+  if (dug.yt && !d.youtube_url) {
+    foundYoutube.push({ dj_id: d.id, name: d.display_name, url: dug.yt });
+    console.log(`  📺 ${d.display_name.padEnd(16)} → ${dug.yt}`);
+  }
+  if (!dug.sc) continue;
+  const meta = await verify(dug.sc);
   await sleep(300);
   if (!meta) continue;
-  found.push({ ...d, url, scName: meta.title });
-  console.log(`  ✅ ${d.display_name.padEnd(16)} → ${url}  (${meta.title})`);
+  found.push({ ...d, url: dug.sc, scName: meta.title });
+  console.log(`  ✅ ${d.display_name.padEnd(16)} → ${dug.sc}  (${meta.title})`);
 }
 
 console.log(`\n=== 추가 확보 ${found.length}명 ===`);
@@ -211,7 +243,13 @@ if (DRY_RUN) {
     if (error) console.log(`  ❌ ${f.display_name}: ${error.message}`);
     else saved++;
   }
-  console.log(`💾 ${saved}건 저장 완료`);
+  let savedYt = 0;
+  for (const y of [...directYoutube, ...foundYoutube]) {
+    const { error } = await sb.from("djs").update({ youtube_url: y.url }).eq("id", y.dj_id).is("youtube_url", null);
+    if (error) console.log(`  ❌ ${y.name} (yt): ${error.message}`);
+    else savedYt++;
+  }
+  console.log(`💾 사클 ${saved}건 / 유튜브 ${savedYt}건 저장 완료`);
 }
 
 const { count } = await sb

@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/sheet";
 import { formatBusinessMin, nowBusinessMinutes } from "@/lib/lineups/time";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
-import { Disc3 } from "lucide-react";
+import { Disc3, Play } from "lucide-react";
 import { DjNameButton } from "@/components/djs/DjNameButton";
+import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 import type { TodayLineupSet } from "./ClubLineupSection";
 
@@ -45,6 +46,8 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
   // 시트 안에서 어느 날짜를 보고 있는지 — 날짜 캐러셀(탭) 선택 상태.
   // Sheet가 열릴 때마다 첫 날짜로 리셋되도록 open이 될 때 0으로 맞춘다.
   const [selectedIndex, setSelectedIndex] = useState(0);
+  /* 프로필 시트는 이 컴포넌트가 하나만 소유한다 — 행 아무 데나 누르면 열린다 */
+  const [openDj, setOpenDj] = useState<(DjProfileTarget & { slug: string }) | null>(null);
 
   if (lineups.length === 0) return null;
   const selectedLineup = lineups[Math.min(selectedIndex, lineups.length - 1)];
@@ -320,7 +323,10 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
                 return (
                   <div
                     key={j}
-                    className={`flex items-center gap-3 py-0.5 ${
+                    onClick={() => set.dj && setOpenDj(set.dj)}
+                    className={`flex items-center gap-3 py-1.5 ${
+                      set.dj ? "cursor-pointer active:bg-white/[0.03] transition-colors" : ""
+                    } ${
                       isNow ? "-mx-2 px-2 border-l-2 border-amber-500 bg-amber-500/5 rounded-r" : ""
                     }`}
                   >
@@ -333,16 +339,24 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
                         min-w-0 이 없으면 긴 이름 + 아이콘 2개가 폭을 넘겨 행이 무너진다. */}
                     {set.dj ? (
                       <span className="min-w-0 flex-1">
-                        <DjNameButton dj={set.dj} className="text-sm text-foreground" />
+                        {/* 시트는 행이 연다 — 이름 글자만 표적이면 누르기 어렵다
+                            (날짜별 라인업 표와 같은 규칙) */}
+                        <DjNameButton dj={set.dj} className="text-sm text-foreground" nameOnly showPreview={false} />
                       </span>
                     ) : (
                       <span className="text-sm text-muted-foreground truncate">-</span>
                     )}
+                    {/* ▶ 는 오른쪽 끝 고정 — 날짜별 라인업 표와 같은 배치 */}
+                    <span className="ml-auto flex items-center gap-2 flex-shrink-0">
+                    {(set.dj?.soundcloud_url || set.dj?.youtube_url) && (
+                      <Play className="w-3.5 h-3.5 fill-current text-muted-foreground" aria-label="미리듣기 가능" />
+                    )}
                     {isNow && (
-                      <span className="text-[10px] font-bold text-amber-500 flex-shrink-0 ml-auto">
+                      <span className="text-[10px] font-bold text-amber-500">
                         NOW
                       </span>
                     )}
+                    </span>
                   </div>
                 );
               })}
@@ -369,6 +383,8 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
           </button>
         </SheetContent>
       </Sheet>
+
+      <DjProfileSheet dj={openDj} onClose={() => setOpenDj(null)} />
       <LineupReportSheet open={reportOpen} onOpenChange={setReportOpen} variant="lineup" />
     </>
   );

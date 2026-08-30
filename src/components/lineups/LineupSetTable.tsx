@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import { Heart, Play } from "lucide-react";
 import { formatBusinessMin, nowBusinessMinutes, getBusinessDateISO } from "@/lib/lineups/time";
 import { DjNameButton } from "@/components/djs/DjNameButton";
-import { DjPreviewButton } from "@/components/djs/DjPreviewButton";
 import { useDjFavoritesContext } from "@/components/providers";
-import type { DjProfileTarget } from "@/components/djs/DjProfileSheet";
+import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
 
 export interface LineupTableSet {
   // 캡션에서 수집한 라인업은 시간이 없다(순서만) — Migration 573
@@ -33,6 +32,9 @@ export function LineupSetTable({
   eventDate: string;
 }) {
   const [nowMin, setNowMin] = useState<number | null>(null);
+  /* 시트를 행마다 두지 않고 표가 하나만 갖는다 — 행 어디를 눌러도(시간·빈칸·▶)
+     같은 프로필 시트가 열려야 목적지가 하나로 유지된다. */
+  const [openDj, setOpenDj] = useState<(DjProfileTarget & { slug: string }) | null>(null);
   const { isFavoritedDj } = useDjFavoritesContext();
   // 캡션 수집 라인업은 전 행이 start_min=null이다 — 이럴 때 시간 열을 그대로
   // 두면 빈 칸(w-20)만 남아 이름이 오른쪽으로 밀려나 보인다(왼쪽 여백 버그).
@@ -40,7 +42,7 @@ export function LineupSetTable({
   const hasAnyTime = sets.some((s) => s.start_min !== null);
   // ▶ 아이콘만으로는 그게 뭔지 첫 사용자가 모른다. 다만 라벨을 항상 띄우면
   // 미리듣기 가능한 DJ가 한 명도 없는 표에서 없는 기능을 광고하는 꼴이 된다.
-  const hasAnyPreview = sets.some((s) => s.dj?.soundcloud_url);
+  const hasAnyPreview = sets.some((s) => s.dj?.soundcloud_url || s.dj?.youtube_url);
 
   useEffect(() => {
     // 오늘이 아니면 시계를 돌릴 이유가 없다
@@ -56,7 +58,7 @@ export function LineupSetTable({
       {hasAnyPreview && (
         <div className="px-4 pt-3 pb-1 flex items-center justify-end gap-1.5 text-[11px] font-bold text-muted-foreground">
           <Play className="w-2.5 h-2.5 fill-current" aria-hidden="true" />
-          눌러서 미리듣기
+          눌러서 듣기·일정 보기
         </div>
       )}
       <table className="w-full text-sm">
@@ -74,9 +76,10 @@ export function LineupSetTable({
             return (
               <tr
                 key={i}
+                onClick={() => s.dj && setOpenDj(s.dj)}
                 className={`border-b border-white/5 last:border-0 ${
-                  isNow ? "bg-amber-500/5" : ""
-                }`}
+                  s.dj ? "cursor-pointer active:bg-white/[0.03] transition-colors" : ""
+                } ${isNow ? "bg-amber-500/5" : ""}`}
               >
                 {hasAnyTime && (
                   <td
@@ -102,24 +105,29 @@ export function LineupSetTable({
                           <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" aria-hidden="true" />
                         )}
                       </span>
-                      {/* fill: 이름 오른쪽 빈 공간을 눌러도 프로필이 열린다 */}
-                      <DjNameButton dj={s.dj} showPreview={false} fill />
+                      {/* 시트는 행(tr)이 연다 — 여기선 이름 글자만 그린다.
+                          인스타 아이콘은 자체 stopPropagation 으로 따로 동작한다. */}
+                      <DjNameButton dj={s.dj} showPreview={false} nameOnly />
                     </span>
                   ) : (
                     "-"
                   )}
                 </td>
-                {/* 오른쪽 끝 열 — NOW 배지와 재생 버튼이 같이 선다.
-                    재생을 이름 옆에 두면 인스타 아이콘과 붙어 오탭이 났다. */}
+                {/* 오른쪽 끝 열 — NOW 배지와 "음악 있음" 표시.
+                    ▶ 가 음악만 있는 시트를 따로 열면 같은 줄에서 목적지가 둘이 된다
+                    (이름을 누르면 음악 + 일정까지 나오는 프로필 시트가 뜨는데,
+                     ▶ 는 음악만 나와 정보가 적은 쪽으로 새는 꼴).
+                    이제 줄 전체가 프로필 시트 하나로 통일되고, ▶ 는 "이 DJ는
+                    들어볼 수 있다"는 표시로만 남는다. */}
                 <td className="pr-4 py-3 w-16 text-right whitespace-nowrap">
                   <span className="inline-flex items-center justify-end gap-2">
                     {isNow && (
                       <span className="text-[10px] font-bold text-amber-500">NOW</span>
                     )}
-                    {s.dj && (
-                      <DjPreviewButton
-                        soundcloudUrl={s.dj.soundcloud_url}
-                        djName={s.dj.display_name}
+                    {(s.dj?.soundcloud_url || s.dj?.youtube_url) && (
+                      <Play
+                        className="w-3.5 h-3.5 fill-current text-muted-foreground"
+                        aria-label="미리듣기 가능"
                       />
                     )}
                   </span>
@@ -129,6 +137,8 @@ export function LineupSetTable({
           })}
         </tbody>
       </table>
+
+      <DjProfileSheet dj={openDj} onClose={() => setOpenDj(null)} />
     </div>
   );
 }

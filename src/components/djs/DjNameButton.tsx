@@ -30,12 +30,17 @@ export function DjNameButton({
   className = "",
   showPreview = true,
   fill = false,
+  nameOnly = false,
 }: {
   dj: DjProfileTarget;
   className?: string;
   /** 칸 전체를 눌러도 프로필이 열리게 한다 — 이름 글자만 표적이면 너무 작다.
    *  아이콘들은 그대로 각자 동작한다(stopPropagation). */
   fill?: boolean;
+  /** 시트를 바깥(행)이 소유할 때 — 이름은 글자만 그리고 자체 시트를 열지 않는다.
+   *  같은 시트가 두 번 열리거나, 행 클릭과 겹쳐 깜빡이는 걸 막는다.
+   *  인스타 아이콘은 그대로 두고 stopPropagation 으로 따로 동작한다. */
+  nameOnly?: boolean;
   /** 라인업 표는 재생 버튼을 행 오른쪽 끝 열에 따로 두므로 여기선 끈다.
    *  (이름 옆에 두면 인스타 아이콘과 붙어 오탭이 났다) */
   showPreview?: boolean;
@@ -65,7 +70,9 @@ export function DjNameButton({
           : undefined
       }
     >
-      {dj.slug ? (
+      {nameOnly ? (
+        <span className={nameClass}>{dj.display_name}</span>
+      ) : dj.slug ? (
         <Link
           href={`/dj/${dj.slug}`}
           onClick={(e) => {
@@ -93,6 +100,9 @@ export function DjNameButton({
           type="button"
           onClick={(e) => {
             e.preventDefault();
+            // nameOnly 면 이 컴포넌트엔 시트가 없다 — 막지 말고 행까지 올려보낸다.
+            // (막으면 아이콘이 눌러도 아무 일 없는 죽은 버튼이 된다)
+            if (nameOnly) return;
             e.stopPropagation();
             setOpen(true);
           }}
@@ -107,6 +117,7 @@ export function DjNameButton({
         </button>
       )}
 
+      {!nameOnly && (
       <DjProfileSheet
         dj={open ? dj : null}
         onClose={() => {
@@ -114,6 +125,7 @@ export function DjNameButton({
           setOpen(false);
         }}
       />
+      )}
     </span>
   );
 }

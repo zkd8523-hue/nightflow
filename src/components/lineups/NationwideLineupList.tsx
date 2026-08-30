@@ -31,6 +31,7 @@ export interface LineupSetRef {
     display_name: string;
     instagram: string | null;
     soundcloud_url: string | null;
+    youtube_url: string | null;
     /** dj_aliases의 다른 표기들 — 검색에만 쓰고 화면에는 안 뿌린다 */
     aliases: string[];
   } | null;
@@ -256,7 +257,8 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
     for (const r of rows) {
       if (area && r.club_area !== area) continue;
       for (const s of r.sets) {
-        if (!s.dj?.soundcloud_url || seen.has(s.dj.id)) continue;
+        // 사클이 없어도 유튜브가 있으면 들을 수 있다
+        if ((!s.dj?.soundcloud_url && !s.dj?.youtube_url) || seen.has(s.dj.id)) continue;
         seen.set(s.dj.id, {
           dj: {
             id: s.dj.id,
@@ -264,6 +266,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
             display_name: s.dj.display_name,
             instagram: s.dj.instagram,
             soundcloud_url: s.dj.soundcloud_url,
+            youtube_url: s.dj.youtube_url,
           },
           club_id: r.club_id,
           club_name: r.club_name,

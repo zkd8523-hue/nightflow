@@ -32,6 +32,7 @@ interface DjRef {
   display_name: string;
   instagram: string | null;
   soundcloud_url: string | null;
+  youtube_url: string | null;
 }
 
 interface LineupRow {
@@ -63,7 +64,7 @@ async function fetchLineup(clubId: string, date: string) {
 
   const { data: lineup } = await supabase
     .from("club_lineups")
-    .select("id, event_title, ticket_url, source, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url))")
+    .select("id, event_title, ticket_url, source, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))")
     .eq("club_id", clubId)
     .eq("event_date", date)
     .maybeSingle<LineupRow>();

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Radio, ChevronDown, ChevronUp } from "lucide-react";
+import { Radio, ChevronDown, ChevronUp, Play } from "lucide-react";
 import { DjNameButton } from "@/components/djs/DjNameButton";
+import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
 import { formatBusinessMin, nowBusinessMinutes } from "@/lib/lineups/time";
 
 export interface TodayLineupSet {
@@ -12,7 +13,7 @@ export interface TodayLineupSet {
   sort_order: number;
   // instagram: DJ 프로필 페이지가 준비되기 전까지 라인업에서 바로 인스타로
   // 나갈 수 있게 하는 임시 진입점. 핸들만 저장한다(Migration 203 규약).
-  dj: { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null } | null;
+  dj: { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null; youtube_url: string | null } | null;
 }
 
 export interface TodayLineup {
@@ -28,6 +29,8 @@ export interface TodayLineup {
  */
 export function ClubLineupSection({ lineup }: { lineup: TodayLineup | null }) {
   const [expanded, setExpanded] = useState(false);
+  /* 프로필 시트는 이 컴포넌트가 하나만 소유한다 — 행 아무 데나 누르면 열린다 */
+  const [openDj, setOpenDj] = useState<(DjProfileTarget & { slug: string }) | null>(null);
   // lazy initializer — 마운트 시점 값은 여기서 한 번만 구하고, 이후 갱신은 effect의 setInterval이 담당.
   // (effect 본문에서 곧바로 setState를 부르지 않기 위함 — SSR과 클라이언트 첫 렌더가 어긋날 수 있어
   // null로 시작해 마운트 후 채우는 값이므로 SSR 불일치는 없음)
@@ -83,9 +86,10 @@ export function ClubLineupSection({ lineup }: { lineup: TodayLineup | null }) {
           return (
             <div
               key={i}
+              onClick={() => set.dj && setOpenDj(set.dj)}
               className={`flex items-center gap-3 py-1.5 px-2 rounded-lg ${
-                isNow ? "border-l-2 border-amber-500 bg-amber-500/5" : ""
-              }`}
+                set.dj ? "cursor-pointer active:bg-white/[0.03] transition-colors" : ""
+              } ${isNow ? "border-l-2 border-amber-500 bg-amber-500/5" : ""}`}
             >
               {set.start_min !== null && (
                 <span className="text-[11px] font-mono text-muted-foreground w-11 flex-shrink-0">
@@ -96,14 +100,22 @@ export function ClubLineupSection({ lineup }: { lineup: TodayLineup | null }) {
                   min-w-0 이 없으면 긴 이름 + 아이콘 2개가 폭을 넘겨 행이 무너진다. */}
               {set.dj ? (
                 <span className="min-w-0 flex-1">
-                  <DjNameButton dj={set.dj} className="text-sm text-foreground" />
+                  {/* 시트는 행이 연다 — 날짜별 라인업 표와 같은 규칙 */}
+                  <DjNameButton dj={set.dj} className="text-sm text-foreground" nameOnly showPreview={false} />
                 </span>
               ) : (
                 <span className="text-sm text-muted-foreground truncate">-</span>
               )}
-              {isNow && (
-                <span className="text-[10px] font-bold text-amber-500 flex-shrink-0 ml-auto">NOW</span>
+              {/* ▶ 는 오른쪽 끝 고정 — 이름 뒤에 붙이면 줄마다 위치가 달라
+                  눈이 따라가기 어렵다(날짜별 라인업 표와 같은 배치). */}
+              <span className="ml-auto flex items-center gap-2 flex-shrink-0">
+              {(set.dj?.soundcloud_url || set.dj?.youtube_url) && (
+                <Play className="w-3.5 h-3.5 fill-current text-muted-foreground" aria-label="미리듣기 가능" />
               )}
+              {isNow && (
+                <span className="text-[10px] font-bold text-amber-500">NOW</span>
+              )}
+              </span>
             </div>
           );
         })}
@@ -125,6 +137,8 @@ export function ClubLineupSection({ lineup }: { lineup: TodayLineup | null }) {
           )}
         </button>
       )}
+
+      <DjProfileSheet dj={openDj} onClose={() => setOpenDj(null)} />
     </div>
   );
 }

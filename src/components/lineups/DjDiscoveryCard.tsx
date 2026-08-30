@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronsRight, Heart, Play } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatBusinessMin } from "@/lib/lineups/time";
 import { isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { useDjFavoritesContext } from "@/components/providers";
-import { DjPreviewButton } from "@/components/djs/DjPreviewButton";
+import { DjPreviewButton, warmSoundcloud } from "@/components/djs/DjPreviewButton";
 import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
+import Link from "next/link";
 import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
+import { DjLedShowList, type DjShowRow } from "@/components/djs/DjLedShowList";
+import { createClient } from "@/lib/supabase/client";
+import { getBusinessDateISO } from "@/lib/lineups/time";
 
 /**
  * 라인업 최상단 "DJ 발견" 카드 — 이름만 봐선 누군지 모르는 DJ를 귀로 먼저 만나는 자리.
@@ -53,6 +57,17 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   // 드래그 상태는 리렌더와 무관하므로 ref에 둔다(움직일 때마다 setState하면 끊긴다)
   const drag = useRef<{ x: number; y: number; lock: "x" | "y" | null } | null>(null);
+  /* 카드가 도는 동안 앞으로 나올 DJ 들을 미리 데운다 — 사클 iframe 은
+     CloudFront 히트면 50ms, 미스면 1.4초다(실측 20배 차이). 캐시가 URL 단위라
+     "그 DJ 의 주소"를 미리 한 번 찔러둬야 그 DJ 가 빨라진다. */
+  useEffect(() => {
+    if (items.length === 0) return;
+    warmSoundcloud(
+      [at(idx), at(idx + 1), at(idx + 2)].map((x) => x?.dj.soundcloud_url)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, items]);
+
   /* 마지막으로 카드가 넘어간 시각(손·자동 공통). 두 가지 일을 한다:
      1) 스와이프 직후의 click 을 무시한다(밀고 손 떼면 재생이 열리던 버그)
      2) 자동 넘김이 이 시각부터 3초를 다시 세게 한다 — 2초째에 밀었는데
@@ -75,13 +90,25 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
     track.style.transform = `translateX(${dir > 0 ? "-66.6666%" : "0%"})`;
     const done = () => {
       track.removeEventListener("transitionend", done);
-      track.style.transition = "";
-      track.style.transform = "translateX(-33.3333%)";
+      /* idx 만 바꾸고 위치 복귀는 useLayoutEffect 가 맡는다.
+         여기서 rAF 로 되돌리면 React 가 새 슬라이드를 그리기 전에 위치가 먼저
+         가운데로 가서, 한 프레임 동안 "옛 슬라이드가 새 위치에" 놓인다
+         — 그게 이전 DJ 이름이 번쩍이는 원인이었다.
+         useLayoutEffect 는 DOM 갱신 직후·페인트 직전에 돌아 그 틈이 없다. */
       setIdx((v) => v + dir);
-      movingRef.current = false;
     };
     track.addEventListener("transitionend", done);
   };
+
+  /* 슬라이드 내용이 새 idx 로 갱신된 직후, 화면에 그려지기 전에 트랙을 가운데로
+     되돌린다. 사람 눈에는 위치 변화가 보이지 않는다(같은 프레임에서 일어남). */
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!track || !movingRef.current) return;
+    track.style.transition = "";
+    track.style.transform = "translateX(-33.3333%)";
+    movingRef.current = false;
+  }, [idx]);
 
   const onDown = (x: number, y: number) => {
     drag.current = { x, y, lock: null };
@@ -253,8 +280,16 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
           <SheetHeader className="p-0">
             {/* 찜은 이름 바로 옆 하트 하나로 — 오른쪽 끝에 두면 X와 붙는다 */}
             <div className="flex items-center gap-2 pr-10">
+              {/* 이름이 곧 전체 프로필로 가는 문이다(시트 안 다른 화면과 같은 규칙) */}
               <SheetTitle className="min-w-0 text-left text-2xl font-black text-foreground tracking-tight truncate">
-                {playing?.dj.display_name}
+                {playing && (
+                  <Link
+                    href={`/dj/${playing.dj.slug}`}
+                    className="hover:text-amber-400 transition-colors"
+                  >
+                    {playing.dj.display_name}
+                  </Link>
+                )}
               </SheetTitle>
               {playing && (
                 <DjFavoriteButton
@@ -271,6 +306,7 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
               key={playing.dj.id}
               autoOpen
               soundcloudUrl={playing.dj.soundcloud_url}
+              youtubeUrl={playing.dj.youtube_url}
               djName={playing.dj.display_name}
               footer={
                 <PreviewFooter
@@ -290,6 +326,24 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
         </SheetContent>
       </Sheet>
     </section>
+  );
+}
+
+/** 그 DJ 일정만 겹쳐 띄운다 — 목록 시트에서 쓴다(예정 라인업을 펴면 중복이라). */
+function ScheduleButton({ dj }: { dj: DjProfileTarget & { slug: string } }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-3 w-full h-10 rounded-xl border border-border text-muted-foreground hover:text-foreground text-[12.5px] font-black inline-flex items-center justify-center transition-colors"
+      >
+        이 DJ 일정
+      </button>
+      {/* 이미 이 DJ를 듣고 있으므로 프로필 안의 "음악 미리듣기"는 숨긴다 */}
+      <DjProfileSheet dj={open ? dj : null} onClose={() => setOpen(false)} hidePreview />
+    </>
   );
 }
 
@@ -357,7 +411,16 @@ function DiscoveryListSheet({
               pr-10 은 X 버튼 자리를 비워둔다. */}
           <div className="flex items-center gap-1.5 pr-10">
             <SheetTitle className="min-w-0 text-left text-2xl font-black text-foreground tracking-tight truncate">
-              {playing ? playing.dj.display_name : "곧 만날 수 있는 DJ"}
+              {playing ? (
+                <Link
+                  href={`/dj/${playing.dj.slug}`}
+                  className="hover:text-amber-400 transition-colors"
+                >
+                  {playing.dj.display_name}
+                </Link>
+              ) : (
+                "곧 만날 수 있는 DJ"
+              )}
             </SheetTitle>
             {playing && (
               <DjFavoriteButton
@@ -375,10 +438,14 @@ function DiscoveryListSheet({
             <DjPreviewButton
               variant="inline"
               soundcloudUrl={playing.dj.soundcloud_url}
+              youtubeUrl={playing.dj.youtube_url}
               djName={playing.dj.display_name}
               autoOpen
               key={playing.dj.id}
-              footer={<PreviewFooter item={playing} />}
+              /* 여기선 예정 라인업을 통째로 펴지 않는다 — 아래에 날짜별 목록이
+                 이미 있어 같은 정보가 두 번이 되고 목록을 가린다.
+                 대신 그 DJ 일정만 따로 보고 싶은 사람을 위해 버튼으로 둔다. */
+              footer={<ScheduleButton dj={playing.dj} />}
               onNextDj={() => {
                 const i = items.findIndex((x) => x.dj.id === playing.dj.id);
                 setPlaying(items[(i + 1) % items.length]);
@@ -485,37 +552,86 @@ function SheetRow({
 
 /** 미리듣기 시트 하단 — 기본은 사운드클라우드로 나가는 링크지만, 듣다가 앱 밖으로
  *  빠지면 다음 DJ로 이어지지 않는다. 찜과 일정 보기로 바꿔 앱 안에 남긴다. */
+/**
+ * 미리듣기 시트 하단 — 그 DJ의 예정 일정을 바로 펼쳐둔다.
+ *
+ * 예전엔 "이 DJ 일정" 버튼으로 프로필 시트를 겹쳐 띄웠는데, 시트 아래가 어차피
+ * 비어 있어서 한 번 더 누르게 할 이유가 없었다. 여기서 바로 보여주고,
+ * 더 볼 사람만 "더 많은 DJ"로 목록을 편다.
+ */
 function PreviewFooter({ item, onMore }: { item: DiscoveryDj; onMore?: () => void }) {
-  // 페이지로 나가면 시트가 닫히고 듣던 흐름이 끊긴다 — 일정은 시트 위에 겹쳐 띄운다.
-  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [plays, setPlays] = useState<DjShowRow[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("lineup_sets")
+        .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, thumbnail_url))")
+        .eq("dj_id", item.dj.id)
+        .gte("club_lineups.event_date", getBusinessDateISO())
+        .limit(20);
+      if (cancelled) return;
+
+      type ClubRef = { id: string; name: string; area: string | null; thumbnail_url: string | null };
+      type Raw = {
+        start_min: number | null;
+        club_lineups:
+          | { event_date: string; clubs: ClubRef | ClubRef[] }
+          | { event_date: string; clubs: ClubRef | ClubRef[] }[]
+          | null;
+      };
+
+      const rows: DjShowRow[] = [];
+      for (const r of (data ?? []) as unknown as Raw[]) {
+        // PostgREST 조인은 배열/객체 양쪽으로 온다 (라인업 화면 공통 규약)
+        const lineup = Array.isArray(r.club_lineups) ? r.club_lineups[0] : r.club_lineups;
+        if (!lineup) continue;
+        const club = Array.isArray(lineup.clubs) ? lineup.clubs[0] : lineup.clubs;
+        if (!club) continue;
+        rows.push({
+          club_id: club.id,
+          club_name: club.name,
+          club_area: club.area,
+          club_thumbnail: club.thumbnail_url ?? null,
+          event_date: lineup.event_date,
+          start_min: r.start_min,
+        });
+      }
+      rows.sort(
+        (a, b) =>
+          a.event_date.localeCompare(b.event_date) ||
+          (a.start_min ?? Number.MAX_SAFE_INTEGER) - (b.start_min ?? Number.MAX_SAFE_INTEGER)
+      );
+      setPlays(rows);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [item.dj.id]);
 
   return (
-    <div className="mt-3 flex items-center gap-2">
-      {/* 찜은 시트 제목 옆 하트가 맡는다 — 여기는 이동 버튼 둘만 반씩 나눈다 */}
-      <button
-        type="button"
-        onClick={() => setScheduleOpen(true)}
-        className="flex-1 h-10 rounded-xl border border-border text-muted-foreground hover:text-foreground text-[12.5px] font-black inline-flex items-center justify-center transition-colors"
-      >
-        이 DJ 일정
-      </button>
+    <div className="mt-4">
+      <p className="text-[11px] font-bold text-muted-foreground mb-2">예정된 라인업</p>
+      {plays === null ? (
+        <div className="py-6 flex justify-center">
+          <div className="w-5 h-5 border-2 border-border border-t-white rounded-full animate-spin" />
+        </div>
+      ) : (
+        <DjLedShowList rows={plays} emptyLabel="예정된 라인업이 없어요" />
+      )}
+
       {onMore && (
         <button
           type="button"
           onClick={onMore}
-          className="flex-1 h-10 rounded-xl border border-border text-muted-foreground hover:text-foreground text-[12.5px] font-black inline-flex items-center justify-center gap-1.5 transition-colors"
+          className="mt-3 w-full h-10 rounded-xl border border-border text-muted-foreground hover:text-foreground text-[12.5px] font-black inline-flex items-center justify-center gap-1.5 transition-colors"
         >
           더 많은 DJ
           <ChevronsRight className="w-4 h-4" aria-hidden="true" />
         </button>
       )}
-
-      {/* 이미 이 DJ를 듣고 있는 중이므로 프로필 안의 "음악 미리듣기"는 숨긴다 */}
-      <DjProfileSheet
-        dj={scheduleOpen ? item.dj : null}
-        onClose={() => setScheduleOpen(false)}
-        hidePreview
-      />
     </div>
   );
 }

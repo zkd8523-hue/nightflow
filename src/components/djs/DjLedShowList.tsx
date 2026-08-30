@@ -29,6 +29,23 @@ export function DjLedShowList({
   /** 행을 눌러 다른 페이지로 이동하기 직전에 호출된다 — 시트에서 쓸 때 onClose로 넘긴다. */
   onItemClick?: () => void;
 }) {
+  /* 같은 날 + 같은 클럽은 한 줄로 묶는다. rows 는 이미 정렬돼 들어오므로
+     시간 순서도 그대로 유지된다. */
+  const grouped = (() => {
+    const m = new Map<string, DjShowRow & { times: string[] }>();
+    for (const r of rows) {
+      const key = `${r.club_id}-${r.event_date}`;
+      const time = r.start_min !== null ? formatBusinessMin(r.start_min) : null;
+      const hit = m.get(key);
+      if (hit) {
+        if (time && !hit.times.includes(time)) hit.times.push(time);
+      } else {
+        m.set(key, { ...r, times: time ? [time] : [] });
+      }
+    }
+    return [...m.values()];
+  })();
+
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-card/40 py-8 text-center">
@@ -55,9 +72,9 @@ export function DjLedShowList({
         aria-hidden="true"
       />
       <div className="relative z-[1] divide-y divide-white/[0.06]">
-        {rows.map((r, i) => (
+        {grouped.map((r) => (
           <Link
-            key={`${r.club_id}-${r.event_date}-${i}`}
+            key={`${r.club_id}-${r.event_date}`}
             href={`/clubs/${r.club_id}/lineup/${r.event_date}`}
             onClick={onItemClick}
             className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.04] transition-colors"
@@ -81,9 +98,16 @@ export function DjLedShowList({
               </p>
               <p className="font-mono text-[10px] text-white/40 mt-0.5">{formatLineupDate(r.event_date)}</p>
             </div>
-            {r.start_min !== null && (
-              <span className="font-mono text-[11px] text-white/50 flex-shrink-0">
-                {formatBusinessMin(r.start_min)}
+            {/* 같은 날 같은 클럽에서 두 번 트는 경우가 흔하다(오프닝 + 마감) —
+                줄을 두 개로 두면 같은 문장이 반복돼 목록이 길어지기만 한다.
+                한 줄로 묶고 시간만 나열한다. */}
+            {r.times.length > 0 && (
+              <span className="font-mono text-[11px] text-white/50 flex-shrink-0 text-right">
+                {r.times.map((t) => (
+                  <span key={t} className="block leading-tight">
+                    {t}
+                  </span>
+                ))}
               </span>
             )}
           </Link>
