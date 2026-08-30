@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ImagePlus } from "lucide-react";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 
 /**
@@ -18,11 +17,12 @@ export function DjUpdateLineupButton({ isOwner }: { isOwner: boolean }) {
 
   return (
     <>
+      {/* 점선 박스 버튼은 "지난 플레이"라는 콘텐츠 자리를 차지해 비어 있는 화면을
+          더 비어 보이게 했다. 주 동작이 아니므로 밑줄 텍스트로 낮춘다. */}
       <button
         onClick={() => setOpen(true)}
-        className="w-full h-10 rounded-xl border border-dashed border-border text-[12px] font-bold text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors flex items-center justify-center gap-1.5"
+        className="mx-auto block text-[12px] font-bold text-muted-foreground hover:text-foreground underline underline-offset-4 decoration-dotted transition-colors"
       >
-        <ImagePlus className="w-3.5 h-3.5" />
         {isOwner ? "내 라인업 업데이트" : "이 DJ 라인업 제보하기"}
       </button>
       <LineupReportSheet open={open} onOpenChange={setOpen} variant="lineup" />

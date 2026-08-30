@@ -291,17 +291,6 @@ export default async function DjProfilePage({ params }: PageProps) {
               </p>
             )}
 
-            {/* 어느 DJ에서 왔는지 넘긴다(?name) — 안 넘기면 신청 화면에서
-                자기 이름을 처음부터 다시 검색해야 한다. */}
-            {!isVerified && (
-              <Link
-                href={`/dj/apply?name=${encodeURIComponent(dj.display_name)}`}
-                className="mt-4 block text-center text-[12px] font-bold text-amber-400 hover:text-amber-300"
-              >
-                이 프로필이 본인인가요? →
-              </Link>
-            )}
-
             {(igHandle || dj.soundcloud_url) && (
               <div className="mt-4 -mx-4 -mb-4">
                 <div className="grid grid-cols-2 divide-x divide-border border-t border-border">
@@ -358,8 +347,9 @@ export default async function DjProfilePage({ params }: PageProps) {
           <div className="flex items-center justify-between">
             <h2 className="text-[15px] font-black text-foreground">지난 플레이</h2>
           </div>
-          <DjUpdateLineupButton isOwner={isOwner} />
+          {/* 제보 링크는 목록 아래로 — 제목과 목록 사이에 끼면 콘텐츠를 밀어낸다 */}
           <DjLedShowList rows={past} emptyLabel="등록된 지난 플레이가 없어요" />
+          <DjUpdateLineupButton isOwner={isOwner} />
         </div>
       </div>
     </>
