@@ -27,7 +27,7 @@ async function fetchPool(): Promise<DjCupCandidate[]> {
 
   const query = supabase
     .from("djs")
-    .select("id, display_name, slug, soundcloud_url, youtube_url, soundcloud_artwork_url")
+    .select("id, display_name, slug, soundcloud_url, youtube_url, soundcloud_artwork_url, instagram")
     .or("soundcloud_url.not.is.null,youtube_url.not.is.null")
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) query.eq("is_test", false);

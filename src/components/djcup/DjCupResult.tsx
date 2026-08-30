@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Instagram, Youtube } from "lucide-react";
+import { SoundcloudIcon } from "@/components/icons/SoundcloudIcon";
 import { DjLedShowList, type DjShowRow } from "@/components/djs/DjLedShowList";
 import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
 import { fetchUpcomingDjShows } from "@/lib/djCup/fetchDjShows";
@@ -31,6 +33,13 @@ export function DjCupResult({
   const [shows, setShows] = useState<DjShowRow[] | null>(null);
   const [submitResult, setSubmitResult] = useState<DjCupSubmitResult | null>(null);
   const submittedRef = useRef(false);
+
+  // 인스타는 @핸들 형태로 저장돼 있을 수 있다(DJ 프로필과 동일 처리).
+  const igHandle = champion.instagram?.replace(/^@/, "") || null;
+  // 유튜브는 채널 URL도 그대로 링크로 쓴다 — 임베드는 막혀도 방문은 된다
+  // (후보 필터에서 쓰는 youtubeVideoId 판정과는 목적이 다르다).
+  const youtubeUrl = champion.youtube_url || null;
+  const linkCount = [igHandle, champion.soundcloud_url, youtubeUrl].filter(Boolean).length;
 
   useEffect(() => {
     fetchUpcomingDjShows(champion.id).then(setShows);
@@ -109,6 +118,57 @@ export function DjCupResult({
           )}
           <DjFavoriteButton djId={champion.id} djName={champion.display_name} />
         </div>
+
+        {/* 우승자 채널 링크 — 여기까지 온 사람은 이 DJ가 마음에 든 사람이다.
+            더 듣거나 팔로우할 곳을 바로 준다. 스타일은 DJ 프로필의 링크
+            블록과 같은 것을 쓴다(새 시각 언어를 만들지 않는다). */}
+        {(igHandle || champion.soundcloud_url || youtubeUrl) && (
+          <div
+            className="mt-3.5 -mx-3 -mb-3 border-t border-border grid divide-x divide-border"
+            style={{ gridTemplateColumns: `repeat(${linkCount}, minmax(0, 1fr))` }}
+          >
+            {igHandle && (
+              <a
+                href={`https://instagram.com/${igHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1 px-2 py-2.5 active:bg-muted transition-colors"
+              >
+                <span className="w-7 h-7 rounded-full bg-pink-500/15 flex items-center justify-center">
+                  <Instagram className="w-4 h-4 text-pink-400" />
+                </span>
+                <span className="text-[10px] font-bold text-muted-foreground">인스타그램</span>
+              </a>
+            )}
+            {champion.soundcloud_url && (
+              <a
+                href={champion.soundcloud_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1 px-2 py-2.5 active:bg-muted transition-colors"
+              >
+                {/* 사클 브랜드 오렌지(#FF5500) 고정 — DJ 프로필과 동일 */}
+                <span className="w-7 h-7 rounded-full bg-[#FF5500]/15 flex items-center justify-center">
+                  <SoundcloudIcon size={16} className="text-[#FF5500]" />
+                </span>
+                <span className="text-[10px] font-bold text-muted-foreground">사운드클라우드</span>
+              </a>
+            )}
+            {youtubeUrl && (
+              <a
+                href={youtubeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1 px-2 py-2.5 active:bg-muted transition-colors"
+              >
+                <span className="w-7 h-7 rounded-full bg-red-500/15 flex items-center justify-center">
+                  <Youtube className="w-4 h-4 text-red-400" />
+                </span>
+                <span className="text-[10px] font-bold text-muted-foreground">유튜브</span>
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 예정된 라인업이 없으면 구분선까지 통째로 숨긴다 — 우승 직후 화면에서

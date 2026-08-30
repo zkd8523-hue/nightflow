@@ -352,34 +352,6 @@ export default async function DjProfilePage({ params }: PageProps) {
           <DjUpdateLineupButton isOwner={isOwner} />
         </div>
 
-        {/* DJ 이상형 월드컵 진입 — 이 DJ가 궁금해서 들어온 사람은 이미 관심이
-            있는 사람이다. 월드컵 → 프로필 → 월드컵 루프를 닫는 자리. */}
-        {dj.soundcloud_url && (
-          <div className="px-4 mt-8">
-            <Link
-              href="/dj-cup"
-              className="flex items-center gap-3 rounded-2xl border border-border overflow-hidden p-3"
-              style={{
-                background:
-                  "radial-gradient(120% 90% at 78% 15%, rgba(255,85,0,.22), transparent 62%)," +
-                  "radial-gradient(95% 85% at 12% 92%, rgba(57,255,106,.14), transparent 58%)," +
-                  "linear-gradient(160deg,#1a1512,#121214)",
-              }}
-            >
-              <span className="w-9 h-9 rounded-xl bg-black/30 flex items-center justify-center text-[18px] shrink-0" aria-hidden="true">
-                🎧
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[12.5px] font-black text-foreground tracking-[-0.02em]">
-                  DJ 이상형 월드컵에서 만나기
-                </span>
-                <span className="block text-[10.5px] text-muted-foreground mt-0.5">
-                  {dj.display_name}도 대결에 등장할 수 있어요
-                </span>
-              </span>
-            </Link>
-          </div>
-        )}
       </div>
     </>
   );

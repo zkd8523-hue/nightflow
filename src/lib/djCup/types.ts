@@ -6,6 +6,8 @@ export interface DjCupCandidate {
   soundcloud_url: string | null;
   youtube_url: string | null;
   soundcloud_artwork_url: string | null;
+  /** @핸들 형태로 저장돼 있을 수 있다 — 링크로 쓸 땐 앞의 @를 떼야 한다. */
+  instagram: string | null;
 }
 
 export const ROUND_SIZES = [4, 8, 16, 32, 64, 128] as const;
