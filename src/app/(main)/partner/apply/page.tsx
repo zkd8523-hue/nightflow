@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { Music, Star } from "lucide-react";
 
 // "파트너 신청" 메뉴 하나에서 갈라지는 갈림길 — 메뉴 항목을 늘리지 않기 위해
 // (사용자 결정). DJ와 클럽 쪽(영업진·MD·대표)은 검증 방식은 같아도 신청서
@@ -22,11 +21,8 @@ export default async function PartnerApplyPage() {
         <div className="space-y-3">
           <Link
             href="/dj/apply"
-            className="flex items-center gap-4 bg-card border border-border rounded-2xl p-5 hover:border-foreground/20 transition-colors"
+            className="block bg-card border border-border rounded-2xl p-5 hover:border-foreground/20 transition-colors"
           >
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-              <Music className="w-6 h-6 text-brand-amber" />
-            </div>
             <div className="min-w-0">
               <p className="text-[16px] font-black text-foreground">DJ</p>
               <p className="text-[12px] text-muted-foreground mt-0.5">플레이 일정과 프로필을 관리해요</p>
@@ -35,11 +31,8 @@ export default async function PartnerApplyPage() {
 
           <Link
             href="/md/apply"
-            className="flex items-center gap-4 bg-card border border-border rounded-2xl p-5 hover:border-foreground/20 transition-colors"
+            className="block bg-card border border-border rounded-2xl p-5 hover:border-foreground/20 transition-colors"
           >
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-              <Star className="w-6 h-6 text-brand-amber" />
-            </div>
             <div className="min-w-0">
               <p className="text-[16px] font-black text-foreground">관리자 (영업진, MD, 대표)</p>
               <p className="text-[12px] text-muted-foreground mt-0.5">테이블 예약과 게스트 관리를 해요</p>

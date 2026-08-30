@@ -70,7 +70,7 @@ export function Footer() {
           </nav>
           {!isPartner && (
             <Link
-              href="/md/apply"
+              href="/partner/apply"
               className="inline-block rounded-full border border-amber-500 px-5 py-2 text-sm font-semibold text-brand-amber hover:bg-amber-500 hover:text-black transition-colors"
             >
               파트너 모집 →
