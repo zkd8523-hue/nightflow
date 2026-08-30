@@ -212,9 +212,12 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
             className="flex w-[300%]"
             style={{ transform: "translateX(-33.3333%)" }}
           >
+            {/* key 는 자리(i)로 고정한다 — idx 를 섞으면 넘길 때마다 세 장이
+                통째로 언마운트/재마운트돼 이름이 한 번 깜빡인다.
+                내용만 갈아끼우면 DOM 은 그대로 남는다. */}
             {[idx - 1, idx, idx + 1].map((k, i) => (
               <Slide
-                key={`${k}-${i}`}
+                key={i}
                 item={at(k)}
                 swipedAt={swipedAt}
                 onPlay={() => setPlaying(at(k))}

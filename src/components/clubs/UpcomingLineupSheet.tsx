@@ -329,9 +329,12 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
                         {formatBusinessMin(set.start_min)}
                       </span>
                     )}
-                    {/* 이름 → 프로필 시트, 아이콘 → 인스타 (라인업 화면 공통 규칙) */}
+                    {/* 이름 → 프로필 시트, 아이콘 → 인스타 (라인업 화면 공통 규칙).
+                        min-w-0 이 없으면 긴 이름 + 아이콘 2개가 폭을 넘겨 행이 무너진다. */}
                     {set.dj ? (
-                      <DjNameButton dj={set.dj} className="text-sm text-foreground" />
+                      <span className="min-w-0 flex-1">
+                        <DjNameButton dj={set.dj} className="text-sm text-foreground" />
+                      </span>
                     ) : (
                       <span className="text-sm text-muted-foreground truncate">-</span>
                     )}

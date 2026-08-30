@@ -59,6 +59,15 @@ export function DjPreviewButton({
 }) {
   const [open, setOpen] = useState(autoOpen);
 
+  /* 버튼이 그려진 시점에 연결을 미리 열고 api.js(5.5KB)도 받아둔다 —
+     탭한 뒤에 시작하면 DNS→TLS→api.js→iframe 이 직렬로 붙어 체감이 느리다.
+     이미 받아둔 스크립트는 재사용되므로 탭 순간엔 iframe 만 남는다. */
+  useEffect(() => {
+    if (!soundcloudUrl) return;
+    preconnectSoundcloud();
+    void loadScApi();
+  }, [soundcloudUrl]);
+
   if (!soundcloudUrl) return null;
 
   if (variant === "inline") {
@@ -173,6 +182,33 @@ declare global {
         getSounds: (cb: (sounds: unknown[]) => void) => void;
       }) & { Events: { READY: string; PLAY: string; LOAD_PROGRESS: string } };
     };
+  }
+}
+
+/**
+ * 사클 호스트에 DNS+TLS 를 미리 끝내둔다.
+ *
+ * 실측(따뜻한 상태에서도): 위젯 iframe 첫 바이트 930ms, api.js 820ms.
+ * 서버 응답 자체는 우리가 못 줄이지만, 그 앞의 핸드셰이크는 미리 할 수 있다.
+ * 탭한 뒤에야 DNS→TLS→요청이 줄줄이 붙는 걸 없앤다.
+ *
+ * 레이아웃(전역)이 아니라 여기서 하는 이유: 미리듣기가 없는 화면까지
+ * 사클에 연결을 열 이유가 없다.
+ */
+let hinted = false;
+function preconnectSoundcloud() {
+  if (typeof document === "undefined" || hinted) return;
+  hinted = true;
+  for (const [rel, href] of [
+    ["preconnect", "https://w.soundcloud.com"],
+    ["preconnect", "https://api.soundcloud.com"],
+    ["dns-prefetch", "https://i1.sndcdn.com"],
+  ] as const) {
+    const l = document.createElement("link");
+    l.rel = rel;
+    l.href = href;
+    if (rel === "preconnect") l.crossOrigin = "anonymous";
+    document.head.appendChild(l);
   }
 }
 
