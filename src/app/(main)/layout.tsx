@@ -113,8 +113,18 @@ export default function MainLayout({
   // 바텀네비는 채팅방에서도 노출 (지도/Vision/임베드/외국인 트랙/쿠폰 사용화면에서만 숨김)
   const hideBottomNav = isClubMapView || isVisionPage || isEmbedded || isForeigner || isCouponRedeem;
 
+  // 당겨서 새로고침은 기본 끔 — 대부분의 화면은 Realtime/폴링으로 스스로 갱신되거나
+  // 클라이언트에서 직접 데이터를 가져와 router.refresh()가 아무 효과가 없다(위약 동작).
+  // 시트·채팅 목록의 세로 스크롤과 싸우는 부작용만 남으므로,
+  // 서버에서 데이터를 받고 자체 갱신 수단이 없는 화면에만 켠다.
+  const allowsPullToRefresh =
+    pathname === "/" ||
+    // 깃발 상세: force-dynamic 서버 렌더인데 Realtime/폴링이 없어 남의 오퍼가 안 보인다.
+    // /flags/[id]/edit, /review 같은 하위 폼 화면은 제외(새로고침되면 입력이 날아간다).
+    (!!pathname && /^\/flags\/[^/]+$/.test(pathname));
+
   return (
-    <PullToRefresh onRefresh={handleRefresh} disabled={isChatPage}>
+    <PullToRefresh onRefresh={handleRefresh} disabled={!allowsPullToRefresh}>
       <div className="bg-background flex flex-col">
         {/* 인앱 브라우저(인스타/페북/라인) 넛지 — 착지 즉시 크롬/사파리 유도. 광고 유입 OAuth 차단 대응 */}
         <InAppBrowserBanner />

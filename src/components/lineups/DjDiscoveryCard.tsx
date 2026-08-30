@@ -276,6 +276,7 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
         <SheetContent
           side="bottom"
           className="bg-card border-border rounded-t-3xl gap-0 px-4 pt-5 pb-8 max-w-lg mx-auto"
+          data-no-pull-refresh="strict"
         >
           <SheetHeader className="p-0">
             {/* 찜은 이름 바로 옆 하트 하나로 — 오른쪽 끝에 두면 X와 붙는다 */}
@@ -403,6 +404,7 @@ function DiscoveryListSheet({
            플레이어를 sticky 로 목록 위에 얹었더니 스크롤 때 제목과 겹쳐 비쳤고,
            스크롤 전에도 목록이 볼 수 있는 세로를 크게 깎았다. */
         className="h-[80vh] bg-card border-border rounded-t-3xl gap-0 px-0 pt-5 pb-0 max-w-lg mx-auto flex flex-col"
+        data-no-pull-refresh="strict"
       >
         <SheetHeader className="p-0 px-4 shrink-0">
           {/* 재생 중이면 그 DJ 이름이 제목이 된다 — 지금 누구를 듣고 있는지가
@@ -455,7 +457,12 @@ function DiscoveryListSheet({
         )}
 
         {/* 목록만 스크롤 — min-h-0 이 없으면 flex 자식이 안 줄어들어 스크롤이 죽는다 */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 pb-4">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto px-4 pt-3 pb-4"
+          /* 시트 안 목록을 세로로 스크롤할 때 뒤 페이지가 당겨져
+             새로고침이 걸리던 문제 차단 (홈은 당겨서 새로고침 허용 화면) */
+          data-no-pull-refresh="strict"
+        >
           <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
             {groups.map((g) => (
               <div key={g.date}>
