@@ -65,7 +65,7 @@ export default async function AdminDashboardPage() {
     { count: foreignNew },
     { count: pendingBankCredits },
     { count: pendingWordReports },
-    { count: pendingLineupDrafts },
+    { data: lineupDraftRows },
   ] = await Promise.all([
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "user"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "md"),
@@ -99,9 +99,19 @@ export default async function AdminDashboardPage() {
     supabase.from("credit_payments").select("*", { count: "exact", head: true }).eq("method", "bank_transfer").eq("status", "pending"),
     // 5자 리뷰 단어 신고 미처리
     supabase.from("club_word_cloud_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
-    // 클럽 타임테이블 검토 대기
-    supabase.from("lineup_drafts").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    // 클럽 타임테이블 검토 대기.
+    // ⚠️ count(head)로 세면 안 된다 — 검토 화면은 normalized 가 빈 draft 를
+    // 목록에서 빼는데(열어도 빈 폼이라), 여기서 전부 세면 "대시보드 35건 /
+    // 검토 큐 0건" 처럼 숫자가 어긋난다(2026-08-30 실측). 같은 기준으로 센다.
+    supabase.from("lineup_drafts").select("normalized").eq("status", "pending"),
   ]);
+
+  // 검토 화면과 같은 기준: normalized 에 셋이 있는 것만 "대기"로 센다.
+  const pendingLineupDrafts = (lineupDraftRows ?? []).filter((d) => {
+    const n = d.normalized as { sets?: unknown[]; rows?: unknown[] } | null;
+    const rows = n?.sets ?? n?.rows;
+    return Array.isArray(rows) && rows.length > 0;
+  }).length;
 
   const { data: artistDupes } = await supabase.rpc("find_duplicate_artists");
   const artistDupeCount = artistDupes?.length ?? 0;

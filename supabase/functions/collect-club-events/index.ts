@@ -430,13 +430,30 @@ async function saveDjRows(
 
   // 이미 그 클럽·날짜에 라인업이 있으면 건드리지 않는다 — 먼저 처리된(혹은 더
   // 정확했을 수 있는) 결과를 나중 게시물이 덮어쓰지 않게 한다.
+  //
+  // ⚠️ 그냥 return 하면 draft 가 pending 인 채로 남는다(2026-08-30 실측).
+  // draft 는 이 함수에 들어오기 전에 이미 pending 으로 만들어져 있고, 여기서
+  // 빠져나가면 normalized 를 채우는 아래 경로를 못 탄다. 그러면 검토 큐에
+  // "열어도 빈 폼"인 항목이 쌓인다 — 하루 만에 35건이 그렇게 생겼다.
+  // 클럽이 같은 행사를 여러 게시물로 올리면(OUTPUT 은 8/28 하루에 7건) 첫 건만
+  // 라인업이 되고 나머지가 전부 여기로 떨어지기 때문이다.
+  // 사람이 볼 게 없으므로 published 로 마감한다(그 밤 라인업은 이미 게시돼 있다).
+  // status CHECK 가 6개 값만 허용하므로 새 값을 만들지 않고 기존 값을 쓴다.
   const { data: exist } = await supabase
     .from("club_lineups")
     .select("id")
     .eq("club_id", clubId)
     .eq("event_date", eventDate)
     .maybeSingle();
-  if (exist) return;
+  if (exist) {
+    if (draftId) {
+      await supabase
+        .from("lineup_drafts")
+        .update({ status: "published" })
+        .eq("id", draftId);
+    }
+    return;
+  }
 
   const sets: any[] = [];
   const seen = new Set<string>();
