@@ -14,11 +14,11 @@ export const metadata: Metadata = {
   description: "미리듣기로 두 DJ를 비교해 우승자를 뽑는 이상형 월드컵. 나플의 DJ 데이터베이스로 만든 게임.",
   alternates: { canonical: "https://nightflow.kr/dj-cup" },
   openGraph: {
-    title: "DJ 이상형 월드컵",
-    description: "귀로만 고르는 이상형 월드컵. 내 최애 DJ는 누구?",
+    title: "귀가 즐거운 곳이 진짜 내 클럽",
+    description: "나만의 최애 Sound & Spot 찾기",
     url: "https://nightflow.kr/dj-cup",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-djcup.jpg", width: 1200, height: 630 }],
   },
 };
 

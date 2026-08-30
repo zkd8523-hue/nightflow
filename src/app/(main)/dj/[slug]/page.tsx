@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { BadgeCheck, Instagram, Heart, Pencil } from "lucide-react";
 import { SoundcloudIcon } from "@/components/icons/SoundcloudIcon";
+import { GENRE_LABEL, type DjGenre } from "@/lib/djCup/fetchTasteReport";
 import { BackButton } from "@/components/ui/BackButton";
 import { DjLedShowList, type DjShowRow } from "@/components/djs/DjLedShowList";
 import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
@@ -74,7 +75,7 @@ async function fetchDj(slug: string) {
 
   const djQuery = supabase
     .from("djs")
-    .select("id, display_name, slug, instagram, soundcloud_url, bio, photo_url, claimed_by_user_id, is_test")
+    .select("id, display_name, slug, instagram, soundcloud_url, bio, photo_url, claimed_by_user_id, is_test, genre, genre_source")
     .eq("slug", slug)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) djQuery.eq("is_test", false);
@@ -183,7 +184,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: "profile",
       images: dj.photo_url
         ? [{ url: dj.photo_url }]
-        : [{ url: "/og-image.png", width: 1200, height: 630 }],
+        : [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
   };
 }
@@ -196,6 +197,7 @@ export default async function DjProfilePage({ params }: PageProps) {
 
   const isVerified = !!dj.claimed_by_user_id;
   const igHandle = dj.instagram?.replace(/^@/, "") || null;
+  const djGenreLabel = dj.genre ? (GENRE_LABEL[dj.genre as DjGenre] ?? null) : null;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -273,6 +275,24 @@ export default async function DjProfilePage({ params }: PageProps) {
                   >
                     @{igHandle}
                   </a>
+                )}
+                {/* 장르 (Migration 616). 출처가 클럽 태그인 경우는 "그 클럽에
+                    게스트로 한 번 갔을 뿐"일 수 있어 단정하지 않는다 — 사클
+                    출처(본인이 트랙에 단 태그)일 때만 확정으로 쓰고, 클럽
+                    추정은 물음표 없이 조용히 같은 칩으로 두되 title로 근거를 남긴다. */}
+                {djGenreLabel && (
+                  <p className="mt-1.5">
+                    <span
+                      title={
+                        dj.genre_source === "soundcloud"
+                          ? "사운드클라우드 업로드 트랙 기준"
+                          : "플레이한 클럽 기준 추정"
+                      }
+                      className="inline-block text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
+                    >
+                      {djGenreLabel}
+                    </span>
+                  </p>
                 )}
                 {/* 팔로움 숫자 — 시드 없음(진짜 찜 개수만). 0이면 부풀린 숫자로 오해받지
                     않도록 아예 숨긴다. */}

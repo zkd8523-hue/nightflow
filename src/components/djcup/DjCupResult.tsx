@@ -8,6 +8,8 @@ import { SoundcloudIcon } from "@/components/icons/SoundcloudIcon";
 import { DjLedShowList, type DjShowRow } from "@/components/djs/DjLedShowList";
 import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
 import { fetchUpcomingDjShows } from "@/lib/djCup/fetchDjShows";
+import { fetchTasteReport, fetchClubsWithUpcoming, type TasteReport } from "@/lib/djCup/fetchTasteReport";
+import { DjCupTasteReport } from "./DjCupTasteReport";
 import { shareDjCup } from "@/lib/utils/share";
 import { getOrCreateDjCupSession } from "@/lib/djCup/session";
 import { createClient } from "@/lib/supabase/client";
@@ -32,6 +34,8 @@ export function DjCupResult({
 }) {
   const [shows, setShows] = useState<DjShowRow[] | null>(null);
   const [submitResult, setSubmitResult] = useState<DjCupSubmitResult | null>(null);
+  const [taste, setTaste] = useState<TasteReport | null>(null);
+  const [upcomingClubIds, setUpcomingClubIds] = useState<Set<string>>(new Set());
   const submittedRef = useRef(false);
 
   // 인스타는 @핸들 형태로 저장돼 있을 수 있다(DJ 프로필과 동일 처리).
@@ -44,6 +48,24 @@ export function DjCupResult({
   useEffect(() => {
     fetchUpcomingDjShows(champion.id).then(setShows);
   }, [champion.id]);
+
+  // 취향 리포트 — 유저가 "선택하기"를 누른 DJ들(winners)이 곧 취향이다.
+  // 패배자는 넣지 않는다.
+  useEffect(() => {
+    let alive = true;
+    fetchTasteReport(winners).then(async (r) => {
+      if (!alive) return;
+      setTaste(r);
+      if (r.clubs.length) {
+        const ids = await fetchClubsWithUpcoming(r.clubs.map((c) => c.id));
+        if (alive) setUpcomingClubIds(ids);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 결과 화면 마운트 시 1회만 제출 — StrictMode 이중 실행으로 같은 판이
   // 두 번 집계되는 걸 막는다.
@@ -170,6 +192,11 @@ export function DjCupResult({
           </div>
         )}
       </div>
+
+      {/* 취향 리포트 + 추천 클럽. 4강(선택 3번)은 표본이 적어 분포가 흔들리므로
+          컴포넌트 안에서 analyzed >= 4 일 때만 장르를 보여준다 — 클럽 추천은
+          표본과 무관하게(고른 DJ가 실제로 서는 무대라) 항상 보여준다. */}
+      {taste && <DjCupTasteReport report={taste} upcomingClubIds={upcomingClubIds} />}
 
       {/* 예정된 라인업이 없으면 구분선까지 통째로 숨긴다 — 우승 직후 화면에서
           "없어요" 빈 박스는 아무 정보도 주지 않으면서 공유 버튼만 밀어낸다.
