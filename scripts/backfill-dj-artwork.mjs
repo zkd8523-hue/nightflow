@@ -53,8 +53,15 @@ for (const d of targets) {
     } else {
       const j = await res.json();
       const url = j.thumbnail_url ?? null;
-      // 기본 아바타(계정 사진 없음)는 저장해봐야 회색 원이라 이니셜만 못하다
-      if (!url || /avatars-default/i.test(url)) {
+      // 저장 가능한 건 i1.sndcdn.com 실제 아트워크뿐이다.
+      //  - avatars-default: 계정 사진 없음 → 회색 원이라 이니셜만 못하다
+      //  - soundcloud.com/images/fb_placeholder.png: 사클 기본 OG 이미지.
+      //    next.config.ts remotePatterns에 i1.sndcdn.com만 등록돼 있어서
+      //    이걸 저장하면 next/image가 "hostname not configured"로 예외를
+      //    던지고 에러 바운더리가 페이지를 통째로 덮는다(실측: DJ컵에서
+      //    해당 DJ가 매치에 나오는 순간 화면 전체가 회색 박스로 바뀜).
+      // 그래서 정규식 블랙리스트가 아니라 호스트 화이트리스트로 판정한다.
+      if (!url || !/^https:\/\/i1\.sndcdn\.com\//i.test(url) || /avatars-default/i.test(url)) {
         miss++;
         console.log(`  ⏭  ${d.display_name} — 아트워크 없음`);
       } else {

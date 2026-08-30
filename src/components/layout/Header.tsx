@@ -570,6 +570,16 @@ export function Header({
                       <span className="text-[15px] font-bold">공연 정보</span>
                     </Link>
 
+                    {/* DJ 라인업/공연 정보와 같은 DJ 발견 계열 — 데이터를 재미로
+                        먼저 만나는 입구라 바로 아래 붙인다 */}
+                    <Link
+                      href="/dj-cup"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                    >
+                      <span className="text-[15px] font-bold">DJ 이상형 월드컵</span>
+                    </Link>
+
                     <div className="h-px bg-muted/50 my-2" />
 
                     {/* ── 지원: 필요할 때만 찾는 것들 ── */}
@@ -690,6 +700,14 @@ export function Header({
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                   >
                     <span className="text-[15px] font-bold">공연 정보</span>
+                  </Link>
+
+                  <Link
+                    href="/dj-cup"
+                    onClick={() => setGuestMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                  >
+                    <span className="text-[15px] font-bold">DJ 이상형 월드컵</span>
                   </Link>
 
                   <div className="h-px bg-muted/50 my-2" />

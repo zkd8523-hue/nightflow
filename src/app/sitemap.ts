@@ -29,6 +29,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/`, lastModified: now, changeFrequency: "hourly", priority: 1.0 },
     { url: `${BASE_URL}/clubs`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE_URL}/lineups`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE_URL}/dj-cup`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${BASE_URL}/dj-cup/ranking`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE_URL}/events`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     ...SHARE_AREAS.map((area) => ({
       url: `${BASE_URL}/share/${encodeURIComponent(area)}`,

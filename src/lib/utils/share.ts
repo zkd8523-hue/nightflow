@@ -102,7 +102,14 @@ async function safeClipboardWrite(text: string): Promise<boolean> {
 }
 
 /**
- * 클립보드 복사 fallback
+ * 클립보드 복사 fallback.
+ *
+ * navigator.clipboard는 보안 컨텍스트(HTTPS)에서만 존재한다 — 로컬 HTTP
+ * 개발 서버(cap dev 등)나 오래된 브라우저에서는 API 자체가 undefined라
+ * safeClipboardWrite가 무조건 실패한다. 이전엔 이 경우 "공유 링크 생성에
+ * 실패했습니다" 토스트만 띄우고 끝나 유저가 링크를 볼 방법이 없었다(실측
+ * 확인). window.prompt는 값이 이미 선택된 채로 열려 수동 복사(Cmd/Ctrl+C)가
+ * 가능한 마지막 수단이다 — 프로덕션 HTTPS에서는 대부분 안 거치는 경로다.
  */
 async function copyToClipboard(text: string, url: string): Promise<void> {
   const fullText = `${text}\n${url}`;
@@ -111,8 +118,11 @@ async function copyToClipboard(text: string, url: string): Promise<void> {
     toast.success("링크가 복사되었습니다! 원하는 곳에 붙여넣기하세요", {
       duration: 3000,
     });
-  } else {
-    toast.error("공유 링크 생성에 실패했습니다");
+    return;
+  }
+  toast.error("자동 복사에 실패했어요. 아래에서 직접 복사해주세요.");
+  if (typeof window !== "undefined" && window.prompt) {
+    window.prompt("이 링크를 복사하세요:", url);
   }
 }
 
@@ -467,4 +477,62 @@ export async function copyAuctionLink(auctionId: string, referralCode?: string |
     toast.error("링크 복사에 실패했습니다");
   }
   return copied;
+}
+
+interface ShareDjCupParams {
+  /** 우승 DJ 이름 — 있으면 결과 공유 문구, 없으면(시작 화면) 게임 초대 문구.
+   *  링크는 두 경우 모두 항상 시작 페이지(결과 OG 없음, 사용자 확정). */
+  championName?: string;
+  roundSize?: number;
+}
+
+/**
+ * DJ 이상형 월드컵 공유. shareEvent와 동일 패턴이되, 링크는 결과가 아니라
+ * 항상 /dj-cup(시작 화면)로 고정한다 — 받는 사람이 바로 게임에 들어오게 하는
+ * 게 목적이라 OG 이미지 없이 텍스트 한 줄이 그 역할을 한다.
+ * championName이 있으면(우승 화면) "내 우승자는 X" 문구, 없으면(시작 화면)
+ * 게임 자체를 소개하는 초대 문구로 갈린다.
+ */
+export async function shareDjCup({ championName, roundSize }: ShareDjCupParams = {}): Promise<boolean> {
+  const baseUrl = `${getShareOrigin()}/dj-cup`;
+  let url = baseUrl;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('utm_source', 'share_sheet');
+    u.searchParams.set('utm_medium', 'share');
+    u.searchParams.set('utm_campaign', 'dj_cup');
+    url = u.toString();
+  } catch {}
+
+  const shareTitle = "DJ 이상형 월드컵";
+  const text = championName
+    ? `DJ 이상형 월드컵 🏆\n내 ${roundSize}강 우승자는 ${championName}\n너의 우승자는 누구야?\n\n나플에서 해보기 👉`
+    : `귀로 고르는 내 최애 DJ, DJ 이상형 월드컵 🎧\n\n나플에서 해보기 👉`;
+  const shareText = `${text}\n\n${url}`;
+
+  const native = await shareViaNative({ title: shareTitle, text: shareText, url });
+  if (native.handled) {
+    trackEvent('dj_cup_shared', { champion: championName, round_size: roundSize, method: 'native' });
+    return !native.cancelled;
+  }
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: shareTitle, text: shareText, url });
+      trackEvent('dj_cup_shared', { champion: championName, round_size: roundSize, method: 'web_share_api' });
+      return true;
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "name" in err && err.name === "AbortError") {
+        return false;
+      }
+      logger.error("DJ cup share failed:", err);
+      await copyToClipboard(text, url);
+      trackEvent('dj_cup_shared', { champion: championName, round_size: roundSize, method: 'clipboard' });
+      return false;
+    }
+  } else {
+    await copyToClipboard(text, url);
+    trackEvent('dj_cup_shared', { champion: championName, round_size: roundSize, method: 'clipboard' });
+    return false;
+  }
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronsRight, Play, SkipBack, SkipForward, Youtube } from "lucide-react";
 import { SoundcloudIcon } from "@/components/icons/SoundcloudIcon";
+import { youtubeVideoId } from "@/lib/lineups/youtubeUrl";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 /**
@@ -215,6 +216,7 @@ declare global {
       Widget: ((el: HTMLIFrameElement) => {
         bind: (ev: string, cb: () => void) => void;
         play: () => void;
+        pause: () => void;
         next: () => void;
         prev: () => void;
         getSounds: (cb: (sounds: unknown[]) => void) => void;
@@ -233,16 +235,6 @@ declare global {
  * 레이아웃(전역)이 아니라 여기서 하는 이유: 미리듣기가 없는 화면까지
  * 사클에 연결을 열 이유가 없다.
  */
-/** 유튜브 주소에서 영상 ID만 뽑는다. 채널 주소면 null —
- *  채널은 임베드가 막혀 있어(실측) 재생할 수 없다. */
-function youtubeVideoId(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const m = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/i.exec(
-    raw
-  );
-  return m ? m[1] : null;
-}
-
 /**
  * 유튜브 재생. 사클이 없는 DJ의 대체 수단이다.
  *
@@ -303,7 +295,7 @@ function preconnectSoundcloud() {
  */
 /** 재생용 iframe 주소. 예열도 반드시 같은 문자열을 써야 CloudFront 히트가 난다
  *  — 캐시는 URL 단위라 파라미터가 하나만 달라도 원서버까지 다시 간다. */
-function playerSrc(url: string): string {
+export function playerSrc(url: string): string {
   return `https://w.soundcloud.com/player/?url=${encodeURIComponent(
     url
   )}&color=%23ff5500&theme=dark&auto_play=true&visual=false&show_artwork=true&show_comments=false&show_teaser=false&sharing=false&buying=false&download=false&show_user=false`;
@@ -355,7 +347,7 @@ export function warmSoundcloud(urls: (string | null | undefined)[]) {
 }
 
 let scApiPromise: Promise<void> | null = null;
-function loadScApi(): Promise<void> {
+export function loadScApi(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
   if (window.SC?.Widget) return Promise.resolve();
   if (!scApiPromise) {

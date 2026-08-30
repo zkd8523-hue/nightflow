@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Disc3, ThumbsUp, Heart, Search, X, CalendarDays, ChevronRight } from "lucide-react";
+import { Disc3, ThumbsUp, Heart, Search, X, CalendarDays, ChevronRight, ChevronsRight } from "lucide-react";
 import { formatBusinessMin } from "@/lib/lineups/time";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
@@ -289,6 +289,34 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
         {/* 미리듣기 가능한 DJ가 없는 날은 카드가 스스로 null을 낸다 —
             없는 기능을 광고하지 않는다(LineupTicker와 같은 규약). */}
         <DjDiscoveryCard items={discoveryDjs} />
+
+        {/* DJ 이상형 월드컵 진입 배너 — 발견 카드가 이미 "귀로 DJ를 만나는"
+            맥락을 만들어둔 자리라 "그럼 누가 제일 좋아?"로 자연스럽게 이어진다.
+            공유 유입이 주 타겟이지만 랭킹이 0판이면 소셜프루프가 작동하지
+            않으므로 내부 유입 진입점이 최소 한 곳은 필요하다. */}
+        <Link
+          href="/dj-cup"
+          className="flex items-center gap-3 rounded-2xl border border-border overflow-hidden p-3"
+          style={{
+            background:
+              "radial-gradient(120% 90% at 78% 15%, rgba(255,85,0,.22), transparent 62%)," +
+              "radial-gradient(95% 85% at 12% 92%, rgba(57,255,106,.14), transparent 58%)," +
+              "linear-gradient(160deg,#1a1512,#121214)",
+          }}
+        >
+          <span className="w-9 h-9 rounded-xl bg-black/30 flex items-center justify-center text-[18px] shrink-0" aria-hidden="true">
+            🎧
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[12.5px] font-black text-white tracking-[-0.02em]">
+              내 최애 DJ 찾기
+            </span>
+            <span className="block text-[10.5px] text-muted-foreground mt-0.5">
+              DJ 이상형 월드컵 — 소리로 고르는 게임
+            </span>
+          </span>
+          <ChevronsRight className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden="true" />
+        </Link>
 
         {/* 지역 칩 + 하트 필터 — 탭 전환과 무관하게 유지된다.
             칩은 가로 스크롤이고 하트는 그 바깥에 고정 — 지역이 늘어나도 하트가

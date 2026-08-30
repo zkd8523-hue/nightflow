@@ -736,6 +736,10 @@ export interface Dj {
   /** 본인 인증 소유자 (Migration 583). NULL = 미인증. */
   claimed_by_user_id: string | null;
   claimed_at: string | null;
+  /** 사클 oEmbed thumbnail_url 캐시 (Migration 612). 발견 카드 아트워크용. */
+  soundcloud_artwork_url: string | null;
+  /** DJ 유튜브 채널/영상 URL 전체 (Migration 613). */
+  youtube_url: string | null;
   created_at: string;
   updated_at: string;
 }

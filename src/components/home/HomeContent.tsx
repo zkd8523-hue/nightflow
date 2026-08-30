@@ -978,6 +978,54 @@ export function HomeContent({
           )}
 
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
+
+          {/* ── DJ 이상형 월드컵 배너 — 홈 리스트 맨 아래 ──
+                 파티/클럽 다이렉트를 다 훑고 내려온 사람에게 마지막으로 보여준다.
+                 랭킹이 0판이면 소셜프루프가 안 서므로 내부 유입 진입점이 최소
+                 한 곳은 필요하다는 판단 — /lineups·/dj/[slug]와 같은 계열.
+                 카드는 다른 홈 섹션과 같은 폭까지 늘어나되(max-w 제거), 텍스트
+                 블록에 max-w를 줘 lg:max-w-4xl 컨테이너에서도 오브와 사이가
+                 붕 뜨지 않게 한다(전에 카드 자체를 max-w-md로 눌렀더니 웹에서
+                 다른 섹션보다 유독 작아 보였다). */}
+          <div className="px-4 mt-2">
+            <Link
+              href="/dj-cup"
+              className="flex items-center justify-between gap-4 rounded-2xl bg-[#EFEFF2] p-5 relative overflow-hidden"
+            >
+              <div className="min-w-0 flex-1 max-w-[280px] relative z-[1]">
+                <p className="text-[14px] font-bold text-black/70 leading-snug">
+                  이번 주말, 내 취향 DJ 찾아서 보러가기
+                </p>
+                <p className="text-[19px] font-black text-black tracking-[-0.03em] leading-[1.3] mt-1.5">
+                  DJ 이상형
+                  <br />
+                  월드컵
+                </p>
+              </div>
+              <div
+                className="relative w-[100px] h-[100px] rounded-full shrink-0 flex items-center justify-center overflow-hidden"
+                style={{
+                  background:
+                    "radial-gradient(120% 90% at 78% 15%, rgba(255,85,0,.65), transparent 62%)," +
+                    "radial-gradient(95% 85% at 12% 92%, rgba(57,255,106,.35), transparent 58%)," +
+                    "linear-gradient(160deg,#231a16,#121214)",
+                }}
+              >
+                <span
+                  className="absolute inset-0 opacity-50"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(circle, rgba(255,255,255,.09) 1px, transparent 1.3px)",
+                    backgroundSize: "5px 5px",
+                  }}
+                  aria-hidden="true"
+                />
+                <span className="relative z-[1] text-[36px]" aria-hidden="true">
+                  🎧
+                </span>
+              </div>
+            </Link>
+          </div>
         </div>
 
         {/* 🔥 Hot Deal Tonight 섹션 + MD 유도 CTA 제거 — 핫딜(daily_hotdeals) 폐기.
