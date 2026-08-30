@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { BadgeCheck, Instagram, Music, Heart, Pencil } from "lucide-react";
+import { BadgeCheck, Instagram, Heart, Pencil } from "lucide-react";
+import { SoundcloudIcon } from "@/components/icons/SoundcloudIcon";
 import { BackButton } from "@/components/ui/BackButton";
 import { DjLedShowList, type DjShowRow } from "@/components/djs/DjLedShowList";
 import { DjUpdateLineupButton } from "@/components/djs/DjUpdateLineupButton";
@@ -23,6 +24,7 @@ interface ClubRef {
   id: string;
   name: string;
   area: string | null;
+  thumbnail_url: string | null;
   is_test: boolean;
   status: string;
   deleted_at: string | null;
@@ -57,6 +59,7 @@ function toRows(raw: RawSetRow[] | null): { rows: DjShowRow[]; clubs: ClubRef[] 
       club_id: club.id,
       club_name: club.name,
       club_area: club.area,
+      club_thumbnail: club.thumbnail_url,
       event_date: lineup.event_date,
       start_min: r.start_min,
     });
@@ -82,13 +85,13 @@ async function fetchDj(slug: string) {
   const [{ data: upcomingRaw }, { data: pastRaw }, { count: favoriteCount }, { data: auth }] = await Promise.all([
     supabase
       .from("lineup_sets")
-      .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at, aliases))")
+      .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, thumbnail_url, is_test, status, deleted_at, aliases))")
       .eq("dj_id", dj.id)
       .gte("club_lineups.event_date", today)
       .limit(60),
     supabase
       .from("lineup_sets")
-      .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at, aliases))")
+      .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, thumbnail_url, is_test, status, deleted_at, aliases))")
       .eq("dj_id", dj.id)
       .lt("club_lineups.event_date", today)
       .limit(60),
@@ -319,8 +322,12 @@ export default async function DjProfilePage({ params }: PageProps) {
                       rel="noopener noreferrer"
                       className={`flex items-center gap-2 bg-card px-4 py-2.5 active:bg-muted transition-colors rounded-br-3xl ${!igHandle ? "rounded-bl-3xl" : ""}`}
                     >
-                      <div className="w-7 h-7 rounded-full bg-orange-500/15 flex items-center justify-center flex-shrink-0">
-                        <Music className="w-4 h-4 text-orange-400" />
+                      {/* 사클 브랜드 오렌지(#FF5500) 고정. tailwind orange-400(#fb923c)은
+                          갈색 끼가 돌아 인스타(선명한 핑크) 옆에서 유독 탁해 보였다.
+                          인스타 아이콘은 선(stroke)이라 가벼운데 이건 면(fill)이라
+                          같은 채도로는 덩어리져 보이는 것도 이유. */}
+                      <div className="w-7 h-7 rounded-full bg-[#FF5500]/15 flex items-center justify-center flex-shrink-0">
+                        <SoundcloudIcon size={16} className="text-[#FF5500]" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[11px] font-bold text-muted-foreground uppercase">사운드클라우드</p>

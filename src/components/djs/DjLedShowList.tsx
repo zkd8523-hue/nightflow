@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Disc3 } from "lucide-react";
 import { formatBusinessMin } from "@/lib/lineups/time";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
@@ -7,6 +8,7 @@ export interface DjShowRow {
   club_id: string;
   club_name: string;
   club_area: string | null;
+  club_thumbnail: string | null;
   event_date: string;
   start_min: number | null;
 }
@@ -60,7 +62,15 @@ export function DjLedShowList({
             onClick={onItemClick}
             className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.04] transition-colors"
           >
-            <Disc3 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#39ff6a" }} aria-hidden="true" />
+            {/* 클럽 대표 이미지 — 없을 때만 레코드 아이콘으로 대체한다.
+                LED 전광판 톤이라 이미지도 작게 원형으로 넣어 결을 맞춘다. */}
+            {r.club_thumbnail ? (
+              <span className="relative w-7 h-7 flex-shrink-0 rounded-full overflow-hidden ring-1 ring-white/15">
+                <Image src={r.club_thumbnail} alt="" fill sizes="28px" className="object-cover" />
+              </span>
+            ) : (
+              <Disc3 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#39ff6a" }} aria-hidden="true" />
+            )}
             <div className="min-w-0 flex-1">
               <p
                 className="font-mono text-[12px] font-bold tracking-[0.02em] truncate"

@@ -7,11 +7,14 @@ import { createClient } from "@/lib/supabase/client";
 import { getBusinessDateISO } from "@/lib/lineups/time";
 import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
 import { DjLedShowList } from "@/components/djs/DjLedShowList";
+import { DjPreviewButton } from "@/components/djs/DjPreviewButton";
 
 export interface DjProfileTarget {
   id: string;
   display_name: string;
   instagram: string | null;
+  /** 있으면 이름 옆에 미리듣기(▶) 버튼이 뜬다. optional — 기존 호출부는 안 넘겨도 됨. */
+  soundcloud_url?: string | null;
   /** 있으면 시트 하단에 전체 프로필(/dj/[slug]) 링크가 뜬다. optional — 기존 호출부는 안 넘겨도 됨. */
   slug?: string;
 }
@@ -22,6 +25,7 @@ interface PlayRow {
   club_id: string;
   club_name: string;
   club_area: string | null;
+  club_thumbnail: string | null;
 }
 
 /**
@@ -69,7 +73,7 @@ function DjProfileBody({
       const supabase = createClient();
       const { data } = await supabase
         .from("lineup_sets")
-        .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area))")
+        .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, thumbnail_url))")
         .eq("dj_id", dj.id)
         .gte("club_lineups.event_date", getBusinessDateISO())
         .limit(50);
@@ -83,7 +87,7 @@ function DjProfileBody({
           | { event_date: string; clubs: ClubRef | ClubRef[] }[]
           | null;
       };
-      type ClubRef = { id: string; name: string; area: string | null };
+      type ClubRef = { id: string; name: string; area: string | null; thumbnail_url: string | null };
 
       const rows: PlayRow[] = [];
       for (const r of (data ?? []) as unknown as Raw[]) {
@@ -98,6 +102,7 @@ function DjProfileBody({
           club_id: club.id,
           club_name: club.name,
           club_area: club.area,
+          club_thumbnail: club.thumbnail_url ?? null,
         });
       }
       // 중첩 select는 order가 보장되지 않으므로 여기서 정렬
@@ -142,6 +147,12 @@ function DjProfileBody({
               </div>
               <DjFavoriteButton djId={dj.id} djName={dj.display_name} size="lg" />
             </div>
+
+            <DjPreviewButton
+              soundcloudUrl={dj.soundcloud_url}
+              djName={dj.display_name}
+              variant="inline"
+            />
 
             {dj.slug && (
               <Link
