@@ -63,10 +63,8 @@ interface Props {
   funnel: {
     step1_start: number;
     step2_agree: number;
-    step3_phone: number;
-    step4_completed: number;
+    step3_completed: number;
     agree_rate: number | null;
-    phone_rate: number | null;
     complete_rate: number | null;
     overall_rate: number | null;
   } | null;
@@ -195,8 +193,7 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
             {[
               { label: "① 회원가입 시작", value: funnel.step1_start, rate: null, isFirst: true },
               { label: "② 약관 동의", value: funnel.step2_agree, rate: funnel.agree_rate },
-              { label: "③ 폰 인증 완료", value: funnel.step3_phone, rate: funnel.phone_rate },
-              { label: "④ 회원가입 완료", value: funnel.step4_completed, rate: funnel.complete_rate },
+              { label: "③ 회원가입 완료", value: funnel.step3_completed, rate: funnel.complete_rate },
             ].map((step, idx) => {
               const width = funnel.step1_start
                 ? (step.value / funnel.step1_start) * 100
@@ -246,7 +243,7 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
                       )}
                     </div>
                   </div>
-                  {idx < 3 && step.rate !== null && (
+                  {idx < 2 && step.rate !== null && (
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                       <ArrowRight className="w-3 h-3" />
                       이 단계에서 <b className="text-red-400">{100 - (step.rate ?? 0)}%</b> 이탈

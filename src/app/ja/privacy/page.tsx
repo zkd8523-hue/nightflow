@@ -36,7 +36,7 @@ export default function JaPrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-lg font-black text-foreground">1. 収集するデータ</h2>
             <ul className="space-y-1 list-disc pl-5 text-[14px]">
-              <li>アカウント情報：氏名、メール、電話（Kakao/Google OAuth経由）</li>
+              <li>アカウント情報：ニックネーム、生年月日、メール（Kakao/Google OAuth経由）</li>
               <li>プロフィール情報：ニックネーム、プロフィール画像</li>
               <li>取引データ：予約、決済、返金</li>
               <li>MD・カスタマーサポートとの通信記録</li>

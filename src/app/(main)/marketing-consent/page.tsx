@@ -33,13 +33,13 @@ export default function MarketingConsentPage() {
           <section className="space-y-3">
             <h2 className="text-lg font-black text-foreground">1. 수신 채널</h2>
             <ul className="list-disc list-inside space-y-1 text-foreground/80">
-              <li>카카오 알림톡 / 카카오톡 친구톡</li>
-              <li>문자 메시지 (SMS / LMS / MMS)</li>
               <li>앱 푸시 알림</li>
               <li>이메일</li>
+              <li>카카오 알림톡 / 문자 메시지 (SMS) — MD 회원에 한함</li>
             </ul>
             <p className="text-[13px] text-muted-foreground">
-              발송은 알림톡을 우선으로 하며, 발송 실패 또는 미수신 시 SMS 등 다른 채널로 대체 발송될 수 있습니다.
+              회사는 회원가입 시 전화번호를 수집하지 않으므로, 일반 회원은 앱 푸시·이메일로 안내받습니다.
+              MD 회원은 연락 채널 목적으로 등록한 전화번호로 알림톡을 받을 수 있습니다.
             </p>
           </section>
 
@@ -77,7 +77,7 @@ export default function MarketingConsentPage() {
             <p>아래 방법 중 하나로 언제든지 철회할 수 있습니다.</p>
             <ul className="list-disc list-inside space-y-1 text-foreground/80">
               <li>앱 내 <strong className="text-foreground">설정 → 알림 설정</strong>에서 마케팅 수신 동의 해제</li>
-              <li>수신한 문자 메시지 내 무료 수신거부 번호 또는 링크 이용</li>
+              <li>(MD 회원) 수신한 문자 메시지 내 무료 수신거부 번호 또는 링크 이용</li>
               <li>이메일: <strong className="text-foreground">support@nightflow.kr</strong></li>
             </ul>
             <p className="text-[13px] text-muted-foreground">
@@ -98,7 +98,7 @@ export default function MarketingConsentPage() {
               본 동의 내용은 관련 법령 및 회사 정책에 따라 변경될 수 있으며, 변경 시 앱 내 공지사항을 통해 안내드립니다.
             </p>
             <p className="text-[13px] text-muted-foreground">
-              시행일자: 2026년 5월 23일
+              시행일자: 2026년 8월 30일 (일반 회원 수신 채널을 앱 푸시·이메일 중심으로 변경)
             </p>
           </section>
         </div>

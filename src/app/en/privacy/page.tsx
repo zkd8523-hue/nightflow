@@ -40,7 +40,7 @@ export default function EnPrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-lg font-black text-foreground">1. Data We Collect</h2>
             <ul className="space-y-1 list-disc pl-5 text-[14px]">
-              <li>Account information: name, email, phone (via Kakao/Google OAuth)</li>
+              <li>Account information: nickname, date of birth, email (via Kakao/Google OAuth)</li>
               <li>Profile information: nickname, profile photo</li>
               <li>Transaction data: reservations, payments, refunds</li>
               <li>Communication records with MDs and customer support</li>

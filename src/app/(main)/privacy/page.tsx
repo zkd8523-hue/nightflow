@@ -39,8 +39,8 @@ export default function PrivacyPage() {
                         <h2 className="text-lg font-black text-foreground">1. 수집하는 개인정보의 항목</h2>
                         <div className="space-y-2">
                             <p className="text-foreground font-bold">① 회원 가입 시</p>
-                            <p className="pl-4">- <span className="text-money font-bold">필수:</span> 이름, 휴대전화번호, 카카오 계정 ID</p>
-                            <p className="pl-4">- <span className="text-muted-foreground font-bold">선택:</span> 회원이 직접 업로드한 프로필 사진</p>
+                            <p className="pl-4">- <span className="text-money font-bold">필수:</span> 닉네임, 생년월일, 카카오 계정 ID</p>
+                            <p className="pl-4">- <span className="text-muted-foreground font-bold">선택:</span> 성별, 회원이 직접 업로드한 프로필 사진</p>
                             <p className="pl-4 text-[12px] text-brand-amber dark:text-brand-amber/80 mt-1">
                                 ※ 회사는 카카오 OAuth로부터 전달받는 프로필 사진을 저장하지 않습니다.
                                 회원이 프로필 설정 페이지에서 직접 업로드한 사진만 저장·노출되며,
@@ -52,6 +52,7 @@ export default function PrivacyPage() {
                             <p className="pl-4">- MD 연락 기록 (연락 시간, 방문 확인 여부)</p>
 
                             <p className="text-foreground font-bold mt-4">③ MD 가입 시 (추가)</p>
+                            <p className="pl-4">- 휴대전화번호 (필수, 연락 채널 및 승인 안내용)</p>
                             <p className="pl-4">- 인스타그램 아이디 (필수, MD 브랜딩 채널)</p>
                             <p className="pl-4">- 활동 지역, 소속 클럽 정보</p>
                             <p className="pl-4">- 은행 계좌 정보 (선택)</p>
@@ -68,8 +69,8 @@ export default function PrivacyPage() {
                     <section className="space-y-3">
                         <h2 className="text-lg font-black text-foreground">2. 개인정보의 수집 및 이용 목적</h2>
                         <div className="space-y-2">
-                            <p className="pl-4">1. <span className="text-foreground font-bold">회원 관리:</span> 본인 확인, 서비스 부정 이용 방지, 고객 문의 응대</p>
-                            <p className="pl-4">2. <span className="text-foreground font-bold">서비스 제공:</span> 경매 낙찰 안내, MD 연락 연결, 예약 확인 문자 발송</p>
+                            <p className="pl-4">1. <span className="text-foreground font-bold">회원 관리:</span> 연령 확인, 서비스 부정 이용 방지, 고객 문의 응대</p>
+                            <p className="pl-4">2. <span className="text-foreground font-bold">서비스 제공:</span> 경매 낙찰 안내, MD 연락 연결</p>
                             <p className="pl-4">3. <span className="text-foreground font-bold">마케팅 및 광고:</span> 신규 경매 알림, 이벤트 안내 (선택 동의 시)</p>
                             <p className="pl-4">4. <span className="text-foreground font-bold">서비스 개선:</span> 통계 분석, 서비스 품질 향상, 맞춤형 서비스 제공</p>
                             <p className="pl-4">5. <span className="text-foreground font-bold">MD 관리:</span> 낙찰 현황 집계, 거래 기록 관리</p>
@@ -94,8 +95,8 @@ export default function PrivacyPage() {
                                 <tbody>
                                     <tr className="border-b border-border">
                                         <td className="px-4 py-3 text-money font-bold">SOLAPI</td>
-                                        <td className="px-4 py-3">전화번호</td>
-                                        <td className="px-4 py-3">알림톡 발송</td>
+                                        <td className="px-4 py-3">전화번호 (MD 회원에 한함)</td>
+                                        <td className="px-4 py-3">MD 대상 알림톡 발송</td>
                                         <td className="px-4 py-3">발송 후 즉시 삭제</td>
                                     </tr>
                                     <tr className="border-b border-border">
@@ -358,6 +359,11 @@ export default function PrivacyPage() {
                         <div className="text-muted-foreground text-sm space-y-1">
                             <p><span className="text-foreground font-bold">공고일자:</span> 2026년 3월 1일</p>
                             <p><span className="text-foreground font-bold">시행일자:</span> 2026년 3월 1일</p>
+                        </div>
+
+                        <div className="pt-4 space-y-1 text-muted-foreground text-sm">
+                            <p className="text-foreground font-bold">변경 이력</p>
+                            <p>- <span className="text-foreground">2026년 8월 30일:</span> 회원가입 시 휴대전화번호 수집 항목을 삭제했습니다 (변경 전: 필수 수집 → 변경 후: 미수집. 일반 회원의 기존 전화번호는 파기했으며, MD 회원은 연락 채널 목적상 계속 수집합니다).</p>
                         </div>
 
                         <div className="pt-6 bg-green-500/10 border border-green-500/20 rounded-xl p-4">

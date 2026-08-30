@@ -11,7 +11,7 @@ import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
 import { validateDisplayName, isDisplayNameTaken, generateRandomNickname } from "@/lib/utils/displayName";
 import { normalizeProfileImage } from "@/lib/utils/image";
-import { ChevronRight, Check, ArrowLeft, Camera, RefreshCw } from "lucide-react";
+import { ChevronRight, Check, ArrowLeft, Camera } from "lucide-react";
 import Link from "next/link";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -35,61 +35,8 @@ interface SignupFormProps {
   mdReferrer?: string | null;
 }
 
-type Step = "agree" | "country" | "birthday" | "gender" | "phone" | "otp" | "nickname";
-
-const RESEND_COOLDOWN_SEC = 60;
-
-const isTestLoginEnabled =
-  process.env.NODE_ENV === "development" ||
-  process.env.NEXT_PUBLIC_ENABLE_TEST_LOGIN === "true";
-
-const TEST_PHONE_BY_EMAIL: Record<string, string> = {
-  "test-user@nightflow.test": "01099990001",
-  "test-md@nightflow.test": "01099990002",
-  "test-admin@nightflow.test": "01099990003",
-};
-
-const MAGIC_PHONES = [
-  "01000000000",
-  "01012345678",
-  "01099990001",
-  "01099990002",
-  "01099990003"
-];
-
-const isMagicPhoneClient = (phone: string) => {
-  const normalized = phone.replace(/[^0-9]/g, "");
-  return MAGIC_PHONES.includes(normalized);
-};
-
-const formatPhoneDisplay = (raw: string) => {
-  const digits = raw.replace(/\D/g, "").slice(0, 11);
-  if (digits.length < 4) return digits;
-  if (digits.length < 8) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-};
-
-const sendOtpErrorMessage = (code: string): string => {
-  switch (code) {
-    case "invalid_phone": return "올바른 휴대폰 번호를 입력해주세요";
-    case "phone_already_registered": return "이미 가입된 번호입니다";
-    case "phone_cooldown":
-    case "rate_limited": return "너무 자주 시도했습니다. 잠시 후 다시 시도해주세요";
-    case "sms_send_failed": return "SMS 발송에 실패했습니다. 잠시 후 다시 시도해주세요";
-    default: return "인증번호 발송 중 오류가 발생했습니다";
-  }
-};
-
-const verifyOtpErrorMessage = (code: string): string => {
-  switch (code) {
-    case "wrong_code": return "인증번호가 일치하지 않습니다";
-    case "expired": return "인증번호가 만료되었습니다. 다시 받아주세요";
-    case "too_many_attempts": return "시도 횟수를 초과했습니다. 다시 받아주세요";
-    case "no_pending_verification": return "발송된 인증번호가 없습니다. 다시 받아주세요";
-    case "already_verified": return "인증번호가 이미 사용됐습니다. 다시 받아주세요";
-    default: return "인증 중 오류가 발생했습니다";
-  }
-};
+// profile = 생년월일 + 성별 통합 단계 (전화번호 인증 제거로 스텝 수를 줄임)
+type Step = "agree" | "country" | "profile" | "nickname";
 
 export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const router = useRouter();
@@ -148,20 +95,13 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   );
   const [agreeMarketing, setAgreeMarketing] = useState(false);
 
-  const [phoneInput, setPhoneInput] = useState("");
-  // 생년월일 (phone 단계에서 입력 — 만 19세 미만 SMS 발송 전 차단용)
+  // 생년월일 + 성별 — "profile" 단계에서 한 화면으로 입력 (만 19세 게이트 포함)
   const [birthdayInput, setBirthdayInput] = useState("");
   // DateWheelPicker가 마운트 시 자동으로 기본값(예: 2001-01-01)을 emit해 birthdayInput이 즉시 채워짐 → 다음 버튼이 조작 없이 활성.
   // 유저가 실제로 휠을 돌리거나 다른 스텝에서 복귀한 경우만 유효 입력으로 간주하기 위해 별도 플래그.
   const [birthdayTouched, setBirthdayTouched] = useState(false);
-  // 성별 (birthday 다음 gender 단계 — 선택 항목, null = 선택안함)
+  // 성별 (선택 항목, null = 선택안함)
   const [gender, setGender] = useState<"male" | "female" | null>(null);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpVerifying, setOtpVerifying] = useState(false);
-  const [resendIn, setResendIn] = useState(0);
-  // OTP 검증 후 nickname 단계로 넘기기 위해 보관
-  const [verifiedPhoneState, setVerifiedPhoneState] = useState<string | null>(null);
   // 닉네임 + 프로필 사진 단계
   const [nicknameInput, setNicknameInput] = useState("");
   const [nicknameError, setNicknameError] = useState<string | null>(null);
@@ -235,7 +175,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
   const requiredMet = agreeAge && agreeTerms && agreePrivacy;
 
-  const isDirty = (step !== "agree" || phoneInput.length > 0) && !otpVerifying && !loading && !completedRef.current;
+  const isDirty = step !== "agree" && !loading && !completedRef.current;
   const { showConfirm, setShowConfirm, confirmLeave, cancelLeave } = useLeaveConfirm(isDirty);
 
   useEffect(() => {
@@ -245,27 +185,19 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         const { data: { user } } = await supabase.auth.getUser();
         if (cancelled) return;
         if (user) {
-          // 이미 가입 완료된 유저면 홈으로 redirect (외국인은 phone 없이 display_name으로 판정)
+          // 이미 가입 완료된 유저면 홈으로 redirect (phone을 더 이상 받지 않으므로 display_name으로만 판정)
           const { data: profile } = await supabase
             .from("users")
-            .select("phone, display_name")
+            .select("display_name")
             .eq("id", user.id)
             .maybeSingle();
           if (cancelled) return;
-          if (profile?.phone || profile?.display_name) {
+          if (profile?.display_name) {
             router.push(redirectAfterSignup);
             return;
           }
           setAuthUser(user);
           trackEvent("signup_start", { provider: user.app_metadata?.provider ?? "unknown" });
-          // 테스트 모드: 한국어 플로우만 약관/전화번호 자동 채움 (외국인은 실제 UX 확인용으로 스킵)
-          if (!isForeigner && isTestLoginEnabled && user.email && TEST_PHONE_BY_EMAIL[user.email]) {
-            setAgreeAge(true);
-            setAgreeTerms(true);
-            setAgreePrivacy(true);
-            setAgreeMarketing(true);
-            setPhoneInput(TEST_PHONE_BY_EMAIL[user.email]);
-          }
           return;
         }
         if (attempt < 2) await new Promise(r => setTimeout(r, 500));
@@ -275,12 +207,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     checkSession();
     return () => { cancelled = true; };
   }, [router, supabase]);
-
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn((v) => v - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendIn]);
 
   const handleAgreeAll = () => {
     const next = !agreeAll;
@@ -332,15 +258,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const handleAgreeNext = () => {
     if (!requiredMet) return;
     trackEvent("signup_agree", { marketing_consent: agreeMarketing });
-    if (isForeigner) {
-      setStep("country"); // 외국인: phone/otp 스킵, 나라 먼저
-    } else {
-      setStep("birthday"); // 한국인: 생년월일 먼저 (19세 게이트) → phone
-    }
+    setStep(isForeigner ? "country" : "profile"); // 외국인: 나라 먼저 / 한국인: 생년월일+성별
   };
-
-  const phoneDigits = phoneInput.replace(/\D/g, "");
-  const phoneValid = /^01[016789]\d{7,8}$/.test(phoneDigits);
 
   // 생년월일 검증 (만 19세 이상만 가입 가능 — 청소년보호법 기준)
   // birthdayInput은 숫자 8자리(YYYYMMDD)로 보관 → YYYY-MM-DD로 파싱.
@@ -360,89 +279,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   // 8자리를 다 입력했는데 19세 미만/잘못된 날짜일 때만 경고 (입력 중에는 침묵)
   const isUnderage = birthdayComplete && !isAdult;
 
-  const handleSendOtp = async () => {
-    if (!phoneValid || !isAdult || otpSending) return;
-    setOtpSending(true);
-    try {
-      const res = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phoneDigits, purpose: "signup" }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(sendOtpErrorMessage(data.error));
-        return;
-      }
-      toast.success("인증번호를 보냈어요");
-      setStep("otp");
-      if (isMagicPhoneClient(phoneDigits)) {
-        setOtpCode("000000");
-      } else {
-        setOtpCode(isTestLoginEnabled ? "000000" : "");
-      }
-      setResendIn(RESEND_COOLDOWN_SEC);
-    } catch (err) {
-      logger.error("send-otp failed:", err);
-      toast.error("네트워크 오류가 발생했습니다");
-    } finally {
-      setOtpSending(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (resendIn > 0) return;
-    await handleSendOtp();
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!authUser) return;
-    if (completedRef.current) return;
-    if (!/^\d{6}$/.test(otpCode)) {
-      toast.error("6자리 숫자를 입력해주세요");
-      return;
-    }
-    setOtpVerifying(true);
-    try {
-      const verifyRes = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phoneDigits, code: otpCode, purpose: "signup" }),
-      });
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok) {
-        toast.error(verifyOtpErrorMessage(verifyData.error));
-        if (["already_verified", "expired", "too_many_attempts", "no_pending_verification"].includes(verifyData.error)) {
-          setStep("phone");
-          setOtpCode("");
-          setResendIn(0);
-        }
-        return;
-      }
-
-      const verifiedPhone: string = verifyData.phone;
-      trackEvent("signup_phone_verified");
-      setVerifiedPhoneState(verifiedPhone);
-      setStep("nickname");
-      setNicknameInput("");
-      setNicknameError(null);
-      setNicknameOk(false);
-    } catch (error: unknown) {
-      logger.error("OTP verify error:", error);
-      toast.error(error instanceof Error ? error.message : "인증 중 오류가 발생했습니다");
-    } finally {
-      setOtpVerifying(false);
-    }
-  };
-
   const handleCompleteSignup = async () => {
     if (!authUser) return;
     if (completedRef.current) return;
-    if (!isForeigner && !verifiedPhoneState) {
-      toast.error("인증 정보가 만료됐어요. 처음부터 다시 시도해주세요");
-      setStep("phone");
-      return;
-    }
     const displayName = nicknameInput.trim();
     if (!displayName) {
       toast.error("닉네임을 입력해주세요");
@@ -456,7 +295,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       return;
     }
     try {
-      const verifiedPhone = verifiedPhoneState;
       setLoading(true);
       const taken = await isDisplayNameTaken(supabase, displayName);
       if (taken) {
@@ -531,7 +369,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         return;
       }
 
-      // 생년월일: phone 단계에서 19세 게이트를 통과한 값(YYYY-MM-DD). 유효할 때만 저장.
+      // 생년월일: profile 단계에서 19세 게이트를 통과한 값(YYYY-MM-DD). 유효할 때만 저장.
       const birthdayToSave = birthdayValid ? birthdayISO : null;
 
       // 이메일: 외국인 알림(첫 오퍼/수락/리마인더) 발송용.
@@ -546,7 +384,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             .from("users")
             .update({
               display_name: displayName,
-              phone: verifiedPhone,
               birthday: birthdayToSave,
               gender,
               alimtalk_consent: agreeMarketing,
@@ -560,7 +397,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             id: authUser.id,
             kakao_id: meta.provider_id || authUser.id,
             display_name: displayName,
-            phone: verifiedPhone,
             birthday: birthdayToSave,
             gender,
             profile_image: finalProfileImage,
@@ -648,11 +484,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
               <div className="h-px bg-muted mx-2" />
 
-              {/* "만 19세 이상" 항목 제거: birthday 스텝에서 실제 생년월일로 검증하므로 중복 게이트 → 이탈 유발 */}
+              {/* "만 19세 이상" 항목 제거: profile 스텝에서 실제 생년월일로 검증하므로 중복 게이트 → 이탈 유발 */}
               {[
                 { state: agreeTerms, set: setAgreeTerms, label: tt("서비스 이용약관 동의", "Terms of Service"), required: true, href: isForeigner ? `/terms?lang=${lang}` : "/terms" },
                 { state: agreePrivacy, set: setAgreePrivacy, label: tt("개인정보 처리방침 동의", "Privacy Policy"), required: true, href: isForeigner ? `/privacy?lang=${lang}` : "/privacy" },
-                { state: agreeMarketing, set: setAgreeMarketing, label: tt("마케팅 정보 수신 동의 (이메일·알림톡·SMS·앱 푸시)", "Marketing notifications (Email, SMS, push)"), required: false, href: isForeigner ? `/marketing-consent?lang=${lang}` : "/marketing-consent" },
+                { state: agreeMarketing, set: setAgreeMarketing, label: tt("마케팅 정보 수신 동의 (이메일·앱 푸시)", "Marketing notifications (Email, push)"), required: false, href: isForeigner ? `/marketing-consent?lang=${lang}` : "/marketing-consent" },
               ].map(({ state, set, label, required, href }) => (
                 <div key={label} className="flex items-center gap-3 px-3 py-3">
                   <button
@@ -700,14 +536,14 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
           </>
         )}
 
-        {step === "birthday" && (
+        {step === "profile" && (
           <>
             <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-foreground">{tt("생년월일을 알려주세요", "Your date of birth")}</p>
+              <p className="text-[18px] font-bold text-foreground">{tt("생년월일과 성별을 알려주세요", "Your date of birth and gender")}</p>
               <p className="text-[13px] text-muted-foreground">{tt("만 19세 이상만 가입할 수 있어요", "You must be 19 or older to join.")}</p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-5">
               <div className="space-y-1.5">
                 <DateWheelPicker
                   value={birthdayInput}
@@ -727,32 +563,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 )}
               </div>
 
-              <Button
-                onClick={() => setStep("gender")}
-                disabled={!birthdayTouched || !birthdayValid || !isAdult}
-                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
-              >
-                {tt("다음", "Next")}
-              </Button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setStep(isForeigner ? "country" : "agree")}
-              className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
-            </button>
-          </>
-        )}
-
-        {step === "gender" && (
-          <>
-            <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-foreground">{tt("성별을 선택해주세요", "Select your gender")}</p>
-            </div>
-
-            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 {([
                   { key: "male" as const, ko: "남성", en: "Male" },
@@ -763,11 +573,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                     <button
                       key={opt.key}
                       type="button"
-                      onClick={() => {
-                        // 선택 즉시 다음 단계로 — "다음" 버튼 탭 한 번을 줄임
-                        setGender(opt.key);
-                        setStep(isForeigner ? "nickname" : "phone");
-                      }}
+                      onClick={() => setGender(active ? null : opt.key)}
                       className={`h-14 rounded-xl border text-[15px] font-bold transition-colors ${
                         active
                           ? "bg-inverse text-inverse-foreground border-white"
@@ -780,101 +586,21 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 })}
               </div>
 
-              {/* 선택안함 — 작은 문구로 건너뛰기 */}
-              <button
-                type="button"
-                onClick={() => {
-                  setGender(null);
-                  setStep(isForeigner ? "nickname" : "phone");
-                }}
-                className="w-full text-center text-[13px] text-muted-foreground hover:text-foreground/80 transition-colors"
+              <Button
+                onClick={() => setStep("nickname")}
+                disabled={!birthdayTouched || !birthdayValid || !isAdult || !gender}
+                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
               >
-                {tt("선택 안 하고 넘어가기", "Prefer not to say")}
-              </button>
+                {tt("다음", "Next")}
+              </Button>
             </div>
 
             <button
               type="button"
-              onClick={() => setStep("birthday")}
+              onClick={() => setStep(isForeigner ? "country" : "agree")}
               className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
-            </button>
-          </>
-        )}
-
-        {(step === "phone" || step === "otp") && (
-          <>
-            <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-foreground">휴대폰 번호로 인증해주세요</p>
-              <p className="text-[13px] text-muted-foreground">오퍼 도착 시 알림톡으로 알려드려요</p>
-            </div>
-
-            {/* 인증번호 받기를 눌러도 화면 전체가 안 바뀌고, 번호 입력창 아래에 OTP 입력이
-                그대로 이어서 나타남 — 별도 화면으로 넘어가는 느낌(다음창) 제거. */}
-            <div className="space-y-3">
-              <input
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel"
-                readOnly={step === "otp"}
-                value={formatPhoneDisplay(phoneInput)}
-                onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                placeholder="010-1234-5678"
-                className={`w-full h-14 px-4 rounded-xl bg-muted border border-border text-foreground text-[16px] placeholder-neutral-500 focus:outline-none focus:border-white transition-colors ${
-                  step === "otp" ? "opacity-60" : ""
-                }`}
-              />
-
-              {step === "phone" ? (
-                <Button
-                  onClick={handleSendOtp}
-                  disabled={!phoneValid || !isAdult || otpSending}
-                  className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
-                >
-                  {otpSending ? "발송 중..." : "인증번호 받기"}
-                </Button>
-              ) : (
-                <>
-                  <p className="text-[13px] text-muted-foreground text-center">6자리 인증번호를 입력하세요</p>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    autoFocus
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="______"
-                    maxLength={6}
-                    className="w-full h-14 px-4 rounded-xl bg-muted border border-border text-foreground text-center text-[20px] tracking-[0.5em] placeholder-neutral-600 focus:outline-none focus:border-white transition-colors"
-                  />
-                  <Button
-                    onClick={handleVerifyOtp}
-                    disabled={otpCode.length !== 6 || otpVerifying || loading}
-                    className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
-                  >
-                    {otpVerifying ? "확인 중..." : "확인"}
-                  </Button>
-                  <div className="flex justify-end text-sm">
-                    <button
-                      type="button"
-                      onClick={handleResendOtp}
-                      disabled={resendIn > 0 || otpSending}
-                      className="text-muted-foreground hover:text-foreground transition-colors disabled:text-muted-foreground"
-                    >
-                      {resendIn > 0 ? `다시 받기 (${resendIn}s)` : "다시 받기"}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setStep(step === "otp" ? "phone" : "gender")}
-              className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> 이전
             </button>
           </>
         )}
@@ -973,9 +699,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                       onClick={handleRegenerateNickname}
                       disabled={nicknameRegenerating}
                       aria-label={tt("닉네임 다시 생성", "Generate new nickname")}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-card disabled:opacity-50 transition-colors"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-base hover:bg-card disabled:opacity-50 transition-colors"
                     >
-                      <RefreshCw className={`w-4 h-4 ${nicknameRegenerating ? "animate-spin" : ""}`} />
+                      <span className={nicknameRegenerating ? "animate-spin inline-block" : "inline-block"}>🎲</span>
                     </button>
                   )}
                 </div>
@@ -1002,7 +728,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               </Button>
               <button
                 type="button"
-                onClick={() => setStep(isForeigner ? "gender" : "otp")}
+                onClick={() => setStep("profile")}
                 className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
@@ -1105,7 +831,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
             <div className="space-y-3 pt-1">
               <Button
-                onClick={() => setStep("birthday")}
+                onClick={() => setStep("profile")}
                 disabled={!countryCode || (isForeigner && !!authUser && !authUser.email && !isValidEmailFormat(emailInput))}
                 className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
               >

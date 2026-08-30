@@ -39,7 +39,7 @@ export default function ZhTwPrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-lg font-black text-foreground">1. 收集的資料</h2>
             <ul className="space-y-1 list-disc pl-5 text-[14px]">
-              <li>帳戶資訊:姓名、電子郵件、電話(透過 Kakao/Google OAuth)</li>
+              <li>帳戶資訊:暱稱、出生日期、電子郵件(透過 Kakao/Google OAuth)</li>
               <li>個人資料:暱稱、頭像</li>
               <li>交易資料:預訂、付款、退款</li>
               <li>與 MD 及客服的通訊紀錄</li>

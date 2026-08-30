@@ -5,8 +5,8 @@ import { createClient as createServerSupabase } from "@/lib/supabase/server";
 type TestRole = "user";
 
 // MD/Admin 테스트 계정 제거: 이 엔드포인트로는 일반 유저 외의 권한을 부여할 수 없다
-const TEST_ACCOUNTS: Record<string, { phone: string; role: TestRole; displayName: string }> = {
-  "test-user@nightflow.test": { phone: "01099990001", role: "user", displayName: "TestUser" },
+const TEST_ACCOUNTS: Record<string, { role: TestRole; displayName: string }> = {
+  "test-user@nightflow.test": { role: "user", displayName: "TestUser" },
 };
 
 export async function POST() {
@@ -30,21 +30,6 @@ export async function POST() {
 
   const admin = createAdminClient();
 
-  // Clean up any previous users squatting on the magic phone
-  const { data: squatters } = await admin
-    .from("users")
-    .select("id")
-    .eq("phone", preset.phone)
-    .neq("id", user.id);
-
-  for (const squatter of squatters ?? []) {
-    try {
-      await admin.auth.admin.deleteUser(squatter.id);
-    } catch (e) {
-      console.warn("[test-bootstrap] failed to remove squatter", squatter.id, e);
-    }
-  }
-
   const { data: existing } = await admin
     .from("users")
     .select("id, deleted_at")
@@ -59,7 +44,6 @@ export async function POST() {
   }
 
   const baseFields = {
-    phone: preset.phone,
     display_name: preset.displayName,
     gender: "male" as const,
     role: preset.role,
@@ -67,17 +51,6 @@ export async function POST() {
     alimtalk_consent: false,
     alimtalk_consent_at: null,
   };
-
-  // INSERT 시 DB 트리거 validate_phone_otp_on_signup가 phone_verifications에
-  // 10분 이내 verified 레코드를 요구함 → DEV 우회 위해 가짜 OTP 인증 박기
-  if (!existing) {
-    await admin.from("phone_verifications").insert({
-      phone: preset.phone,
-      code_hash: "test-bootstrap",
-      verified_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + 60_000).toISOString(),
-    });
-  }
 
   const { error: writeError } = existing
     ? await admin.from("users").update(baseFields).eq("id", user.id)

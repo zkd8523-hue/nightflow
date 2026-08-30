@@ -22,10 +22,8 @@ interface DropoffHotspot {
 interface SignupFunnel {
   step1_start: number;
   step2_agree: number;
-  step3_phone: number;
-  step4_completed: number;
+  step3_completed: number;
   agree_rate: number | null;
-  phone_rate: number | null;
   complete_rate: number | null;
   overall_rate: number | null;
 }

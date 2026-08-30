@@ -51,8 +51,8 @@ export default function TermsPage() {
                         <h2 className="text-lg font-black text-foreground">제 3조 (회원 가입 및 탈퇴)</h2>
                         <div className="space-y-2">
                             <p className="text-foreground font-bold">① 회원 자격</p>
-                            <p className="pl-4">1. 본 서비스는 만 19세 이상만 이용할 수 있습니다.</p>
-                            <p className="pl-4">2. 회원은 실명 및 실제 정보를 입력해야 하며, 허위 정보 입력 시 서비스 이용이 제한될 수 있습니다.</p>
+                            <p className="pl-4">1. 본 서비스는 만 19세 이상만 이용할 수 있으며, 회원가입 시 입력한 생년월일을 기준으로 확인합니다.</p>
+                            <p className="pl-4">2. 회원은 실제 정보를 입력해야 하며, 생년월일 등 허위 정보 입력이 확인될 경우 서비스 이용이 제한되거나 계정이 차단될 수 있습니다.</p>
                             <p className="pl-4">3. 카카오 계정 연동을 통한 간편 가입이 가능합니다.</p>
 
                             <p className="text-foreground font-bold mt-4">② 회원 탈퇴</p>
@@ -136,7 +136,7 @@ export default function TermsPage() {
                             <p className="text-foreground font-bold mt-4">④ 외국인 사용자 거래</p>
                             <p className="pl-4">1. 외국인 사용자(영어/중국어/일본어 트랙)의 깃발 매칭 역시 회사가 결제를 중개하지 않으며, 테이블 이용 금액은 이용자가 매칭된 클럽(MD)에게 직접 지불합니다(제①항과 동일).</p>
                             <p className="pl-4">2. 회사가 결제대행사(PG)를 통해 대금을 선결제·보관·정산하는 별도 결제 기능은 현재 제공하지 않습니다. 향후 도입 시 사전에 공지하고 본 약관을 개정합니다.</p>
-                            <p className="pl-4">3. 미성년자(19세 미만)는 서비스 이용이 제한되며, 회원가입 시 본인인증을 통해 확인됩니다.</p>
+                            <p className="pl-4">3. 미성년자(19세 미만)는 서비스 이용이 제한되며, 회원가입 시 입력한 생년월일을 기준으로 확인합니다.</p>
 
                         </div>
                     </section>
@@ -257,6 +257,11 @@ export default function TermsPage() {
                         <div className="pt-6 text-muted-foreground text-sm space-y-1">
                             <p><span className="font-bold">공고일자:</span> 2026년 3월 1일</p>
                             <p><span className="font-bold">시행일자:</span> 2026년 3월 1일</p>
+                        </div>
+
+                        <div className="pt-4 space-y-1 text-muted-foreground text-sm">
+                            <p className="text-foreground font-bold">변경 이력</p>
+                            <p>- <span className="text-foreground">2026년 8월 30일:</span> 회원가입 시 휴대전화번호 본인인증 절차를 폐지했습니다. 만 19세 이상 확인은 회원가입 시 입력하는 생년월일을 기준으로 합니다 (제3조, 제6조).</p>
                         </div>
 
                         <div className="pt-6 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">

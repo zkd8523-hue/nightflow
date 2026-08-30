@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
-import { isValidKoreanPhone, normalizePhone } from "@/lib/auth/otp";
+import { isValidKoreanPhone, normalizePhone } from "@/lib/utils/phone";
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     // 실제 클럽 연결은 admin이 승인 화면에서 기존 클럽에 연결(club_partners).
     const extraClubNames: string[] = Array.isArray(body.extra_club_names) ? body.extra_club_names : [];
 
-    // phone 정규화 (하이픈 제거 등). phone_verifications과 users.phone 모두 normalized 형태로 일관 저장.
+    // phone 정규화 (하이픈 제거 등). users.phone에 normalized 형태로 저장.
     if (!isValidKoreanPhone(rawPhone ?? "")) {
       return NextResponse.json(
         { error: "올바른 휴대폰 번호를 입력해주세요." },
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 휴대폰 본인인증은 로그인/가입 단계에서 이미 완료되므로 MD 신청에서는 재검증하지 않음.
+    // 휴대폰 번호는 SMS OTP 인증 없이 자기신고로 저장. 신뢰성은 Admin 승인 절차에서 확인.
 
     // Instagram 서버 검증
     const cleanInstagram = instagram.replace(/^@/, "");

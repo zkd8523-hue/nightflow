@@ -36,7 +36,7 @@ export default function ZhPrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-lg font-black text-foreground">1. 收集的数据</h2>
             <ul className="space-y-1 list-disc pl-5 text-[14px]">
-              <li>账户信息：姓名、电子邮件、电话（通过 Kakao/Google OAuth）</li>
+              <li>账户信息：昵称、出生日期、电子邮件（通过 Kakao/Google OAuth）</li>
               <li>个人资料：昵称、头像</li>
               <li>交易数据：预订、支付、退款</li>
               <li>与 MD 和客服的通信记录</li>
