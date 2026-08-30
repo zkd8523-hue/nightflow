@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { BadgeCheck, Heart } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
 import { getBusinessDateISO } from "@/lib/lineups/time";
@@ -38,9 +40,13 @@ interface PlayRow {
 export function DjProfileSheet({
   dj,
   onClose,
+  hidePreview = false,
 }: {
   dj: DjProfileTarget | null;
   onClose: () => void;
+  /** 이미 재생 중인 화면에서 열렸을 때 — "음악 미리듣기"를 또 보여주면
+   *  방금 누른 것과 같은 동작이 하나 더 있는 셈이 된다. */
+  hidePreview?: boolean;
 }) {
   return (
     <Sheet open={!!dj} onOpenChange={(next) => !next && onClose()}>
@@ -52,7 +58,7 @@ export function DjProfileSheet({
       >
         {/* key로 DJ마다 새 인스턴스를 만든다 — 이전 DJ의 목록이 잠깐 비쳤다가
             바뀌는 일이 없고, 로딩 상태를 effect로 되돌릴 필요도 없어진다. */}
-        {dj && <DjProfileBody key={dj.id} dj={dj} onClose={onClose} />}
+        {dj && <DjProfileBody key={dj.id} dj={dj} onClose={onClose} hidePreview={hidePreview} />}
       </SheetContent>
     </Sheet>
   );
@@ -61,24 +67,59 @@ export function DjProfileSheet({
 function DjProfileBody({
   dj,
   onClose,
+  hidePreview = false,
 }: {
   dj: DjProfileTarget;
   onClose: () => void;
+  hidePreview?: boolean;
 }) {
   const [plays, setPlays] = useState<PlayRow[] | null>(null);
+  const [past, setPast] = useState<PlayRow[]>([]);
+  // 프로필 페이지에만 있던 값들 — 시트에서도 같은 걸 보여준다(페이지 이동 없이)
+  const [profile, setProfile] = useState<{
+    photo_url: string | null;
+    bio: string | null;
+    verified: boolean;
+    favoriteCount: number;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("lineup_sets")
-        .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, thumbnail_url))")
-        .eq("dj_id", dj.id)
-        .gte("club_lineups.event_date", getBusinessDateISO())
-        .limit(50);
+      const today = getBusinessDateISO();
+      const [{ data }, { data: pastData }, { data: djRow }, { count: favCount }] = await Promise.all([
+        supabase
+          .from("lineup_sets")
+          .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, thumbnail_url))")
+          .eq("dj_id", dj.id)
+          .gte("club_lineups.event_date", today)
+          .limit(50),
+        supabase
+          .from("lineup_sets")
+          .select("start_min, club_lineups!inner(event_date, clubs!inner(id, name, area, thumbnail_url))")
+          .eq("dj_id", dj.id)
+          .lt("club_lineups.event_date", today)
+          .limit(30),
+        supabase
+          .from("djs")
+          .select("photo_url, bio, claimed_by_user_id")
+          .eq("id", dj.id)
+          .maybeSingle(),
+        supabase
+          .from("user_favorite_djs")
+          .select("id", { count: "exact", head: true })
+          .eq("dj_id", dj.id),
+      ]);
 
       if (cancelled) return;
+
+      setProfile({
+        photo_url: djRow?.photo_url ?? null,
+        bio: djRow?.bio ?? null,
+        verified: !!djRow?.claimed_by_user_id,
+        favoriteCount: favCount ?? 0,
+      });
 
       type Raw = {
         start_min: number | null;
@@ -112,6 +153,29 @@ function DjProfileBody({
           (a.start_min ?? Number.MAX_SAFE_INTEGER) - (b.start_min ?? Number.MAX_SAFE_INTEGER)
       );
       setPlays(rows);
+
+      // 지난 플레이도 같은 규약으로 정규화한다(최신순)
+      const pastRows: PlayRow[] = [];
+      for (const r of (pastData ?? []) as unknown as Raw[]) {
+        const lineup = Array.isArray(r.club_lineups) ? r.club_lineups[0] : r.club_lineups;
+        if (!lineup) continue;
+        const club = Array.isArray(lineup.clubs) ? lineup.clubs[0] : lineup.clubs;
+        if (!club) continue;
+        pastRows.push({
+          event_date: lineup.event_date,
+          start_min: r.start_min,
+          club_id: club.id,
+          club_name: club.name,
+          club_area: club.area,
+          club_thumbnail: club.thumbnail_url ?? null,
+        });
+      }
+      pastRows.sort(
+        (a, b) =>
+          b.event_date.localeCompare(a.event_date) ||
+          (b.start_min ?? 0) - (a.start_min ?? 0)
+      );
+      setPast(pastRows.slice(0, 20));
     })();
     return () => {
       cancelled = true;
@@ -125,34 +189,75 @@ function DjProfileBody({
               <SheetTitle className="sr-only">{dj.display_name} 프로필</SheetTitle>
             </SheetHeader>
 
-            {/* DJ는 가입 개념이 없는 운영자 등록 데이터라 프로필 사진이 없다 —
-                이니셜 원은 정보가 없는 자리만 차지하므로 두지 않는다.
-                인스타는 버튼이 아니라 이름 옆 텍스트 링크 — 굳이 버튼 하나를 더
-                눌러야 나가는 동작이 아니라는 걸 시각적으로도 가볍게 둔다. */}
-            <div className="flex items-center gap-3">
-              <div className="min-w-0 flex-1 flex items-baseline gap-1.5">
-                <p className="font-black text-foreground truncate leading-tight text-lg">
-                  {dj.display_name}
-                </p>
+            {/* 프로필 페이지(/dj/[slug])와 같은 명함 — 페이지로 나가지 않고
+                여기서 다 보게 한다(라인업을 훑던 흐름이 안 끊긴다). */}
+            <div className="flex items-start gap-3">
+              <div className="relative w-16 h-16 rounded-full overflow-hidden bg-muted shrink-0 ring-2 ring-border">
+                {profile?.photo_url ? (
+                  <Image
+                    src={profile.photo_url}
+                    alt={dj.display_name}
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-foreground/60 text-2xl font-black">
+                    {dj.display_name.charAt(0)}
+                  </div>
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-black text-foreground truncate leading-tight text-lg">
+                    {dj.display_name}
+                  </p>
+                  {profile?.verified && (
+                    <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-black leading-none">
+                      <BadgeCheck className="w-3 h-3" strokeWidth={2.5} />
+                      인증됨
+                    </span>
+                  )}
+                </div>
                 {dj.instagram && (
                   <a
                     href={`https://instagram.com/${dj.instagram}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[13px] text-muted-foreground hover:text-foreground/80 truncate transition-colors"
+                    className="text-[13px] text-muted-foreground hover:text-foreground/80 truncate transition-colors block mt-0.5"
                   >
                     @{dj.instagram}
                   </a>
                 )}
+                {/* 0이면 부풀린 숫자로 오해받지 않도록 숨긴다(프로필 페이지와 같은 규칙) */}
+                {!!profile?.favoriteCount && profile.favoriteCount > 0 && (
+                  <p className="flex items-center gap-1 text-[12px] text-muted-foreground mt-1">
+                    <Heart className="w-3 h-3 fill-current" />
+                    {profile.favoriteCount}
+                  </p>
+                )}
               </div>
+
               <DjFavoriteButton djId={dj.id} djName={dj.display_name} size="lg" />
             </div>
 
-            <DjPreviewButton
-              soundcloudUrl={dj.soundcloud_url}
-              djName={dj.display_name}
-              variant="inline"
-            />
+            {profile?.bio && (
+              <p className="mt-3 text-[13px] font-semibold leading-[1.45] whitespace-pre-wrap break-words text-foreground">
+                {profile.bio}
+              </p>
+            )}
+
+            {/* 버튼을 한 번 더 누르게 하지 않는다 — 이 시트를 연 사람은 이미
+                "이 DJ가 어떤 음악인지"를 보러 온 것이라 플레이어를 바로 편다. */}
+            {!hidePreview && (
+              <DjPreviewButton
+                soundcloudUrl={dj.soundcloud_url}
+                djName={dj.display_name}
+                variant="inline"
+                autoOpen
+              />
+            )}
 
             {dj.slug && (
               <Link
@@ -177,6 +282,17 @@ function DjProfileBody({
                 <DjLedShowList rows={plays} emptyLabel="예정된 라인업이 없어요" onItemClick={onClose} />
               )}
             </div>
+
+            {/* 예정이 없는 DJ는 시트가 텅 비어 "정보가 없는 사람"처럼 보인다 —
+                지난 플레이가 그 자리를 채워 어디서 뛰던 사람인지 알려준다. */}
+            {past.length > 0 && (
+              <div className="mt-5">
+                <p className="text-[11px] font-bold text-muted-foreground mb-2">
+                  지난 플레이
+                </p>
+                <DjLedShowList rows={past} emptyLabel="" onItemClick={onClose} />
+              </div>
+            )}
     </>
   );
 }

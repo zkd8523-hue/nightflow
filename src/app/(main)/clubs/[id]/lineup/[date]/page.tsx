@@ -31,6 +31,7 @@ interface DjRef {
   slug: string;
   display_name: string;
   instagram: string | null;
+  soundcloud_url: string | null;
 }
 
 interface LineupRow {
@@ -62,7 +63,7 @@ async function fetchLineup(clubId: string, date: string) {
 
   const { data: lineup } = await supabase
     .from("club_lineups")
-    .select("id, event_title, ticket_url, source, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram))")
+    .select("id, event_title, ticket_url, source, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url))")
     .eq("club_id", clubId)
     .eq("event_date", date)
     .maybeSingle<LineupRow>();
@@ -236,8 +237,16 @@ export default async function ClubLineupDatePage({ params }: PageProps) {
             <p className="text-[12px] font-bold text-muted-foreground mb-1">
               {dateLabel} 라인업
             </p>
+            {/* 클럽명도 클럽 상세로 가는 문이다 — 아래 "클럽 정보 보기" 카드만
+                표적이면 정작 제일 큰 글자를 눌러도 아무 일이 없어 답답하다.
+                h1 은 SEO 상 그대로 두고 안쪽만 링크로 감싼다. */}
             <h1 className="text-[30px] font-black tracking-tight leading-tight break-keep text-foreground">
-              {club.name}
+              <Link
+                href={`/clubs/${id}`}
+                className="hover:text-amber-400 transition-colors"
+              >
+                {club.name}
+              </Link>
             </h1>
             {/* 파티 이름 — 꺾쇠로 감싸 클럽 설명이 아니라 "그날의 이벤트 제목"임을
                 드러낸다(한국어권에서 〈〉는 작품·행사명 표기). */}

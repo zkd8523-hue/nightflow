@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Heart } from "lucide-react";
+import { Heart, Play } from "lucide-react";
 import { formatBusinessMin, nowBusinessMinutes, getBusinessDateISO } from "@/lib/lineups/time";
 import { DjNameButton } from "@/components/djs/DjNameButton";
+import { DjPreviewButton } from "@/components/djs/DjPreviewButton";
 import { useDjFavoritesContext } from "@/components/providers";
 import type { DjProfileTarget } from "@/components/djs/DjProfileSheet";
 
@@ -37,6 +38,9 @@ export function LineupSetTable({
   // 두면 빈 칸(w-20)만 남아 이름이 오른쪽으로 밀려나 보인다(왼쪽 여백 버그).
   // 시간이 하나도 없으면 그 열 자체를 없앤다.
   const hasAnyTime = sets.some((s) => s.start_min !== null);
+  // ▶ 아이콘만으로는 그게 뭔지 첫 사용자가 모른다. 다만 라벨을 항상 띄우면
+  // 미리듣기 가능한 DJ가 한 명도 없는 표에서 없는 기능을 광고하는 꼴이 된다.
+  const hasAnyPreview = sets.some((s) => s.dj?.soundcloud_url);
 
   useEffect(() => {
     // 오늘이 아니면 시계를 돌릴 이유가 없다
@@ -49,6 +53,12 @@ export function LineupSetTable({
 
   return (
     <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
+      {hasAnyPreview && (
+        <div className="px-4 pt-3 pb-1 flex items-center justify-end gap-1.5 text-[11px] font-bold text-muted-foreground">
+          <Play className="w-2.5 h-2.5 fill-current" aria-hidden="true" />
+          눌러서 미리듣기
+        </div>
+      )}
       <table className="w-full text-sm">
         <tbody>
           {sets.map((s, i) => {
@@ -86,22 +96,33 @@ export function LineupSetTable({
                       하트 자리는 보이든 안 보이든 폭을 고정해 이름 시작 위치가
                       행마다 흔들리지 않게 한다. */}
                   {s.dj ? (
-                    <span className="inline-flex items-center gap-1.5 max-w-full">
+                    <span className="flex items-center gap-1.5 max-w-full">
                       <span className="w-3.5 shrink-0 inline-flex items-center justify-center">
                         {isFavoritedDj(s.dj.id) && (
                           <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" aria-hidden="true" />
                         )}
                       </span>
-                      <DjNameButton dj={s.dj} />
+                      {/* fill: 이름 오른쪽 빈 공간을 눌러도 프로필이 열린다 */}
+                      <DjNameButton dj={s.dj} showPreview={false} fill />
                     </span>
                   ) : (
                     "-"
                   )}
                 </td>
-                <td className="px-4 py-3 w-12 text-right">
-                  {isNow && (
-                    <span className="text-[10px] font-bold text-amber-500">NOW</span>
-                  )}
+                {/* 오른쪽 끝 열 — NOW 배지와 재생 버튼이 같이 선다.
+                    재생을 이름 옆에 두면 인스타 아이콘과 붙어 오탭이 났다. */}
+                <td className="pr-4 py-3 w-16 text-right whitespace-nowrap">
+                  <span className="inline-flex items-center justify-end gap-2">
+                    {isNow && (
+                      <span className="text-[10px] font-bold text-amber-500">NOW</span>
+                    )}
+                    {s.dj && (
+                      <DjPreviewButton
+                        soundcloudUrl={s.dj.soundcloud_url}
+                        djName={s.dj.display_name}
+                      />
+                    )}
+                  </span>
                 </td>
               </tr>
             );

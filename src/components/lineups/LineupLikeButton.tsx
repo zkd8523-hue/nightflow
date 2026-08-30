@@ -25,6 +25,9 @@ export function LineupLikeButton({
   const { getLike, toggleLike } = useLineupLikes([lineupId], user?.id, target);
   const like = getLike(lineupId);
   const tier = hypeTier(like.count);
+  /* "좋아요"만 두면 클럽을 찜하는 것으로 읽힌다 — 무엇이 좋다는 건지 밝힌다.
+     공연(target="event")은 라인업이 아니라 그 공연 자체가 대상이다. */
+  const label = target === "event" ? "공연이 좋아요" : "라인업이 좋아요";
 
   return (
     <button
@@ -32,7 +35,7 @@ export function LineupLikeButton({
       onClick={() => toggleLike(lineupId)}
       aria-pressed={like.likedByMe}
       // 보이는 글자는 숫자뿐이라 스크린리더가 맥락 없이 숫자만 읽는다 — 라벨로 보완
-      aria-label={`좋아요 ${like.count}${like.likedByMe ? " (취소)" : ""}`}
+      aria-label={`${label} ${like.count}${like.likedByMe ? " (취소)" : ""}`}
       className={`inline-flex items-center gap-1.5 h-9 pl-3 pr-3.5 rounded-full border font-black text-[13px] transition-all active:scale-95 ${hypeButtonClass(
         tier,
         like.likedByMe
@@ -45,7 +48,7 @@ export function LineupLikeButton({
       {/* 라벨은 항상 고정하고 숫자만 뒤에 붙인다 — 0일 때 "좋아요", 1건부터 숫자로
           바뀌던 예전 방식은 로딩 전후로 글자가 통째로 교체돼 새로고침마다 깜빡였다.
           숫자만 남으면 그게 무슨 수인지도 알 수 없다. */}
-      <span>좋아요</span>
+      <span>{label}</span>
       {like.count > 0 && (
         <span className="tabular-nums">{like.count}</span>
       )}

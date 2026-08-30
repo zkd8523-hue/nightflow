@@ -6,6 +6,7 @@ import { BadgeCheck, Instagram, Heart, Pencil } from "lucide-react";
 import { SoundcloudIcon } from "@/components/icons/SoundcloudIcon";
 import { BackButton } from "@/components/ui/BackButton";
 import { DjLedShowList, type DjShowRow } from "@/components/djs/DjLedShowList";
+import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
 import { DjUpdateLineupButton } from "@/components/djs/DjUpdateLineupButton";
 import { getBusinessDateISO } from "@/lib/lineups/time";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
@@ -259,6 +260,9 @@ export default async function DjProfilePage({ params }: PageProps) {
                       <Pencil className="w-3.5 h-3.5" />
                     </Link>
                   )}
+                  {/* 찜 개수만 보여주고 정작 찜할 방법이 없었다 — 라인업·시트와
+                      같은 버튼을 여기에도 둔다(찜해두면 뜨는 날 알림). */}
+                  <DjFavoriteButton djId={dj.id} djName={dj.display_name} />
                 </div>
                 {igHandle && (
                   <a
@@ -287,9 +291,11 @@ export default async function DjProfilePage({ params }: PageProps) {
               </p>
             )}
 
+            {/* 어느 DJ에서 왔는지 넘긴다(?name) — 안 넘기면 신청 화면에서
+                자기 이름을 처음부터 다시 검색해야 한다. */}
             {!isVerified && (
               <Link
-                href="/dj/apply"
+                href={`/dj/apply?name=${encodeURIComponent(dj.display_name)}`}
                 className="mt-4 block text-center text-[12px] font-bold text-amber-400 hover:text-amber-300"
               >
                 이 프로필이 본인인가요? →

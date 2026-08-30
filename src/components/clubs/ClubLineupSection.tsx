@@ -12,7 +12,7 @@ export interface TodayLineupSet {
   sort_order: number;
   // instagram: DJ 프로필 페이지가 준비되기 전까지 라인업에서 바로 인스타로
   // 나갈 수 있게 하는 임시 진입점. 핸들만 저장한다(Migration 203 규약).
-  dj: { id: string; slug: string; display_name: string; instagram: string | null } | null;
+  dj: { id: string; slug: string; display_name: string; instagram: string | null; soundcloud_url: string | null } | null;
 }
 
 export interface TodayLineup {

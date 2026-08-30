@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Search, Loader2, Instagram, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -24,7 +24,10 @@ function sanitizeInstagram(v: string) {
 
 export function DjApplyForm() {
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  /* 프로필에서 "본인인가요?"로 넘어오면 그 DJ 이름이 실려 온다 — 자기 이름을
+     처음부터 다시 검색하게 두지 않는다. */
+  const [query, setQuery] = useState(() => searchParams.get("name") ?? "");
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [mode, setMode] = useState<Mode>("search");

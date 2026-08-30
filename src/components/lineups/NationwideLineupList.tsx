@@ -17,6 +17,7 @@ import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
 import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 import { useLineupLikes } from "@/hooks/useLineupLikes";
+import { DjDiscoveryCard, type DiscoveryDj } from "@/components/lineups/DjDiscoveryCard";
 import { hypeTier, hypeBadgeClass, hypeBadgeIconClass } from "@/lib/lineups/hypeTier";
 
 export interface LineupSetRef {
@@ -29,6 +30,7 @@ export interface LineupSetRef {
     slug: string;
     display_name: string;
     instagram: string | null;
+    soundcloud_url: string | null;
     /** dj_aliases의 다른 표기들 — 검색에만 쓰고 화면에는 안 뿌린다 */
     aliases: string[];
   } | null;
@@ -245,12 +247,45 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
     ]) as Array<[string, DjRow[]]>;
   }, [filtered, isFavoritedDj, query, favOnly]);
 
+  // 발견 카드에 넘길 DJ — 미리듣기(사운드클라우드)가 있는 사람만 모은다.
+  // 같은 DJ가 여러 날 뛰면 가장 가까운 날 하나만 남긴다(카드에 같은 이름이
+  // 두 번 나오면 넘기는 재미가 죽는다). 지역 필터는 따르되 검색어는 무시한다 —
+  // 검색은 목록을 좁히는 동작이지 발견을 좁히는 동작이 아니다.
+  const discoveryDjs = useMemo<DiscoveryDj[]>(() => {
+    const seen = new Map<string, DiscoveryDj>();
+    for (const r of rows) {
+      if (area && r.club_area !== area) continue;
+      for (const s of r.sets) {
+        if (!s.dj?.soundcloud_url || seen.has(s.dj.id)) continue;
+        seen.set(s.dj.id, {
+          dj: {
+            id: s.dj.id,
+            slug: s.dj.slug,
+            display_name: s.dj.display_name,
+            instagram: s.dj.instagram,
+            soundcloud_url: s.dj.soundcloud_url,
+          },
+          club_id: r.club_id,
+          club_name: r.club_name,
+          club_area: r.club_area,
+          event_date: r.event_date,
+          start_min: s.start_min,
+        });
+      }
+    }
+    return [...seen.values()];
+  }, [rows, area]);
+
   const groupCount = tab === "club" ? clubGroups.length : djGroups.length;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-24">
       <div className="max-w-lg lg:max-w-4xl mx-auto px-4 pt-6 space-y-4">
         <LineupPageHeader active="lineups" />
+
+        {/* 미리듣기 가능한 DJ가 없는 날은 카드가 스스로 null을 낸다 —
+            없는 기능을 광고하지 않는다(LineupTicker와 같은 규약). */}
+        <DjDiscoveryCard items={discoveryDjs} />
 
         {/* 지역 칩 + 하트 필터 — 탭 전환과 무관하게 유지된다.
             칩은 가로 스크롤이고 하트는 그 바깥에 고정 — 지역이 늘어나도 하트가
@@ -418,6 +453,8 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
             )}
           </div>
         )}
+
+        <div id="lineup-list" className="scroll-mt-4" />
 
         {groupCount === 0 ? (
           <div className="bg-[#1C1C1E] rounded-2xl px-4 py-10 text-center space-y-3">
