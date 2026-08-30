@@ -233,7 +233,18 @@ async function callExtract(model: string, caption: string, imageUrl: string | nu
     body: JSON.stringify({
       model,
       max_tokens: EXTRACT_MAX_TOKENS,
-      system: LINEUP_SYSTEM_PROMPT,
+      // 프롬프트 캐싱: 시스템 프롬프트가 5,300 토큰인데 게시물마다 똑같이 다시
+      // 보낸다. 하루 24회 호출이면 그것만 13만 토큰이고, 실제 출력은 100여
+      // 토큰이다. 캐시 히트는 입력값의 10% 가격이라 사실상 이 비용이 사라진다.
+      //
+      // 캐시는 프리픽스 일치라 tools -> system -> messages 순서 중 system 까지가
+      // 캐시 대상이 된다. LINEUP_SYSTEM_PROMPT 와 LINEUP_EMIT_TOOL 은 상수이므로
+      // 바이트가 흔들리지 않는다(날짜·핸들 같은 가변값은 전부 user 메시지에 있다).
+      //
+      // TTL 5분 — 수집기는 워커 4개로 몇 분 안에 게시물을 훑으므로 한 번의 실행
+      // 안에서는 첫 호출만 쓰기 비용이고 나머지는 히트한다. 다음날 실행에는
+      // 만료돼 있는 게 정상이다(모델별 캐시라 Haiku/Sonnet 각각 1회씩 쓴다).
+      system: [{ type: "text", text: LINEUP_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
       tools: [LINEUP_EMIT_TOOL],
       tool_choice: { type: "tool", name: "emit_lineup" },
       messages: [{ role: "user", content }],
@@ -247,6 +258,13 @@ async function callExtract(model: string, caption: string, imageUrl: string | nu
   // 안 되므로, 조용히 통과시키면 원인 모를 누락으로 남는다. 명시적으로 던진다.
   if (data.stop_reason === "max_tokens") {
     throw new Error(`추출 응답이 max_tokens(${EXTRACT_MAX_TOKENS})에서 잘림 — 캡션 ${caption.length}자`);
+  }
+
+  // 캐시가 실제로 먹는지 눈으로 확인할 수 있게 남긴다. cache_read 가 계속 0이면
+  // 프리픽스를 흔드는 무언가가 들어온 것이다(프롬프트 상수화가 깨졌거나 tools 변경).
+  const u = data.usage ?? {};
+  if (u.cache_creation_input_tokens || u.cache_read_input_tokens) {
+    console.log(`[cache] ${model} write=${u.cache_creation_input_tokens ?? 0} read=${u.cache_read_input_tokens ?? 0} in=${u.input_tokens ?? 0} out=${u.output_tokens ?? 0}`);
   }
 
   const toolUse = data.content?.find((b: any) => b.type === "tool_use");

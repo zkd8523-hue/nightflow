@@ -141,7 +141,10 @@ export async function POST(req: NextRequest) {
         max_tokens: 8000,
         tool_choice: { type: "tool", name: LINEUP_EMIT_TOOL.name },
         tools: [LINEUP_EMIT_TOOL],
-        system: LINEUP_SYSTEM_PROMPT,
+        // 프롬프트 캐싱 — 시스템 프롬프트가 5,300 토큰이고 매 요청 그대로 다시
+        // 간다. 운영자가 포스터를 연달아 올리면(TTL 5분) 2장째부터 10% 가격에
+        // 읽는다. 수집기(collect-club-events)와 같은 처리다.
+        system: [{ type: "text", text: LINEUP_SYSTEM_PROMPT, cache_control: { type: "ephemeral" as const } }],
         messages: [
           {
             role: "user",
