@@ -80,7 +80,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       siteName: "NightFlow",
       images: [
         {
-          url: "/og-image.png",
+          url: "/og-image-v2.png",
           width: 1200,
           height: 630,
           alt: title,
@@ -91,7 +91,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: "summary_large_image",
       title,
       description,
-      images: ["/og-image.png"],
+      images: ["/og-image-v2.png"],
     },
   };
 }

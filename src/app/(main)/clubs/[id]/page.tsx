@@ -102,7 +102,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       // 이미지로 폴백(썸네일 없는 클럽도 빈 카드가 뜨진 않게).
       images: club.thumbnail_url
         ? [{ url: club.thumbnail_url }]
-        : [{ url: "/og-image.png", width: 1200, height: 630 }],
+        : [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
   };
 }

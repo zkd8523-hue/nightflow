@@ -32,6 +32,20 @@ export function DjCupStart({
 
   return (
     <div className="flex flex-col">
+      {/* 히어로 이미지 — 시작 화면이 텍스트와 버튼만이라 허전했다.
+          OG/홈 배너와 같은 DJ 대결 일러스트를 써서 공유 링크로 들어온
+          사람이 카드에서 본 그림을 그대로 만나게 한다. 모바일 5:3 /
+          웹 3:1 두 장을 비율에 맞춰 교체(홈 배너와 동일 규약). */}
+      <div
+        className="w-full rounded-2xl overflow-hidden bg-[#121214] bg-cover bg-center aspect-[5/3] mt-2 sm:hidden"
+        style={{ backgroundImage: "url('/og-djcup-mobile.jpg')" }}
+        aria-hidden="true"
+      />
+      <div
+        className="w-full rounded-2xl overflow-hidden bg-[#121214] bg-cover bg-center aspect-[3/1] mt-2 hidden sm:block"
+        style={{ backgroundImage: "url('/og-djcup-web.jpg')" }}
+        aria-hidden="true"
+      />
       <div className="text-center pt-4 pb-1">
         <h1
           className="text-[26px] font-black text-white tracking-[-0.035em] leading-tight"

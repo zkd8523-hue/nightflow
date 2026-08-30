@@ -15,14 +15,14 @@ export const metadata: Metadata = {
         "x-default": "https://nightflow.kr/en/seoul-nightlife",
     },
   },
-  openGraph: { title: "ソウルナイトライフガイド 2026 — どこへ行く、何を予約", description: "日本人旅行者向け正直なガイド。江南、弘大、梨泰院、狎鴎亭。本物の価格、ブローカーなし。", url: "https://nightflow.kr/ja/seoul-nightlife", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
+  openGraph: { title: "ソウルナイトライフガイド 2026 — どこへ行く、何を予約", description: "日本人旅行者向け正直なガイド。江南、弘大、梨泰院、狎鴎亭。本物の価格、ブローカーなし。", url: "https://nightflow.kr/ja/seoul-nightlife", locale: "ja_JP", type: "website", images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }] },
 };
 
 export default function JaSeoulNightlifePage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Article", headline: "ソウルナイトライフガイド 2026 — どこへ行く、何を予約", description: "日本人旅行者向け完全ソウルナイトライフガイド。", image: ["https://nightflow.kr/og-image.png"], datePublished: "2026-01-01T00:00:00+09:00", author: { "@type": "Organization", name: "NightFlow", url: "https://nightflow.kr/ja" }, publisher: { "@type": "Organization", name: "NightFlow", logo: { "@type": "ImageObject", url: "https://nightflow.kr/og-image.png" } }, mainEntityOfPage: { "@type": "WebPage", "@id": "https://nightflow.kr/ja/seoul-nightlife" }, inLanguage: "ja-JP" },
+      { "@type": "Article", headline: "ソウルナイトライフガイド 2026 — どこへ行く、何を予約", description: "日本人旅行者向け完全ソウルナイトライフガイド。", image: ["https://nightflow.kr/og-image-v2.png"], datePublished: "2026-01-01T00:00:00+09:00", author: { "@type": "Organization", name: "NightFlow", url: "https://nightflow.kr/ja" }, publisher: { "@type": "Organization", name: "NightFlow", logo: { "@type": "ImageObject", url: "https://nightflow.kr/og-image-v2.png" } }, mainEntityOfPage: { "@type": "WebPage", "@id": "https://nightflow.kr/ja/seoul-nightlife" }, inLanguage: "ja-JP" },
       { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "NightFlow", item: "https://nightflow.kr/ja" }, { "@type": "ListItem", position: 2, name: "ソウルナイトライフ", item: "https://nightflow.kr/ja/seoul-nightlife" }] },
     ],
   };

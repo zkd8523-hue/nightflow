@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     url: "https://nightflow.kr/zh-tw/guests",
     locale: "zh_TW",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 

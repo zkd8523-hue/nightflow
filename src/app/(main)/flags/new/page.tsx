@@ -30,13 +30,13 @@ export async function generateMetadata({
         siteName: "나플",
         locale: "ko_KR",
         type: "website",
-        images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "나플 — 깃발 꽂기" }],
+        images: [{ url: "/og-image-v2.png", width: 1200, height: 630, alt: "나플 — 깃발 꽂기" }],
       },
       twitter: {
         card: "summary_large_image",
         title: "깃발 꽂기 — 시크릿오퍼 받기",
         description: "예산만 정하면 클럽에서 시크릿오퍼를 보내요. 100% 기밀, 맞춤 패키지.",
-        images: ["/og-image.png"],
+        images: ["/og-image-v2.png"],
       },
     };
   }

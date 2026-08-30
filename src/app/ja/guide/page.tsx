@@ -64,7 +64,7 @@ export const metadata: Metadata = {
         "x-default": "https://nightflow.kr/en/guide",
     },
   },
-  openGraph: { title: "韓国クラブ予約ガイド — 江南・弘大・梨泰院でVIPに", description: "韓国語不要でソウルのトップクラブを予約。本物の価格、ブローカーなし。", url: "https://nightflow.kr/ja/guide", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
+  openGraph: { title: "韓国クラブ予約ガイド — 江南・弘大・梨泰院でVIPに", description: "韓国語不要でソウルのトップクラブを予約。本物の価格、ブローカーなし。", url: "https://nightflow.kr/ja/guide", locale: "ja_JP", type: "website", images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }] },
 };
 
 export default async function JaGuidePage() {
@@ -75,11 +75,11 @@ export default async function JaGuidePage() {
     "@type": "Article",
     headline: "韓国クラブ予約ガイド — 江南・弘大・梨泰院でVIPに",
     description: "韓国語不要でソウルの最熱クラブを予約。江南・弘大・梨泰院・狎鴎亭のベストVIPルーム。公平な価格、列とブローカーをスキップ。",
-    image: ["https://nightflow.kr/og-image.png"],
+    image: ["https://nightflow.kr/og-image-v2.png"],
     datePublished: "2026-01-01T00:00:00+09:00",
     dateModified: new Date().toISOString().split("T")[0] + "T00:00:00+09:00",
     author: { "@type": "Organization", name: "NightFlow", url: "https://nightflow.kr/ja" },
-    publisher: { "@type": "Organization", name: "NightFlow", logo: { "@type": "ImageObject", url: "https://nightflow.kr/og-image.png" } },
+    publisher: { "@type": "Organization", name: "NightFlow", logo: { "@type": "ImageObject", url: "https://nightflow.kr/og-image-v2.png" } },
     mainEntityOfPage: { "@type": "WebPage", "@id": "https://nightflow.kr/ja/guide" },
     inLanguage: "ja-JP",
     about: [{ "@type": "Thing", name: "ソウルナイトライフ" }, { "@type": "Thing", name: "韓国クラブ予約" }, { "@type": "Thing", name: "江南VIPルーム" }, { "@type": "Thing", name: "弘大クラブ" }, { "@type": "Thing", name: "梨泰院ナイトライフ" }],

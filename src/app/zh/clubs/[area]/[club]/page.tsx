@@ -138,7 +138,7 @@ export async function generateMetadata({
       url,
       locale: "zh_CN",
       type: "website",
-      images: [{ url: club.thumbnail_url || "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: club.thumbnail_url || "/og-image-v2.png", width: 1200, height: 630 }],
     },
   };
 }

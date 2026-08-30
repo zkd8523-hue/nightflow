@@ -228,7 +228,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       // 이미지로 폴백.
       images: club?.thumbnail_url
         ? [{ url: club.thumbnail_url }]
-        : [{ url: "/og-image.png", width: 1200, height: 630 }],
+        : [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
   };
 }

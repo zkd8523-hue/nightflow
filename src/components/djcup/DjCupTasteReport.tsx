@@ -45,27 +45,9 @@ export function DjCupTasteReport({
         </div>
       )}
 
-      {/* 편중도: 1위 장르 비율이 곧 "취향이 얼마나 확고한가"다 */}
-      {top && report.analyzed >= 4 && (
-        <div className="mt-2.5 grid grid-cols-2 gap-2">
-          <div className="bg-card border border-border rounded-2xl px-3 py-2.5">
-            <p className="text-[17px] font-black tracking-[-0.04em] text-white tabular-nums">
-              {top.pct}%
-            </p>
-            <p className="text-[9.5px] text-muted-foreground mt-0.5 leading-[1.35]">
-              {top.label} 편중도
-            </p>
-          </div>
-          <div className="bg-card border border-border rounded-2xl px-3 py-2.5">
-            <p className="text-[17px] font-black tracking-[-0.04em] text-white tabular-nums">
-              {report.genres.length}
-            </p>
-            <p className="text-[9.5px] text-muted-foreground mt-0.5 leading-[1.35]">
-              들어본 장르 수
-            </p>
-          </div>
-        </div>
-      )}
+      {/* 통계 타일(편중도 / 들어본 장르 수)은 뺐다 — "장르 수 5"는 많이 들었다는
+          뜻인지 취향이 없다는 뜻인지 읽는 사람이 알 수 없었고, 편중도는 아래
+          장르 칩의 1위 값과 같은 숫자라 같은 정보가 두 번 나왔다. */}
 
       {/* 장르 칩. 1위는 색이 아니라 흰 글씨+굵기로 구분한다(위 주석 참조). */}
       {report.genres.length > 0 && report.analyzed >= 4 && (

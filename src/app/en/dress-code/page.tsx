@@ -15,6 +15,6 @@ export const metadata: Metadata = {
     "en-US":"https://nightflow.kr/en/dress-code","ja-JP":"https://nightflow.kr/ja/dress-code",
     "zh-CN":"https://nightflow.kr/zh/dress-code","zh-TW":"https://nightflow.kr/zh-tw/dress-code",
     "x-default":"https://nightflow.kr/en/dress-code" } },
-  openGraph: { title:"Seoul Club Dress Code 2026", description:"Gangnam strict, Hongdae relaxed — no slippers anywhere.", url:"https://nightflow.kr/en/dress-code", locale:"en_US", type:"article", images:[{url:"/og-image.png",width:1200,height:630}] },
+  openGraph: { title:"Seoul Club Dress Code 2026", description:"Gangnam strict, Hongdae relaxed — no slippers anywhere.", url:"https://nightflow.kr/en/dress-code", locale:"en_US", type:"article", images:[{url:"/og-image-v2.png",width:1200,height:630}] },
 };
 export default function Page(){ return <DressCodePage lang="en" />; }

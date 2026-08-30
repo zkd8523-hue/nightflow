@@ -15,7 +15,7 @@ export const metadata: Metadata = {
         "x-default": "https://nightflow.kr/en/guests",
     },
   },
-  openGraph: { title: "ソウルクラブ ゲストリスト — 韓国クラブ無料入場", description: "ソウルのトップクラブの入場料をスキップ。週次ゲストディール、韓国語不要。", url: "https://nightflow.kr/ja/guests", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
+  openGraph: { title: "ソウルクラブ ゲストリスト — 韓国クラブ無料入場", description: "ソウルのトップクラブの入場料をスキップ。週次ゲストディール、韓国語不要。", url: "https://nightflow.kr/ja/guests", locale: "ja_JP", type: "website", images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }] },
 };
 
 export default function JaGuestsPage() {

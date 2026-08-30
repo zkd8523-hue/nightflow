@@ -22,7 +22,7 @@ export const metadata: Metadata = {
       "전국 인기 클럽의 가격·영업시간·게스트 간판 혜택을 한눈에 비교. 나플.",
     url: "https://nightflow.kr/clubs",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 

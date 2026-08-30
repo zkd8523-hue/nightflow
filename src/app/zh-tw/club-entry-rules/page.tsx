@@ -13,6 +13,6 @@ export const metadata: Metadata = {
     "en-US":"https://nightflow.kr/en/club-entry-rules","ja-JP":"https://nightflow.kr/ja/club-entry-rules",
     "zh-CN":"https://nightflow.kr/zh/club-entry-rules","zh-TW":"https://nightflow.kr/zh-tw/club-entry-rules",
     "x-default":"https://nightflow.kr/en/club-entry-rules" } },
-  openGraph: { title:"韓國夜店年齡限制與證件規定 2026", description:"2007年及以前出生。需護照或ARC正本。", url:"https://nightflow.kr/zh-tw/club-entry-rules", locale:"zh_TW", type:"article", images:[{url:"/og-image.png",width:1200,height:630}] },
+  openGraph: { title:"韓國夜店年齡限制與證件規定 2026", description:"2007年及以前出生。需護照或ARC正本。", url:"https://nightflow.kr/zh-tw/club-entry-rules", locale:"zh_TW", type:"article", images:[{url:"/og-image-v2.png",width:1200,height:630}] },
 };
 export default function Page(){ return <ClubEntryRulesPage lang="zh-tw" />; }

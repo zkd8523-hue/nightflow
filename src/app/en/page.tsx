@@ -120,7 +120,7 @@ export const metadata: Metadata = {
     title: "NightFlow — Seoul Club Booking for Travelers",
     description:
       "Book the best clubs in Seoul without speaking Korean. Real prices, VIP tables, no broker.",
-    images: ["/og-image.png"],
+    images: ["/og-image-v2.png"],
   },
 };
 
@@ -247,7 +247,7 @@ export default async function EnHomePage() {
         name: "NightFlow",
         alternateName: ["NightFlow Korea", "NightFlow Seoul"],
         url: "https://nightflow.kr/en",
-        logo: "https://nightflow.kr/og-image.png",
+        logo: "https://nightflow.kr/og-image-v2.png",
         description:
           "Korea club booking platform for foreign travelers. Book VIP tables at Seoul's best clubs in Gangnam, Hongdae, Itaewon without speaking Korean.",
         sameAs: ["https://www.instagram.com/nightflow.kr/"],

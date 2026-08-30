@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     url: "https://nightflow.kr/zh-tw/guide",
     locale: "zh_TW",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 
@@ -61,14 +61,14 @@ export default async function ZhTwGuidePage() {
     headline: "韓國夜店預訂指南 — 在江南、弘大、梨泰院做 VIP",
     description:
       "無需韓語預訂首爾最熱夜店。江南、弘大、梨泰院、狎鷗亭最佳 VIP 包廂。公平價格,跳過排隊和中介。",
-    image: ["https://nightflow.kr/og-image.png"],
+    image: ["https://nightflow.kr/og-image-v2.png"],
     datePublished: "2026-01-01T00:00:00+09:00",
     dateModified: new Date().toISOString().split("T")[0] + "T00:00:00+09:00",
     author: { "@type": "Organization", name: "NightFlow", url: "https://nightflow.kr/zh-tw" },
     publisher: {
       "@type": "Organization",
       name: "NightFlow",
-      logo: { "@type": "ImageObject", url: "https://nightflow.kr/og-image.png" },
+      logo: { "@type": "ImageObject", url: "https://nightflow.kr/og-image-v2.png" },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": "https://nightflow.kr/zh-tw/guide" },
     inLanguage: "zh-TW",

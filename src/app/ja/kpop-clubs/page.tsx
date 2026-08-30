@@ -15,7 +15,7 @@ export const metadata: Metadata = {
         "x-default": "https://nightflow.kr/en/kpop-clubs",
     },
   },
-  openGraph: { title: "ソウルのK-POPクラブ — 日本人旅行者ガイド", description: "ソウルのベストK-POPナイトクラブ。本物の価格、日本語フレンドリー。K-POPファンが実際に行く場所。", url: "https://nightflow.kr/ja/kpop-clubs", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
+  openGraph: { title: "ソウルのK-POPクラブ — 日本人旅行者ガイド", description: "ソウルのベストK-POPナイトクラブ。本物の価格、日本語フレンドリー。K-POPファンが実際に行く場所。", url: "https://nightflow.kr/ja/kpop-clubs", locale: "ja_JP", type: "website", images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }] },
 };
 
 const KPOP_VENUES = [

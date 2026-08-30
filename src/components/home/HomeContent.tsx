@@ -988,42 +988,36 @@ export function HomeContent({
                  붕 뜨지 않게 한다(전에 카드 자체를 max-w-md로 눌렀더니 웹에서
                  다른 섹션보다 유독 작아 보였다). */}
           <div className="px-4 mt-2">
+            {/* 좌우 분할 — 텍스트 40% / 이미지 60%. 모바일에서 이미지가 잘렸던
+                원인은 칸이 이미지(5:3)보다 세로로 길어 bg-cover가 좌우를 깎은
+                것이라, 카드 높이를 이미지 비율에 맞춰 잡아 잘림을 없앤다.
+                웹(lg)은 3:1 이미지로 교체 + 높이 220px. */}
             <Link
               href="/dj-cup"
-              className="flex items-center justify-between gap-4 rounded-2xl bg-[#EFEFF2] p-5 relative overflow-hidden"
+              className="flex items-stretch rounded-2xl bg-[#EFEFF2] relative overflow-hidden min-h-[132px] lg:min-h-[220px]"
             >
-              <div className="min-w-0 flex-1 max-w-[280px] relative z-[1]">
-                <p className="text-[14px] font-bold text-black/70 leading-snug">
-                  이번 주말, 내 취향 DJ 찾아서 보러가기
+              <div className="w-[40%] shrink-0 flex flex-col justify-center py-4 pl-4 pr-2 lg:w-auto lg:py-6 lg:pl-5">
+                <p className="text-[13px] font-bold text-black/70 leading-snug lg:text-[14px]">
+                  나랑 취향 찰떡인 DJ는 누구?
                 </p>
-                <p className="text-[19px] font-black text-black tracking-[-0.03em] leading-[1.3] mt-1.5">
+                <p className="text-[17px] font-black text-black tracking-[-0.03em] leading-[1.3] mt-1.5 lg:text-[19px]">
                   DJ 이상형
                   <br />
                   월드컵
                 </p>
               </div>
+              {/* 모바일: 5:3 이미지 */}
               <div
-                className="relative w-[100px] h-[100px] rounded-full shrink-0 flex items-center justify-center overflow-hidden"
-                style={{
-                  background:
-                    "radial-gradient(120% 90% at 78% 15%, rgba(255,85,0,.65), transparent 62%)," +
-                    "radial-gradient(95% 85% at 12% 92%, rgba(57,255,106,.35), transparent 58%)," +
-                    "linear-gradient(160deg,#231a16,#121214)",
-                }}
-              >
-                <span
-                  className="absolute inset-0 opacity-50"
-                  style={{
-                    backgroundImage:
-                      "radial-gradient(circle, rgba(255,255,255,.09) 1px, transparent 1.3px)",
-                    backgroundSize: "5px 5px",
-                  }}
-                  aria-hidden="true"
-                />
-                <span className="relative z-[1] text-[36px]" aria-hidden="true">
-                  🎧
-                </span>
-              </div>
+                className="flex-1 min-w-0 self-stretch bg-[#121214] bg-cover bg-center lg:hidden"
+                style={{ backgroundImage: "url('/og-djcup-mobile.jpg')" }}
+                aria-hidden="true"
+              />
+              {/* 웹: 3:1 이미지 */}
+              <div
+                className="hidden lg:block lg:flex-1 lg:min-w-0 lg:self-stretch bg-[#121214] bg-cover bg-center"
+                style={{ backgroundImage: "url('/og-djcup-web.jpg')" }}
+                aria-hidden="true"
+              />
             </Link>
           </div>
         </div>

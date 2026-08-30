@@ -17,14 +17,14 @@ export const metadata: Metadata = {
         "x-default": "https://nightflow.kr/en/seoul-nightlife",
     },
   },
-  openGraph: { title: "首爾夜生活指南 2026 — 去哪裡、訂哪裡", description: "外國旅客的誠實指南。江南、弘大、梨泰院、狎鷗亭。真實價格,無中介。", url: "https://nightflow.kr/zh-tw/seoul-nightlife", locale: "zh_TW", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
+  openGraph: { title: "首爾夜生活指南 2026 — 去哪裡、訂哪裡", description: "外國旅客的誠實指南。江南、弘大、梨泰院、狎鷗亭。真實價格,無中介。", url: "https://nightflow.kr/zh-tw/seoul-nightlife", locale: "zh_TW", type: "website", images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }] },
 };
 
 export default function ZhTwSeoulNightlifePage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Article", headline: "首爾夜生活指南 2026 — 去哪裡、訂哪裡", description: "外國旅客完整的首爾夜生活指南。", image: ["https://nightflow.kr/og-image.png"], datePublished: "2026-01-01T00:00:00+09:00", author: { "@type": "Organization", name: "NightFlow", url: "https://nightflow.kr/zh-tw" }, publisher: { "@type": "Organization", name: "NightFlow", logo: { "@type": "ImageObject", url: "https://nightflow.kr/og-image.png" } }, mainEntityOfPage: { "@type": "WebPage", "@id": "https://nightflow.kr/zh-tw/seoul-nightlife" }, inLanguage: "zh-TW" },
+      { "@type": "Article", headline: "首爾夜生活指南 2026 — 去哪裡、訂哪裡", description: "外國旅客完整的首爾夜生活指南。", image: ["https://nightflow.kr/og-image-v2.png"], datePublished: "2026-01-01T00:00:00+09:00", author: { "@type": "Organization", name: "NightFlow", url: "https://nightflow.kr/zh-tw" }, publisher: { "@type": "Organization", name: "NightFlow", logo: { "@type": "ImageObject", url: "https://nightflow.kr/og-image-v2.png" } }, mainEntityOfPage: { "@type": "WebPage", "@id": "https://nightflow.kr/zh-tw/seoul-nightlife" }, inLanguage: "zh-TW" },
       { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "NightFlow", item: "https://nightflow.kr/zh-tw" }, { "@type": "ListItem", position: 2, name: "首爾夜生活", item: "https://nightflow.kr/zh-tw/seoul-nightlife" }] },
     ],
   };

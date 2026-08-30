@@ -146,7 +146,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: "website",
       images: club.thumbnail_url
         ? [{ url: club.thumbnail_url }]
-        : [{ url: "/og-image.png", width: 1200, height: 630 }],
+        : [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
   };
 }

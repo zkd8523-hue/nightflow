@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     description: "전국 클럽 힙합 공연 일정을 날짜별로 한눈에. 나플.",
     url: "https://nightflow.kr/events",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 

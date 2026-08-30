@@ -13,7 +13,7 @@ export const metadata: Metadata = {
       "나플은 클럽 정보·무료입장 게스트 간판·파티를 한곳에 모은 플랫폼. 미션은 \"밤을 더 아름답게\".",
     url: "https://nightflow.kr/vision",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 

@@ -14,6 +14,6 @@ export const metadata: Metadata = {
     "en-US":"https://nightflow.kr/en/club-hours","ja-JP":"https://nightflow.kr/ja/club-hours",
     "zh-CN":"https://nightflow.kr/zh/club-hours","zh-TW":"https://nightflow.kr/zh-tw/club-hours",
     "x-default":"https://nightflow.kr/en/club-hours" } },
-  openGraph: { title:"首爾夜店營業時間 2026", description:"96家夜店真實營業時間。大多數22:00開、05:00關。", url:"https://nightflow.kr/zh-tw/club-hours", locale:"zh_TW", type:"article", images:[{url:"/og-image.png",width:1200,height:630}] },
+  openGraph: { title:"首爾夜店營業時間 2026", description:"96家夜店真實營業時間。大多數22:00開、05:00關。", url:"https://nightflow.kr/zh-tw/club-hours", locale:"zh_TW", type:"article", images:[{url:"/og-image-v2.png",width:1200,height:630}] },
 };
 export default function Page(){ return <ClubHoursPage lang="zh-tw" />; }

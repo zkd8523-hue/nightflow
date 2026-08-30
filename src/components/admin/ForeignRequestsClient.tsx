@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Copy, Calendar, Users, Coins, MapPin, Trash2 } from "lucide-react";
+import { Copy, Calendar, Users, UserRound, Coins, MapPin, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export type ForeignReq = {
@@ -14,6 +14,7 @@ export type ForeignReq = {
   budget: number | null;
   club_ids: string[];
   clubNames: string[];
+  guest_name: string | null;
   contact_type: string;
   contact_value: string;
   notes: string | null;
@@ -102,6 +103,7 @@ export function ForeignRequestsClient({ initial }: { initial: ForeignReq[] }) {
               <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-muted-foreground" />{r.group_size}명</span>
               {r.area && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-muted-foreground" />{r.area}</span>}
               {r.budget != null && <span className="flex items-center gap-1"><Coins className="w-3.5 h-3.5 text-muted-foreground" />{r.budget.toLocaleString()}원</span>}
+              {r.guest_name && <span className="flex items-center gap-1"><UserRound className="w-3.5 h-3.5 text-muted-foreground" />{r.guest_name}</span>}
             </div>
 
             {r.notes && <p className="text-[13px] text-muted-foreground bg-card rounded-lg px-3 py-2">📝 {r.notes}</p>}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics/events";
 import { DjCupStart } from "./DjCupStart";
 import { DjCupMatch } from "./DjCupMatch";
 import { DjCupResult } from "./DjCupResult";
@@ -31,6 +32,9 @@ export function DjCupClient({ pool }: { pool: DjCupCandidate[] }) {
   const handleStart = (roundSize: RoundSize) => {
     const candidates = pickCandidates(pool, roundSize);
     setBracket(createBracket(candidates, roundSize));
+    // 시작 집계 — 공유율·완주율의 분모가 된다(이게 없으면 dj_cup_shared 수를
+    // 해석할 수 없다).
+    trackEvent("dj_cup_started", { round_size: roundSize });
     // 첫 곡은 위젯 본체 스크립트를 브라우저가 처음 받는 순간이라
     // "따뜻해도 930ms" 구조 그대로 지연이 드러난다 — 그 이탈을 미리 막는다.
     // 뒤로 갈수록 스크립트가 캐시되고 백그라운드 예열 큐가 따라잡아 빨라진다.

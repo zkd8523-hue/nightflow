@@ -15,14 +15,14 @@ export const metadata: Metadata = {
         "x-default": "https://nightflow.kr/en/seoul-nightlife",
     },
   },
-  openGraph: { title: "首尔夜生活指南 2026 — 去哪里、订哪里", description: "外国游客的诚实指南。江南、弘大、梨泰院、狎鸥亭。真实价格，无中介。", url: "https://nightflow.kr/zh/seoul-nightlife", locale: "zh_CN", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
+  openGraph: { title: "首尔夜生活指南 2026 — 去哪里、订哪里", description: "外国游客的诚实指南。江南、弘大、梨泰院、狎鸥亭。真实价格，无中介。", url: "https://nightflow.kr/zh/seoul-nightlife", locale: "zh_CN", type: "website", images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }] },
 };
 
 export default function ZhSeoulNightlifePage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Article", headline: "首尔夜生活指南 2026 — 去哪里、订哪里", description: "外国游客完整的首尔夜生活指南。", image: ["https://nightflow.kr/og-image.png"], datePublished: "2026-01-01T00:00:00+09:00", author: { "@type": "Organization", name: "NightFlow", url: "https://nightflow.kr/zh" }, publisher: { "@type": "Organization", name: "NightFlow", logo: { "@type": "ImageObject", url: "https://nightflow.kr/og-image.png" } }, mainEntityOfPage: { "@type": "WebPage", "@id": "https://nightflow.kr/zh/seoul-nightlife" }, inLanguage: "zh-CN" },
+      { "@type": "Article", headline: "首尔夜生活指南 2026 — 去哪里、订哪里", description: "外国游客完整的首尔夜生活指南。", image: ["https://nightflow.kr/og-image-v2.png"], datePublished: "2026-01-01T00:00:00+09:00", author: { "@type": "Organization", name: "NightFlow", url: "https://nightflow.kr/zh" }, publisher: { "@type": "Organization", name: "NightFlow", logo: { "@type": "ImageObject", url: "https://nightflow.kr/og-image-v2.png" } }, mainEntityOfPage: { "@type": "WebPage", "@id": "https://nightflow.kr/zh/seoul-nightlife" }, inLanguage: "zh-CN" },
       { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "NightFlow", item: "https://nightflow.kr/zh" }, { "@type": "ListItem", position: 2, name: "首尔夜生活", item: "https://nightflow.kr/zh/seoul-nightlife" }] },
     ],
   };

@@ -146,7 +146,7 @@ export async function generateMetadata({
       url,
       locale: "ja_JP",
       type: "website",
-      images: [{ url: club.thumbnail_url || "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: club.thumbnail_url || "/og-image-v2.png", width: 1200, height: 630 }],
     },
   };
 }

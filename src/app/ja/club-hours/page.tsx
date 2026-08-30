@@ -14,6 +14,6 @@ export const metadata: Metadata = {
     "en-US":"https://nightflow.kr/en/club-hours","ja-JP":"https://nightflow.kr/ja/club-hours",
     "zh-CN":"https://nightflow.kr/zh/club-hours","zh-TW":"https://nightflow.kr/zh-tw/club-hours",
     "x-default":"https://nightflow.kr/en/club-hours" } },
-  openGraph: { title:"ソウルのクラブ営業時間 2026", description:"96店の実際の営業時間。ほとんどが22:00オープン・05:00クローズ。", url:"https://nightflow.kr/ja/club-hours", locale:"ja_JP", type:"article", images:[{url:"/og-image.png",width:1200,height:630}] },
+  openGraph: { title:"ソウルのクラブ営業時間 2026", description:"96店の実際の営業時間。ほとんどが22:00オープン・05:00クローズ。", url:"https://nightflow.kr/ja/club-hours", locale:"ja_JP", type:"article", images:[{url:"/og-image-v2.png",width:1200,height:630}] },
 };
 export default function Page(){ return <ClubHoursPage lang="ja" />; }

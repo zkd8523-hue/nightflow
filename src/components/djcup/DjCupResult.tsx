@@ -10,7 +10,9 @@ import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
 import { fetchUpcomingDjShows } from "@/lib/djCup/fetchDjShows";
 import { fetchTasteReport, fetchClubsWithUpcoming, type TasteReport } from "@/lib/djCup/fetchTasteReport";
 import { DjCupTasteReport } from "./DjCupTasteReport";
+import { DjCupComments } from "./DjCupComments";
 import { shareDjCup } from "@/lib/utils/share";
+import { trackEvent } from "@/lib/analytics/events";
 import { getOrCreateDjCupSession } from "@/lib/djCup/session";
 import { createClient } from "@/lib/supabase/client";
 import { usableDjArtwork, type DjCupCandidate, type DjCupSubmitResult, type RoundSize } from "@/lib/djCup/types";
@@ -72,6 +74,14 @@ export function DjCupResult({
   useEffect(() => {
     if (submittedRef.current) return;
     submittedRef.current = true;
+
+    // 완주 집계 — dj_cup_started 대비 완주율, 그리고 dj_cup_shared 대비
+    // 공유 전환율을 여기서 계산한다.
+    trackEvent("dj_cup_completed", {
+      round_size: roundSize,
+      champion: champion.display_name,
+      champion_id: champion.id,
+    });
 
     const supabase = createClient();
     supabase
@@ -208,19 +218,39 @@ export function DjCupResult({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => shareDjCup({ championName: champion.display_name, roundSize })}
-        className="h-[38px] mt-3 rounded-xl bg-[#FEE500] text-black font-black text-[12.5px] tracking-[-0.02em]"
-      >
-        DJ 이상형 월드컵 공유하기
-      </button>
       <Link
         href="/lineups"
-        className="h-[38px] mt-1.5 rounded-xl border border-border text-white font-black text-[12.5px] tracking-[-0.02em] flex items-center justify-center"
+        className="h-[38px] mt-3 rounded-xl border border-border text-white font-black text-[12.5px] tracking-[-0.02em] flex items-center justify-center"
       >
         전국 라인업 둘러보기
       </Link>
+
+      {/* 공용 댓글 — 공유 버튼이 스티키라 여기 아래로 와도 밀려나지 않는다. */}
+      <DjCupComments
+        championId={champion.id}
+        championName={champion.display_name}
+        roundSize={roundSize}
+      />
+
+      {/* 스티키 공유 바가 마지막 댓글을 덮지 않도록 그만큼 자리를 비운다. */}
+      <div aria-hidden="true" className="h-[62px]" />
+
+      {/* 공유는 이 화면의 목적이다 — 댓글이 붙으면서 화면이 길어져 버튼이
+          스크롤 밖으로 밀려났으므로 하단에 고정한다. 하단 네비(60px, z-50)
+          위에 앉히고 z도 그 위로 올린다. */}
+      <div
+        className="fixed left-0 right-0 z-[51] px-4 pb-2 pt-2 bg-gradient-to-t from-background via-background to-transparent"
+        // 네비는 60px + safe-area(아이폰 홈바)라 60px 고정으로 두면 노치 기기에서 겹친다.
+        style={{ bottom: "calc(60px + env(safe-area-inset-bottom))" }}
+      >
+        <button
+          type="button"
+          onClick={() => shareDjCup({ championName: champion.display_name, roundSize })}
+          className="w-full max-w-lg lg:max-w-2xl mx-auto h-[42px] rounded-xl bg-[#FEE500] text-black font-black text-[12.5px] tracking-[-0.02em] flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,.5)]"
+        >
+          DJ 이상형 월드컵 공유하기
+        </button>
+      </div>
     </div>
   );
 }

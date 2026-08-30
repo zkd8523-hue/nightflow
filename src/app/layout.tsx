@@ -97,7 +97,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image-v2.png",
         width: 1200,
         height: 630,
         alt: "나플 | 나이트플로우 - 강남·홍대·이태원 클럽 정보",
@@ -109,7 +109,7 @@ export const metadata: Metadata = {
     title: "나플 | 나이트플로우 - 강남·홍대·이태원 클럽 정보",
     description:
       "강남·홍대·이태원 클럽 정보와 무료입장·프리드링크 게스트 간판, 파티(합석)까지 한 곳에.",
-    images: ["/og-image.png"],
+    images: ["/og-image-v2.png"],
   },
   robots: {
     index: true,

@@ -88,7 +88,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image-v2.png",
         width: 1200,
         height: 630,
         alt: "NightFlow — 韩国夜店预订",
@@ -99,7 +99,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "韩国夜店预订 — NightFlow 首尔",
     description: "首尔最佳夜店预订 — 江南·弘大·梨泰院。无中介，无需韩语。",
-    images: ["/og-image.png"],
+    images: ["/og-image-v2.png"],
   },
 };
 
@@ -223,7 +223,7 @@ export default async function ZhHomePage() {
         name: "NightFlow",
         alternateName: ["NightFlow 韩国", "NightFlow 首尔"],
         url: "https://nightflow.kr/zh",
-        logo: "https://nightflow.kr/og-image.png",
+        logo: "https://nightflow.kr/og-image-v2.png",
         description:
           "韩国夜店预订平台，专为外国旅客打造。轻松预订首尔江南·弘大·梨泰院顶级夜店的 VIP 包间，无需韩语。",
         sameAs: ["https://www.instagram.com/nightflow.kr/"],

@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     url: "https://nightflow.kr/ja/club-prices",
     locale: "ja_JP",
     type: "article",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 

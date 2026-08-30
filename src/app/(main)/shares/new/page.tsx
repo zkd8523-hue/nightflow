@@ -16,13 +16,13 @@ export const metadata: Metadata = {
     siteName: "나플",
     locale: "ko_KR",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "나플 — 파티 올리기" }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630, alt: "나플 — 파티 올리기" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "파티 올리기 — 파티원 모집",
     description: "파티를 등록하면 친구들이 채팅방에 합류. 클럽에서 오퍼가 옵니다.",
-    images: ["/og-image.png"],
+    images: ["/og-image-v2.png"],
   },
 };
 

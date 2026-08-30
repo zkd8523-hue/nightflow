@@ -15,6 +15,6 @@ export const metadata: Metadata = {
     "en-US":"https://nightflow.kr/en/club-hours","ja-JP":"https://nightflow.kr/ja/club-hours",
     "zh-CN":"https://nightflow.kr/zh/club-hours","zh-TW":"https://nightflow.kr/zh-tw/club-hours",
     "x-default":"https://nightflow.kr/en/club-hours" } },
-  openGraph: { title:"Seoul Club Opening Hours 2026", description:"Real hours from 96 clubs. Most open 22:00, close 05:00.", url:"https://nightflow.kr/en/club-hours", locale:"en_US", type:"article", images:[{url:"/og-image.png",width:1200,height:630}] },
+  openGraph: { title:"Seoul Club Opening Hours 2026", description:"Real hours from 96 clubs. Most open 22:00, close 05:00.", url:"https://nightflow.kr/en/club-hours", locale:"en_US", type:"article", images:[{url:"/og-image-v2.png",width:1200,height:630}] },
 };
 export default function Page(){ return <ClubHoursPage lang="en" />; }

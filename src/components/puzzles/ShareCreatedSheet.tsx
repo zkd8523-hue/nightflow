@@ -75,7 +75,7 @@ export function ShareCreatedSheet({
   const shareUrl = `${origin}/flags/${puzzleId}?t=${bust}`;
   // MD 직통은 클럽 대표 이미지(Supabase 공개 URL) — 로컬에서도 카카오가 긁을 수 있음.
   // 유저 조각은 나플 대표 이미지("FREE PASS" 카드) — 로컬 미노출, 프로덕션에서만.
-  const imageUrl = useClub && clubThumbnail ? clubThumbnail : `${origin}/og-image.png`;
+  const imageUrl = useClub && clubThumbnail ? clubThumbnail : `${origin}/og-image-v2.png`;
 
   async function handleKakao() {
     trackEvent("puzzle_share_kakao_click", {

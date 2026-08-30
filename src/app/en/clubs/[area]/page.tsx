@@ -234,7 +234,7 @@ export async function generateMetadata({
       url: `https://nightflow.kr/en/clubs/${area}`,
       locale: "en_US",
       type: "website",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
   };
 }

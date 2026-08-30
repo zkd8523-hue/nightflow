@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DjCupRankingTable, type DjCupRankingRow } from "@/components/djcup/DjCupRankingTable";
+import { DjCupComments } from "@/components/djcup/DjCupComments";
 
 // 집계가 계속 바뀌는 화면이라 캐시하지 않는다.
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
     description: "전체 유저가 뽑은 DJ 랭킹.",
     url: "https://nightflow.kr/dj-cup/ranking",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-djcup.jpg", width: 1200, height: 630 }],
   },
 };
 
@@ -52,6 +53,10 @@ export default async function DjCupRankingPage() {
       >
         나도 해보기
       </Link>
+
+      {/* 집계가 0판이어도 댓글은 쌓인다 — 빈 랭킹만 있는 화면을 살리는 자리.
+          여기서는 우승자를 붙이지 않는다(판을 끝낸 사람이 아니다). */}
+      <DjCupComments />
     </div>
   );
 }

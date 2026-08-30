@@ -101,7 +101,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image-v2.png",
         width: 1200,
         height: 630,
         alt: "NightFlow — 韓国クラブ予約",
@@ -112,7 +112,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "韓国クラブ予約 — NightFlow ソウル",
     description: "ソウルのベストクラブ予約 — 江南・弘大・梨泰院。ブローカーなし、韓国語不要。",
-    images: ["/og-image.png"],
+    images: ["/og-image-v2.png"],
   },
 };
 
@@ -235,7 +235,7 @@ export default async function JaHomePage() {
         name: "NightFlow",
         alternateName: ["NightFlow 韓国", "NightFlow ソウル"],
         url: "https://nightflow.kr/ja",
-        logo: "https://nightflow.kr/og-image.png",
+        logo: "https://nightflow.kr/og-image-v2.png",
         description:
           "日本人旅行者のための韓国クラブ予約プラットフォーム。ソウルの江南・弘大・梨泰院のVIPルームを韓国語不要で簡単予約。",
         sameAs: ["https://www.instagram.com/nightflow.kr/"],

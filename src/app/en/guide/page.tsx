@@ -175,7 +175,7 @@ export default async function EnglishLanding() {
     headline: "Seoul Club Booking Guide — Be a VIP at Gangnam, Hongdae, Itaewon Clubs",
     description:
       "Book Seoul's hottest clubs without speaking Korean. Best VIP tables in Gangnam, Hongdae, Itaewon, Apgujeong. Fair prices, skip the line and the broker.",
-    image: ["https://nightflow.kr/og-image.png"],
+    image: ["https://nightflow.kr/og-image-v2.png"],
     datePublished: "2026-01-01T00:00:00+09:00",
     dateModified: new Date().toISOString().split("T")[0] + "T00:00:00+09:00",
     author: {
@@ -188,7 +188,7 @@ export default async function EnglishLanding() {
       name: "NightFlow",
       logo: {
         "@type": "ImageObject",
-        url: "https://nightflow.kr/og-image.png",
+        url: "https://nightflow.kr/og-image-v2.png",
       },
     },
     mainEntityOfPage: {

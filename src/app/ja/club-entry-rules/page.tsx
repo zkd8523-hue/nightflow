@@ -13,6 +13,6 @@ export const metadata: Metadata = {
     "en-US":"https://nightflow.kr/en/club-entry-rules","ja-JP":"https://nightflow.kr/ja/club-entry-rules",
     "zh-CN":"https://nightflow.kr/zh/club-entry-rules","zh-TW":"https://nightflow.kr/zh-tw/club-entry-rules",
     "x-default":"https://nightflow.kr/en/club-entry-rules" } },
-  openGraph: { title:"韓国クラブの年齢制限・身分証ルール 2026", description:"2007年生まれまで。パスポートまたはARCの実物が必要。", url:"https://nightflow.kr/ja/club-entry-rules", locale:"ja_JP", type:"article", images:[{url:"/og-image.png",width:1200,height:630}] },
+  openGraph: { title:"韓国クラブの年齢制限・身分証ルール 2026", description:"2007年生まれまで。パスポートまたはARCの実物が必要。", url:"https://nightflow.kr/ja/club-entry-rules", locale:"ja_JP", type:"article", images:[{url:"/og-image-v2.png",width:1200,height:630}] },
 };
 export default function Page(){ return <ClubEntryRulesPage lang="ja" />; }

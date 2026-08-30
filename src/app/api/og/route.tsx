@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
 // 사용: openGraph.images = [`/api/og?title=Encoded%20Title&sub=Subtitle&lang=en`]
 //
 // 영문 텍스트만 지원 (시스템 fallback 폰트). 한글/중일어는 깨짐 →
-// 한국어/중국어/일본어 페이지는 기존 정적 og-image.png 유지.
+// 한국어/중국어/일본어 페이지는 기존 정적 og-image-v2.png 유지.
 //
 // Edge runtime — Vercel Edge Functions에서 빠른 응답.
 export const runtime = "edge";

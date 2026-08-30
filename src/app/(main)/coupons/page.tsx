@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     description: "강남·홍대 클럽 무료입장·프리드링크 쿠폰을 지금 받아보세요. 나플.",
     url: "https://nightflow.kr/coupons",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 

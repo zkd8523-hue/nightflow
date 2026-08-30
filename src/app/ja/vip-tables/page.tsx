@@ -15,7 +15,7 @@ export const metadata: Metadata = {
         "x-default": "https://nightflow.kr/en/vip-tables",
     },
   },
-  openGraph: { title: "ソウルVIPルーム予約 — 韓国クラブボトルサービスガイド", description: "韓国語不要でソウルのトップクラブを予約。本物の価格、ブローカーなし。", url: "https://nightflow.kr/ja/vip-tables", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
+  openGraph: { title: "ソウルVIPルーム予約 — 韓国クラブボトルサービスガイド", description: "韓国語不要でソウルのトップクラブを予約。本物の価格、ブローカーなし。", url: "https://nightflow.kr/ja/vip-tables", locale: "ja_JP", type: "website", images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }] },
 };
 
 const TIERS = [

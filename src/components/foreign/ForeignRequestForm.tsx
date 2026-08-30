@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search, X, Check, MapPin, Users, Calendar, Coins, MessageCircle, Languages, ChevronRight, Heart, Plus } from "lucide-react";
+import { Search, X, Check, MapPin, Users, UserRound, Calendar, Coins, MessageCircle, Languages, ChevronRight, Heart, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -155,6 +155,7 @@ export function ForeignRequestForm({
     presetClubId && clubs.some((c) => c.id === presetClubId) ? [presetClubId] : []
   );
   const [clubSearch, setClubSearch] = useState("");
+  const [guestName, setGuestName] = useState("");
   const [contactType, setContactType] = useState<ContactType>("whatsapp");
   const [preferredLang, setPreferredLang] = useState<Lang>(lang);
   const [contactValue, setContactValue] = useState("");
@@ -403,6 +404,8 @@ export function ForeignRequestForm({
     if (!eventDate) return toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期"));
     if (!area && selectedClubIds.length === 0)
       return toast.error(t("지역이나 클럽을 골라주세요", "Pick an area or a club", "エリアかクラブを選択", "请选择区域或夜店"));
+    if (!guestName.trim())
+      return toast.error(t("예약자 이름을 입력해주세요", "Enter the name for the booking", "予約者名を入力", "请填写预订人姓名"));
     if (!contactValue.trim())
       return toast.error(t("연락처를 입력해주세요", "Enter your contact", "連絡先を入力", "请填写联系方式"));
 
@@ -427,6 +430,7 @@ export function ForeignRequestForm({
         group_size: groupSize,
         budget: budgetAmount() > 0 ? budgetAmount() : null,
         club_ids: selectedClubIds,
+        guest_name: guestName.trim() || null,
         contact_type: contactType,
         contact_value: contactValue.trim(),
         notes: notes.trim() || null,
@@ -1099,6 +1103,20 @@ export function ForeignRequestForm({
         </SheetContent>
       </Sheet>
 
+      {/* 예약자 이름 — 입구에서 확인하는 이름. 확인서 발행에 필수. */}
+      <section>
+        {label(<UserRound className="w-4 h-4 text-money" />, t("예약자 이름", "Name for the booking", "予約者名", "预订人姓名"))}
+        <input
+          value={guestName}
+          onChange={(e) => setGuestName(e.target.value)}
+          placeholder={t("여권에 있는 이름", "As shown on your passport", "パスポートの表記", "护照上的姓名")}
+          className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
+        />
+        <p className="text-[12px] text-muted-foreground mt-1.5">
+          {t("입구에서 이 이름으로 확인해요", "The door checks this name", "入口でこの名前を確認します", "入场时以此姓名核对")}
+        </p>
+      </section>
+
       {/* 연락처 */}
       <section>
         {label(<MessageCircle className="w-4 h-4 text-money" />, t("연락처", "How to reach you", "連絡先", "联系方式"))}
@@ -1199,6 +1217,10 @@ export function ForeignRequestForm({
 
           {/* 요약 */}
           <div className="mt-3 space-y-1.5 text-[13px]">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{t("예약자", "Name", "予約者", "预订人")}</span>
+              <span className="text-foreground font-semibold">{guestName.trim()}</span>
+            </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("날짜", "Date", "日付", "日期")}</span>
               <span className="text-foreground font-semibold">{eventDate}</span>
