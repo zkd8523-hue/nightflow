@@ -38,13 +38,20 @@ export interface DjCupSubmitResult {
 /**
  * next/image로 안전하게 렌더할 수 있는 아트워크 URL인지 판정한다.
  *
- * next.config.ts의 remotePatterns에 등록된 호스트는 i1.sndcdn.com 하나뿐이라,
- * 다른 호스트(사클 기본 이미지 soundcloud.com/images/fb_placeholder.png 등)를
- * <Image src>에 넘기면 렌더 시점에 예외가 던져지고 에러 바운더리가 페이지를
- * 통째로 덮는다 — onError로는 잡히지 않는다(실측: DJ컵에서 해당 DJ가 매치에
- * 나오는 순간 화면 전체가 회색 박스). 그래서 렌더 전에 호스트를 검증한다.
+ * next.config.ts의 remotePatterns에 등록된 호스트는 i1.sndcdn.com과
+ * i.ytimg.com 둘뿐이라, 다른 호스트(사클 기본 이미지
+ * soundcloud.com/images/fb_placeholder.png 등)를 <Image src>에 넘기면 렌더
+ * 시점에 예외가 던져지고 에러 바운더리가 페이지를 통째로 덮는다 — onError로는
+ * 잡히지 않는다(실측: DJ컵에서 해당 DJ가 매치에 나오는 순간 화면 전체가 회색
+ * 박스). 그래서 렌더 전에 호스트를 검증한다.
  */
 export function usableDjArtwork(url: string | null | undefined): string | null {
   if (!url) return null;
-  return /^https:\/\/i1\.sndcdn\.com\//i.test(url) ? url : null;
+  if (/^https:\/\/i1\.sndcdn\.com\//i.test(url)) return url;
+  return /^https:\/\/i\.ytimg\.com\/vi\//i.test(url) ? url : null;
+}
+
+/** 유튜브 영상 ID로 썸네일 URL 생성 — 사클 아트워크 없는 DJ의 카드 이미지 폴백. */
+export function youtubeThumbnailUrl(videoId: string): string {
+  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 }

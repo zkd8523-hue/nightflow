@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { Play } from "lucide-react";
 import { useState } from "react";
-import { usableDjArtwork, type DjCupCandidate } from "@/lib/djCup/types";
+import { usableDjArtwork, youtubeThumbnailUrl, type DjCupCandidate } from "@/lib/djCup/types";
+import { youtubeVideoId } from "@/lib/lineups/youtubeUrl";
 
 /**
  * DJ 이상형 월드컵 대결 카드 (좌/우 한 장).
@@ -58,7 +59,13 @@ export function DjCupCard({
   // soundcloud.com/images/fb_placeholder.png가 저장된 DJ가 매치에 나오면
   // 화면이 통째로 회색 박스가 됐다). 그래서 렌더 전에 호스트를 직접 검증해
   // 등록된 i1.sndcdn.com이 아니면 아예 <Image>를 그리지 않는다.
-  const artworkUrl = artworkFailed ? null : usableDjArtwork(dj.soundcloud_artwork_url);
+  // 사클 아트워크 우선, 없으면 유튜브 썸네일로 폴백(스타 DJ는 사클 없이
+  // 유튜브 대표곡 URL만 있는 경우가 많다 — Migration 624).
+  const ytVideoId = youtubeVideoId(dj.youtube_url);
+  const fallbackUrl = ytVideoId ? youtubeThumbnailUrl(ytVideoId) : null;
+  const artworkUrl = artworkFailed
+    ? null
+    : usableDjArtwork(dj.soundcloud_artwork_url) ?? usableDjArtwork(fallbackUrl);
 
   return (
     <div

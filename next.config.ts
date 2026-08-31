@@ -54,6 +54,12 @@ const nextConfig: NextConfig = {
         hostname: "i1.sndcdn.com",
         pathname: "/**",
       },
+      {
+        // 유튜브 영상 썸네일 — 사클 아트워크 없는 DJ의 폴백 (DJ컵)
+        protocol: "https",
+        hostname: "i.ytimg.com",
+        pathname: "/vi/**",
+      },
     ],
     formats: ["image/avif", "image/webp"],
   },
