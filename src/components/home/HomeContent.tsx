@@ -28,7 +28,7 @@ import type { ClubBenefitItem } from "@/lib/home/clubBenefitData";
 import { CouponHomeStrip } from "@/components/home/CouponHomeStrip";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
-import { ServiceUpdateSheet } from "@/components/home/ServiceUpdateSheet";
+import { DjCupPromoSheet } from "@/components/home/DjCupPromoSheet";
 import { PartyOnboardingSheet } from "@/components/home/PartyOnboardingSheet";
 import { OfferCreditGuideSheet } from "@/components/md/OfferCreditGuideSheet";
 import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
@@ -690,8 +690,11 @@ export function HomeContent({
       {/* 깃발 사용법 온보딩 — 비로그인 첫 방문 시 1회 자동 노출 (localStorage) */}
       {/* 자동 노출 비활성화 — 깃발 신규 진입점 숨김 */}
       <FlagOnboardingSheet autoShow={false} />
-      {/* 개편 공지(깃발 종료 + 혜택 중심 전환) — 로그인 유저 1회 */}
-      <ServiceUpdateSheet show={!!user} />
+      {/* 개편 공지(깃발 종료 + 혜택 중심 전환) 노출 중단 — 전환기 안내가 끝났고,
+          깃발을 쓴 적 없는 신규 유저에게는 없는 서비스의 종료 소식이라 혼란만 준다.
+          컴포넌트는 남겨둠(재공지 필요 시 다시 마운트). */}
+      {/* DJ 이상형 월드컵 홍보 — 비로그인 포함 기기당 1회 (localStorage) */}
+      <DjCupPromoSheet />
       {/* 최근 매치 깃발 모달 */}
       <Sheet open={showMatchedModal} onOpenChange={setShowMatchedModal}>
         <SheetContent
