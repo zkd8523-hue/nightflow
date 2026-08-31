@@ -18,6 +18,7 @@ import {
   CalendarCheck,
   LayoutGrid,
   Star,
+  MessageSquare,
   MessageSquareWarning,
   BarChart3,
   Wine,
@@ -447,6 +448,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-amber-500/10",
       badge: null,
       href: "/admin/marketing",
+    },
+    {
+      label: "DJ컵 댓글",
+      value: "관리",
+      icon: MessageSquare,
+      color: "text-brand-amber",
+      bgColor: "bg-amber-500/10",
+      badge: null,
+      href: "/admin/dj-cup-comments",
     },
     {
       label: "앱 피드백",

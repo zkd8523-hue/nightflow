@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrCreateDjCupSession } from "@/lib/djCup/session";
 import { trackEvent } from "@/lib/analytics/events";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /**
  * DJ 이상형 월드컵 공용 댓글 (Migration 617).
@@ -48,6 +50,15 @@ export function DjCupComments({
   const [done, setDone] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const loadingMore = useRef(false);
+
+  /** 전역 auth store에 이미 users 프로필 전체가 들어있다(useAuthInit의 select *).
+   *  여기서 따로 조회하면 같은 걸 두 번 읽는 셈이라 store를 그대로 쓴다. */
+  const { user } = useCurrentUser();
+  /** 계정 닉네임. 비우고 보내면 서버가 이걸로 채운다(Migration 620).
+   *  placeholder로만 쓴다 — 값을 넣어버리면 "직접 입력"으로 취급돼서
+   *  나중에 닉네임을 바꿔도 이 댓글만 옛 이름으로 굳는다. */
+  const myName = user?.display_name ?? null;
+  const isAdmin = user?.role === "admin";
 
   const load = useCallback(async (before?: string) => {
     const supabase = createClient();
@@ -97,6 +108,24 @@ export function DjCupComments({
     }
   };
 
+  /** Admin 전용 숨김(Migration 621). hard delete가 아니라 is_hidden 토글이라
+   *  오조작을 되돌릴 수 있고, 도배범이 지워서 레이트리밋을 리셋하는 것도 막는다. */
+  const hide = async (id: string) => {
+    if (!confirm("이 댓글을 숨길까요? 관리자 페이지에서 되살릴 수 있어요.")) return;
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("admin_set_dj_cup_comment_hidden", {
+      p_comment_id: id,
+      p_hidden: true,
+    });
+    const res = data as { success?: boolean; error?: string } | null;
+    if (error || !res?.success) {
+      toast.error(res?.error ?? "숨기지 못했어요");
+      return;
+    }
+    setRows((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
+    toast.success("숨겼어요");
+  };
+
   const loadMore = async () => {
     if (loadingMore.current || !rows?.length) return;
     loadingMore.current = true;
@@ -139,7 +168,7 @@ export function DjCupComments({
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             maxLength={20}
-            placeholder="닉네임 (선택)"
+            placeholder={myName ? `${myName} (변경하려면 입력)` : "닉네임 (선택)"}
             className="w-full h-8 px-2.5 rounded-lg bg-background border border-border text-[12px] text-white placeholder:text-muted-foreground outline-none focus:border-white/30"
           />
           <textarea
@@ -175,7 +204,8 @@ export function DjCupComments({
       ) : (
         <ul className="mt-3">
           {rows.map((c) => (
-            <li key={c.id} className="py-2.5 border-t border-border first:border-t-0">
+            <li key={c.id} className="py-2.5 border-t border-border first:border-t-0 flex items-start gap-2">
+              <div className="flex-1 min-w-0">
               <p className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
                 <span className="text-[12px] font-extrabold text-white">{c.nickname}</span>
                 {c.champion_name && (
@@ -201,6 +231,18 @@ export function DjCupComments({
               <p className="text-[12.5px] text-foreground mt-0.5 whitespace-pre-wrap break-words leading-[1.45]">
                 {c.body}
               </p>
+              </div>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => hide(c.id)}
+                  title="숨기기 (관리자)"
+                  aria-label="댓글 숨기기"
+                  className="shrink-0 mt-0.5 p-1.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </li>
           ))}
         </ul>
