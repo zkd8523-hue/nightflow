@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     eventTitle?: unknown;
     posterUrl?: unknown;
     ticketUrl?: unknown;
+    entryFeeText?: unknown;
     sets?: unknown;
     source?: unknown;
     /** "lineup"(기본) = DJ 라인업 / "event" = 공연 탭으로 보낸다 */
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
-  const { draftId, clubId, eventDate, doorOpenMin, eventTitle, posterUrl, ticketUrl, sets, source, publishAs } = body;
+  const { draftId, clubId, eventDate, doorOpenMin, eventTitle, posterUrl, ticketUrl, entryFeeText, sets, source, publishAs } = body;
 
   if (typeof clubId !== "string" || !clubId) {
     return NextResponse.json({ error: "clubId required" }, { status: 400 });
@@ -198,6 +199,7 @@ export async function POST(req: NextRequest) {
         title: typeof eventTitle === "string" ? eventTitle : null,
         lineup: lineupNames,
         ticket_url: typeof ticketUrl === "string" ? ticketUrl : null,
+        entry_fee_text: typeof entryFeeText === "string" ? entryFeeText : null,
         source_account: "admin_review",
         source_post_id: `draft:${typeof draftId === "string" ? draftId : eventDate}`,
         status: "approved",
@@ -228,6 +230,7 @@ export async function POST(req: NextRequest) {
     p_source: typeof source === "string" ? source : "admin_manual",
     p_draft_id: typeof draftId === "string" ? draftId : null,
     p_ticket_url: typeof ticketUrl === "string" ? ticketUrl : null,
+    p_entry_fee_text: typeof entryFeeText === "string" ? entryFeeText : null,
   });
 
   // RPC 결과가 실제로 유효한 lineup_id를 담고 있는지 명시적으로 검증한다.

@@ -278,6 +278,11 @@ export const LINEUP_EMIT_TOOL = {
               description:
                 'A ticketing/reservation URL explicitly printed in the caption (e.g. after "예매", "티켓", "Booking", "Ticket link", a bio-link service, or a direct link to interpark/yes24/ticketlink/nol/residentadvisor/dumbs_app). Only the literal URL text — never invent one, never use an Instagram profile/post link, never use a phone number or DM handle.',
             },
+            entry_fee_text: {
+              type: ["string", "null"],
+              description:
+                'The entry/door price as printed in the caption, condensed to ONE line. Copy the figures verbatim — never estimate, never convert currency, null when no price is stated. Keep every tier and its condition ("예매/도어/N시 이후", "presale/at door/after 12", RA or other platform prices) and any included perk ("+1 free drink", "프리드링크"). Examples: "도어 20,000원 (프리드링크 1잔)" / "예매 15,000원 / 도어 20,000원 / 24시 이후 25,000원". Table/bottle reservation prices are NOT entry fees — skip those. Write it in the caption\'s own language.',
+            },
             sets: {
               type: "array",
               items: {
@@ -317,7 +322,7 @@ export const LINEUP_EMIT_TOOL = {
           },
           required: [
             "event_date", "event_title", "door_open_hhmm",
-            "venue_name", "venue_instagram", "venue_area", "venue_type", "ticket_url", "sets",
+            "venue_name", "venue_instagram", "venue_area", "venue_type", "ticket_url", "entry_fee_text", "sets",
           ],
           additionalProperties: false,
         },

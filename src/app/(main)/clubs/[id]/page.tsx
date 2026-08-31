@@ -173,7 +173,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     supabase
       .from("club_lineups")
       .select(
-        "door_open_min, event_title, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))"
+        "door_open_min, event_title, entry_fee_text, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))"
       )
       .eq("club_id", id)
       .eq("event_date", todayBusinessDateISO)
@@ -182,7 +182,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     // 오늘 것만 보여주면 게시일과 실제 방문일 사이에 확인할 방법이 없다.
     supabase
       .from("club_lineups")
-      .select("event_date, door_open_min, event_title, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))")
+      .select("event_date, door_open_min, event_title, entry_fee_text, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))")
       .eq("club_id", id)
       .gte("event_date", todayBusinessDateISO)
       .order("event_date", { ascending: true })
@@ -230,7 +230,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
           ? a.start_min - b.start_min
           : a.sort_order - b.sort_order
       );
-    return { door_open_min: lineupRow.door_open_min, event_title: lineupRow.event_title, sets };
+    return { door_open_min: lineupRow.door_open_min, event_title: lineupRow.event_title, entry_fee_text: lineupRow.entry_fee_text, sets };
   })();
 
   // "어떤 DJ들이 올까?" 시트용 — 오늘부터 앞으로 예정된 전체 라인업.
@@ -255,7 +255,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
           ? a.start_min - b.start_min
           : a.sort_order - b.sort_order
       );
-      return { event_date: row.event_date, door_open_min: row.door_open_min, event_title: row.event_title, sets };
+      return { event_date: row.event_date, door_open_min: row.door_open_min, event_title: row.event_title, entry_fee_text: row.entry_fee_text, sets };
     })
     .filter((l) => l.sets.length > 0);
 

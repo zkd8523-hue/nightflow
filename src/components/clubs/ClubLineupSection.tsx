@@ -19,6 +19,8 @@ export interface TodayLineupSet {
 export interface TodayLineup {
   door_open_min: number | null;
   event_title: string | null;
+  /** 캡션에 적힌 입장료 한 줄(Migration 625). 없으면 줄 자체를 안 그린다. */
+  entry_fee_text?: string | null;
   sets: TodayLineupSet[];
 }
 
@@ -72,6 +74,14 @@ export function ClubLineupSection({ lineup }: { lineup: TodayLineup | null }) {
           </span>
         )}
       </div>
+
+      {/* 입장료 — 도어오픈과 달리 길이가 들쭉날쭉해서(3단 요금제 등) 헤더 옆이
+          아니라 아래 한 줄로 뺀다. 없으면 렌더하지 않는다. */}
+      {lineup.entry_fee_text && (
+        <p className="mb-2 text-[11px] text-muted-foreground break-keep">
+          입장료 {lineup.entry_fee_text}
+        </p>
+      )}
 
       <div className="space-y-1">
         {visibleSets.map((set, i) => {

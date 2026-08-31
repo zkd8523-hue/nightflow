@@ -395,6 +395,9 @@ export interface RawExtractionEvent {
   /** 캡션에 명시된 예매/티켓 링크. 모델이 지어내지 않는다는 전제 하에, 여기서는
    * 형식만 검증한다("이게 진짜 티켓 링크인가"는 프롬프트가 이미 판단했다). */
   ticket_url?: string | null;
+  /** 캡션에 명시된 입장료 안내 한 줄. 프롬프트가 "지어내지 말 것 + 표 예약가는 제외"를
+   * 이미 판단했고, 여기서는 길이·공백만 정리한다. */
+  entry_fee_text?: string | null;
   sets: RawExtractionSet[];
 }
 export interface RawExtraction {
@@ -521,6 +524,11 @@ function normalizeExtractionEvent(rawEvent: RawExtractionEvent | undefined): Nor
       ? rawEvent.venue_type
       : null;
   const ticketUrl = sanitizeTicketUrl(rawEvent?.ticket_url);
+  // 연락처 스크럽은 제목과 같은 규약. 여러 줄로 오면 한 줄로 접는다(프롬프트가
+  // 한 줄을 요구하지만 모델이 개행을 넣는 경우가 있다).
+  const entryFeeText = rawEvent?.entry_fee_text
+    ? scrubContactsSimple(String(rawEvent.entry_fee_text)).replace(/\s+/g, " ").trim().slice(0, 200) || null
+    : null;
 
   return {
     doorOpenMin,
@@ -531,6 +539,7 @@ function normalizeExtractionEvent(rawEvent: RawExtractionEvent | undefined): Nor
     venueArea,
     venueType,
     ticketUrl,
+    entryFeeText,
     rows,
     droppedRowCount,
   };
