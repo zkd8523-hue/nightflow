@@ -987,16 +987,20 @@ export function HomeContent({
                  블록에 max-w를 줘 lg:max-w-4xl 컨테이너에서도 오브와 사이가
                  붕 뜨지 않게 한다(전에 카드 자체를 max-w-md로 눌렀더니 웹에서
                  다른 섹션보다 유독 작아 보였다). */}
-          <div className="px-4 mt-2">
+          {/* ⚠️ px-4 를 주지 않는다 — 부모 컨테이너가 이미 좌우 패딩을 갖고 있어
+              여기서 또 주면 이중 패딩이 되어 이 카드만 다른 섹션보다 좌우
+              28px씩 좁아진다(실측 832px vs 888px). 형제인 클럽 다이렉트
+              섹션도 패딩 없이 mb/mt만 준다. */}
+          <div className="mt-2">
             {/* 좌우 분할 — 텍스트 40% / 이미지 60%. 모바일에서 이미지가 잘렸던
                 원인은 칸이 이미지(5:3)보다 세로로 길어 bg-cover가 좌우를 깎은
                 것이라, 카드 높이를 이미지 비율에 맞춰 잡아 잘림을 없앤다.
                 웹(lg)은 3:1 이미지로 교체 + 높이 220px. */}
             <Link
               href="/dj-cup"
-              className="flex items-stretch rounded-2xl bg-[#EFEFF2] relative overflow-hidden min-h-[132px] lg:min-h-[220px]"
+              className="flex items-stretch rounded-xl bg-[#EFEFF2] relative overflow-hidden min-h-[132px] lg:min-h-[220px]"
             >
-              <div className="w-[40%] shrink-0 flex flex-col justify-center py-4 pl-4 pr-2 lg:w-auto lg:py-6 lg:pl-5">
+              <div className="w-[32%] shrink-0 flex flex-col justify-center py-4 pl-4 pr-2 lg:w-auto lg:py-6 lg:pl-5">
                 <p className="text-[13px] font-bold text-black/70 leading-snug lg:text-[14px]">
                   나랑 취향 찰떡인 DJ는 누구?
                 </p>

@@ -16,6 +16,15 @@ import {
 } from "@/lib/djCup/candidates";
 import type { DjCupBracketState, DjCupCandidate, RoundSize } from "@/lib/djCup/types";
 
+/** 현재 남은 인원(bracket.current.length) 기준 라운드 이름.
+ *  마지막 두 라운드만 한글 관례 명칭을 쓴다 — 8강 이상은 참가자 수가
+ *  곧 정체성이라("8강에 들었다") 굳이 안 바꾼다. */
+function roundLabel(remaining: number): string {
+  if (remaining === 2) return "결승전";
+  if (remaining === 4) return "준결승전";
+  return `${remaining}강`;
+}
+
 /**
  * DJ 이상형 월드컵 상태머신 — 단일 페이지(start | match | result).
  *
@@ -65,7 +74,7 @@ export function DjCupClient({ pool }: { pool: DjCupCandidate[] }) {
             <>
               <DjCupMatch
                 match={match}
-                roundLabel={`${bracket.current.length}강`}
+                roundLabel={roundLabel(bracket.current.length)}
                 progressLabel={`${bracket.matchIdx + 1} / ${bracket.current.length / 2}`}
                 onSelect={handleSelect}
               />
