@@ -10,7 +10,6 @@ import { VisitConfirmTrigger } from "@/components/puzzles/VisitConfirmTrigger";
 import { PartyReviewTrigger } from "@/components/puzzles/PartyReviewTrigger";
 import { NewOffersAlertSheet } from "@/components/puzzles/NewOffersAlertSheet";
 import { InAppBrowserBanner } from "@/components/common/InAppBrowserBanner";
-import { PriceRangeOnboardingSheet } from "@/components/md/PriceRangeOnboardingSheet";
 import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
 import { GuestSignPromoGate } from "@/components/md/GuestSignPromoGate";
 import { AppFeedbackSheet } from "@/components/feedback/AppFeedbackSheet";
@@ -141,7 +140,6 @@ export default function MainLayout({
         <VisitConfirmTrigger />
         <PartyReviewTrigger />
         {/* 깃발 생성 직후 앱설치 유도 — 깃발 신규 생성 경로가 막혀 트리거되지 않으므로 마운트 해제 */}
-        <PriceRangeOnboardingSheet />
         {/* 파티 가이드 — 홈에서는 "지금 잡을 수 있는 자리가 있을 때"만 (계정당 1회) */}
         <ShareOnboardingSheet onlyWhenSlotOpen />
         <GuestSignPromoGate />

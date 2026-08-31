@@ -1,5 +1,4 @@
 import { BottomNav } from "@/components/layout/BottomNav";
-import { PriceRangeOnboardingSheet } from "@/components/md/PriceRangeOnboardingSheet";
 import { GuestSignPromoGate } from "@/components/md/GuestSignPromoGate";
 import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
 import { CouponOnboardingSheet } from "@/components/md/CouponOnboardingSheet";
@@ -14,7 +13,6 @@ export default function DashboardLayout({
     <>
       <div className="pb-16">{children}</div>
       <BottomNav />
-      <PriceRangeOnboardingSheet />
       <GuestSignPromoGate />
       <ShareOnboardingSheet />
       {/* 조각 가이드 뒤에 둔다 — 겹치면 CouponOnboardingSheet가 스스로 물러난다 */}

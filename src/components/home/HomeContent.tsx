@@ -8,7 +8,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, PartyPopper, ChevronRight } from "lucide-react";
+import { CheckCircle2, X, ChevronRight } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { ClubStrip } from "@/components/home/ClubStrip";
 import { isAuctionExpired } from "@/lib/utils/auction";
@@ -294,9 +294,6 @@ export function HomeContent({
   const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const [showMDWelcome, setShowMDWelcome] = useState(false);
-  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
-
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   // 조각 섹션 전용 지역 필터 — 깃발(selectedArea)과 독립적으로 움직임
   const [selectedShareArea, setSelectedShareArea] = useState<string | null>(null);
@@ -478,30 +475,6 @@ export function HomeContent({
       trackShareEvent("clubdirect_tab_view", { source: "home" });
     }
   }, [currentTab]);
-
-  useEffect(() => {
-    if (!welcomeDismissed && user?.role === "md" && user?.md_status === "approved" && user?.md_welcome_shown === false) {
-      setShowMDWelcome(true);
-    }
-  }, [user, welcomeDismissed]);
-
-
-  const handleDismissMDWelcome = async () => {
-    setShowMDWelcome(false);
-    setWelcomeDismissed(true);
-    if (user) {
-      await supabase.from("users").update({ md_welcome_shown: true }).eq("id", user.id);
-    }
-  };
-
-  const handleGoToCreateAuction = async () => {
-    setShowMDWelcome(false);
-    setWelcomeDismissed(true);
-    if (user) {
-      await supabase.from("users").update({ md_welcome_shown: true }).eq("id", user.id);
-    }
-    router.push("/md/auctions/new");
-  };
 
   const [auctions, setAuctions] = useState({
     active: activeAuctions,
@@ -798,64 +771,10 @@ export function HomeContent({
         </SheetContent>
       </Sheet>
 
-      {/* MD 파트너 승인 축하 Sheet (최초 1회) */}
-      <Sheet open={showMDWelcome} onOpenChange={(open) => { if (!open) handleDismissMDWelcome(); }}>
-        <SheetContent
-          side="bottom"
-          showCloseButton={false}
-          className="h-auto bg-card border-border rounded-t-3xl px-6 pb-10"
-        >
-          <SheetHeader className="text-center pt-2">
-            <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-              <PartyPopper className="w-8 h-8 text-brand-amber" />
-            </div>
-            <SheetTitle className="text-foreground font-black text-2xl">
-              축하합니다!
-            </SheetTitle>
-            <SheetDescription className="text-muted-foreground text-sm leading-relaxed mt-2">
-              NightFlow 파트너로 승인되었습니다.
-              <br />
-              지금 바로 테이블을 등록하고 첫 매출을 만들어보세요.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="space-y-3 mt-6">
-            <div className="flex items-center gap-3 bg-card/50 rounded-xl p-3 border border-border/30">
-              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-money font-black text-sm shrink-0">1</div>
-              <p className="text-[13px] text-foreground/80 font-medium">
-                <span className="text-foreground font-bold">주말(공휴일) 테이블</span>을 경매로 올리세요
-              </p>
-            </div>
-            <div className="flex items-center gap-3 bg-card/50 rounded-xl p-3 border border-border/30">
-              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-money font-black text-sm shrink-0">2</div>
-              <p className="text-[13px] text-foreground/80 font-medium">
-                유저들이 실시간으로 <span className="text-foreground font-bold">입찰 경쟁</span>합니다
-              </p>
-            </div>
-            <div className="flex items-center gap-3 bg-card/50 rounded-xl p-3 border border-border/30">
-              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-money font-black text-sm shrink-0">3</div>
-              <p className="text-[13px] text-foreground/80 font-medium">
-                낙찰되면 <span className="text-foreground font-bold">유저가 직접 연락</span>드려요
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3 mt-6">
-            <Button
-              onClick={handleGoToCreateAuction}
-              className="w-full h-14 bg-inverse hover:opacity-90 text-inverse-foreground font-black text-base rounded-2xl transition-all active:scale-[0.98]"
-            >
-              경매 올리기
-            </Button>
-            <button
-              onClick={handleDismissMDWelcome}
-              className="w-full text-center text-sm text-muted-foreground hover:text-foreground/80 transition-colors py-2 font-medium"
-            >
-              나중에 둘러볼게요
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* MD 파트너 승인 축하 Sheet 제거 — 안내 내용(경매 등록·입찰 경쟁)이 죽은 기능이었다.
+          경매는 2026-06-26 이후 신규 등록이 없고 237건 중 낙찰 3건(unsold 233)이라,
+          신규 승인 MD의 첫 화면으로 내보내기에 맞지 않는다. 살아있는 기능(게스트 간판·
+          쿠폰·파티)으로 다시 안내할 때 새로 만든다. */}
 
     </>
   );
