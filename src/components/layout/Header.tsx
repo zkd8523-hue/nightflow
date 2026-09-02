@@ -132,6 +132,11 @@ export function Header({
     deleteNotification,
     deleteAllNotifications,
   } = useNotifications(user?.id);
+  // 내 깃발에 들어온 새 오퍼 — 하단 탭 MY 가 LINE UP 으로 바뀌면서 이 배지도
+  // 메뉴의 "내 정보" 항목으로 옮겨왔다 (BottomNav 와 같은 판정식).
+  const hasNewOffer = notifications.some(
+    (n) => !n.is_read && n.type === "puzzle_offer_received"
+  );
   const supportUnread = useSupportUnread(user?.id);
   const router = useRouter();
   const pathname = usePathname();
@@ -535,6 +540,22 @@ export function Header({
                         <span className="text-[15px] font-bold">파트너 대시보드</span>
                       </Link>
                     )}
+
+                    {/* 내 정보(/profile) — 하단 탭 MY 자리를 LINE UP 에 내주고 이리로 옮겼다
+                        (2026-09-02). 내 파티 목록과 제재 정보가 이 화면에만 있어서
+                        진입 경로가 사라지면 안 된다. 새 오퍼 알림 배지도 함께 이동. */}
+                    <Link
+                      href="/profile"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                    >
+                      <span className="text-[15px] font-bold">내 정보</span>
+                      {hasNewOffer && (
+                        <span className="ml-auto px-2 py-0.5 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black leading-none tracking-widest shadow-md shadow-rose-900/40">
+                          Offer
+                        </span>
+                      )}
+                    </Link>
 
                     <Link
                       href="/my-coupons"

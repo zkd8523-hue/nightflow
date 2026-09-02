@@ -442,7 +442,13 @@ async function saveDjRows(
   draftId: string | null,
   ctx: SaveCtx,
   ticketUrl: string | null = null,
-  entryFeeText: string | null = null
+  entryFeeText: string | null = null,
+  // 원본 인스타 게시물 — 라인업 상세에서 "원본 게시물 보기"로 공개 노출한다
+  // (Migration 626). draft 조인으로는 못 가져온다: 월간 스케줄 게시물에서
+  // draft claim 은 첫 밤에만 쓰이고 나머지 밤은 draftId=null 로 들어오기 때문에,
+  // 출처는 라인업 행이 직접 들고 있어야 한다.
+  sourceUrl: string | null = null,
+  sourceAccount: string | null = null
 ): Promise<void> {
   if (djRows.length === 0) return;
   const { supabase, results } = ctx;
@@ -547,6 +553,8 @@ async function saveDjRows(
     p_draft_id: draftId,
     p_ticket_url: ticketUrl,
     p_entry_fee_text: entryFeeText,
+    p_source_url: sourceUrl,
+    p_source_account: sourceAccount,
   });
   if (rpcErr) {
     results.errors.push(`upsert_lineup: ${rpcErr.message}`);
@@ -810,7 +818,7 @@ async function processClubAccountPost(post: any, sourceClub: ClubRef & { id: str
       }
       const djDraftId = djDraftClaimUsed ? null : draft.id;
       djDraftClaimUsed = true;
-      await saveDjRows(sourceClub.id, eventDate, event.eventTitle, djRows, event.droppedRowCount, djDraftId, ctx, event.ticketUrl, event.entryFeeText);
+      await saveDjRows(sourceClub.id, eventDate, event.eventTitle, djRows, event.droppedRowCount, djDraftId, ctx, event.ticketUrl, event.entryFeeText, permalink, post.ownerUsername ?? null);
       anySaved = true;
     }
 
@@ -902,7 +910,7 @@ async function processCurationPost(post: any, ctx: SaveCtx, venueHint?: string):
     // 큐레이션 게시물은 클럽이 사후에만 확정되므로 draft claim 없이(p_draft_id=null)
     // 바로 저장한다.
     if (djRows.length > 0 && clubId) {
-      await saveDjRows(clubId, eventDate, event.eventTitle, djRows, event.droppedRowCount, null, ctx, event.ticketUrl, event.entryFeeText);
+      await saveDjRows(clubId, eventDate, event.eventTitle, djRows, event.droppedRowCount, null, ctx, event.ticketUrl, event.entryFeeText, post.url ?? null, post.ownerUsername ?? null);
     }
 
     if (artistRows.length > 0) {

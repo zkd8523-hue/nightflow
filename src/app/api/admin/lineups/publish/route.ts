@@ -239,7 +239,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, publishedAs: "event" });
   }
 
-  // 3) upsert_club_lineup RPC
+  // 3) 원본 게시물 출처 — 라인업 상세의 "원본 게시물 보기"에 쓴다 (Migration 626).
+  // draft 에서 읽어와 club_lineups 자기 컬럼에 박아둔다. draft 조인으로 표시하지
+  // 않는 이유는 draft_id 링크가 구조적으로 끊길 수 있기 때문(월간 스케줄 게시물의
+  // 두 번째 밤부터는 draftId=null 로 저장된다). 수동 입력(draftId 없음)은 NULL.
+  let sourceUrl: string | null = null;
+  let sourceAccount: string | null = null;
+  if (typeof draftId === "string") {
+    const { data: draftRow } = await supabaseAdmin
+      .from("lineup_drafts")
+      .select("ig_permalink, ig_sources(ig_username)")
+      .eq("id", draftId)
+      .maybeSingle();
+    if (draftRow) {
+      sourceUrl = (draftRow as { ig_permalink: string | null }).ig_permalink ?? null;
+      // PostgREST 가 조인을 배열/단일 객체 양쪽으로 돌려줄 수 있다
+      const src = (draftRow as { ig_sources?: unknown }).ig_sources;
+      const srcRow = Array.isArray(src) ? src[0] : src;
+      sourceAccount = (srcRow as { ig_username?: string } | null | undefined)?.ig_username ?? null;
+    }
+  }
+
+  // 4) upsert_club_lineup RPC
   const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc("upsert_club_lineup", {
     p_club_id: clubId,
     p_event_date: eventDate,
@@ -251,6 +272,8 @@ export async function POST(req: NextRequest) {
     p_draft_id: typeof draftId === "string" ? draftId : null,
     p_ticket_url: typeof ticketUrl === "string" ? ticketUrl : null,
     p_entry_fee_text: typeof entryFeeText === "string" ? entryFeeText : null,
+    p_source_url: sourceUrl,
+    p_source_account: sourceAccount,
   });
 
   // RPC 결과가 실제로 유효한 lineup_id를 담고 있는지 명시적으로 검증한다.

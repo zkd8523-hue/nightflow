@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Home, User, Map, Heart, MessageCircle } from "lucide-react";
+import { Home, Disc3, Map, Heart, MessageCircle } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
@@ -19,7 +19,7 @@ export function BottomNav() {
   const { user, isLoading } = useCurrentUser();
   // 와글 채팅 입력 중이면 네비 숨김 (채팅 공간 확보 + 키보드 겹침 완화)
   const composerFocused = useChatComposerStore((s) => s.focused);
-  // 내 깃발에 들어온 새 오퍼(미확인)가 있으면 "내 정보" 탭에 점 표시.
+  // notifications 는 아래 "/profile 진입 시 오퍼 읽음 처리"에 쓴다.
   // Hooks 규칙상 early return보다 위에서 호출. 비로그인 시 빈 배열 반환됨.
   const { notifications, markAsRead } = useNotifications(user?.id);
   const offerChatOn = useOfferChatFlag();
@@ -34,7 +34,8 @@ export function BottomNav() {
     reloadParty();
     reloadDm();
   }, [pathname, reloadOffers, reloadParty, reloadDm]);
-  // MY(/profile) 진입 시 미확인 오퍼 알림을 읽음 처리 → "Offer" 배지 제거
+  // /profile 진입 시 미확인 오퍼 알림을 읽음 처리 → 헤더 메뉴의 "Offer" 배지 제거.
+  // BottomNav 는 전 페이지에 렌더되므로 어느 경로로 들어가든 동작한다.
   useEffect(() => {
     if (pathname !== "/profile") return;
     notifications
@@ -56,9 +57,6 @@ export function BottomNav() {
       0
     ) +
     dmThreads.reduce((sum, t) => sum + (t.unread_count ?? 0), 0);
-  const hasNewOffer = notifications.some(
-    (n) => !n.is_read && n.type === "puzzle_offer_received"
-  );
 
   // 최초 인증 상태 확인 중에는 깜빡임 방지를 위해 숨김.
   // 비로그인 사용자에게도 탭바를 노출해 기능(와글/주변/찜 등)을 발견할 수 있게 함.
@@ -81,7 +79,12 @@ export function BottomNav() {
       : offerChatOn
         ? { label: "메시지", icon: MessageCircle, href: "/messages" }
         : { label: "찜", icon: Heart, href: "/favorites" },
-    { label: "MY", icon: User, href: "/profile" },
+    // MY(/profile) → LINE UP 으로 교체 (사용자 결정, 2026-09-02).
+    // 라인업이 앱의 주 콘텐츠인데 탭바에서 빠져 있어 홈 상단 토글로만 닿았다.
+    // 대신 /profile 은 햄버거 메뉴 "내 정보"로 옮겨 진입 경로를 남긴다 —
+    // 내 파티 목록과 제재 정보(/my-penalties)가 거기에만 있어서 그냥 빼면
+    // 접근 불가가 된다.
+    { label: "LINE UP", icon: Disc3, href: "/lineups" },
   ];
 
   return (
@@ -96,8 +99,9 @@ export function BottomNav() {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
           // 와글 활성 시 보라 시그니처 (MUSIC 가치), 나머지는 흰색
           const activeClass = "text-foreground";
-          // "내 정보"=새 오퍼는 NEW 뱃지, "메시지"=안읽은 메시지 개수 뱃지
-          const showNewOfferBadge = href === "/profile" && hasNewOffer;
+          // "메시지"=안읽은 메시지 개수 뱃지.
+          // 새 오퍼("Offer") 뱃지는 MY 탭이 LINE UP 으로 바뀌면서 헤더 메뉴의
+          // "내 정보" 항목으로 옮겼다 (Header.tsx).
           const chatBadgeCount = href === "/messages" ? unreadChatCount : 0;
           return (
             <Link
@@ -109,11 +113,6 @@ export function BottomNav() {
             >
               <span className="relative">
                 <Icon className="w-5 h-5" />
-                {showNewOfferBadge && (
-                  <span className="pointer-events-none absolute -top-2.5 -right-5 -rotate-12 px-2 py-0.5 text-[9px] font-black leading-none tracking-widest text-foreground bg-gradient-to-br from-red-500 to-rose-600 rounded-full shadow-lg shadow-rose-900/50">
-                    Offer
-                  </span>
-                )}
                 {chatBadgeCount > 0 && (
                   <UnreadBadge
                     count={chatBadgeCount}
@@ -121,7 +120,7 @@ export function BottomNav() {
                   />
                 )}
               </span>
-              <span className={`font-bold ${label === "OPEN" ? "text-[11px]" : "text-[10px]"}`}>{label}</span>
+              <span className={`font-bold ${label === "OPEN" ? "text-[11px]" : "text-[10px]"} whitespace-nowrap`}>{label}</span>
             </Link>
           );
         })}

@@ -41,6 +41,9 @@ interface LineupRow {
   event_title: string | null;
   ticket_url: string | null;
   source: string;
+  /** 원본 인스타 게시물 permalink (Migration 626) */
+  source_url: string | null;
+  source_account: string | null;
   lineup_sets: Array<{
     start_min: number | null;
     end_min: number | null;
@@ -64,7 +67,7 @@ async function fetchLineup(clubId: string, date: string) {
 
   const { data: lineup } = await supabase
     .from("club_lineups")
-    .select("id, event_title, ticket_url, source, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))")
+    .select("id, event_title, ticket_url, source, source_url, source_account, lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))")
     .eq("club_id", clubId)
     .eq("event_date", date)
     .maybeSingle<LineupRow>();
@@ -335,6 +338,24 @@ export default async function ClubLineupDatePage({ params }: PageProps) {
 
           {/* 타임테이블은 클라이언트 컴포넌트 — NOW 하이라이트에 현재 시각이 필요하다 */}
           <LineupSetTable sets={sets} eventDate={date} />
+
+          {/* 원문 캡션은 싣지 않는다 — 클럽 저작물이고 인스타와 중복 콘텐츠가 된다.
+              타임테이블만 재구성하고 원문(포스터 전체·변경 공지)은 링크로 보낸다.
+              공연 상세(/events/[date]/[slug])와 같은 카드 구조. */}
+          {lineup.source_url && (
+            <a
+              href={lineup.source_url}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="flex items-center justify-between gap-3 bg-[#1C1C1E] rounded-2xl px-4 py-3.5 text-[14px] font-bold hover:text-amber-400 transition-colors"
+            >
+              <span>
+                원본 게시물 보기
+                {lineup.source_account ? ` (${lineup.source_account})` : ""}
+              </span>
+              <ExternalLink className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+            </a>
+          )}
         </div>
       </div>
     </>

@@ -407,6 +407,9 @@ serve(async (req: Request) => {
           p_sets: scoreInput.sets.map((s) => ({ dj_id: s.matchedDjId, start_min: s.start_min, end_min: s.end_min, raw_name: s.raw_name })),
           p_source: "ig_auto",
           p_draft_id: draft.id,
+          // 라인업 상세의 "원본 게시물 보기" (Migration 626)
+          p_source_url: media.permalink,
+          p_source_account: source.ig_username,
         });
 
         if (rpcError || !rpcResult) {
