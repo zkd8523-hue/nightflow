@@ -18,7 +18,7 @@ export function ClubBenefitSection({ items }: { items: ClubBenefitItem[] }) {
       <Link href="/clubs?view=list" className="flex items-baseline justify-between px-1">
         <h2 className="text-[18px] font-black text-foreground flex items-center gap-1.5 tracking-tight">
           <span className="text-[18px]">🥂</span>
-          오늘 어디갈래?
+          어디갈래?
         </h2>
         <span className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5">
           더보기

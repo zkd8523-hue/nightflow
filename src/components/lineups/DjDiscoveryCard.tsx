@@ -212,7 +212,7 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
     <section aria-label="DJ 미리듣기">
       <div className="flex items-center justify-between mb-2 px-0.5">
         <h2 className="text-[13.5px] font-black text-foreground tracking-tight">
-          당신을 뛰게 할 DJ는?
+          이번 주말, 당신을 뛰게 할 DJ는?
         </h2>
       </div>
 
@@ -253,19 +253,8 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
           </div>
         </div>
 
-        {/* 듣기 전에 "찜하기"부터 들이밀면 순서가 거꾸로다 — 이 카드의 일은
-            듣게 만드는 것 하나다. 찜·일정·목록은 듣고 난 시트에서 준다.
-            줄 전체가 버튼이다 — 오른쪽 글자만 표적이면 너무 작다. */}
-        {items.length > 1 && (
-          <button
-            type="button"
-            onClick={() => setListOpen(true)}
-            className="w-full px-3 py-2.5 flex items-center justify-center gap-1 border-t border-white/5 text-[11px] font-bold text-muted-foreground hover:text-foreground active:bg-white/[0.03] transition-colors"
-          >
-            더 많은 DJ
-            <ChevronsRight className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
-        )}
+        {/* 카드 아래 "더 많은 DJ" 줄은 두지 않는다 — 이 카드의 일은 듣게 만드는 것
+            하나다. 목록은 듣고 난 시트 안(PreviewFooter)에서 연다. */}
       </div>
 
       <DiscoveryListSheet open={listOpen} onClose={() => setListOpen(false)} items={items} />

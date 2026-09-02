@@ -12,7 +12,6 @@ import {
   createBracket,
   currentMatch,
   isChampionDecided,
-  pickCandidates,
 } from "@/lib/djCup/candidates";
 import type { DjCupBracketState, DjCupCandidate, RoundSize } from "@/lib/djCup/types";
 
@@ -38,8 +37,11 @@ export function DjCupClient({ pool }: { pool: DjCupCandidate[] }) {
   const match = bracket ? currentMatch(bracket) : null;
   const champion = bracket && isChampionDecided(bracket) ? bracket.current[0] : null;
 
-  const handleStart = (roundSize: RoundSize) => {
-    const candidates = pickCandidates(pool, roundSize);
+  // candidates 는 시작 화면이 미리 뽑아 넘긴 대진이다 — 그래야 그 화면에
+  // 머무는 동안 첫 매치 참가자의 사클 iframe 을 미리 데울 수 있다
+  // (DjCupStart 의 picked/warmSoundcloud 주석 참고). 여기서 다시 뽑으면
+  // 데운 후보와 실제로 나오는 후보가 어긋나 예열이 통째로 헛돈다.
+  const handleStart = (roundSize: RoundSize, candidates: DjCupCandidate[]) => {
     setBracket(createBracket(candidates, roundSize));
     // 시작 집계 — 공유율·완주율의 분모가 된다(이게 없으면 dj_cup_shared 수를
     // 해석할 수 없다).
@@ -57,7 +59,7 @@ export function DjCupClient({ pool }: { pool: DjCupCandidate[] }) {
 
   return (
     <div className="max-w-lg lg:max-w-2xl mx-auto px-4 py-6">
-      {!bracket && <DjCupStart poolSize={pool.length} onStart={handleStart} />}
+      {!bracket && <DjCupStart pool={pool} onStart={handleStart} />}
 
       {bracket && (
         <DjCupPreloadProvider candidates={bracket.current}>

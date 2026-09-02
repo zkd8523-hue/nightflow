@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { Share2 } from "lucide-react";
-import { useState } from "react";
-import { ROUND_SIZES, type RoundSize } from "@/lib/djCup/types";
-import { availableRoundSizes } from "@/lib/djCup/candidates";
+import { useEffect, useMemo, useState } from "react";
+import { loadScApi, preconnectSoundcloud, warmSoundcloud } from "@/components/djs/DjPreviewButton";
+import { ROUND_SIZES, type DjCupCandidate, type RoundSize } from "@/lib/djCup/types";
+import { availableRoundSizes, pickCandidates } from "@/lib/djCup/candidates";
 import { shareDjCup } from "@/lib/utils/share";
 
 /**
@@ -16,17 +17,65 @@ import { shareDjCup } from "@/lib/utils/share";
  * 판정이라 후보가 늘면 자동으로 더 큰 라운드가 나타난다 — 하드코딩 없음.
  */
 export function DjCupStart({
-  poolSize,
+  pool,
   onStart,
 }: {
-  poolSize: number;
-  onStart: (roundSize: RoundSize) => void;
+  pool: DjCupCandidate[];
+  onStart: (roundSize: RoundSize, candidates: DjCupCandidate[]) => void;
 }) {
+  const poolSize = pool.length;
   const available = availableRoundSizes(poolSize, ROUND_SIZES);
   const [selected, setSelected] = useState<RoundSize>(
     // 16강을 기본값으로 — 완주율과 대진 다양성의 중간 지점
     available.includes(16) ? 16 : (available[available.length - 1] ?? available[0])
   );
+
+  // 시작 화면에 머무는 몇 초(라운드 크기 고르는 시간)를 재생 준비에 쓴다.
+  // 이걸 안 하면 첫 곡 재생이 이렇게 직렬로 흐른다:
+  //   시작 클릭 → w.soundcloud.com DNS+TLS → iframe HTML → widget.sndcdn.com
+  //   DNS+TLS → 위젯 본체 1.25MB → 그제서야 api.js 요청 → SC.Widget 바인딩 → play()
+  // 앞의 두 핸드셰이크와 api.js는 후보가 누구든 상관없이 미리 끝낼 수 있다.
+  //
+  //  1) preconnect — 사클 도메인 DNS+TLS를 미리 끝낸다. DJ컵은 사이트에서
+  //     가장 재생이 많은 화면인데 정작 이 힌트가 걸린 적이 없었다
+  //     (warmSoundcloud를 타는 발견 카드 경로만 preconnect를 불렀다).
+  //  2) api.js — SC.Widget이 있어야 play()를 부를 수 있는데, 예전엔 첫 곡
+  //     src를 채운 "뒤에야" 이 스크립트를 받으러 갔다(startLoading 안).
+  //     여기서 미리 받아두면 loadScApi()가 즉시 resolve돼 그 구간이 사라진다.
+  //
+  // 둘 다 내부에 1회 가드가 있어 중복 호출은 무해하다.
+  useEffect(() => {
+    preconnectSoundcloud();
+    loadScApi();
+  }, []);
+
+  // 대진을 "시작 클릭 시점"이 아니라 지금 미리 뽑아둔다.
+  //
+  // 예열의 가장 큰 덩어리는 iframe HTML 인데(CloudFront 히트 50~60ms vs
+  // 미스 1.4초), 이 캐시는 URL 단위라 "그 DJ 의 주소"를 실제로 찔러봐야
+  // 데워진다. 예전엔 pickCandidates 가 시작 클릭 순간에 셔플해서 그 전엔
+  // 누가 나올지 몰랐고 — 그래서 아무도 데울 수 없었다.
+  //
+  // 여기서 한 번 뽑아 그대로 onStart 로 넘기면 무작위성은 그대로 두면서
+  // (셔플은 여전히 crypto 기반, 매 방문마다 새 대진) 첫 매치 참가자를
+  // 미리 알 수 있다. 풀 전체를 섞어두고 라운드 크기만큼 앞에서 잘라 쓰므로,
+  // 크기 버튼을 눌러도 앞쪽 대진은 그대로다 — 이미 데운 예열이 헛돌지 않는다.
+  const picked = useMemo(() => pickCandidates(pool, pool.length), [pool]);
+
+  // 첫 매치 2명 + 다음 매치 2명까지만 데운다. 라운드 전체(최대 128명)를
+  // 한꺼번에 찌르면 keepalive fetch 가 브라우저 동시 연결 한도에 걸려
+  // 정작 첫 곡이 뒤로 밀린다(candidates.ts upcomingCandidates 주석과 동일 판단).
+  //
+  // ⚠️ autoPlay=false — DJ컵 재생 iframe 과 같은 URL 이어야 CloudFront 가
+  // 히트한다. true 로 데우면 홈 발견 카드용 엔트리만 데워지고 정작
+  // DJ컵에선 전부 미스가 난다(playerSrc 주석 참고).
+  useEffect(() => {
+    if (picked.length === 0) return;
+    warmSoundcloud(
+      picked.slice(0, 4).map((c) => c.soundcloud_url),
+      false
+    );
+  }, [picked]);
 
   if (available.length === 0) return null;
 
@@ -89,7 +138,7 @@ export function DjCupStart({
       <div className="grid grid-cols-[2fr_1fr_1fr] gap-1.5">
         <button
           type="button"
-          onClick={() => onStart(selected)}
+          onClick={() => onStart(selected, picked.slice(0, selected))}
           className="h-[38px] rounded-xl bg-white text-black font-black text-[12.5px] tracking-[-0.02em] inline-flex items-center justify-center gap-1"
         >
           <span aria-hidden="true">▶</span> 시작하기

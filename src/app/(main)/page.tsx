@@ -7,6 +7,7 @@ import { hideTestData, hideForeignerFlags } from "@/lib/utils/testData";
 import { getBusinessDateISO } from "@/lib/lineups/time";
 import { getActiveWeekStartISO } from "@/lib/utils/hotdeal";
 import { buildLineupTickerData, type LineupSetRow, type ClubEventRow } from "@/lib/home/lineupTickerData";
+import { buildDjDiscoveryItems, type DiscoverySetRow } from "@/lib/home/djDiscoveryData";
 import { buildClubBenefitItems, type ClubBenefitClubRow, type ClubBenefitSlotRow, type ClubBenefitFavoriteRow } from "@/lib/home/clubBenefitData";
 
 export const revalidate = 10; // 10초마다 재검증
@@ -42,6 +43,7 @@ export default async function HomePage() {
     { data: hotdealSlotsRaw },
     { data: benefitClubsRaw },
     { data: favoriteClubsRaw },
+    { data: discoverySetsRaw },
   ] = await Promise.all([
     // 조각(share) 매물 조회 — 메인 카탈로그 기본
     // hideTestData(clubs): 프로덕션에서만 테스트/운영자 클럽 매물 제외, 로컬·프리뷰는 노출
@@ -136,6 +138,18 @@ export default async function HomePage() {
       .is("deleted_at", null),
     // "오늘 어디갈래?" 좋아요(찜) 카운트
     supabase.from("user_favorite_clubs").select("club_id"),
+    // "당신을 뛰게 할 DJ는?" 미리듣기 카드 — 전광판 쿼리와 컬럼 셋이 다르다
+    // (미리듣기 URL·slug 필요) + 가장 가까운 하루가 아니라 예정 전체에서 고르므로
+    // 별도 쿼리로 둔다. 미리듣기 있는 DJ는 라인업 줄 기준 약 1/4이라 넉넉히 받는다.
+    supabase
+      .from("lineup_sets")
+      .select(
+        "start_min, djs!inner(id, slug, display_name, instagram, soundcloud_url, youtube_url), club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at))"
+      )
+      .gte("club_lineups.event_date", lineupFromDate)
+      .or("soundcloud_url.not.is.null,youtube_url.not.is.null", { referencedTable: "djs" })
+      .order("event_date", { referencedTable: "club_lineups", ascending: true })
+      .limit(300),
   ]);
 
   const activeAuctions = [...(shareAuctions ?? []), ...(legacyAuctions ?? [])];
@@ -195,6 +209,9 @@ export default async function HomePage() {
     (lineupSetsRaw ?? []) as unknown as LineupSetRow[],
     (clubEventsRaw ?? []) as ClubEventRow[]
   );
+  const djDiscoveryItems = buildDjDiscoveryItems(
+    (discoverySetsRaw ?? []) as unknown as DiscoverySetRow[]
+  );
   const clubBenefitItems = buildClubBenefitItems(
     (hotdealSlotsRaw ?? []) as ClubBenefitSlotRow[],
     (benefitClubsRaw ?? []) as unknown as ClubBenefitClubRow[],
@@ -239,6 +256,7 @@ export default async function HomePage() {
           clubs={clubs || []}
           lineupDjNames={lineupDjNames}
           lineupEventLabels={lineupEventLabels}
+          djDiscoveryItems={djDiscoveryItems}
           clubBenefitItems={clubBenefitItems}
         />
       </Suspense>

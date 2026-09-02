@@ -24,6 +24,7 @@ import { groupPuzzlesByClub } from "@/components/puzzles/ClubDirectCard";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { LineupTicker } from "@/components/home/LineupTicker";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
+import { DjDiscoveryCard, type DiscoveryDj } from "@/components/lineups/DjDiscoveryCard";
 import type { ClubBenefitItem } from "@/lib/home/clubBenefitData";
 import { CouponHomeStrip } from "@/components/home/CouponHomeStrip";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
@@ -273,6 +274,8 @@ interface HomeContentProps {
   clubs?: { id: string; name: string; area: string; thumbnail_url: string | null }[];
   lineupDjNames?: string[];
   lineupEventLabels?: string[];
+  /** "이번 주말, 당신을 뛰게 할 DJ는?" 카드 — 0건이면 카드가 스스로 null을 낸다 */
+  djDiscoveryItems?: DiscoveryDj[];
   clubBenefitItems?: ClubBenefitItem[];
 }
 
@@ -283,6 +286,7 @@ export function HomeContent({
   clubs = [],
   lineupDjNames = [],
   lineupEventLabels = [],
+  djDiscoveryItems = [],
   clubBenefitItems = [],
 }: HomeContentProps) {
   const activeAuctions = useMemo(() => {
@@ -835,7 +839,18 @@ export function HomeContent({
                  여백은 컴포넌트가 자기 루트에 직접 준다. */}
           <LineupTicker djNames={lineupDjNames} eventLabels={lineupEventLabels} />
 
-          {/* ── 오늘 어디갈래? ── */}
+          {/* ── 이번 주말, 당신을 뛰게 할 DJ는? ──
+                 /lineups 최상단과 같은 카드. 전광판에서 이름만 스쳐간 DJ를 바로 아래
+                 에서 귀로 확인시키고, 그다음 "어디갈래?"로 넘긴다.
+                 미리듣기 되는 DJ가 0명이면 카드가 스스로 null을 내므로 빈 여백이
+                 남지 않게 래퍼는 카드가 있을 때만 그린다(LineupTicker와 같은 규약). */}
+          {djDiscoveryItems.length > 0 && (
+            <div className="pb-4">
+              <DjDiscoveryCard items={djDiscoveryItems} />
+            </div>
+          )}
+
+          {/* ── 어디갈래? ── */}
           <div className="-mx-4 px-4 pb-4">
             <ClubBenefitSection items={clubBenefitItems} />
 

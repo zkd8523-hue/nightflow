@@ -28,7 +28,7 @@ function shuffle<T>(list: T[]): T[] {
 
 /** 후보 풀에서 라운드 크기만큼 무작위 추출.
  *  시드는 쓰지 않는다 — 공유가 결과가 아니라 시작 링크라 대진 재현 요구가 없다. */
-export function pickCandidates(pool: DjCupCandidate[], size: RoundSize): DjCupCandidate[] {
+export function pickCandidates(pool: DjCupCandidate[], size: number): DjCupCandidate[] {
   return shuffle(pool).slice(0, size);
 }
 

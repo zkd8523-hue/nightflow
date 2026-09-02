@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { SkipBack, SkipForward } from "lucide-react";
-import { DjPreviewButton } from "@/components/djs/DjPreviewButton";
+import { DjPreviewButton, loadScApi, playerSrc } from "@/components/djs/DjPreviewButton";
 import type { DjCupCandidate } from "@/lib/djCup/types";
 
 /**
@@ -78,29 +78,18 @@ export function useDjCupPlayerManager() {
 // Window.SC 전역 타입은 DjPreviewButton.tsx에서 선언한다(같은 전역을 두 번
 // 선언하면 구조가 조금만 달라도 TS2717 충돌이 난다) — 여기서는 재사용만 한다.
 
-let scApiPromise: Promise<void> | null = null;
-function loadScApi(): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  if (window.SC?.Widget) return Promise.resolve();
-  if (!scApiPromise) {
-    scApiPromise = new Promise((resolve) => {
-      const sc = document.createElement("script");
-      sc.src = "https://w.soundcloud.com/player/api.js";
-      sc.async = true;
-      sc.onload = () => resolve();
-      sc.onerror = () => resolve();
-      document.body.appendChild(sc);
-    });
-  }
-  return scApiPromise;
-}
+// ⚠️ loadScApi를 여기 복제해두면 안 된다 — 모듈 스코프 scApiPromise가 둘로
+// 갈라져, 시작 화면(DjCupStart)이 미리 시작해둔 로드가 "아직 진행 중"인 동안
+// 여기서 <script>를 하나 더 붙인다(window.SC 체크는 로드 완료 후에만 참).
+// DjPreviewButton의 것을 그대로 쓴다 — 예열과 재생이 같은 promise를 공유해야
+// 시작 화면의 선로드가 실제로 이 경로의 대기 시간을 줄인다.
 
-/** auto_play=false 고정 — 화면에 안 보이는 곡이 백그라운드에서 소리를 내면 안 된다. */
-function playerSrcNoAutoplay(url: string): string {
-  return `https://w.soundcloud.com/player/?url=${encodeURIComponent(
-    url
-  )}&color=%23ff5500&theme=dark&auto_play=false&visual=false&show_artwork=true&show_comments=false&show_teaser=false&sharing=false&buying=false&download=false&show_user=false`;
-}
+/** auto_play=false 고정 — 화면에 안 보이는 곡이 백그라운드에서 소리를 내면 안 된다.
+ *
+ *  ⚠️ 주소 문자열을 여기 따로 적어두면 안 된다 — 예열(warmSoundcloud)과 재생이
+ *  한 글자라도 다른 URL을 쓰면 CloudFront 캐시가 갈려 예열이 통째로 헛돈다.
+ *  DjPreviewButton의 playerSrc를 auto_play=false 로 호출해 문자열을 한 곳에 묶는다. */
+const playerSrcNoAutoplay = (url: string) => playerSrc(url, false);
 
 export function DjCupPreloadProvider({
   candidates,

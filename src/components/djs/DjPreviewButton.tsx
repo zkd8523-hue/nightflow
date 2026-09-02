@@ -71,7 +71,9 @@ export function DjPreviewButton({
     if (!soundcloudUrl) return;
     preconnectSoundcloud();
     void loadScApi();
-    warmWidget(soundcloudUrl);
+    // 이 컴포넌트는 auto_play=true 로 띄우므로(playerSrc 기본값) 예열도
+    // 같은 변형이어야 CloudFront 가 히트한다.
+    warmWidget(soundcloudUrl, true);
   }, [soundcloudUrl]);
 
   /* 사클이 없으면 유튜브로 떨어진다 — 재생원이 하나도 없을 때만 아무것도 안 그린다.
@@ -261,7 +263,9 @@ function YoutubePlayer({ videoId, djName }: { videoId: string; djName: string })
 }
 
 let hinted = false;
-function preconnectSoundcloud() {
+/** 사클 도메인 DNS+TLS 사전 연결. 여러 번 불러도 첫 호출만 실제로 동작한다
+ *  — 재생이 예상되는 화면에 진입하는 즉시 부르면 된다(DJ컵 시작 화면 등). */
+export function preconnectSoundcloud() {
   if (typeof document === "undefined" || hinted) return;
   hinted = true;
   for (const [rel, href] of [
@@ -294,29 +298,43 @@ function preconnectSoundcloud() {
  * 우선순위를 낮게 잡아 첫 화면을 방해하지 않는다.
  */
 /** 재생용 iframe 주소. 예열도 반드시 같은 문자열을 써야 CloudFront 히트가 난다
- *  — 캐시는 URL 단위라 파라미터가 하나만 달라도 원서버까지 다시 간다. */
-export function playerSrc(url: string): string {
+ *  — 캐시는 URL 단위라 파라미터가 하나만 달라도 원서버까지 다시 간다.
+ *
+ *  ⚠️ autoPlay가 캐시 키를 가른다. 발견 카드는 탭 = 재생이라 true 로 띄우지만,
+ *  DJ컵은 화면 밖 예열 iframe이 여럿이라 false 로 띄우고 play()를 직접 부른다
+ *  (안 그러면 안 보이는 곡들이 동시에 소리를 낸다). 두 화면이 같은 DJ를 틀어도
+ *  이 파라미터 하나 때문에 CloudFront 엔트리가 갈라져, 한쪽에서 데운 게
+ *  다른 쪽에서 미스가 됐다 — 그래서 예열은 양쪽 변형을 다 찔러야 한다. */
+export function playerSrc(url: string, autoPlay = true): string {
   return `https://w.soundcloud.com/player/?url=${encodeURIComponent(
     url
-  )}&color=%23ff5500&theme=dark&auto_play=true&visual=false&show_artwork=true&show_comments=false&show_teaser=false&sharing=false&buying=false&download=false&show_user=false`;
+  )}&color=%23ff5500&theme=dark&auto_play=${autoPlay}&visual=false&show_artwork=true&show_comments=false&show_teaser=false&sharing=false&buying=false&download=false&show_user=false`;
 }
 
 const warmedUrls = new Set<string>();
-function warmWidget(url: string) {
-  if (typeof document === "undefined" || warmedUrls.has(url)) return;
-  warmedUrls.add(url);
+function warmWidget(url: string, autoPlay: boolean) {
+  // 캐시 키가 갈리므로 변형별로 따로 세어야 한다 — 같은 DJ의 true/false 를
+  // 하나로 묶으면 둘 중 하나만 데워지고 나머지는 조용히 건너뛴다.
+  const key = `${autoPlay ? "1" : "0"}|${url}`;
+  if (typeof document === "undefined" || warmedUrls.has(key)) return;
+  warmedUrls.add(key);
+  // "이번이 세션 통틀어 첫 예열인가"를 요청 시점이 아니라 지금 확정한다.
+  // 예전엔 run() 안에서 warmedUrls.size === 1 로 판정했는데, DJ컵처럼 여러
+  // URL을 한 번에 예열하면 run 이 도는 시점엔 size 가 이미 여럿이라 아무도
+  // 이 분기에 못 들어갔다(= 위젯 본체를 받아오는 iframe 이 아예 안 뜸).
+  const isFirstWarm = warmedUrls.size === 1;
   const run = () => {
     /* iframe 을 띄우는 대신 prefetch 로 HTML 만 받아 CloudFront 를 데운다 —
        iframe 은 그 안에서 스크립트·추적까지 전부 돌아 비용이 크다.
        첫 한 명은 위젯 본체까지 받아야 하므로 iframe 을 쓴다. */
-    if (warmedUrls.size === 1) {
+    if (isFirstWarm) {
       const f = document.createElement("iframe");
       f.setAttribute("aria-hidden", "true");
       f.tabIndex = -1;
       // display:none 이면 브라우저가 로드를 미루는 경우가 있어 화면 밖으로 뺀다
       f.style.cssText =
         "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;top:-9999px;border:0";
-      f.src = playerSrc(url);
+      f.src = playerSrc(url, autoPlay);
       document.body.appendChild(f);
       window.setTimeout(() => f.remove(), 15000);
       return;
@@ -326,7 +344,7 @@ function warmWidget(url: string) {
        mode:"no-cors" 라 응답 본문은 못 읽지만 상관없다 — 목적은 CloudFront 를
        데우는 것이고, 그건 요청이 도달하기만 하면 된다(실측: Miss → Hit).
        keepalive 로 카드가 넘어가 언마운트돼도 요청이 취소되지 않게 한다. */
-    fetch(playerSrc(url), { mode: "no-cors", credentials: "omit", keepalive: true }).catch(
+    fetch(playerSrc(url, autoPlay), { mode: "no-cors", credentials: "omit", keepalive: true }).catch(
       () => {
         /* 예열은 실패해도 재생 자체엔 지장이 없다 */
       }
@@ -339,11 +357,13 @@ function warmWidget(url: string) {
   else window.setTimeout(run, 1500);
 }
 
-/** 바깥(발견 카드)에서 다음에 나올 DJ 들을 미리 데울 때 쓴다. */
-export function warmSoundcloud(urls: (string | null | undefined)[]) {
+/** 바깥(발견 카드·DJ컵)에서 다음에 나올 DJ 들을 미리 데울 때 쓴다.
+ *  autoPlay 는 그 화면이 실제로 띄울 iframe 과 같은 값이어야 한다 —
+ *  다르면 CloudFront 엔트리가 갈려 예열이 통째로 헛돈다(playerSrc 주석 참고). */
+export function warmSoundcloud(urls: (string | null | undefined)[], autoPlay = true) {
   if (typeof document === "undefined") return;
   preconnectSoundcloud();
-  for (const u of urls) if (u) warmWidget(u);
+  for (const u of urls) if (u) warmWidget(u, autoPlay);
 }
 
 let scApiPromise: Promise<void> | null = null;
