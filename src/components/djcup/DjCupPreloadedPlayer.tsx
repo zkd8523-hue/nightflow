@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { SkipBack, SkipForward } from "lucide-react";
 import { DjPreviewButton, loadScApi, playerSrc } from "@/components/djs/DjPreviewButton";
 import type { DjCupCandidate } from "@/lib/djCup/types";
+import { usePauseOnBackground } from "@/hooks/usePauseOnBackground";
 
 /**
  * DJ컵 전용 "완전 예열" 재생 시스템.
@@ -120,6 +121,20 @@ export function DjCupPreloadProvider({
   const [activeDjId, setActiveDjIdState] = useState<string | null>(null);
   const activeDjIdRef = useRef<string | null>(null);
   const [, forceRender] = useState(0);
+
+  /* 앱이 백그라운드로 가면 전부 멈춘다 — 네이티브 WebView는 앱을 닫아도 살아 있어
+     재생 중이던 위젯이 계속 소리를 낸다. 여기는 위젯을 Map으로 여러 개 들고 있고
+     활성 하나만 소리를 내는 게 정상이지만, 상태가 어긋나 둘이 겹쳐 울리는 경우까지
+     확실히 잡으려고 보유한 전부에 pause를 건다(이미 멈춘 위젯엔 무해). */
+  usePauseOnBackground(() => {
+    for (const h of handlesRef.current.values()) {
+      try {
+        h.widget?.pause();
+      } catch {
+        /* 준비 전이거나 사라진 위젯 — 멈출 게 없다 */
+      }
+    }
+  });
 
   useEffect(() => {
     urlsByIdRef.current = new Map(urls.map((u) => [u.djId, u.url]));

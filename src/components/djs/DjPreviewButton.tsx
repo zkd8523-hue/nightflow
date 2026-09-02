@@ -5,6 +5,7 @@ import { ChevronsRight, Play, SkipBack, SkipForward, Youtube } from "lucide-reac
 import { SoundcloudIcon } from "@/components/icons/SoundcloudIcon";
 import { youtubeVideoId } from "@/lib/lineups/youtubeUrl";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { usePauseOnBackground } from "@/hooks/usePauseOnBackground";
 
 /**
  * DJ 미리듣기 — 이름만 봐서는 "어떤" DJ인지 모르는 문제를 푸는 자리.
@@ -248,11 +249,24 @@ declare global {
  * nocookie 도메인을 쓰는 이유: 추적 쿠키를 심지 않아 첫 방문자에게 가볍다.
  */
 function YoutubePlayer({ videoId, djName }: { videoId: string; djName: string }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  /* 유튜브는 사클과 달리 위젯 API를 안 붙였다(큐도 없고 컨트롤도 유튜브 자체 UI를 쓴다).
+     대신 iframe 임베드가 공개로 여는 postMessage 명령으로 멈춘다 — enablejsapi=1 이
+     있어야 받는다. 스크립트를 새로 받을 필요는 없다. */
+  usePauseOnBackground(() => {
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: "command", func: "pauseVideo", args: [] }),
+      "*"
+    );
+  });
+
   return (
     <div className="mt-3">
       <iframe
+        ref={iframeRef}
         title={`${djName} 유튜브`}
-        src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`}
+        src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1&enablejsapi=1`}
         className="w-full aspect-video rounded-xl overflow-hidden"
         frameBorder="no"
         allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -397,8 +411,17 @@ function SoundcloudPlayer({
   nextLabel?: string;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const widgetRef = useRef<{ play: () => void; next: () => void; prev: () => void } | null>(null);
+  const widgetRef = useRef<{
+    play: () => void;
+    pause: () => void;
+    next: () => void;
+    prev: () => void;
+  } | null>(null);
   const [ready, setReady] = useState(false);
+
+  /* 앱을 백그라운드로 보내면 멈춘다 — 네이티브 WebView는 앱을 닫아도 살아 있어
+     iframe이 계속 소리를 낸다(시트를 닫는 경로에만 언마운트 정지가 있었다). */
+  usePauseOnBackground(() => widgetRef.current?.pause());
   /* 큐에 곡이 하나뿐이면 "이전곡/다음곡"은 눌러도 아무 일이 없다 —
      반응 없는 버튼을 두느니 안 그린다. */
   const [hasQueue, setHasQueue] = useState(false);

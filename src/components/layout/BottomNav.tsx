@@ -73,18 +73,18 @@ export function BottomNav() {
   const tabs = [
     { label: "홈", icon: Home, href: "/" },
     { label: "클럽지도", icon: Map, href: "/clubs" },
-    { label: "OPEN", icon: WagleIcon, href: "/chat" },
-    offerChatOn === undefined
-      ? null
-      : offerChatOn
-        ? { label: "메시지", icon: MessageCircle, href: "/messages" }
-        : { label: "찜", icon: Heart, href: "/favorites" },
     // MY(/profile) → LINE UP 으로 교체 (사용자 결정, 2026-09-02).
     // 라인업이 앱의 주 콘텐츠인데 탭바에서 빠져 있어 홈 상단 토글로만 닿았다.
     // 대신 /profile 은 햄버거 메뉴 "내 정보"로 옮겨 진입 경로를 남긴다 —
     // 내 파티 목록과 제재 정보(/my-penalties)가 거기에만 있어서 그냥 빼면
     // 접근 불가가 된다.
     { label: "LINE UP", icon: Disc3, href: "/lineups" },
+    { label: "OPEN", icon: WagleIcon, href: "/chat" },
+    offerChatOn === undefined
+      ? null
+      : offerChatOn
+        ? { label: "메시지", icon: MessageCircle, href: "/messages" }
+        : { label: "찜", icon: Heart, href: "/favorites" },
   ];
 
   return (

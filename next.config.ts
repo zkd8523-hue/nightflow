@@ -67,6 +67,12 @@ const nextConfig: NextConfig = {
   experimental: {
     // 대량 사용 패키지 트리셰이킹 강화 (lucide-react 200+ 파일, radix-ui 메타패키지, dayjs)
     optimizePackageImports: ["lucide-react", "radix-ui", "dayjs"],
+    // 클라이언트 라우터 캐시 — Next 15부터 dynamic 기본값이 0이라 탭을 오갈 때마다
+    // RSC 페이로드를 매번 새로 받는다(홈↔LINE UP 왕복이 느린 주원인).
+    // 서버는 이미 ISR(홈 10초, 라인업 300초)로 캐시돼 있어 30초 정도 재사용해도
+    // 신선도 손해가 없다. 당겨서 새로고침/router.refresh()는 이 캐시를 무시하므로
+    // 사용자가 원할 때 즉시 최신화되는 경로는 그대로 남는다.
+    staleTimes: { dynamic: 30, static: 180 },
   },
 
 };
