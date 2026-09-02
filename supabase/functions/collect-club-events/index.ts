@@ -493,7 +493,18 @@ async function saveDjRows(
         .select("id");
       if (updated?.length) results.handles_from_caption++;
     }
-    sets.push({ dj_id: djId, start_min: row.start_min, end_min: row.end_min, raw_name: row.raw_name });
+    // instagram 을 함께 싣는 이유: isWeakLineup 이면 이 배열이 그대로
+    // lineup_drafts.normalized 로 들어간다(아래). 핸들을 빼면 검토 화면에서
+    // 사람이 "인스타 미등록"으로 보고 다시 찾아야 하는데, 방금 캡션에서 읽은
+    // 값이 이미 손에 있다. djs 갱신(위)은 기존 값이 있으면 건너뛰므로,
+    // 이미 등록된 DJ 의 핸들도 검토 화면에서는 보여줄 수 있어야 한다.
+    sets.push({
+      dj_id: djId,
+      start_min: row.start_min,
+      end_min: row.end_min,
+      raw_name: row.raw_name,
+      instagram: handle,
+    });
   }
   if (sets.length === 0) return;
 

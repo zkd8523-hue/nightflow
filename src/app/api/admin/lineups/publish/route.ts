@@ -127,6 +127,17 @@ export async function POST(req: NextRequest) {
 
       if (existingAlias) {
         djId = existingAlias.dj_id;
+        // 기존 DJ 재사용 경로 — 핸들이 비어 있으면 이번에 받은 값으로 채운다.
+        // INSERT 경로만 instagram 을 넣고 있어서, 한 번이라도 이름만으로 만들어진
+        // DJ 는 나중에 핸들이 와도 영영 비어 있었다. Edge Function 과 같은 규약으로
+        // .is("instagram", null) — 기존 값은 절대 덮지 않는다.
+        if (s.newDjInstagram) {
+          await supabaseAdmin
+            .from("djs")
+            .update({ instagram: s.newDjInstagram })
+            .eq("id", djId)
+            .is("instagram", null);
+        }
       } else {
         const slug = slugify(displayName);
         const { data: newDj, error: djError } = await supabaseAdmin
@@ -146,6 +157,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: `DJ 생성 실패: ${displayName} (${djError.message})` }, { status: 500 });
           }
           djId = existingDj.id;
+          // 위 existingAlias 경로와 같은 이유 — 경합으로 남의 행을 쓰게 됐어도
+          // 핸들이 비어 있으면 채운다.
+          if (s.newDjInstagram) {
+            await supabaseAdmin
+              .from("djs")
+              .update({ instagram: s.newDjInstagram })
+              .eq("id", djId)
+              .is("instagram", null);
+          }
         } else if (djError || !newDj) {
           return NextResponse.json({ error: `DJ 생성 실패: ${displayName}${djError ? ` (${djError.message})` : ""}` }, { status: 500 });
         } else {

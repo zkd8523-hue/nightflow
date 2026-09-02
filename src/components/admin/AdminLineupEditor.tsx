@@ -37,6 +37,9 @@ interface StoredSetRow {
   start_min: number | null;
   end_min: number | null;
   matchedDjId: string | null;
+  // 수집기가 캡션/포스터에서 읽은 인스타 핸들. 없으면 null.
+  // 신규 DJ 등록 시 기본값으로 쓴다 — 사람이 다시 찾지 않아도 되게.
+  instagram?: string | null;
 }
 
 export interface DraftListItem {
@@ -81,6 +84,12 @@ interface EditRow {
   newDjName?: string;
   newDjInstagram?: string | null;
   learnAlias?: boolean;
+  /**
+   * 수집기가 캡션/포스터에서 읽어 draft 에 실어 보낸 핸들(있을 때만).
+   * newDjInstagram 과 구분한다 — 이건 "원본에 이렇게 적혀 있었다"는 사실이고,
+   * newDjInstagram 은 사람이 등록하기로 확정한 값이다.
+   */
+  draftInstagram?: string | null;
   /** 화면 표시용 — djId가 있으면 그 이름, 없으면 미매칭 상태 */
   displayLabel: string;
 }
@@ -669,6 +678,7 @@ function DraftEditView({
       endMin: s.end_min,
       djId: s.matchedDjId,
       displayLabel: s.raw_name,
+      draftInstagram: s.instagram ?? null,
     }))
   );
   const [autoLink, setAutoLink] = useState(true);
@@ -717,16 +727,28 @@ function DraftEditView({
   };
 
   /**
-   * 미매칭 행 전부를 "이름 그대로" 신규 DJ로 일괄 등록한다. 인스타 핸들은 사람이
-   * 찾아 넣어야 하는 정보라 자동화하지 않는다(동명이인 오매칭 위험) — 대신 등록
-   * 직후 "인스타 미등록 DJ" 목록을 보여줘서 나중에 찾아 채워 넣을 수 있게 한다.
+   * 미매칭 행 전부를 "이름 그대로" 신규 DJ로 일괄 등록한다.
+   *
+   * 핸들은 draftInstagram 이 있을 때만 채운다. 원래는 무조건 null 이었는데
+   * (동명이인 오매칭이 두려워서), 그 판단은 핸들 정보가 아예 없던 시절 기준이다.
+   * 지금은 수집기가 캡션의 "이름 @핸들" 을 그 행에 붙여 보내므로, 그건 추측이
+   * 아니라 원본에 적힌 사실이다 — 사람이 다시 찾게 만들 이유가 없다.
+   *
+   * draftInstagram 이 없는 행은 종전대로 null 로 두고, 등록 직후
+   * "인스타 미등록 DJ" 목록에 남겨 나중에 채우게 한다.
    */
   const bulkRegisterUnmatched = () => {
     setRows((prev) =>
       prev.map((r) =>
         r.djId || r.newDjName
           ? r
-          : { ...r, newDjName: r.rawName, newDjInstagram: null, learnAlias: false, displayLabel: r.rawName }
+          : {
+              ...r,
+              newDjName: r.rawName,
+              newDjInstagram: r.draftInstagram ?? null,
+              learnAlias: false,
+              displayLabel: r.rawName,
+            }
       )
     );
     setShowUnregisteredList(true);

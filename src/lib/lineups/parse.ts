@@ -49,6 +49,14 @@ export interface NormalizedSetRow {
   role: 'dj' | 'artist';
   /** 검증을 통과한 핸들. 확신 없으면 null — 오연결이 미입력보다 나쁘다. */
   instagram: string | null;
+  /**
+   * 팀 명의 1개 셋에 붙은 멤버 개인 핸들들(MONKEYTIMERS → takekawa_mts, hisashikiyota).
+   *
+   * ⚠️ 현재 소비처 없음 — 파싱·정규화만 하고 아무 데도 저장하지 않는다.
+   * djs 는 1인 1행이라 팀-멤버 관계를 표현할 스키마가 필요한데, 실측 5건뿐이라
+   * (2026-08-31 드래프트 413건 기준) 근거가 모자라 스키마를 미뤄 뒀다.
+   * 지우지는 말 것 — 데이터는 계속 쌓이고 있고, 사례가 늘면 그때 설계한다.
+   */
   memberHandles: string[];
   start_min: number | null;
   end_min: number | null;
