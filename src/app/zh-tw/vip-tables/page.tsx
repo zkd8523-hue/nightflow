@@ -49,7 +49,7 @@ export const metadata: Metadata = {
 };
 
 const TIERS = [
-  { name: "弘大 walk-in 友善", price: "₩300,000–600,000", perPerson: "每人 ₩50,000–100,000 (6 人)", desc: "中小型夜店,嘻哈/K-POP 為主,無嚴格門禁。Club Dokkaebi、Sabotage、Purple。" },
+  { name: "弘大 walk-in 友善", price: "₩400,000–600,000", perPerson: "每人 ₩70,000–100,000 (6 人)", desc: "中小型夜店,嘻哈/K-POP 為主,無嚴格門禁。Club Dokkaebi、Sabotage、Purple。" },
   { name: "江南主桌 VIP", price: "₩750,000–1,500,000", perPerson: "每人 ₩150,000–300,000 (4–6 人)", desc: "EDM 大型夜店,黃金座位,全套瓶裝服務。Club ACE、Massive、Club Pop。" },
   { name: "狎鷗亭高端包廂", price: "₩2,000,000+", perPerson: "每人 ₩400,000+ (4–6 人)", desc: "高端包廂,香檳文化,獨家人群。Core Lounge、Club Arzu、DM Seoul。" },
 ];

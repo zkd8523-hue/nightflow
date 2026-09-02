@@ -42,6 +42,15 @@ const ITAEWON_RECOMMEND_CURATED = ["Dawn", "BADASS", "Day&night"];
 // 3개면 MD가 비교 제안하기 충분하고, 그 이상은 고르다 지쳐 폼을 못 끝낸다.
 const MAX_CLUBS = 3;
 const AREAS = ["이태원", "강남", "홍대", "서울 어디든"];
+// 지역별 최소 예산(총액). 강남은 메인 VIP·보틀 단가가 높아 40만으로는 성사가 안 된다
+// (MD가 자리를 못 잡아 왕복만 늘고 결국 무산). "서울 어디든"은 강남 포함이라 상한을 따른다.
+const AREA_MIN_BUDGET: Record<string, number> = {
+  "강남": 1000000,
+  "서울 어디든": 1000000,
+  "이태원": 400000,
+  "홍대": 400000,
+};
+const FALLBACK_MIN_BUDGET = 400000;
 const CONTACT_TYPES = ["whatsapp", "instagram", "email", "wechat", "line"] as const;
 type ContactType = (typeof CONTACT_TYPES)[number];
 const CONTACT_LABEL: Record<ContactType, string> = {
@@ -105,28 +114,15 @@ export function ForeignRequestForm({
   // 40만 = private table + 보틀 2~3병 수준이라, 금액과 받는 것을 같이 보여줄 수 있는 기준점.
   const DEFAULT_BUDGET = 400000;
   const [budget, setBudget] = useState(DEFAULT_BUDGET.toLocaleString("en-US"));
+  // 사용자가 금액을 직접 만졌는지 — 만졌으면 지역이 바뀌어도 덮어쓰지 않는다.
+  const budgetTouchedRef = useRef(false);
   const budgetAmount = () => Number(budget.replace(/[^0-9]/g, "")) || 0;
+
 
   // 금액이 오르면 받는 것도 달라져야 한다 — 고정 문구면 "올려도 그대로"라 올릴 이유가 없어진다.
   // 구간은 실제 업장 통념 기준(입장만 → 스탠딩 → 프라이빗+보틀 → VIP). 클럽마다 편차가 커서
   // 단정하지 않고 "보통 이 정도"로 표현한다.
   const budgetTier = (won: number) => {
-    if (won < 100000)
-      return t(
-        "입장료 + 음료 정도 (테이블 없이)",
-        "Entry and drinks — no table",
-        "入場料+ドリンク程度（テーブルなし）",
-        "入场费+饮料（无卡座）",
-        "入場費+飲料（無包廂）"
-      );
-    if (won < 300000)
-      return t(
-        "스탠딩 테이블 + 보틀 1병 정도",
-        "Standing table + 1 bottle",
-        "スタンディングテーブル + ボトル1本",
-        "站台 + 1瓶酒",
-        "站檯 + 1瓶酒"
-      );
     if (won < 700000)
       return t(
         "프라이빗 테이블 + 보틀 2~3병 (클럽에 따라 다름)",
@@ -155,6 +151,28 @@ export function ForeignRequestForm({
     presetClubId && clubs.some((c) => c.id === presetClubId) ? [presetClubId] : []
   );
   const [clubSearch, setClubSearch] = useState("");
+
+  // 지역을 비우고 클럽만 고를 수 있어서(지역 칩은 토글로 해제됨) 클럽 쪽 지역도 같이 본다.
+  // 여러 지역이 섞이면 가장 높은 하한을 적용 — 강남 한 곳만 껴도 강남 기준.
+  const minBudget = (() => {
+    const areas: string[] = [];
+    if (area) areas.push(area);
+    selectedClubIds.forEach((id) => {
+      const c = clubs.find((cl) => cl.id === id);
+      if (c?.area) areas.push(c.area);
+    });
+    if (areas.length === 0) return FALLBACK_MIN_BUDGET;
+    return Math.max(...areas.map((a) => AREA_MIN_BUDGET[a] ?? FALLBACK_MIN_BUDGET));
+  })();
+
+  // 지역이 바뀌면 기본 금액도 그 지역 하한으로 맞춘다. 직접 입력한 뒤에는 건드리지 않는다
+  // (40만 적어둔 사람의 숫자를 지역 칩 한 번에 100만으로 바꿔버리면 신뢰가 깨진다).
+  useEffect(() => {
+    if (budgetTouchedRef.current) return;
+    setBudget(minBudget.toLocaleString("en-US"));
+  }, [minBudget]);
+
+
   const [guestName, setGuestName] = useState("");
   const [contactType, setContactType] = useState<ContactType>("whatsapp");
   const [preferredLang, setPreferredLang] = useState<Lang>(lang);
@@ -404,6 +422,17 @@ export function ForeignRequestForm({
     if (!eventDate) return toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期"));
     if (!area && selectedClubIds.length === 0)
       return toast.error(t("지역이나 클럽을 골라주세요", "Pick an area or a club", "エリアかクラブを選択", "请选择区域或夜店"));
+    if (budgetAmount() > 0 && budgetAmount() < minBudget) {
+      return toast.error(
+        t(
+          `이 지역은 최소 ₩${minBudget.toLocaleString("en-US")}부터 가능해요`,
+          `This area starts at ₩${minBudget.toLocaleString("en-US")}`,
+          `このエリアは₩${minBudget.toLocaleString("en-US")}からです`,
+          `该区域最低 ₩${minBudget.toLocaleString("en-US")}`,
+          `該區域最低 ₩${minBudget.toLocaleString("en-US")}`
+        )
+      );
+    }
     if (!guestName.trim())
       return toast.error(t("예약자 이름을 입력해주세요", "Enter the name for the booking", "予約者名を入力", "请填写预订人姓名"));
     if (!contactValue.trim())
@@ -680,10 +709,11 @@ export function ForeignRequestForm({
             inputMode="numeric"
             value={budget}
             onChange={(e) => {
+              budgetTouchedRef.current = true;
               const raw = e.target.value.replace(/[^0-9]/g, "");
               setBudget(raw ? Number(raw).toLocaleString("en-US") : "");
             }}
-            placeholder={t("예) 400,000", "e.g. 400,000", "例) 400,000", "例) 400,000")}
+            placeholder={`${t("예)", "e.g.", "例)", "例)")} ${minBudget.toLocaleString("en-US")}`}
             className="w-full h-12 pl-4 pr-9 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[15px] font-bold pointer-events-none">
@@ -693,6 +723,17 @@ export function ForeignRequestForm({
         {/* 가독성: 통화 4개를 한 줄에 나열하면 332px 안에 숫자가 뭉쳐 스캔이 안 된다.
             2열로 펼치고 역할별로 크기를 나눈다(받는 것 = 가장 큼 > 환산 > 기준일).
             순서 중요: 입력칸 바로 아래. 프리셋 버튼이 금액과 그 의미 사이를 막으면 안 된다. */}
+        {budgetAmount() > 0 && budgetAmount() < minBudget && (
+          <p className="text-[12px] text-red-400 font-semibold mt-1.5 break-keep">
+            {t(
+              `이 지역은 최소 ₩${minBudget.toLocaleString("en-US")}부터 가능해요`,
+              `This area starts at ₩${minBudget.toLocaleString("en-US")}`,
+              `このエリアは₩${minBudget.toLocaleString("en-US")}からです`,
+              `该区域最低 ₩${minBudget.toLocaleString("en-US")}`,
+              `該區域最低 ₩${minBudget.toLocaleString("en-US")}`
+            )}
+          </p>
+        )}
         {budgetAmount() > 0 && (
           <div className="mt-2 rounded-xl bg-card border border-border overflow-hidden">
             <div className="grid grid-cols-2 gap-x-3 gap-y-1 p-3">
@@ -724,7 +765,10 @@ export function ForeignRequestForm({
             <button
               key={preset}
               type="button"
-              onClick={() => setBudget((budgetAmount() + preset).toLocaleString("en-US"))}
+              onClick={() => {
+                budgetTouchedRef.current = true;
+                setBudget((budgetAmount() + preset).toLocaleString("en-US"));
+              }}
               className="h-10 px-0 rounded-lg bg-card border border-border text-foreground/80 hover:bg-muted hover:text-foreground hover:border-amber-500/50 font-bold text-[13px] transition-colors"
             >
               {`+₩${(preset / 10000).toFixed(0)}0k`}
@@ -732,7 +776,10 @@ export function ForeignRequestForm({
           ))}
           <button
             type="button"
-            onClick={() => setBudget("")}
+            onClick={() => {
+              budgetTouchedRef.current = true;
+              setBudget("");
+            }}
             className="h-10 px-0 rounded-lg bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:border-red-500/50 font-bold text-[13px] transition-colors"
           >
             {t("초기화", "Clear", "クリア", "清除")}

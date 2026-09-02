@@ -61,8 +61,8 @@ export const metadata: Metadata = {
 const TIERS = [
   {
     name: "Hongdae walk-in friendly",
-    price: "₩300,000–600,000",
-    perPerson: "₩50,000–100,000 (6 ppl)",
+    price: "₩400,000–600,000",
+    perPerson: "₩70,000–100,000 (6 ppl)",
     desc: "Smaller clubs, hip-hop/K-pop focus, no strict door policy. Club Dokkaebi, Sabotage, Purple.",
   },
   {

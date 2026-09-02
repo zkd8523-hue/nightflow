@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 const TIERS = [
-  { name: "弘大ウォークインフレンドリー", price: "₩300,000–600,000", perPerson: "一人 ₩50,000–100,000 (6人)", desc: "小規模クラブ、ヒップホップ/K-POPフォーカス、厳格なドアポリシーなし。Club Dokkaebi、Sabotage、Purple。" },
+  { name: "弘大ウォークインフレンドリー", price: "₩400,000–600,000", perPerson: "一人 ₩70,000–100,000 (6人)", desc: "小規模クラブ、ヒップホップ/K-POPフォーカス、厳格なドアポリシーなし。Club Dokkaebi、Sabotage、Purple。" },
   { name: "江南メインVIP", price: "₩750,000–1,500,000", perPerson: "一人 ₩150,000–300,000 (4–6人)", desc: "EDMメガクラブ、プライムテーブル、フルボトルサービス。Club ACE、Massive、Club Pop。" },
   { name: "狎鴎亭プレミアムラウンジ", price: "₩2,000,000+", perPerson: "一人 ₩400,000+ (4–6人)", desc: "高級ラウンジ、シャンパン文化、独占的な客層。Core Lounge、Club Arzu、DM Seoul。" },
 ];
