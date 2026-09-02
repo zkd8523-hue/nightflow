@@ -16,10 +16,6 @@ import { pinFeatured } from "@/lib/clubs/foreignSort";
 import { trackForeignEvent, trackEvent } from "@/lib/analytics/events";
 import { useSavedClubs } from "@/lib/clubs/savedClubs";
 
-// 예산 가산 버튼. 절대값 목록으로 두면 최댓값이 천장처럼 읽혀 그 이상을 안 적는다 —
-// 가산이라 계속 누르면 무한히 올라간다. 빈칸일 때 첫 클릭은 지역 하한부터 시작.
-const BUDGET_PRESETS = [100000, 300000];
-
 // ₩400k / ₩1.5M / ₩40만 — 자릿수가 커지면 k가 길어져 읽기 어렵다.
 function fmtWon(amount: number, lang: Lang): string {
   if (lang === "ko") return `₩${amount / 10000}만`;
@@ -55,13 +51,22 @@ const MAX_CLUBS = 3;
 const AREAS = ["이태원", "강남", "홍대", "서울 어디든"];
 // 지역별 최소 예산(총액). 강남은 메인 VIP·보틀 단가가 높아 40만으로는 성사가 안 된다
 // (MD가 자리를 못 잡아 왕복만 늘고 결국 무산). "서울 어디든"은 강남 포함이라 상한을 따른다.
-const AREA_MIN_BUDGET: Record<string, number> = {
-  "강남": 1000000,
-  "서울 어디든": 1000000,
-  "이태원": 400000,
-  "홍대": 400000,
+// 지역별 예산 3단. 첫 값이 곧 그 지역의 하한이다(= START).
+// 등급 라벨을 붙이면 최댓값이 "천장"이 아니라 "최상위 등급"으로 읽혀서,
+// 절대값이면서도 그 이상을 직접 적는 걸 막지 않는다.
+const AREA_BUDGET_TIERS: Record<string, number[]> = {
+  "강남": [1000000, 1500000, 2500000],
+  "서울 어디든": [1000000, 1500000, 2500000],
+  "이태원": [400000, 800000, 1500000],
+  "홍대": [400000, 800000, 1500000],
 };
-const FALLBACK_MIN_BUDGET = 400000;
+const FALLBACK_BUDGET_TIERS = [400000, 800000, 1500000];
+const BUDGET_TIER_LABELS = ["VIP", "VVIP", "SVIP"] as const;
+
+const AREA_MIN_BUDGET: Record<string, number> = Object.fromEntries(
+  Object.entries(AREA_BUDGET_TIERS).map(([area, tiers]) => [area, tiers[0]])
+);
+const FALLBACK_MIN_BUDGET = FALLBACK_BUDGET_TIERS[0];
 const CONTACT_TYPES = ["whatsapp", "instagram", "email", "wechat", "line"] as const;
 type ContactType = (typeof CONTACT_TYPES)[number];
 const CONTACT_LABEL: Record<ContactType, string> = {
@@ -184,6 +189,10 @@ export function ForeignRequestForm({
     return { amount: topAmount, area: top };
   })();
   const minBudget = budgetFloor.amount;
+  // 버튼에 쓸 3단 값 — 하한을 만든 지역 기준.
+  const budgetTiers = budgetFloor.area
+    ? (AREA_BUDGET_TIERS[budgetFloor.area] ?? FALLBACK_BUDGET_TIERS)
+    : FALLBACK_BUDGET_TIERS;
 
   // "Gangnam VIP starts at ₩1,000,000" — 지역을 모르면 지역명 없이 표현.
   const minBudgetNotice = (() => {
@@ -781,36 +790,31 @@ export function ForeignRequestForm({
           </div>
         )}
         <div className="grid grid-cols-4 gap-1.5 mt-2">
-          {/* 첫 버튼 = 시작점(지역 하한). 빈칸에서 뭘 적어야 할지 모르는 사람의 진입구. */}
-          <button
-            type="button"
-            onClick={() => setBudget(minBudget.toLocaleString("en-US"))}
-            className="h-10 px-0 rounded-lg bg-card border border-border text-foreground/80 hover:bg-muted hover:text-foreground hover:border-amber-500/50 font-bold text-[11px] leading-tight transition-colors flex flex-col items-center justify-center gap-0"
-          >
-            <span className="text-[9px] font-black tracking-wider text-muted-foreground uppercase">
-              {t("시작", "Start", "開始", "起步", "起步")}
-            </span>
-            <span className="text-[13px]">{fmtWon(minBudget, lang)}</span>
-          </button>
-          {/* 나머지 = 가산. 상한이 없어야 하한보다 위를 적는 사람이 나온다. */}
-          {BUDGET_PRESETS.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              onClick={() =>
-                setBudget(
-                  // 빈칸에서 가산부터 누르면 하한 미달이 되므로 하한을 기준으로 올린다.
-                  (budgetAmount() > 0
-                    ? budgetAmount() + preset
-                    : minBudget + preset
-                  ).toLocaleString("en-US")
-                )
-              }
-              className="h-10 px-0 rounded-lg bg-card border border-border text-foreground/80 hover:bg-muted hover:text-foreground hover:border-amber-500/50 font-bold text-[13px] transition-colors"
-            >
-              {`+${fmtWon(preset, lang)}`}
-            </button>
-          ))}
+          {/* 등급별 절대값. 라벨이 있어 최댓값이 상한이 아니라 최상위 등급으로 읽힌다. */}
+          {budgetTiers.map((amount, i) => {
+            const active = budgetAmount() === amount;
+            return (
+              <button
+                key={amount}
+                type="button"
+                onClick={() => setBudget(amount.toLocaleString("en-US"))}
+                className={`h-11 px-0 rounded-lg border font-bold leading-tight transition-colors flex flex-col items-center justify-center gap-0 ${
+                  active
+                    ? "bg-inverse text-inverse-foreground border-transparent"
+                    : "bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground hover:border-amber-500/50"
+                }`}
+              >
+                <span
+                  className={`text-[9px] font-black tracking-wider ${
+                    active ? "opacity-70" : "text-muted-foreground"
+                  }`}
+                >
+                  {BUDGET_TIER_LABELS[i]}
+                </span>
+                <span className="text-[13px]">{fmtWon(amount, lang)}</span>
+              </button>
+            );
+          })}
           <button
             type="button"
             onClick={() => {
