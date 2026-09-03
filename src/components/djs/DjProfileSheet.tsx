@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { BadgeCheck, Heart } from "lucide-react";
+import { BadgeCheck, ChevronDown, Heart, Instagram } from "lucide-react";
 import { GENRE_LABEL, type DjGenre } from "@/lib/djCup/fetchTasteReport";
+import { usableDjArtwork, youtubeThumbnailUrl } from "@/lib/djCup/types";
+import { youtubeVideoId } from "@/lib/lineups/youtubeUrl";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
 import { getBusinessDateISO } from "@/lib/lineups/time";
@@ -78,6 +80,10 @@ function DjProfileBody({
 }) {
   const [plays, setPlays] = useState<PlayRow[] | null>(null);
   const [past, setPast] = useState<PlayRow[]>([]);
+  /* 지난 플레이는 접힌 채로 시작한다 — 예정 라인업이 첫 화면에 남아야 한다.
+     시트는 DJ가 바뀔 때마다 key로 새로 마운트되므로(부모의 key={dj.id})
+     다른 DJ를 열면 자동으로 다시 접힌다. */
+  const [pastOpen, setPastOpen] = useState(false);
   // 프로필 페이지에만 있던 값들 — 시트에서도 같은 걸 보여준다(페이지 이동 없이)
   const [profile, setProfile] = useState<{
     photo_url: string | null;
@@ -85,6 +91,11 @@ function DjProfileBody({
     verified: boolean;
     favoriteCount: number;
     genre: string | null;
+    /** 사클 아트워크 — photo_url이 비어 있을 때의 실질적 프로필 사진 */
+    artwork_url: string | null;
+    /** 미리듣기 소스. 호출부 prop이 비어도 여기서 채운다 */
+    soundcloud_url: string | null;
+    youtube_url: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -107,7 +118,9 @@ function DjProfileBody({
           .limit(30),
         supabase
           .from("djs")
-          .select("photo_url, bio, claimed_by_user_id, genre")
+          .select(
+            "photo_url, bio, claimed_by_user_id, genre, soundcloud_artwork_url, soundcloud_url, youtube_url"
+          )
           .eq("id", dj.id)
           .maybeSingle(),
         supabase
@@ -124,6 +137,9 @@ function DjProfileBody({
         verified: !!djRow?.claimed_by_user_id,
         favoriteCount: favCount ?? 0,
         genre: djRow?.genre ?? null,
+        artwork_url: djRow?.soundcloud_artwork_url ?? null,
+        soundcloud_url: djRow?.soundcloud_url ?? null,
+        youtube_url: djRow?.youtube_url ?? null,
       });
 
       type Raw = {
@@ -187,6 +203,25 @@ function DjProfileBody({
     };
   }, [dj]);
 
+  // 운영자가 올린 photo_url 우선, 없으면 사클 아트워크 → 유튜브 썸네일.
+  // photo_url은 사실상 거의 비어 있어(운영자 등록 데이터라 사진을 안 넣는다)
+  // 이 폴백이 없으면 사클·유튜브가 멀쩡히 있는 DJ도 전부 이니셜로 떨어진다.
+  //
+  // ⚠️ usableDjArtwork를 반드시 통과시킨다: next.config.ts remotePatterns에
+  // 없는 호스트를 <Image src>로 넘기면 렌더 시점 예외가 나고 에러 바운더리가
+  // 화면을 통째로 덮는다(onError로도 못 잡는다 — djCup/types.ts 주석 참조).
+  // photo_url은 우리 스토리지(*.supabase.co)라 그 검증 대상이 아니다.
+  const ytVideoId = youtubeVideoId(profile?.youtube_url ?? dj.youtube_url);
+  const avatarUrl =
+    profile?.photo_url ??
+    usableDjArtwork(profile?.artwork_url) ??
+    (ytVideoId ? usableDjArtwork(youtubeThumbnailUrl(ytVideoId)) : null);
+
+  // 미리듣기 소스는 DB 값을 우선한다 — 호출부(DjLineupRow 등)가 prop으로
+  // 안 넘겨주는 화면이 있어서, prop에만 기대면 버튼이 조용히 사라진다.
+  const previewSoundcloud = profile?.soundcloud_url ?? dj.soundcloud_url;
+  const previewYoutube = profile?.youtube_url ?? dj.youtube_url;
+
   return (
     <>
             {/* 제목은 화면에 안 보이고 스크린 리더용 — 패딩 없는 헤더로 자리를 안 먹게 */}
@@ -198,9 +233,9 @@ function DjProfileBody({
                 여기서 다 보게 한다(라인업을 훑던 흐름이 안 끊긴다). */}
             <div className="flex items-start gap-3">
               <div className="relative w-16 h-16 rounded-full overflow-hidden bg-muted shrink-0 ring-2 ring-border">
-                {profile?.photo_url ? (
+                {avatarUrl ? (
                   <Image
-                    src={profile.photo_url}
+                    src={avatarUrl}
                     alt={dj.display_name}
                     fill
                     sizes="64px"
@@ -230,6 +265,21 @@ function DjProfileBody({
                       {dj.display_name}
                     </p>
                   )}
+                  {/* 인스타는 이름 바로 옆이다 — DJ를 확인하러 나가는 곳이라
+                      아래 핸들 텍스트 한 줄을 차지하는 것보다 이름과 붙어 있는
+                      쪽이 눈에 먼저 들어온다. 인스타 브랜드색(분홍)으로 둬서
+                      회색 정보 텍스트가 아니라 "나가는 링크"임을 드러낸다. */}
+                  {dj.instagram && (
+                    <a
+                      href={`https://instagram.com/${dj.instagram}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${dj.display_name} 인스타그램`}
+                      className="shrink-0 inline-flex items-center justify-center p-1 -m-1 text-[#E1306C] hover:text-[#F056A0] active:scale-90 transition-all"
+                    >
+                      <Instagram className="w-[22px] h-[22px]" strokeWidth={2.25} />
+                    </a>
+                  )}
                   {profile?.verified && (
                     <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-black leading-none">
                       <BadgeCheck className="w-3 h-3" strokeWidth={2.5} />
@@ -237,16 +287,6 @@ function DjProfileBody({
                     </span>
                   )}
                 </div>
-                {dj.instagram && (
-                  <a
-                    href={`https://instagram.com/${dj.instagram}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[13px] text-muted-foreground hover:text-foreground/80 truncate transition-colors block mt-0.5"
-                  >
-                    @{dj.instagram}
-                  </a>
-                )}
                 {/* 장르 해시태그 (Migration 616). 핸들 아래가 비어 있어 이름 블록이
                     허전했다 — 클럽 태그로 추정한 값도 섞여 있으므로 단정적인
                     문장 대신 태그 형태로 가볍게 둔다. */}
@@ -277,8 +317,8 @@ function DjProfileBody({
                 "이 DJ가 어떤 음악인지"를 보러 온 것이라 플레이어를 바로 편다. */}
             {!hidePreview && (
               <DjPreviewButton
-                soundcloudUrl={dj.soundcloud_url}
-                youtubeUrl={dj.youtube_url}
+                soundcloudUrl={previewSoundcloud}
+                youtubeUrl={previewYoutube}
                 djName={dj.display_name}
                 variant="inline"
                 autoOpen
@@ -300,13 +340,29 @@ function DjProfileBody({
             </div>
 
             {/* 예정이 없는 DJ는 시트가 텅 비어 "정보가 없는 사람"처럼 보인다 —
-                지난 플레이가 그 자리를 채워 어디서 뛰던 사람인지 알려준다. */}
+                지난 플레이가 그 자리를 채워 어디서 뛰던 사람인지 알려준다.
+                다만 최대 20건이라 펼친 채로 두면 정작 중요한 "예정된 라인업"이
+                위로 밀려 스크롤해야 보인다 — 접어두고 필요할 때만 편다.
+                건수를 라벨에 박아 열지 않고도 이력의 두께가 보이게 한다. */}
             {past.length > 0 && (
               <div className="mt-5">
-                <p className="text-[11px] font-bold text-muted-foreground mb-2">
-                  지난 플레이
-                </p>
-                <DjLedShowList rows={past} emptyLabel="" onItemClick={onClose} />
+                <button
+                  type="button"
+                  onClick={() => setPastOpen((v) => !v)}
+                  aria-expanded={pastOpen}
+                  className="w-full flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  지난 플레이 {past.length}
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform ${pastOpen ? "rotate-180" : ""}`}
+                    aria-hidden="true"
+                  />
+                </button>
+                {pastOpen && (
+                  <div className="mt-2">
+                    <DjLedShowList rows={past} emptyLabel="" onItemClick={onClose} />
+                  </div>
+                )}
               </div>
             )}
     </>

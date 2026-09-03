@@ -1,17 +1,39 @@
 import Link from "next/link";
-import Image from "next/image";
+import { youtubeVideoId } from "@/lib/lineups/youtubeUrl";
+import { usableDjArtwork, youtubeThumbnailUrl } from "@/lib/djCup/types";
+import { DjRankingAvatar } from "@/components/djcup/DjRankingAvatar";
 
 export interface DjCupRankingRow {
   dj_id: string;
   display_name: string;
   slug: string;
   artwork_url: string | null;
+  /** 사클 아트워크가 없을 때 썸네일을 조립할 원본 (Migration 627) */
+  youtube_url: string | null;
   champion_count: number;
   win_count: number;
   appear_count: number;
   champion_rate: number | null;
   win_rate: number | null;
   total_plays: number;
+}
+
+/**
+ * 행에 실제로 그릴 이미지 주소. DjCupCard와 같은 규약이다 —
+ * 사클 아트워크 우선, 없으면 유튜브 썸네일, 둘 다 없으면 null(이니셜).
+ *
+ * 해외 스타 DJ(Alan Walker·Solomun·Peggy Gou 등)는 사클 계정 없이 유튜브
+ * 대표곡 URL만 있어서, 폴백이 없으면 상위권이 통째로 이니셜 글자로 나온다.
+ *
+ * usableDjArtwork를 반드시 통과시킨다: next.config.ts remotePatterns에 없는
+ * 호스트를 <Image src>에 넘기면 렌더 시점에 예외가 나고 에러 바운더리가
+ * 페이지를 통째로 덮는다(onError로도 못 잡는다 — types.ts 주석 참조).
+ */
+function rowArtwork(row: DjCupRankingRow): string | null {
+  const sc = usableDjArtwork(row.artwork_url);
+  if (sc) return sc;
+  const videoId = youtubeVideoId(row.youtube_url);
+  return videoId ? usableDjArtwork(youtubeThumbnailUrl(videoId)) : null;
 }
 
 /**
@@ -67,20 +89,14 @@ export function DjCupRankingTable({ rows }: { rows: DjCupRankingRow[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => (
+          {rows.map((row, i) => {
+            const artwork = rowArtwork(row);
+            return (
             <tr key={row.dj_id} className="border-b border-border hover:bg-card/50 transition-colors">
               <td className="py-2 pl-1 pr-2 font-bold text-muted-foreground tabular-nums">{i + 1}</td>
               <td className="py-2 pr-2 pl-0 max-w-0 w-full">
                 <Link href={`/dj/${row.slug}`} className="flex items-center gap-3 group min-w-0">
-                  <span className="relative w-[54px] h-[72px] overflow-hidden shrink-0 bg-[#1C1C1E]">
-                    {row.artwork_url ? (
-                      <Image src={row.artwork_url} alt="" fill sizes="54px" className="object-cover" />
-                    ) : (
-                      <span className="absolute inset-0 flex items-center justify-center text-[20px] font-black text-white/70">
-                        {row.display_name.trim().charAt(0).toUpperCase() || "?"}
-                      </span>
-                    )}
-                  </span>
+                  <DjRankingAvatar src={artwork} displayName={row.display_name} />
                   <span className="font-bold text-foreground truncate group-hover:text-amber-400 transition-colors">
                     {row.display_name}
                   </span>
@@ -105,7 +121,8 @@ export function DjCupRankingTable({ rows }: { rows: DjCupRankingRow[] }) {
                 )}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

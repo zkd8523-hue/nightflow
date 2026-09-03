@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Disc3, ThumbsUp, Heart, Search, X, CalendarDays, ChevronRight } from "lucide-react";
+import { Disc3, ThumbsUp, Heart, Search, X, CalendarDays, ChevronRight, Play } from "lucide-react";
 import { formatBusinessMin } from "@/lib/lineups/time";
+import { youtubeVideoId } from "@/lib/lineups/youtubeUrl";
+import { GENRE_LABEL, type DjGenre } from "@/lib/djCup/fetchTasteReport";
 import { splitLineupDate, isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
@@ -15,6 +17,7 @@ import { performerMatchesQuery } from "@/lib/search/performerMatch";
 import { useFavoritesContext, useDjFavoritesContext } from "@/components/providers";
 import { DjFavoriteButton } from "@/components/djs/DjFavoriteButton";
 import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
+import { ClubLineupSheet } from "@/components/lineups/ClubLineupSheet";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 import { useLineupLikes } from "@/hooks/useLineupLikes";
 import { DjDiscoveryCard, type DiscoveryDj } from "@/components/lineups/DjDiscoveryCard";
@@ -32,6 +35,8 @@ export interface LineupSetRef {
     instagram: string | null;
     soundcloud_url: string | null;
     youtube_url: string | null;
+    /** Migration 616 대분류. 약 절반이 비어 있어 있을 때만 태그를 그린다. */
+    genre: string | null;
     /** dj_aliases의 다른 표기들 — 검색에만 쓰고 화면에는 안 뿌린다 */
     aliases: string[];
   } | null;
@@ -105,6 +110,9 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
   const [dateOpen, setDateOpen] = useState(false);
   // 프로필 시트에 띄울 DJ (null이면 닫힘)
   const [profileDj, setProfileDj] = useState<DjProfileTarget | null>(null);
+  /* 클럽 탭에서 카드를 누르면 뜨는 타임테이블 시트 — 목록이 이미 들고 있는
+     row를 그대로 넘기므로 추가 조회가 없다. */
+  const [lineupRow, setLineupRow] = useState<LineupClubRow | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // 찜은 "필터"가 아니라 "정렬 우선순위"다 — 하트한 것이 날짜 그룹 안에서 위로 올라올 뿐,
@@ -521,6 +529,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
                       key={`${r.club_id}-${r.event_date}`}
                       row={r}
                       like={getLike(r.id)}
+                      onOpen={setLineupRow}
                     />
                   ))}
                 </div>
@@ -559,6 +568,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
       </div>
 
       <DjProfileSheet dj={profileDj} onClose={() => setProfileDj(null)} />
+      <ClubLineupSheet row={lineupRow} onClose={() => setLineupRow(null)} />
       <LineupReportSheet open={reportOpen} onOpenChange={setReportOpen} variant="lineup" />
     </div>
   );
@@ -584,9 +594,11 @@ function DateHeader({ date }: { date: string }) {
 function ClubLineupRow({
   row,
   like,
+  onOpen,
 }: {
   row: LineupClubRow;
   like: { count: number; likedByMe: boolean };
+  onOpen: (row: LineupClubRow) => void;
 }) {
   const { isFavorited, toggleFavorite } = useFavoritesContext();
   const { isFavoritedDj } = useDjFavoritesContext();
@@ -598,9 +610,14 @@ function ClubLineupRow({
   >[];
 
   return (
-    <Link
-      href={`/clubs/${row.club_id}/lineup/${row.event_date}`}
-      className="flex items-center gap-3 bg-[#1C1C1E] rounded-2xl p-3 hover:bg-[#232326] transition-colors"
+    /* 페이지로 나가지 않고 시트로 연다 — 목록을 훑는 흐름에서 매번 튕겨나갔다
+       돌아오면 스크롤 위치와 맥락이 끊긴다. 상세 페이지
+       (/clubs/{id}/lineup/{date})는 SEO 본진이자 공유 착지점이라 그대로 두고,
+       시트 안의 "전체 페이지로 보기"로 건너간다. */
+    <button
+      type="button"
+      onClick={() => onOpen(row)}
+      className="w-full text-left flex items-center gap-3 bg-[#1C1C1E] rounded-2xl p-3 hover:bg-[#232326] transition-colors"
     >
       {/* 클럽 찜 하트는 썸네일 위에 얹는다 — "이 클럽을 찜"이라는 대상이 그림으로 명백해지고,
           오른쪽에는 그날 셋 좋아요(🔥)가 들어와 둘이 헷갈리지 않는다. */}
@@ -618,22 +635,31 @@ function ClubLineupRow({
             <Disc3 className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           </span>
         )}
-        {/* 행 전체가 링크라 기본 동작을 막아야 상세로 안 넘어간다 */}
-        <button
+        {/* 행 전체가 버튼이라 stopPropagation 으로 시트가 같이 열리는 걸 막는다.
+            <button> 안에 <button>을 넣으면 HTML 위반이라 하이드레이션이 깨지므로
+            role="button" 인 span 으로 둔다(키보드 조작은 onKeyDown 으로 유지). */}
+        <span
+          role="button"
+          tabIndex={0}
           onClick={(e) => {
+            e.stopPropagation();
+            toggleFavorite(row.club_id);
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" && e.key !== " ") return;
             e.preventDefault();
             e.stopPropagation();
             toggleFavorite(row.club_id);
           }}
           aria-label={`${row.club_name} ${favorited ? "찜 해제" : "찜하기"}`}
-          className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-black/85 ring-1 ring-white/25 transition-transform active:scale-90"
+          className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-black/85 ring-1 ring-white/25 transition-transform active:scale-90 cursor-pointer"
         >
           <Heart
             className={`w-[11px] h-[11px] transition-colors ${
               favorited ? "text-red-500 fill-red-500" : "text-white"
             }`}
           />
-        </button>
+        </span>
       </span>
 
       <div className="min-w-0 flex-1">
@@ -684,7 +710,7 @@ function ClubLineupRow({
       )}
 
       <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" aria-hidden="true" />
-    </Link>
+    </button>
   );
 }
 
@@ -702,7 +728,18 @@ function DjLineupRow({
       display_name: row.dj.display_name,
       instagram: row.dj.instagram,
       slug: row.dj.slug,
+      // 시트가 DB에서 다시 읽긴 하지만, 넘겨주면 조회 완료 전에도 미리듣기가
+      // 바로 뜬다(시트를 여는 순간 재생 버튼이 늦게 나타나는 깜빡임 방지).
+      soundcloud_url: row.dj.soundcloud_url,
+      youtube_url: row.dj.youtube_url,
     });
+
+  // 재생 가능한 소스가 있는 DJ만 표시한다 — DJ컵 후보 필터와 같은 규약
+  // (유튜브 "채널" URL은 임베드가 막혀 있어 영상 ID가 없으면 재생 불가).
+  const playable = !!row.dj.soundcloud_url || youtubeVideoId(row.dj.youtube_url) !== null;
+  // DB에 CHECK 제약이 걸려 있지만(Migration 616) 라벨에 없는 값이 오면
+  // "#undefined"가 되므로 매핑에 있을 때만 그린다.
+  const genreLabel = GENRE_LABEL[row.dj.genre as DjGenre] ?? null;
 
   return (
     /* 이니셜 원은 두지 않는다 — DJ는 프로필 사진이 없는 운영자 등록 데이터라
@@ -717,10 +754,27 @@ function DjLineupRow({
       className="w-full flex items-center gap-3 px-3 py-2.5 border-b border-white/5 last:border-0 text-left hover:bg-white/[0.03] transition-colors"
     >
       <div className="min-w-0 flex-1">
-        <span className="truncate text-sm font-bold text-foreground block">{row.dj.display_name}</span>
-        <p className="text-[11px] text-muted-foreground truncate">
-          {row.club_name}
-          {row.club_area ? ` · ${row.club_area}` : ""}
+        {/* 장르는 이름 바로 옆이다 — "누가 트는지"와 "어떤 음악인지"는 같이 읽히는
+            정보라 붙여둔다. 약 절반은 값이 없고 일부는 클럽 태그에서 추정한
+            값이라(genre_source='club'), 프로필 시트와 같은 규약으로 단정적인
+            문장 대신 가벼운 해시태그로 둔다.
+            이름은 truncate, 태그는 shrink-0 — 긴 이름이 와도 태그가 안 밀린다. */}
+        <span className="flex items-baseline gap-1.5 min-w-0">
+          <span className="truncate text-sm font-bold text-foreground">{row.dj.display_name}</span>
+          {genreLabel && (
+            <span className="shrink-0 text-[10.5px] font-bold text-muted-foreground/70">
+              #{genreLabel}
+            </span>
+          )}
+        </span>
+        {/* 클럽명과 지역을 명도로 가른다 — 같은 회색이면 "Cakeshop 이태원"이
+            한 덩어리로 뭉쳐 읽힌다. 클럽 탭(ClubLineupRow)이 이미 쓰는 규약
+            그대로: 이름은 밝게, 지역은 한 단계 흐리게. */}
+        <p className="text-[11px] truncate">
+          <span className="text-foreground/70">{row.club_name}</span>
+          {row.club_area && (
+            <span className="text-muted-foreground/60"> · {row.club_area}</span>
+          )}
         </p>
       </div>
 
@@ -728,6 +782,16 @@ function DjLineupRow({
         <span className="text-[11px] font-mono text-muted-foreground flex-shrink-0">
           {formatBusinessMin(row.start_min)}
         </span>
+      )}
+
+      {/* "이 DJ는 들어볼 수 있다"는 표시 — LineupSetTable과 같은 규약
+          (행 오른쪽 끝, 회색 채운 삼각형). 여기서 따로 시트를 열지 않는다:
+          행 전체가 프로필 시트를 열고 그 안에서 플레이어가 바로 펴진다. */}
+      {playable && (
+        <Play
+          className="w-3.5 h-3.5 shrink-0 fill-current text-muted-foreground"
+          aria-label="미리듣기 가능"
+        />
       )}
 
       <span onClick={(e) => e.stopPropagation()}>
