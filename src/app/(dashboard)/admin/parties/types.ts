@@ -61,11 +61,20 @@ export interface PartyOfferRow {
   mds_offering: number;
 }
 
-// admin_get_club_party_members RPC (Migration 556) 반환 행.
+// admin_get_club_party_members RPC (Migration 556 + 628 + 629) 반환 행.
+// 629부터 방장 혼자인 빈 파티는 반환되지 않는다.
 export interface ClubPartyMemberRow {
   puzzle_id: string;
   puzzle_status: string;
   puzzle_created_at: string;
+  event_date: string | null;
+  budget_per_person: number | null;
+  total_budget: number | null;
+  target_count: number | null;
+  current_count: number | null;
+  msg_count: number;
+  last_msg_at: string | null;
+  last_msg_sender: string | null;
   user_id: string;
   display_name: string;
   member_status: "참여중" | "나감" | "추방됨";
