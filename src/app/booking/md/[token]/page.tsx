@@ -18,7 +18,7 @@ export default async function BookingMdPage({
 
   const { data: conf } = await sb
     .from("booking_confirmations")
-    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, request_id")
+    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, request_id, md_checked_in_at")
     .eq("md_token", token)
     .maybeSingle();
 
@@ -49,8 +49,10 @@ export default async function BookingMdPage({
 
   return (
     <BookingPassMd
+      mdToken={token}
       requestId={conf.request_id}
       refNo={conf.ref_no}
+      checkedInAt={conf.md_checked_in_at}
       guestName={req.guest_name}
       eventDate={req.event_date}
       groupSize={conf.confirmed_group_size ?? req.group_size}

@@ -29,6 +29,8 @@ type Props = {
   guestRequest: string | null;
   hostName: string | null;
   arrivedPings: string[];
+  mdToken: string;
+  checkedInAt: string | null;
 };
 
 function fmtDateKo(iso: string): string {
@@ -38,7 +40,53 @@ function fmtDateKo(iso: string): string {
 }
 
 export function BookingPassMd(p: Props) {
-  const [step, setStep] = useState<"idle" | "confirm" | "done">("idle");
+  // 손님이 실제로 "I'm here"를 보낸 적 있는지 — 없는데 체크인하면 서버가 경고
+  // SMS를 관리자+MD에게 보낸다(허위/실수 클릭 방지용 로그, 차단은 아니다).
+  const hasArrivedPing = p.arrivedPings.includes("arrived");
+  const [step, setStep] = useState<"idle" | "confirm" | "done">(
+    p.checkedInAt ? "done" : "idle"
+  );
+  const [busy, setBusy] = useState(false);
+  const [warned, setWarned] = useState(false);
+  const [checkErr, setCheckErr] = useState<string | null>(null);
+
+  const doCheckin = async () => {
+    setBusy(true);
+    setCheckErr(null);
+    try {
+      const res = await fetch("/api/md-checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "checkin", md_token: p.mdToken }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setWarned(!!json.warned);
+        setStep("done");
+      } else {
+        setCheckErr("Could not save. Please try again.");
+      }
+    } catch {
+      setCheckErr("Could not save. Please try again.");
+    }
+    setBusy(false);
+  };
+
+  const doUndo = async () => {
+    setBusy(true);
+    try {
+      await fetch("/api/md-checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "undo", md_token: p.mdToken }),
+      });
+    } catch {
+      // 실패해도 로컬은 되돌린다 — 어차피 다시 체크인하면 서버 상태도 맞춰진다.
+    }
+    setStep("idle");
+    setWarned(false);
+    setBusy(false);
+  };
 
   const Row = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <div className="flex gap-3 py-2.5 border-t border-border/60 first:border-t-0">
@@ -155,14 +203,21 @@ export function BookingPassMd(p: Props) {
             {!p.cancelled && (
               <div className="mt-4 pt-3.5 border-t border-border">
                 {step === "done" ? (
-                  <div className="flex items-center gap-2 h-12 rounded-xl bg-green-500/10 border border-green-500/30 px-4">
-                    <Check className="w-4 h-4 text-money shrink-0" />
-                    <span className="text-[13.5px] font-bold text-money">
-                      입장 완료 · 메시지 전송됨
+                  <div
+                    className={`flex items-center gap-2 h-12 rounded-xl border px-4 ${
+                      warned
+                        ? "bg-amber-500/10 border-amber-500/30"
+                        : "bg-green-500/10 border-green-500/30"
+                    }`}
+                  >
+                    <Check className={`w-4 h-4 shrink-0 ${warned ? "text-brand-amber" : "text-money"}`} />
+                    <span className={`text-[13.5px] font-bold ${warned ? "text-brand-amber" : "text-money"}`}>
+                      {warned ? "입장 완료 (도착 신호 없음 · 운영자 확인중)" : "입장 완료"}
                     </span>
                     <button
-                      onClick={() => setStep("idle")}
-                      className="ml-auto h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-muted-foreground"
+                      onClick={doUndo}
+                      disabled={busy}
+                      className="ml-auto h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-muted-foreground disabled:opacity-50"
                     >
                       취소
                     </button>
@@ -170,23 +225,31 @@ export function BookingPassMd(p: Props) {
                 ) : step === "confirm" ? (
                   <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.06] p-3.5">
                     <p className="text-[13px] leading-relaxed text-foreground/90 mb-3">
-                      입장 완료를 누르시면 고객과 나이트플로우에 완료 메시지가 전송돼요.
+                      입장 완료를 누르시면 나이트플로우에 기록돼요.
                       확인하셨나요?
+                      {!hasArrivedPing && (
+                        <span className="block mt-1.5 text-brand-amber font-semibold">
+                          ⚠️ 아직 손님의 도착 신호가 없어요 — 그래도 처리하면 운영자에게 확인 문자가 갑니다.
+                        </span>
+                      )}
                     </p>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setStep("done")}
-                        className="flex-1 h-11 rounded-lg bg-money text-black text-[13.5px] font-bold"
+                        onClick={doCheckin}
+                        disabled={busy}
+                        className="flex-1 h-11 rounded-lg bg-money text-black text-[13.5px] font-bold disabled:opacity-50"
                       >
-                        네, 입장했어요
+                        {busy ? "처리 중…" : "네, 입장했어요"}
                       </button>
                       <button
                         onClick={() => setStep("idle")}
-                        className="w-[88px] h-11 rounded-lg border border-border text-[13.5px] font-bold text-muted-foreground"
+                        disabled={busy}
+                        className="w-[88px] h-11 rounded-lg border border-border text-[13.5px] font-bold text-muted-foreground disabled:opacity-50"
                       >
                         취소
                       </button>
                     </div>
+                    {checkErr && <p className="text-[12px] text-red-400 mt-2">{checkErr}</p>}
                   </div>
                 ) : (
                   <button
