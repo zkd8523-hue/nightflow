@@ -173,7 +173,9 @@ for (let i = 0; i < ids.length; i += 200) {
 }
 
 const targets = djs
-  .filter((d) => !d.deleted_at && !d.is_test && d.instagram && !d.soundcloud_url)
+  // 1차와 같은 규약 — 사클·유튜브 둘 다 없을 때만 조회한다.
+  // 전에는 사클만 봐서, 유튜브가 이미 있는 DJ도 계속 다시 조회하고 있었다.
+  .filter((d) => !d.deleted_at && !d.is_test && d.instagram && !d.soundcloud_url && !d.youtube_url)
   .map((d) => ({ ...d, sets: setCount.get(d.id) ?? 0 }))
   .sort((a, b) => b.sets - a.sets);
 

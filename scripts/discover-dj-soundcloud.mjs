@@ -205,15 +205,20 @@ for (let i = 0; i < ids.length; i += 200) {
 
 let targets = djs
   .filter((d) => !upcomingIds || upcomingIds.has(d.id))
-  // 사클이 없거나 유튜브가 없으면 대상 — 한 번 조회로 둘 다 챙긴다
-  .filter((d) => !d.deleted_at && !d.is_test && d.instagram && (!d.soundcloud_url || !d.youtube_url))
+  // 사클·유튜브가 둘 다 없을 때만 대상.
+  //
+  // 전에는 (!sc || !yt) 였다 — 하나만 있어도 나머지를 채우러 다시 조회했다.
+  // 미리듣기는 "들을 수 있는 링크가 하나라도 있으면" 목적을 달성하고(사클 우선,
+  // 없으면 유튜브), 이미 한쪽이 있는 DJ를 다시 보는 건 조회 104명치를 더 쓰면서
+  // 화면에 바뀌는 게 없다(사용자 결정, 2026-09-03).
+  .filter((d) => !d.deleted_at && !d.is_test && d.instagram && !d.soundcloud_url && !d.youtube_url)
   .map((d) => ({ ...d, sets: setCount.get(d.id) ?? 0 }))
   .filter((d) => d.sets >= MIN_SETS)
   .sort((a, b) => b.sets - a.sets); // 많이 나오는 DJ부터 — 중단해도 가치가 큰 순
 
 if (LIMIT > 0) targets = targets.slice(0, LIMIT);
 
-console.log(`🎯 대상 ${targets.length}명 (라인업 보유 · 인스타 있음 · SC 없음, 셋 ${MIN_SETS}회+)`);
+console.log(`🎯 대상 ${targets.length}명 (라인업 보유 · 인스타 있음 · 사클/유튜브 둘 다 없음, 셋 ${MIN_SETS}회+)`);
 console.log(`   예상 비용 약 $${(targets.length * 0.0023).toFixed(2)}\n`);
 if (targets.length === 0) process.exit(0);
 
