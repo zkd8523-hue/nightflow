@@ -774,31 +774,29 @@ function DjLineupRow({
             문장 대신 가벼운 해시태그로 둔다.
             이름은 truncate, 태그는 shrink-0 — 긴 이름이 와도 태그가 안 밀린다. */}
         <span className="flex items-baseline gap-1.5 min-w-0">
-          <span className="truncate text-sm font-bold text-foreground">{row.dj.display_name}</span>
+          <span className="truncate text-[13px] font-bold text-foreground">
+            {row.dj.display_name}
+          </span>
           {genreLabel && (
             <span className="shrink-0 text-[10.5px] font-bold text-muted-foreground/70">
               #{genreLabel}
             </span>
           )}
         </span>
-        {/* 클럽명과 지역을 명도로 가른다 — 같은 회색이면 "Cakeshop 이태원"이
-            한 덩어리로 뭉쳐 읽힌다. 클럽 탭(ClubLineupRow)이 이미 쓰는 규약
-            그대로: 이름은 밝게, 지역은 한 단계 흐리게.
-            구분자(·)는 두지 않는다 — 명도 차이가 이미 경계를 만들어서
-            점까지 넣으면 짧은 줄에 기호만 늘어난다(클럽 탭도 점 없이 간격만 쓴다). */}
-        <p className="text-[11px] truncate">
-          <span className="text-foreground/70">{row.club_name}</span>
-          {row.club_area && (
-            <span className="text-muted-foreground/60"> {row.club_area}</span>
+        {/* 발견 시트(DjDiscoveryCard)와 같은 스타일 — 클럽명·지역을 초록 LED
+            색으로 한 덩어리로 두고, 시간은 그 오른쪽에 mono/흐린 흰색으로 붙인다.
+            시간을 행 오른쪽 별도 열에 두면 시간 없는 DJ(캡션 수집분)가 많아
+            빈칸만 남는다. */}
+        <p className="text-[10px] font-bold text-[#39ff6a] truncate mt-0.5">
+          {row.club_name}
+          {row.club_area ? ` ${row.club_area}` : ""}
+          {row.start_min !== null && (
+            <span className="font-mono text-white/60 ml-1.5">
+              {formatBusinessMin(row.start_min)}
+            </span>
           )}
         </p>
       </div>
-
-      {row.start_min !== null && (
-        <span className="text-[11px] font-mono text-muted-foreground flex-shrink-0">
-          {formatBusinessMin(row.start_min)}
-        </span>
-      )}
 
       {/* "이 DJ는 들어볼 수 있다"는 표시 — LineupSetTable과 같은 규약
           (행 오른쪽 끝, 회색 채운 삼각형). 여기서 따로 시트를 열지 않는다:
