@@ -114,7 +114,7 @@ export async function sendVisitConfirmedNotification(
   });
 }
 
-async function sendSms(to: string, text: string) {
+export async function sendSms(to: string, text: string) {
   if (!SOLAPI_SENDER_NUMBER) {
     throw new Error("SOLAPI sender number is not configured");
   }

@@ -88,3 +88,70 @@ export function areaLabel(area: string, lang: Lang): string {
   if (lang === "zh-tw") return m.zhTw;
   return m.en;
 }
+
+// 언어 선택 UI 공용 상수 (푸터 LangSwitcher · 앱 첫 실행 언어 선택 게이트).
+// 각 언어 = 전용 경로 — 네이티브 타이틀·메타데이터·SEO가 심긴 페이지로 보냄.
+// href 는 순수 경로여야 함: ?lang= 를 붙이면 (main)/layout 의 isForeigner 판정에
+// 걸려 헤더·바텀네비가 통째로 사라진다.
+export const LANG_OPTIONS: { lang: Lang; label: string; href: string; flag: string }[] = [
+  { lang: "ko",    label: "한국어",      href: "/",       flag: "🇰🇷" },
+  { lang: "en",    label: "English",     href: "/en",     flag: "🇺🇸" },
+  { lang: "ja",    label: "日本語",      href: "/ja",     flag: "🇯🇵" },
+  { lang: "zh",    label: "简体中文",    href: "/zh",     flag: "🇨🇳" },
+  { lang: "zh-tw", label: "繁體中文",    href: "/zh-tw",  flag: "🇹🇼" },
+];
+
+// 기기(OS) 언어 → Lang. navigator.language 기준.
+// 미들웨어 pickForeignRoute() 와 판정이 일치해야 한다 (특히 zh-tw —
+// 서버는 번체를 구분하는데 클라이언트가 zh 로 뭉개면 /zh-tw 갔다가 /zh 로 되튕긴다).
+export function detectDeviceLang(): Lang {
+  const raw = (typeof navigator !== "undefined" ? navigator.language : "") || "en";
+  const l = raw.toLowerCase();
+  if (l.startsWith("ko")) return "ko";
+  if (l.startsWith("ja")) return "ja";
+  if (l.startsWith("zh")) {
+    // zh-TW · zh-HK · zh-Hant → 번체, 그 외 zh → 간체
+    if (l.startsWith("zh-tw") || l.startsWith("zh-hk") || l.startsWith("zh-hant")) return "zh-tw";
+    return "zh";
+  }
+  return "en"; // 그 외 전부 영어 폴백
+}
+
+// 앱에서 유저가 명시적으로 고른 언어 (localStorage, 앱 삭제 전까지 유지).
+// 기존 nf_lang_pref 는 재사용하지 않는다 — 푸터 드롭다운이 쓰기만 하고
+// 아무도 읽지 않던 좀비 키라, 과거에 눌러본 한국 유저의 값이 오염돼 있다.
+export const APP_LANG_KEY = "nf_app_lang";
+
+export function readAppLang(): Lang | null {
+  try {
+    const v = localStorage.getItem(APP_LANG_KEY);
+    return v && LANG_OPTIONS.some((o) => o.lang === v) ? (v as Lang) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeAppLang(lang: Lang): void {
+  try {
+    localStorage.setItem(APP_LANG_KEY, lang);
+  } catch {
+    /* noop — iOS 프라이빗 모드 등에서 throw */
+  }
+}
+
+// 자동 언어 리다이렉트 억제. 억제 장치가 두 곳에 이중으로 있고 저장소가 다르다:
+//   - 미들웨어: 쿠키 nf_lang_redirected (6시간)
+//   - LangAutoRedirect: sessionStorage 동일 키
+// 같은 이름이지만 서로 공유되지 않으므로 반드시 둘 다 세팅해야 한다.
+export function suppressAutoLangRedirect(): void {
+  try {
+    sessionStorage.setItem("nf_lang_redirected", "1");
+  } catch {
+    /* noop */
+  }
+  try {
+    document.cookie = "nf_lang_redirected=1; path=/; max-age=21600; samesite=lax";
+  } catch {
+    /* noop */
+  }
+}

@@ -4,6 +4,10 @@
 //
 // 실행 (반드시 nightflow 디렉토리에서, node_modules의 @supabase/supabase-js를 쓰므로):
 //   cd nightflow && node scripts/cardnews/fetch-today-lineup.mjs > /tmp/today-lineup.json
+//   node scripts/cardnews/fetch-today-lineup.mjs --date=2026-09-04 --area=홍대 > /tmp/hongdae-fri.json
+//
+// --date: 조회할 영업일(YYYY-MM-DD). 생략하면 오늘.
+// --area: club_area가 이 값과 정확히 일치하는 클럽만 남긴다(지역편 발행용). 생략하면 전체.
 //
 // 핵심 가치(카드뉴스의 존재 이유): 미리듣기 -> 라인업 확인 -> 선택 도움.
 // 그래서 soundcloud_url도 youtube_url도 없는 DJ는 통째로 버린다 —
@@ -68,6 +72,15 @@ function firstOf(v) {
   return Array.isArray(v) ? v[0] ?? null : v;
 }
 
+function parseArgs() {
+  const args = { date: null, area: null };
+  for (const arg of process.argv.slice(2)) {
+    const m = /^--(date|area)=(.+)$/.exec(arg);
+    if (m) args[m[1]] = m[2];
+  }
+  return args;
+}
+
 async function main() {
   const env = loadEnvLocal();
   const url = env.NEXT_PUBLIC_SUPABASE_URL;
@@ -77,15 +90,16 @@ async function main() {
     process.exit(1);
   }
 
+  const { date: dateArg, area: areaArg } = parseArgs();
   const supabase = createClient(url, key);
-  const today = getBusinessDateISO();
+  const today = dateArg || getBusinessDateISO();
 
   const { data, error } = await supabase
     .from("club_lineups")
     .select(
       `id, event_date, club_id, door_open_min, event_title,
-       clubs(id, name, area, thumbnail_url, is_test, status, deleted_at),
-       lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url))`
+       clubs(id, name, area, address, operating_hours, entry_fee_detail, thumbnail_url, is_test, status, deleted_at),
+       lineup_sets(start_min, end_min, sort_order, djs(id, slug, display_name, instagram, soundcloud_url, youtube_url, genre))`
     )
     .eq("event_date", today)
     .limit(200);
@@ -102,6 +116,7 @@ async function main() {
     if (club.is_test) continue;
     if (club.deleted_at) continue;
     if (club.status !== "approved") continue;
+    if (areaArg && club.area !== areaArg) continue;
 
     const allSets = (r.lineup_sets ?? [])
       .map((s) => ({ ...s, dj: firstOf(s.djs) }))
@@ -119,17 +134,30 @@ async function main() {
         youtube_url: s.dj.youtube_url,
         youtube_video_id: youtubeVideoId(s.dj.youtube_url),
         has_preview: hasPreview(s.dj),
+        // Migration 616: House/Techno/EDM/HipHop/RnB/Global 6종 중 하나 또는
+        // null(아직 수집 안 됨). 사운드클라우드 프로필에서 자동 수집한 값이라
+        // 신뢰도가 100%는 아니지만(genre_confidence 컬럼 별도 존재), 카드뉴스
+        // 해시태그(#하우스 등) 정도의 용도로는 충분하다.
+        genre: s.dj.genre,
       }));
 
-    // 클럽 포함 기준은 그대로: 미리듣기 있는 DJ가 1명도 없으면 클럽째 제외.
-    // 다만 포함된 클럽 안에서는 미리듣기 없는 DJ도 리스트업한다(배지만 다르게).
-    if (!allSets.some((s) => s.has_preview)) continue;
+    // 클럽 포함 기준: 라인업(DJ)이 있으면 포함한다. 미리듣기 유무는 안 본다.
+    //
+    // 예전엔 "미리듣기 가능한 DJ가 1명도 없으면 클럽째 제외"였는데, 실제로
+    // 그 때문에 서비스 화면과 카드뉴스의 클럽 수가 어긋났다(2026-09-03:
+    // 강남 9/3이 사이트엔 3곳인데 카드뉴스는 2곳 — Orgasm Valley가 DJ 3명
+    // 전원 링크 없어 빠짐). 사용자 확정으로 이 필터를 걷어냈다.
+    // 미리듣기 배지는 있는 DJ에만 붙으므로, 링크 없는 클럽은 배지 없이 나온다.
     const sets = allSets;
 
     clubs.push({
       lineup_id: r.id,
+      club_id: club.id,
       club_name: club.name,
       club_area: club.area,
+      club_address: club.address,
+      club_operating_hours: club.operating_hours,
+      club_entry_fee: club.entry_fee_detail,
       club_thumbnail: club.thumbnail_url,
       door_open: formatBusinessMin(r.door_open_min),
       event_title: r.event_title,
@@ -137,7 +165,25 @@ async function main() {
     });
   }
 
-  console.log(JSON.stringify({ date: today, clubs }, null, 2));
+  // 지역편은 클럽 3곳 이상일 때만 만든다(사용자 확정, 2026-09-03 —
+  // 처음엔 "이태원/홍대/강남은 무조건 지역편"이었다가, 실제로 홍대가
+  // 1클럽뿐인 날에도 지역편이 나오는 걸 보고 "모든 지역 공통 3곳 이상"
+  // 규칙으로 정정함). 미달이면 빈 결과를 그냥 안 내고 에러로 명확히
+  // 알린다 — 그래야 실수로 1~2클럽짜리 지역편을 만드는 걸 스크립트가
+  // 막아준다. 전체 발행(--area 없음)에는 이 기준을 적용하지 않는다.
+  if (areaArg && clubs.length < 3) {
+    console.error(
+      `[${areaArg}] ${today} 라인업이 있는 클럽이 ${clubs.length}곳뿐입니다 ` +
+        `(지역편 최소 기준: 3곳). 이 지역은 오늘 지역편 대상이 아닙니다.`
+    );
+    process.exit(1);
+  }
+
+  // --area로 필터링했으면 그 지역명을 출력에도 담는다 — build-cards-html.mjs가
+  // 이 최상위 area 필드를 읽어 표지 문구(지역 배지·타이틀)를 바꾼다.
+  // 예전엔 필터링에만 쓰고 출력에 안 넣어서, 실제 파이프라인으로 만든
+  // 지역편 표지가 지역명 없이 나오는 버그가 있었다(2026-09-03 발견).
+  console.log(JSON.stringify({ date: today, area: areaArg || null, clubs }, null, 2));
 }
 
 main();
