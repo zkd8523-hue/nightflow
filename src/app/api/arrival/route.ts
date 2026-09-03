@@ -53,6 +53,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "cancelled_booking" }, { status: 409 });
   }
 
+  // 예약 당일(KST)에만 허용 — 클라이언트에서 버튼을 비활성화해도 devtools로
+  // 우회 가능하니 서버에서도 같은 기준으로 다시 막는다.
+  const todayKst = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" }); // YYYY-MM-DD
+  if (reqRow.event_date !== todayKst) {
+    return NextResponse.json({ error: "not_event_day" }, { status: 403 });
+  }
+
   // 5분 쿨다운 — 완전 무제한이면 손님이 연타해 MD 폰에 문자 폭탄이 될 수 있고,
   // 아예 막으면 재확인 차 다시 보내야 할 때 방법이 없다. 같은 kind로 5분 이내
   // 발송 기록이 있으면 거부하고, 지나면 다시 보낼 수 있게 한다.

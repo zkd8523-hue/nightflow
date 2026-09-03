@@ -47,10 +47,27 @@ export default async function BookingPage({
     ? await sb.from("users").select("display_name").eq("id", req.assigned_md_id).maybeSingle()
     : { data: null };
 
+  // MD가 "입장 완료"를 눌렀는지 — 리뷰 작성 자체를 막지는 않지만, 안 눌렀을 때는
+  // 화면에 다른 안내 문구를 보여준다.
+  const { data: pings } = await sb
+    .from("arrival_pings")
+    .select("kind")
+    .eq("request_id", conf.request_id)
+    .eq("kind", "arrived");
+
+  const { data: existingReview } = await sb
+    .from("booking_reviews")
+    .select("rating, comment")
+    .eq("request_id", conf.request_id)
+    .maybeSingle();
+
   return (
     <BookingPass
+      publicToken={token}
       requestId={conf.request_id}
       refNo={conf.ref_no}
+      arrivalConfirmed={(pings ?? []).length > 0}
+      existingReview={existingReview ?? null}
       guestName={req.guest_name}
       eventDate={req.event_date}
       groupSize={conf.confirmed_group_size ?? req.group_size}
