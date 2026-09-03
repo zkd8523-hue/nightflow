@@ -777,7 +777,15 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
 }
 
 // ── Flags 탭 ─────────────────────────────────────────────────────
-function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
+function FlagsTab({
+  flags,
+  clubs,
+  openRequestCount = null,
+}: {
+  flags: FlagItem[];
+  clubs: ClubItem[];
+  openRequestCount?: number | null;
+}) {
   const { lang, tr } = useTr();
   // Sticky "Book with NightFlow" CTA: 원본 CTA(RegionSection 하단)가 화면 밖일 때만 표시.
   // 원본이 보이면 자동 숨김 (중복 UI 방지). 스크롤 컨테이너(overflow-y-auto div)를 root로 관찰.
@@ -939,6 +947,16 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
             : "opacity-0 translate-y-3"
         }`}
       >
+        {/* 신뢰 문구 — 숫자는 하드코딩이 아니라 요청 시점의 실제 열린 건수(count_open_
+            foreign_requests). 0이면 렌더 안 함: 빈 서비스처럼 보이는 게 소셜 프루프 없는
+            것보다 나쁘다. */}
+        {!!openRequestCount && (
+          <p className="text-center text-[13.5px] text-foreground mb-2.5">
+            <span className="font-bold text-amber-500 tabular-nums">{openRequestCount}</span>
+            {" "}
+            {tr("requests on-going right now")}
+          </p>
+        )}
         <Link
           href={`/flags/new?lang=${lang}`}
           tabIndex={showStickyCta ? 0 : -1}
@@ -996,20 +1014,31 @@ export function EnHomeClient({
   flags,
   clubs = [],
   initialLang = "en",
+  openRequestCount = null,
 }: {
   flags: FlagItem[];
   clubs?: ClubItem[];
   /** 서버에서 확정한 언어. Context로 하위 컴포넌트에 즉시 주입 → 첫 프레임 flash 제거. */
   initialLang?: Lang;
+  /** count_open_foreign_requests() 결과. null이면 신뢰 문구 자체를 숨긴다(0을 보여주지 않음). */
+  openRequestCount?: number | null;
 }) {
   return (
     <LangContext.Provider value={initialLang}>
-      <EnHomeInner flags={flags} clubs={clubs} />
+      <EnHomeInner flags={flags} clubs={clubs} openRequestCount={openRequestCount} />
     </LangContext.Provider>
   );
 }
 
-function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubItem[] }) {
+function EnHomeInner({
+  flags,
+  clubs = [],
+  openRequestCount = null,
+}: {
+  flags: FlagItem[];
+  clubs?: ClubItem[];
+  openRequestCount?: number | null;
+}) {
   const [tab, setTab] = useState<Tab>("flags");
   const { lang, tr } = useTr();
 
@@ -1074,7 +1103,9 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
       {/* lg: 사이드바 오른쪽 영역이 초광폭 모니터에서 끝까지 늘어나지 않도록 가운데 정렬 + 최대폭.
           4개 탭(홈/내 요청/Q&A/지도)에 공통 적용된다. */}
       <div className="flex-1 overflow-hidden flex flex-col lg:w-full lg:max-w-[1100px] lg:mx-auto">
-        {tab === "flags" && <FlagsTab flags={flags} clubs={clubs} />}
+        {tab === "flags" && (
+          <FlagsTab flags={flags} clubs={clubs} openRequestCount={openRequestCount} />
+        )}
         {tab === "my" && <MyRequestsTab />}
         {tab === "qa" && <FaqTab />}
         {tab === "map" && <MapTab />}

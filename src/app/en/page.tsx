@@ -136,6 +136,13 @@ export default async function EnHomePage() {
   const supabase = createAnonClient();
   const nowIso = new Date().toISOString();
 
+  // 신뢰 문구("5 requests on-going right now")용 실시간 카운트. foreign_requests는
+  // RLS가 본인 것·admin만 SELECT 허용이라(Migration 454) anon으로 전체 개수를 못 센다 —
+  // 행을 노출하지 않는 count_open_foreign_requests() RPC(Migration 638)로 우회한다.
+  const { data: openRequestCount } = await supabase.rpc(
+    "count_open_foreign_requests"
+  );
+
   // 깃발 캐러셀 = "🇰🇷 한국인이 올린 깃발" 소셜 프루프.
   // 테스트 유저(is_test) 제외 + 한국인(country_code NULL)만 — 외국인 본인 깃발은 My flags에 별도.
   const { data: puzzlesRaw } = await supabase
@@ -469,7 +476,12 @@ export default async function EnHomePage() {
           </li>
         </ul>
       </div>
-      <EnHomeClient flags={flags} clubs={clubs} initialLang="en" />
+      <EnHomeClient
+        flags={flags}
+        clubs={clubs}
+        initialLang="en"
+        openRequestCount={openRequestCount ?? null}
+      />
     </>
   );
 }

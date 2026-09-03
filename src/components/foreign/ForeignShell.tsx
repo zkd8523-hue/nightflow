@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Home, User, HelpCircle, Map } from "lucide-react";
 import { type Lang, makeT } from "@/lib/i18n";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
+import { createClient } from "@/lib/supabase/client";
 
 // ── 외국인 트랙 데스크톱 셸 ────────────────────────────────────────
 // 외국인 트래픽은 데스크톱 비중이 한국어(25%)의 두 배 안팎이다(ZH 63%·JA 51%·ZH-TW 39%·EN 38%).
@@ -38,6 +40,20 @@ export function ForeignSidebar({
 }) {
   const t = makeT(lang);
   const tr = (en: string) => t("", en);
+
+  // 신뢰 문구("N requests on-going right now") — 사이드바는 EnHomeClient와 별도로
+  // 여러 페이지(SEO·클럽·폼)에 박히는 공용 컴포넌트라 서버 prop을 못 받는다. anon으로도
+  // 안전한 count_open_foreign_requests() RPC(Migration 638, 행 데이터 미노출)를 직접 호출.
+  const [openRequestCount, setOpenRequestCount] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    createClient()
+      .rpc("count_open_foreign_requests")
+      .then(({ data }) => {
+        if (!cancelled) setOpenRequestCount(typeof data === "number" ? data : null);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const label = (key: ForeignNavKey) =>
     navLabels?.[key] ??
@@ -110,6 +126,13 @@ export function ForeignSidebar({
         <div className="flex justify-center">
           <LangSwitcher />
         </div>
+        {!!openRequestCount && (
+          <p className="text-center text-[13px] text-foreground">
+            <span className="font-bold text-amber-500 tabular-nums">{openRequestCount}</span>
+            {" "}
+            {tr("requests on-going right now")}
+          </p>
+        )}
         <Link
           href={`/flags/new?lang=${lang}`}
           className="block text-center py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors"
