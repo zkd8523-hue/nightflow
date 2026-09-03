@@ -71,6 +71,14 @@ interface DjRow {
 
 type Tab = "club" | "dj";
 
+/** 미리듣기가 되는 DJ인지 — DJ컵 후보 필터(isPlayableCandidate)와 같은 규약.
+ *  유튜브 "채널" URL은 임베드가 막혀 있어 영상 ID가 없으면 재생할 수 없다.
+ *  정렬(상위 노출)과 행의 ▶ 표시가 같은 기준을 써야 "위에 있는데 아이콘이
+ *  없는" 행이 안 생긴다. */
+function isPlayable(dj: { soundcloud_url: string | null; youtube_url: string | null }): boolean {
+  return !!dj.soundcloud_url || youtubeVideoId(dj.youtube_url) !== null;
+}
+
 /**
  * 클럽이 검색어에 걸리는지 — 클럽명 + 지역 + DB 별칭(clubs.aliases) + 정적 별칭(aliases.ts).
  * 매칭 규칙은 lib/search가 단독으로 쥔다(/clubs·/events와 동일).
@@ -247,6 +255,12 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
       [...list].sort((a, b) => {
         const fav = Number(isFavoritedDj(b.dj.id)) - Number(isFavoritedDj(a.dj.id));
         if (fav !== 0) return fav;
+        // 들어볼 수 있는 DJ를 날짜 안에서 위로 올린다 — 이 탭은 한 클럽의
+        // 타임테이블이 아니라 여러 클럽을 섞은 목록이라 시간순의 의미가 약하고
+        // (그래서 찜도 이미 시간보다 위다), 이름만 있는 행은 눌러도 들을 게
+        // 없어 아래에 있는 편이 낫다.
+        const play = Number(isPlayable(b.dj)) - Number(isPlayable(a.dj));
+        if (play !== 0) return play;
         // 시간이 있으면 시간순, 없으면 캡션에 적힌 순서
         if (a.start_min !== null && b.start_min !== null) return a.start_min - b.start_min;
         if (a.start_min !== null) return -1; // 시간 있는 셋을 먼저
@@ -734,9 +748,9 @@ function DjLineupRow({
       youtube_url: row.dj.youtube_url,
     });
 
-  // 재생 가능한 소스가 있는 DJ만 표시한다 — DJ컵 후보 필터와 같은 규약
-  // (유튜브 "채널" URL은 임베드가 막혀 있어 영상 ID가 없으면 재생 불가).
-  const playable = !!row.dj.soundcloud_url || youtubeVideoId(row.dj.youtube_url) !== null;
+  // 정렬(상위 노출)과 같은 판정을 쓴다 — 기준이 갈리면 위에 올라왔는데
+  // ▶ 가 없는 행이 생긴다.
+  const playable = isPlayable(row.dj);
   // DB에 CHECK 제약이 걸려 있지만(Migration 616) 라벨에 없는 값이 오면
   // "#undefined"가 되므로 매핑에 있을 때만 그린다.
   const genreLabel = GENRE_LABEL[row.dj.genre as DjGenre] ?? null;
@@ -769,11 +783,13 @@ function DjLineupRow({
         </span>
         {/* 클럽명과 지역을 명도로 가른다 — 같은 회색이면 "Cakeshop 이태원"이
             한 덩어리로 뭉쳐 읽힌다. 클럽 탭(ClubLineupRow)이 이미 쓰는 규약
-            그대로: 이름은 밝게, 지역은 한 단계 흐리게. */}
+            그대로: 이름은 밝게, 지역은 한 단계 흐리게.
+            구분자(·)는 두지 않는다 — 명도 차이가 이미 경계를 만들어서
+            점까지 넣으면 짧은 줄에 기호만 늘어난다(클럽 탭도 점 없이 간격만 쓴다). */}
         <p className="text-[11px] truncate">
           <span className="text-foreground/70">{row.club_name}</span>
           {row.club_area && (
-            <span className="text-muted-foreground/60"> · {row.club_area}</span>
+            <span className="text-muted-foreground/60"> {row.club_area}</span>
           )}
         </p>
       </div>

@@ -63,7 +63,7 @@ export function ClubLineupSheet({
                   <span className="block truncate leading-tight">{row.club_name}</span>
                   <span className="block text-[11.5px] font-bold text-muted-foreground mt-0.5">
                     {formatLineupDate(row.event_date)}
-                    {row.club_area ? ` · ${row.club_area}` : ""}
+                    {row.club_area ? ` ${row.club_area}` : ""}
                   </span>
                 </span>
               </SheetTitle>
