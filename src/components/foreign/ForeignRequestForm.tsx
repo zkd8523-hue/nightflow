@@ -14,6 +14,7 @@ import { krwToAll, formatAsOfLocale } from "@/lib/utils/currency";
 import { useKrwRates } from "@/lib/utils/useKrwRates";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
 import { trackForeignEvent, trackEvent } from "@/lib/analytics/events";
+import { getCurrentUtm } from "@/lib/analytics/userEvents";
 import { useSavedClubs } from "@/lib/clubs/savedClubs";
 
 // ₩400k / ₩1.5M / ₩40만 — 자릿수가 커지면 k가 길어져 읽기 어렵다.
@@ -491,6 +492,9 @@ export function ForeignRequestForm({
     setLoading(true);
     try {
       const supabase = createClient();
+      // 유료 광고(구글애즈 등) 채널별 전환 분석용. 새 파싱 로직 없이 세션에 이미
+      // 기록된 UTM(userEvents.ts SSOT)을 그대로 실어 보낸다.
+      const utm = getCurrentUtm();
       const { error } = await supabase.from("foreign_requests").insert({
         user_id: userId,
         lang: preferredLang,
@@ -503,6 +507,10 @@ export function ForeignRequestForm({
         contact_type: contactType,
         contact_value: contactValue.trim(),
         notes: notes.trim() || null,
+        utm_source: utm.utm_source,
+        utm_medium: utm.utm_medium,
+        utm_campaign: utm.utm_campaign,
+        landing_path: utm.landing_path,
       });
       if (error) throw error;
 

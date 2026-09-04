@@ -203,6 +203,33 @@ export function resetUserEventCache() {
 }
 
 /**
+ * 현재 세션의 유입 채널(UTM)을 읽기만 한다 — getOrRotateSession()과 같은
+ * localStorage 키를 보되, 세션을 새로 굴리거나 이벤트를 기록하지 않는다.
+ * foreign_requests INSERT처럼 "이 제출이 어느 채널에서 왔는지"만 필요한
+ * 곳에서 쓴다(예: 구글애즈 전환 채널 분석).
+ */
+export function getCurrentUtm(): {
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  landing_path: string | null;
+} {
+  try {
+    const raw = localStorage.getItem(SESSION_UTM_KEY);
+    if (!raw) return { utm_source: null, utm_medium: null, utm_campaign: null, landing_path: null };
+    const utm = JSON.parse(raw);
+    return {
+      utm_source: utm.utm_source ?? null,
+      utm_medium: utm.utm_medium ?? null,
+      utm_campaign: utm.utm_campaign ?? null,
+      landing_path: utm.landing_path ?? null,
+    };
+  } catch {
+    return { utm_source: null, utm_medium: null, utm_campaign: null, landing_path: null };
+  }
+}
+
+/**
  * user_events 테이블에 이벤트 저장. Fire-and-forget.
  * events.ts의 trackEvent()와 병렬로 자동 호출됨.
  *
