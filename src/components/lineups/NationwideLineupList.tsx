@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,6 +20,7 @@ import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfile
 import { ClubLineupSheet } from "@/components/lineups/ClubLineupSheet";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 import { useLineupLikes } from "@/hooks/useLineupLikes";
+import { useDjAliases } from "@/hooks/useDjAliases";
 import { DjDiscoveryCard, type DiscoveryDj } from "@/components/lineups/DjDiscoveryCard";
 import { hypeTier, hypeBadgeClass, hypeBadgeIconClass } from "@/lib/lineups/hypeTier";
 
@@ -37,8 +38,6 @@ export interface LineupSetRef {
     youtube_url: string | null;
     /** Migration 616 대분류. 약 절반이 비어 있어 있을 때만 태그를 그린다. */
     genre: string | null;
-    /** dj_aliases의 다른 표기들 — 검색에만 쓰고 화면에는 안 뿌린다 */
-    aliases: string[];
   } | null;
 }
 
@@ -71,6 +70,9 @@ interface DjRow {
 
 type Tab = "club" | "dj";
 
+/** 점진 렌더 한 묶음 크기. 모바일 한 화면이 카드 6~7장이라 3~4화면 분량이다. */
+const VISIBLE_STEP = 28;
+
 /** 미리듣기가 되는 DJ인지 — DJ컵 후보 필터(isPlayableCandidate)와 같은 규약.
  *  유튜브 "채널" URL은 임베드가 막혀 있어 영상 ID가 없으면 재생할 수 없다.
  *  정렬(상위 노출)과 행의 ▶ 표시가 같은 기준을 써야 "위에 있는데 아이콘이
@@ -88,6 +90,32 @@ function clubMatches(row: LineupClubRow, q: string): boolean {
     { id: row.club_id, name: row.club_name, area: row.club_area, aliases: row.club_aliases },
     q
   );
+}
+
+/**
+ * 날짜 그룹을 "카드 N장까지"로 잘라낸다 — 점진 렌더용.
+ *
+ * 왜 날짜 단위가 아니라 카드 단위인가:
+ *   금·토에 라인업이 몰려서 하루가 30~35건이다(실측). "3일치"로 끊으면 첫 화면이
+ *   그대로 60장이 넘어 자르는 의미가 없다. 카드 수로 끊어야 요일과 무관하게
+ *   초기 렌더가 일정해진다.
+ *
+ * 날짜 헤더는 그 날짜 카드가 1장이라도 남았을 때만 따라온다 — 헤더만 있고 아래가
+ * 빈 섹션이 생기면 "이 날은 라인업이 없다"로 잘못 읽힌다.
+ */
+function takeGroups<T>(
+  groups: Array<[string, T[]]>,
+  budget: number
+): { shown: Array<[string, T[]]>; total: number } {
+  const total = groups.reduce((sum, [, list]) => sum + list.length, 0);
+  const shown: Array<[string, T[]]> = [];
+  let left = budget;
+  for (const [date, list] of groups) {
+    if (left <= 0) break;
+    shown.push([date, list.slice(0, left)]);
+    left -= list.length;
+  }
+  return { shown, total };
 }
 
 /** 날짜 그룹을 순서 그대로 유지하며 묶는다(입력이 event_date 오름차순 정렬 상태). */
@@ -123,6 +151,13 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
   const [lineupRow, setLineupRow] = useState<LineupClubRow | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
+  /* 점진 렌더 — 데이터는 서버에서 전부 받지만(검색·필터·SEO 유지), 카드는
+     처음 VISIBLE_STEP장만 그리고 바닥에 닿을 때마다 이어 그린다.
+     금·토가 하루 30~35건이라 116장을 한 번에 그리면 카드마다 도는 찜 훅까지
+     같이 116번 돌아 저사양 기기에서 첫 상호작용이 늦다. */
+  const [visible, setVisible] = useState(VISIBLE_STEP);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
   // 찜은 "필터"가 아니라 "정렬 우선순위"다 — 하트한 것이 날짜 그룹 안에서 위로 올라올 뿐,
   // 하트 안 한 항목도 전부 그대로 남는다. 날짜 순서 자체는 절대 안 바뀐다.
   const { isFavorited } = useFavoritesContext();
@@ -135,6 +170,27 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
   // 목록은 숫자만 읽는다(누르는 건 상세) → 로그인 여부와 무관하게 카운트만 받아온다.
   const lineupIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const { getLike } = useLineupLikes(lineupIds, undefined);
+
+  // DJ 별칭 — 검색에만 쓰이고 화면에는 안 그려지므로 SSR에서 빼고 검색창을 열 때
+  // 받는다. 한 번 받으면 계속 들고 있으므로 검색창을 접었다 펴도 재조회가 없다.
+  const djIds = useMemo(
+    () => [
+      ...new Set(
+        rows.flatMap((r) => r.sets.map((s) => s.dj?.id).filter(Boolean) as string[])
+      ),
+    ],
+    [rows]
+  );
+  const aliasesByDj = useDjAliases(djIds, searchOpen);
+  /** 별칭까지 얹은 검색용 DJ 객체 — 별칭이 아직 안 왔으면 이름·핸들로만 매칭된다. */
+  const djSearchable = useCallback(
+    (dj: NonNullable<LineupSetRef["dj"]>) => ({
+      display_name: dj.display_name,
+      instagram: dj.instagram,
+      aliases: aliasesByDj[dj.id],
+    }),
+    [aliasesByDj]
+  );
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -184,7 +240,9 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
     const q = query;
     let searched = q
       ? filtered.filter(
-          (r) => clubMatches(r, q) || r.sets.some((s) => s.dj && performerMatchesQuery(s.dj, q))
+          (r) =>
+            clubMatches(r, q) ||
+            r.sets.some((s) => s.dj && performerMatchesQuery(djSearchable(s.dj), q))
         )
       : filtered;
 
@@ -211,7 +269,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
         return a.club_name.localeCompare(b.club_name);
       }),
     ]) as Array<[string, LineupClubRow[]]>;
-  }, [filtered, isFavorited, isFavoritedDj, query, favOnly]);
+  }, [filtered, isFavorited, isFavoritedDj, query, favOnly, djSearchable]);
 
   // 검색 실패 로깅용 — 지역·날짜·찜 칩을 빼고 "검색어만" 적용한 결과 수.
   // 탭별로 세지 않고 클럽·DJ 양쪽을 합산한다: DJ 탭에서 클럽명을 쳐서 0건인 건
@@ -221,9 +279,9 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
     return rows.filter(
       (r) =>
         clubMatches(r, query) ||
-        r.sets.some((s) => s.dj && performerMatchesQuery(s.dj, query))
+        r.sets.some((s) => s.dj && performerMatchesQuery(djSearchable(s.dj), query))
     ).length;
-  }, [rows, query]);
+  }, [rows, query, djSearchable]);
 
   useSearchMissLogger("lineups", query, queryOnlyMatchCount);
 
@@ -238,7 +296,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
         // DJ 본인(이름·핸들·별칭)으로만 검색한다.
         // 클럽명으로도 걸리게 하면 "그 클럽 소속 DJ"처럼 읽히는데, DJ는 여러 클럽에서
         // 뛰므로 사실과 다른 인상을 준다. 클럽으로 찾는 건 클럽별 탭의 역할.
-        if (!performerMatchesQuery(s.dj, q)) continue;
+        if (!performerMatchesQuery(djSearchable(s.dj), q)) continue;
         flat.push({
           event_date: r.event_date,
           start_min: s.start_min,
@@ -268,7 +326,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
         return a.sort_order - b.sort_order;
       }),
     ]) as Array<[string, DjRow[]]>;
-  }, [filtered, isFavoritedDj, query, favOnly]);
+  }, [filtered, isFavoritedDj, query, favOnly, djSearchable]);
 
   // 발견 카드에 넘길 DJ — 미리듣기(사운드클라우드)가 있는 사람만 모은다.
   // 같은 DJ가 여러 날 뛰면 가장 가까운 날 하나만 남긴다(카드에 같은 이름이
@@ -302,6 +360,43 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
   }, [rows, area]);
 
   const groupCount = tab === "club" ? clubGroups.length : djGroups.length;
+
+  // 현재 탭 기준으로 화면에 낼 만큼만 잘라둔다.
+  const clubView = useMemo(() => takeGroups(clubGroups, visible), [clubGroups, visible]);
+  const djView = useMemo(() => takeGroups(djGroups, visible), [djGroups, visible]);
+  const shownTotal = tab === "club" ? clubView.total : djView.total;
+  const hasMore = visible < shownTotal;
+
+  // 탭·검색·필터가 바뀌면 처음부터 다시 — 목록의 의미가 달라졌는데 "아래로
+  // 몇 장 더 펼친 상태"를 물려받으면 왜 이만큼 보이는지 설명이 안 된다.
+  useEffect(() => {
+    setVisible(VISIBLE_STEP);
+  }, [tab, area, activeDate, query, favOnly]);
+
+  /* 바닥 근처에 닿으면 다음 묶음을 이어 그린다.
+
+     ⚠️ 한 번 늘릴 때마다 관찰을 끊는다(io.disconnect). 늘린 직후엔 새 sentinel이
+     또 rootMargin 안에 들어와 있어서, 끊지 않으면 관찰자가 연쇄로 다시 불려
+     스크롤도 안 했는데 목록이 끝까지 펼쳐진다(실측: 28장 → 116장 전부).
+     effect가 visible 변화로 다시 돌면서 새로 붙으므로, 다음 확장은 그때 새로
+     계산된 위치를 기준으로 판정된다. */
+  useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    let done = false;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (done || !entries[0].isIntersecting) return;
+        done = true;
+        io.disconnect();
+        setVisible((v) => Math.min(v + VISIBLE_STEP, shownTotal));
+      },
+      { rootMargin: "400px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, shownTotal, visible]);
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-24">
@@ -532,7 +627,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
           </div>
         ) : tab === "club" ? (
           <div className="space-y-5">
-            {clubGroups.map(([date, list]) => (
+            {clubView.shown.map(([date, list]) => (
               <section key={date} className="space-y-2">
                 <DateHeader date={date} />
                 {/* 데스크톱은 2열 — 카드가 독립적이라 그리드로 쪼개도 안전하다.
@@ -552,7 +647,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
           </div>
         ) : (
           <div className="space-y-5">
-            {djGroups.map(([date, list]) => (
+            {djView.shown.map(([date, list]) => (
               <section key={date} className="space-y-2">
                 <DateHeader date={date} />
                 <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
@@ -566,6 +661,20 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
                 </div>
               </section>
             ))}
+          </div>
+        )}
+
+        {/* 다음 묶음을 부르는 자리. 관찰자가 안 도는 환경(구형 브라우저·자동화)에서도
+            버튼으로 끝까지 갈 수 있어야 한다 — 스크롤에만 걸면 나머지가 영영 안 보인다. */}
+        {hasMore && (
+          <div ref={sentinelRef} className="pt-1">
+            <button
+              type="button"
+              onClick={() => setVisible((v) => Math.min(v + VISIBLE_STEP, shownTotal))}
+              className="w-full py-2.5 rounded-lg text-[13px] font-bold bg-[#1C1C1E] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              더보기 ({shownTotal - visible}건 남음)
+            </button>
           </div>
         )}
 

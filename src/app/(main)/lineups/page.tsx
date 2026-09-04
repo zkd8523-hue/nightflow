@@ -99,25 +99,9 @@ export default async function LineupsPage() {
 
   const raw = (data ?? []) as unknown as RawLineupRow[];
 
-  // DJ 별칭 — 포스터 표기가 여러 개인 DJ("DJ BERMUDA" / "버뮤다")를 어느 표기로
-  // 검색해도 찾히게 한다. 화면에 뿌린 DJ만 조회하므로 목록 크기에 비례한다.
-  const djIds = [
-    ...new Set(
-      raw.flatMap((r) =>
-        (r.lineup_sets ?? []).map((s) => firstOf(s.djs)?.id).filter(Boolean) as string[]
-      )
-    ),
-  ];
-  const aliasesByDj: Record<string, string[]> = {};
-  if (djIds.length > 0) {
-    const { data: aliasRows } = await supabase
-      .from("dj_aliases")
-      .select("dj_id, alias")
-      .in("dj_id", djIds);
-    for (const a of (aliasRows ?? []) as Array<{ dj_id: string; alias: string }>) {
-      (aliasesByDj[a.dj_id] ??= []).push(a.alias);
-    }
-  }
+  // DJ 별칭(dj_aliases)은 여기서 받지 않는다 — 검색 매칭에만 쓰이고 화면에는 안
+  // 그려지는데, 위 쿼리 결과를 기다렸다 도는 순차 2단계가 되고 DJ id 수백 개를
+  // URL에 나열하게 된다. 검색창을 열 때 클라이언트가 받는다(useDjAliases).
 
   const rows: LineupClubRow[] = [];
   for (const r of raw) {
@@ -136,7 +120,7 @@ export default async function LineupsPage() {
           start_min: s.start_min,
           end_min: s.end_min,
           sort_order: s.sort_order,
-          dj: dj ? { ...dj, aliases: aliasesByDj[dj.id] ?? [] } : null,
+          dj,
         };
       })
       // 시간이 있으면 시간순, 없으면 캡션에 적힌 순서(sort_order)
