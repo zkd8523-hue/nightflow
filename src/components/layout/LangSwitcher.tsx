@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Check, ChevronDown } from "lucide-react";
-import { getLang, type Lang } from "@/lib/i18n";
+import { getLang, writeAppLang, suppressAutoLangRedirect, type Lang } from "@/lib/i18n";
 
 type LangExt = Lang | "zh-tw";
 
@@ -69,7 +69,12 @@ export function LangSwitcher() {
             <a
               key={o.lang}
               href={o.href}
-              onClick={() => { try { localStorage.setItem("nf_lang_pref", o.lang); } catch { /* noop */ } }}
+              onClick={() => {
+                // 명시적 선택은 nf_app_lang 에 영구 저장 + 자동 리다이렉트 억제.
+                // (구 nf_lang_pref 는 아무도 읽지 않던 좀비 키였고, 값도 오염돼 있어 버렸다.)
+                writeAppLang(o.lang);
+                suppressAutoLangRedirect();
+              }}
               className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
                 o.lang === current
                   ? "text-foreground bg-muted"
