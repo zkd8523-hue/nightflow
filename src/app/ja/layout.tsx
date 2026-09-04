@@ -11,11 +11,17 @@ export const metadata: Metadata = {
   description:
     "ソウルのベストクラブ予約 — 江南・弘大・梨泰院・狎鴎亭のVIPルーム。韓国語不要、本物の価格、ブローカーなし。日本人旅行者のための韓国ナイトライフ予約プラットフォーム。",
   alternates: {
+    // zh-TW/zh-Hant 누락 — zh-tw layout은 ja를 링크하는데 여기서 되돌아가는 링크가
+    // 없었다. zh/zh-tw/en과 맞춰 완전한 상호 링크로 채운다.
     languages: {
       "ja-JP": "https://nightflow.kr/ja",
       "ko-KR": "https://nightflow.kr",
       "en-US": "https://nightflow.kr/en",
       "zh-CN": "https://nightflow.kr/zh",
+      "zh-Hans": "https://nightflow.kr/zh",
+      "zh-TW": "https://nightflow.kr/zh-tw",
+      "zh-HK": "https://nightflow.kr/zh-tw",
+      "zh-Hant": "https://nightflow.kr/zh-tw",
       "x-default": "https://nightflow.kr",
     },
   },

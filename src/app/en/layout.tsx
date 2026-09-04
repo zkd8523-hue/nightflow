@@ -11,9 +11,18 @@ export const metadata: Metadata = {
   description:
     "Book Korea's best clubs in Seoul — Gangnam, Hongdae, Itaewon, Apgujeong VIP tables. No Korean needed, no broker. Korea nightlife made easy for travelers.",
   alternates: {
+    // zh/zh-tw/ja layout은 서로 + en + ko를 전부 상호 링크하는데 en만 ko만 링크했다.
+    // hreflang은 양방향이 안 맞으면 구글이 그 관계 전체를 무시할 수 있어서, 트래픽이
+    // 가장 큰(전체 세션의 절반) en 페이지가 정작 다른 언어판 존재를 신호하지 못했다.
     languages: {
       "en-US": "https://nightflow.kr/en",
       "ko-KR": "https://nightflow.kr",
+      "ja-JP": "https://nightflow.kr/ja",
+      "zh-CN": "https://nightflow.kr/zh",
+      "zh-Hans": "https://nightflow.kr/zh",
+      "zh-TW": "https://nightflow.kr/zh-tw",
+      "zh-HK": "https://nightflow.kr/zh-tw",
+      "zh-Hant": "https://nightflow.kr/zh-tw",
       "x-default": "https://nightflow.kr",
     },
   },
