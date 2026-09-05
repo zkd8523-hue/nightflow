@@ -24,6 +24,17 @@ const detectLang = (): 'ko' | 'en' | 'ja' | 'zh' | 'zh-tw' => {
   return 'ko';
 };
 
+/**
+ * Google Ads 전환으로 보낼 이벤트 목록.
+ *
+ * 모든 이벤트를 전환으로 쏘면 전환 개념이 오염되고 입찰 최적화가 망가지므로,
+ * 실제 비즈니스 목표에 해당하는 이벤트만 여기 등록한다.
+ * 현재는 외국인 컨시어지 요청 제출(= 리드) 하나뿐.
+ */
+const ADS_CONVERSION_LABELS: Record<string, string | undefined> = {
+  foreign_request_submitted: process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
+};
+
 export const trackEvent = (eventName: string, params: Record<string, unknown> = {}) => {
   try {
     // 모든 이벤트에 lang 자동 부착 (외국인 이탈퍼널 필터용).
@@ -36,6 +47,16 @@ export const trackEvent = (eventName: string, params: Record<string, unknown> = 
         ...enriched,
         timestamp: new Date().toISOString(),
       });
+
+      // 1-1. Google Ads 전환 (전환 목록에 등록된 이벤트만)
+      //      GA4와 같은 gtag를 쓰지만 send_to로 Ads 계정에 별도 전송된다.
+      const adsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
+      const conversionLabel = ADS_CONVERSION_LABELS[eventName];
+      if (adsId && conversionLabel) {
+        window.gtag('event', 'conversion', {
+          send_to: `${adsId}/${conversionLabel}`,
+        });
+      }
     }
 
     // 2. Mixpanel 추적
