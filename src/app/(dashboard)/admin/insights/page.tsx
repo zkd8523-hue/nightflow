@@ -74,6 +74,20 @@ interface ForeignExitPoint {
   avg_time_sec: number | null;
 }
 
+// Migration 660 — 사람(anon_id) 단위 방문자 목록. 폼 이상 도달한 사람만.
+interface ForeignVisitor {
+  anon_id: string;
+  lang: string;
+  stage: number;
+  stage_label: string;
+  visits: number;
+  events: number;
+  first_seen: string;
+  last_seen: string;
+  utm_source: string | null;
+  landing_path: string | null;
+}
+
 export default async function InsightsPage() {
   const supabase = await createClient();
 
@@ -88,8 +102,8 @@ export default async function InsightsPage() {
     .single();
   if (ud?.role !== "admin") redirect("/");
 
-  // 6개 뷰 병렬 조회 (Migration 658로 외국인 퍼널 2개 추가)
-  const [hotspotsRes, funnelRes, acquisitionRes, langRes, fgFunnelRes, fgExitRes] =
+  // 7개 뷰 병렬 조회 (658: 외국인 퍼널 2개, 660: 방문자 목록)
+  const [hotspotsRes, funnelRes, acquisitionRes, langRes, fgFunnelRes, fgExitRes, fgVisitorRes] =
     await Promise.all([
       supabase.from("dropoff_hotspots").select("*").limit(10),
       supabase.from("signup_funnel").select("*").single(),
@@ -97,6 +111,7 @@ export default async function InsightsPage() {
       supabase.from("dropoff_by_lang").select("*"),
       supabase.from("foreign_funnel_by_lang").select("*"),
       supabase.from("foreign_exit_points").select("*"),
+      supabase.from("foreign_visitor_list").select("*"),
     ]);
 
   const hotspots: DropoffHotspot[] = (hotspotsRes.data as DropoffHotspot[]) || [];
@@ -106,6 +121,7 @@ export default async function InsightsPage() {
   // 마이그레이션 미적용 환경에서도 페이지 전체가 죽지 않게 빈 배열로 폴백
   const foreignFunnel: ForeignFunnel[] = (fgFunnelRes.data as ForeignFunnel[]) || [];
   const foreignExits: ForeignExitPoint[] = (fgExitRes.data as ForeignExitPoint[]) || [];
+  const foreignVisitors: ForeignVisitor[] = (fgVisitorRes.data as ForeignVisitor[]) || [];
 
   return (
     <div className="min-h-screen bg-background text-foreground pt-12 pb-24">
@@ -169,6 +185,7 @@ export default async function InsightsPage() {
           byLang={byLang}
           foreignFunnel={foreignFunnel}
           foreignExits={foreignExits}
+          foreignVisitors={foreignVisitors}
         />
       </div>
     </div>

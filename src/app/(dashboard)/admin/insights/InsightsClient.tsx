@@ -1,6 +1,8 @@
 "use client";
 
-import { TrendingDown, Target, BarChart3, Globe2, ArrowRight } from "lucide-react";
+import { useState, useTransition } from "react";
+import { TrendingDown, Target, BarChart3, Globe2, ArrowRight, ChevronDown, Users } from "lucide-react";
+import { fetchVisitorJourney, type JourneyEvent } from "./actions";
 
 // event_name → 한국어 라벨 매핑. 없으면 원본 반환.
 const EVENT_LABELS: Record<string, string> = {
@@ -108,6 +110,116 @@ interface Props {
     avg_scroll_depth: number | null;
     avg_time_sec: number | null;
   }[];
+  // Migration 660 — 사람(anon_id) 단위. 폼 이상 도달한 사람만.
+  foreignVisitors: {
+    anon_id: string;
+    lang: string;
+    stage: number;
+    stage_label: string;
+    visits: number;
+    events: number;
+    first_seen: string;
+    last_seen: string;
+    utm_source: string | null;
+    landing_path: string | null;
+  }[];
+}
+
+/** 방문자 한 줄 — 누르면 저니가 펼쳐진다. 저니는 클릭 시점에 그 사람 것만 조회. */
+function VisitorRow({
+  v,
+  color,
+}: {
+  v: Props["foreignVisitors"][number];
+  color: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [journey, setJourney] = useState<JourneyEvent[] | null>(null);
+  const [pending, start] = useTransition();
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    // 처음 펼칠 때만 조회. 다시 접었다 펴면 캐시된 걸 쓴다.
+    if (next && journey === null) {
+      start(async () => setJourney(await fetchVisitorJourney(v.anon_id)));
+    }
+  };
+
+  const stageColor =
+    v.stage >= 5 ? "text-emerald-400" : v.stage === 4 ? "text-brand-amber" : "text-muted-foreground";
+
+  return (
+    <div className="border-t border-border">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className="w-full grid grid-cols-[16px_60px_56px_1fr_64px_88px] gap-2 items-center py-2.5 text-xs text-left hover:bg-muted/40 transition-colors"
+      >
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className="font-bold flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: color }} />
+          {v.lang}
+        </span>
+        <span className={`font-black ${stageColor}`}>{v.stage_label}</span>
+        <span className="text-muted-foreground truncate">
+          {v.landing_path ?? "—"}
+          {v.utm_source && v.utm_source !== "direct" && (
+            <span className="ml-2 text-brand-amber">· {v.utm_source}</span>
+          )}
+        </span>
+        <span className="text-muted-foreground tabular-nums text-right">
+          {v.visits}회 · {v.events}건
+        </span>
+        <span className="text-muted-foreground tabular-nums text-right">
+          {v.last_seen.slice(5, 16).replace("T", " ")}
+        </span>
+      </button>
+
+      {open && (
+        <div className="pb-3 pl-6 pr-2">
+          {pending || journey === null ? (
+            <p className="text-[11px] text-muted-foreground py-2">저니 불러오는 중…</p>
+          ) : journey.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground py-2">이벤트가 없습니다.</p>
+          ) : (
+            <ol className="space-y-0.5 border-l border-border pl-3">
+              {journey.map((e, i) => {
+                // 세션이 바뀌는 지점에 구분선 — "다른 날 다시 왔다"가 보이게
+                const newSession = i > 0 && e.session_id !== journey[i - 1].session_id;
+                const isSubmit = e.event_name === "foreign_request_submitted";
+                const isExit = e.event_name === "foreign_page_exit";
+                const depth = isExit ? e.properties?.scroll_depth : undefined;
+                const sec = isExit ? e.properties?.time_on_page_sec : undefined;
+                return (
+                  <li key={i}>
+                    {newSession && (
+                      <div className="text-[10px] text-brand-amber font-bold py-1 -ml-3 pl-3 border-t border-dashed border-border mt-1">
+                        ↻ 재방문 · {e.created_at.slice(5, 16).replace("T", " ")}
+                      </div>
+                    )}
+                    <div className={`grid grid-cols-[52px_1fr] gap-2 text-[11px] py-0.5 ${isSubmit ? "text-emerald-400 font-bold" : "text-muted-foreground"}`}>
+                      <span className="tabular-nums">{e.created_at.slice(11, 19)}</span>
+                      <span className="truncate">
+                        <span className={isSubmit ? "" : "text-foreground"}>{labelEvent(e.event_name)}</span>
+                        {e.path && <span className="ml-2 opacity-70">{e.path}</span>}
+                        {isExit && (
+                          <span className="ml-2 opacity-70">
+                            깊이 {String(depth)}% · {String(sec)}초
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // 언어별 고정색 — 어느 차트에서든 같은 색 = 같은 언어로 읽히게.
@@ -163,8 +275,15 @@ function Donut({
 }
 
 export function InsightsClient({
-  hotspots, funnel, acquisition, byLang, foreignFunnel, foreignExits,
+  hotspots, funnel, acquisition, byLang, foreignFunnel, foreignExits, foreignVisitors,
 }: Props) {
+  // 방문자 목록 언어 필터. null = 전체.
+  const [visitorLang, setVisitorLang] = useState<string | null>(null);
+  const visibleVisitors = visitorLang
+    ? foreignVisitors.filter((v) => v.lang === visitorLang)
+    : foreignVisitors;
+  // 필터 칩에 쓸 언어 목록 — 목록에 실제로 있는 것만
+  const visitorLangs = Array.from(new Set(foreignVisitors.map((v) => v.lang)));
   const maxHotspot = Math.max(...hotspots.map((h) => h.session_count), 1);
 
   // 언어별로 그룹핑
@@ -703,6 +822,80 @@ export function InsightsClient({
                     깊이 <b className="text-foreground">30%↓</b> + 체류{" "}
                     <b className="text-foreground">15초↓</b>(빨강) = 검색 의도와 콘텐츠 불일치.
                     깊이 <b className="text-foreground">70%↑</b>인데 CTA 클릭이 없으면 CTA 문제.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* ── 방문자 목록 + 저니 드릴다운 (Migration 660) ── */}
+            <div>
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+                <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                  <Users className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+                  방문자별 저니{" "}
+                  <span className="normal-case tracking-normal font-medium">
+                    — 폼 이상 도달한 사람. 누르면 이동 경로가 펼쳐집니다
+                  </span>
+                </p>
+                {/* 언어 필터 칩 */}
+                <div className="flex gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setVisitorLang(null)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors ${
+                      visitorLang === null
+                        ? "bg-foreground text-background border-foreground"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    전체 {foreignVisitors.length}
+                  </button>
+                  {visitorLangs.map((lg) => {
+                    const n = foreignVisitors.filter((v) => v.lang === lg).length;
+                    return (
+                      <button
+                        key={lg}
+                        type="button"
+                        onClick={() => setVisitorLang(lg)}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors flex items-center gap-1.5 ${
+                          visitorLang === lg
+                            ? "bg-foreground text-background border-foreground"
+                            : "border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-sm" style={{ background: langColor(lg) }} />
+                        {lg} {n}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {visibleVisitors.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {foreignVisitors.length === 0
+                    ? "데이터가 없습니다. Migration 660이 적용됐는지 확인하세요."
+                    : "이 언어로 폼까지 간 사람이 아직 없습니다."}
+                </p>
+              ) : (
+                <div>
+                  {/* 헤더 */}
+                  <div className="grid grid-cols-[16px_60px_56px_1fr_64px_88px] gap-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground pb-2">
+                    <span />
+                    <span>언어</span>
+                    <span>단계</span>
+                    <span>첫 랜딩 · 채널</span>
+                    <span className="text-right">방문·이벤트</span>
+                    <span className="text-right">마지막</span>
+                  </div>
+                  {visibleVisitors.map((v) => (
+                    <VisitorRow key={v.anon_id} v={v} color={langColor(v.lang)} />
+                  ))}
+                  <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
+                    한 사람(브라우저)이 한 줄입니다. 저니 안의{" "}
+                    <b className="text-brand-amber">↻ 재방문</b> 표시는 세션이 바뀐 지점 —
+                    "다른 날 다시 와서 결국 예약했다"는 패턴이 여기서 보입니다. 랜딩만 하고
+                    나간 사람은 저니가 1줄이라 목록에서 뺐습니다.
                   </p>
                 </div>
               )}
