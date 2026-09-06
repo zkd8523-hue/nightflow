@@ -266,9 +266,68 @@ export default async function ZhTwClubsAreaPage({
   }));
   const clubCount = clubList.length;
 
+  // Schema.org — Place + ItemList (Google: 별점·리스트 노출). en 버전(clubs/[area]/page.tsx)엔
+  // 있는데 ja/zh/zh-tw엔 통째로 빠져 있었다 — 콘텐츠는 동일하게 현지화됐는데 구조화 데이터만
+  // en 전용이라, 검색결과 리치 스니펫이 3개 언어에서 안 뜨는 격차였다.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ItemList",
+        "@id": `https://nightflow.kr/zh-tw/clubs/${area}/#itemlist`,
+        name: `${config.zh}夜店 — 首爾夜店預訂`,
+        description: config.intro,
+        numberOfItems: clubCount,
+        itemListElement: clubList.map((c, i) => {
+          const nameEn = c.name_en?.trim();
+          const slug = nameEn ? clubSlug(nameEn) : null;
+          return {
+            "@type": "ListItem",
+            position: i + 1,
+            item: {
+              "@type": "NightClub",
+              name: nameEn || c.name,
+              alternateName: nameEn ? c.name : undefined,
+              address: c.address
+                ? { "@type": "PostalAddress", addressLocality: area.charAt(0).toUpperCase() + area.slice(1), addressCountry: "KR" }
+                : undefined,
+              aggregateRating: c.google_rating
+                ? {
+                    "@type": "AggregateRating",
+                    ratingValue: c.google_rating,
+                    reviewCount: c.google_review_count ?? 1,
+                  }
+                : undefined,
+              url: slug
+                ? `https://nightflow.kr/zh-tw/clubs/${area}/${slug}`
+                : `https://nightflow.kr/clubs/${c.id}`,
+            },
+          };
+        }),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "NightFlow", item: "https://nightflow.kr/zh-tw" },
+          { "@type": "ListItem", position: 2, name: "首爾夜店", item: "https://nightflow.kr/zh-tw/clubs" },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: `${config.zh}夜店`,
+            item: `https://nightflow.kr/zh-tw/clubs/${area}`,
+          },
+        ],
+      },
+    ],
+  };
+
   return (
     <ForeignShell lang="zh-tw">
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="sr-only">
         <h1>
           {config.zh}夜店預訂 — 首爾 {config.zh} {clubCount} 家夜店 ({config.koreanArea})
