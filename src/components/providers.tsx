@@ -157,6 +157,21 @@ function LoginNotifyPromptInit() {
   return <LoginNotifyPromptSheet />;
 }
 
+// 앱이 정상 부팅됐다 = 새 빌드로 갈아타는 데 성공했다.
+// error.tsx가 낡은 빌드(ChunkLoadError) 자동 리로드를 1회로 제한하려고 심어둔
+// 세션 플래그를 여기서 지운다. 안 지우면 그 세션 동안 두 번째 배포가 나갔을 때
+// 자동 복구가 죽고 유저가 수동으로 버튼을 눌러야 한다.
+function StaleBuildFlagReset() {
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem("nf_stale_build_reloaded");
+    } catch {
+      /* sessionStorage 차단 환경 — 지울 것도 없다 */
+    }
+  }, []);
+  return null;
+}
+
 function DeepLinkInit() {
   useEffect(() => {
     initDeepLinkHandler();
@@ -180,6 +195,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <GlobalNotifications />
       <MixpanelInit />
       <DeepLinkInit />
+      <StaleBuildFlagReset />
       <PushInit />
       <LoginNotifyPromptInit />
       <NetworkOverlay />
