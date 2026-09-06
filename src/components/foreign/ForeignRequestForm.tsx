@@ -7,6 +7,7 @@ import { Search, X, Check, MapPin, Users, UserRound, Calendar, Coins, MessageCir
 import { createClient } from "@/lib/supabase/client";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
@@ -17,6 +18,8 @@ import { trackForeignEvent, trackEvent } from "@/lib/analytics/events";
 import { getCurrentUtm } from "@/lib/analytics/userEvents";
 import { useSavedClubs } from "@/lib/clubs/savedClubs";
 import { MenuPicker } from "@/components/foreign/MenuPicker";
+import { saveFormDraft, loadFormDraft, clearFormDraft, FOREIGN_BOOKING_DRAFT_KEY } from "@/lib/utils/formDraft";
+import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import type { ClubMenuItem, ClubMenuCombo, SelectedMenuSnapshot } from "@/types/database";
 
 
@@ -189,6 +192,10 @@ export function ForeignRequestForm({
   );
   const [menuLoading, setMenuLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // 스냅샷(DB 저장용, image_url 없음)에는 item_id만 있다 — 요약 카드에서
+  // 한국인 폼(KoreanBookingForm)과 같은 수준(이미지 포함)으로 보여주려면
+  // 로드해둔 menuItems에서 같은 id를 찾아 이미지를 붙여야 한다(2026-09-06).
+  const imageOf = (itemId: string) => menuItems.find((m) => m.id === itemId)?.image_url ?? null;
   const [menuZone, setMenuZone] = useState<string | null>(null);
   const [picked, setPicked] = useState<{ snapshot: SelectedMenuSnapshot; total: number } | null>(null);
   // 시트를 Continue 없이 닫았을 때(X·바깥 탭·뒤로가기) 담던 걸 붙잡아두는 초안.
@@ -324,6 +331,66 @@ export function ForeignRequestForm({
   //   2장: 메뉴 시트 (전체화면급) — 담기 완료하면 자동으로 3장
   //   3장: 이름·연락처·언어·메모 → 전송
   const [formStep, setFormStep] = useState<1 | 3 | 4>(1);
+
+  // 강제종료·새로고침·오조작으로 입력하던 걸 통째로 잃는 사고 방지(2026-09-06,
+  // 한국인 폼과 동일 정책). "술을 하나라도 담았을 때"부터 지킨다 — 클럽 탐색
+  // 단계(1장 초반)까지 막으면 그냥 구경하다 나가려는 손님까지 붙잡게 된다.
+  type ForeignDraft = {
+    eventDate: string;
+    groupSize: number;
+    area: string;
+    budget: string;
+    selectedClubIds: string[];
+    picked: { snapshot: SelectedMenuSnapshot; total: number } | null;
+    menuZone: string | null;
+    guestName: string;
+    contactType: ContactType;
+    preferredLang: Lang;
+    contactValue: string;
+    notes: string;
+  };
+  const draftKey = FOREIGN_BOOKING_DRAFT_KEY;
+  const hasProgress = !!picked;
+  // 이 폼은 페이지 자체라 감쌀 최상위 Sheet가 없다 — 바깥 클릭/ESC로 닫히는
+  // 위험은 없고(메뉴 시트는 이미 draft로 보호됨), beforeunload만 필요하다.
+  useUnsavedFormGuard(hasProgress && formStep !== 4);
+  const [resumePrompt, setResumePrompt] = useState<ForeignDraft | null>(null);
+
+  // 마운트 시 1회 — 저장된 초안이 있으면 "이어하시겠습니까?"부터 묻는다.
+  useEffect(() => {
+    const draft = loadFormDraft<ForeignDraft>(draftKey);
+    if (draft?.picked) setResumePrompt(draft);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 진행 중인 입력을 계속 저장 — 강제종료돼도 다음 방문 때 복원 후보가 된다.
+  useEffect(() => {
+    if (!hasProgress || formStep === 4) return;
+    saveFormDraft<ForeignDraft>(draftKey, {
+      eventDate, groupSize, area, budget, selectedClubIds, picked, menuZone,
+      guestName, contactType, preferredLang, contactValue, notes,
+    });
+  }, [hasProgress, formStep, eventDate, groupSize, area, budget, selectedClubIds, picked, menuZone, guestName, contactType, preferredLang, contactValue, notes]);
+
+  const applyDraft = (d: ForeignDraft) => {
+    setEventDate(d.eventDate);
+    setGroupSize(d.groupSize);
+    setArea(d.area);
+    setBudget(d.budget);
+    setSelectedClubIds(d.selectedClubIds);
+    setPicked(d.picked);
+    setMenuZone(d.menuZone);
+    setGuestName(d.guestName);
+    setContactType(d.contactType);
+    setPreferredLang(d.preferredLang);
+    setContactValue(d.contactValue);
+    setNotes(d.notes);
+    // 여행 확정 게이트는 이미 통과한 상태였다 — 다시 묻지 않는다.
+    setTripStatus("qualified");
+    // 술까지 담았으면 연락처 단계(3장)로 바로 복귀한다.
+    setFormStep(d.picked ? 3 : 1);
+    setResumePrompt(null);
+  };
 
   // 게이트·폼에서 "네가 고른 클럽"을 확인시켜 줄 이름.
   // 이게 없으면 "Book at BADASS"를 눌렀는데 클럽 얘기 없는 질문 화면이 떠서 선택이 증발한 걸로 보임.
@@ -611,6 +678,7 @@ export function ForeignRequestForm({
       });
       if (error) throw error;
 
+      clearFormDraft(draftKey);
       // 운영자 푸시는 foreign_requests INSERT 트리거(Mig 455)가 자동 발송
       // 전환 완료 측정 (SOP 6단계 대체 지표 — puzzle_created는 외국인 미발동)
       trackForeignEvent("foreign_request_submitted", {
@@ -657,11 +725,24 @@ export function ForeignRequestForm({
     if (tripStatus === null) trackEvent("foreign_trip_gate_view", { lang: preferredLang });
   }, [tripStatus, preferredLang]);
 
+  // 제목 한 줄로 통일 — 부제(무엇을 하면 무슨 일이 일어나는지)는 이미 1장 폼의
+  // 클럽 카드·Choose drinks 버튼이 스스로 설명해서 중복이었다. 접수 완료(4단계)
+  // 에선 숨긴다 — 완료 화면이 이미 "Your request is in" 제목을 자체로 갖고
+  // 있어서 위에 남아있으면 제목이 중복돼 보인다(2026-09-06). 예전엔 이 타이틀이
+  // 부모 페이지(서버 컴포넌트)에 있어서 formStep을 몰라 못 숨겼다 — 그래서
+  // 게이트 화면 포함 모든 return에서 재사용하게 여기로 옮겼다.
+  const formTitle = formStep !== 4 && (
+    <h1 className="text-2xl font-black text-foreground tracking-tight">
+      {t("서울의 밤 예약하기", "Book your Seoul night", "ソウルの夜を予約", "预订你的首尔夜晚")}
+    </h1>
+  );
+
   // ── 여행 확정 게이트 ────────────────────────────────────────────────
   // 계획중(막연)인 사람은 실제 방문 불확실 → MD 오퍼 낭비·마켓 오염. 확정된 유저만 폼 노출.
   if (tripStatus === null) {
     return (
       <div className="space-y-6 pb-12">
+        {formTitle}
         {/* 고른 클럽을 게이트에서도 보여줌 — 이게 없으면 "Book at BADASS"를 눌렀는데
             클럽 얘기가 없는 질문 화면이 떠서, 선택이 날아간 줄 알고 목록으로 되돌아가 이탈했음.
             메인 폼(3장 구조)의 클럽 카드와 같은 형태로 통일 — 이미지 + 이름만.
@@ -719,6 +800,7 @@ export function ForeignRequestForm({
   if (tripStatus === "planning") {
     return (
       <div className="space-y-6 pb-12">
+        {formTitle}
         <div className="bg-card rounded-3xl border border-border p-7 space-y-5 text-center">
           <div className="text-[40px]">🗓️</div>
           <div className="space-y-2">
@@ -748,13 +830,40 @@ export function ForeignRequestForm({
 
   return (
     <div className="space-y-7">
+      {formTitle}
+
+      {/* 강제종료 등으로 남아있던 이전 입력 — 폼 위에 별도 팝업으로 먼저 묻는다. */}
+      <ConfirmDialog
+        isOpen={!!resumePrompt}
+        onOpenChange={(o) => {
+          if (!o && resumePrompt) {
+            clearFormDraft(draftKey);
+            setResumePrompt(null);
+          }
+        }}
+        onCancel={() => {
+          clearFormDraft(draftKey);
+          setResumePrompt(null);
+        }}
+        onConfirm={() => resumePrompt && applyDraft(resumePrompt)}
+        title={t("이전에 작성하던 예약이 있어요", "You have an unfinished booking", "以前作成中の予約があります", "您有未完成的预订")}
+        description={t(
+          `${resumePrompt?.picked?.snapshot.items.length ?? 0}개 주류 · ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 이어서 작성하시겠어요?`,
+          `${resumePrompt?.picked?.snapshot.items.length ?? 0} drink${(resumePrompt?.picked?.snapshot.items.length ?? 0) > 1 ? "s" : ""} · ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · Continue where you left off?`,
+          `ドリンク${resumePrompt?.picked?.snapshot.items.length ?? 0}点 · ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 続きから再開しますか？`,
+          `${resumePrompt?.picked?.snapshot.items.length ?? 0}款酒水 · ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 是否继续之前的预订？`
+        )}
+        cancelText={t("아니요", "No", "いいえ", "否")}
+        confirmText={t("이어하기", "Continue", "続ける", "继续")}
+      />
+
       {/* 클럽을 이미 골랐으면 재선택 목록(캐러셀·검색·정렬탭) 전체를 걷어내고
           이 카드 하나로 대체한다 — 어차피 한 곳만 고르는 흐름이라, 다시 고를 목록을
           계속 띄워두는 건 "확정했다"는 느낌을 깨고 화면만 길어지게 한다.
           지우는 버튼은 안 둔다 — 클럽 상세에서 "Book at ○○"로 이미 확정하고 넘어온
           손님에게 "지금이라도 뺄 수 있다"는 걸 보여주는 게 오히려 모순이다.
           클럽을 바꾸려면 뒤로 가서 다른 클럽에서 다시 눌러야 한다. */}
-      {(() => {
+      {formStep !== 4 && (() => {
         const selectedClub = selectedClubIds[0] ? clubById[selectedClubIds[0]] : null;
         if (!selectedClub) return null;
         return (
@@ -784,6 +893,8 @@ export function ForeignRequestForm({
         );
       })()}
 
+      {formStep !== 4 && (
+      <>
       {/* 날짜 */}
       <section>
         {label(<Calendar className="w-4 h-4 text-money" />, t("날짜", "Date", "日付", "日期"))}
@@ -819,6 +930,8 @@ export function ForeignRequestForm({
           />
         </div>
       </section>
+      </>
+      )}
 
       {formStep === 1 && (
       <>
@@ -859,25 +972,47 @@ export function ForeignRequestForm({
               onClick={() => setMenuOpen(true)}
               className="w-full rounded-xl border border-amber-500/60 bg-card px-4 py-3 text-left transition-colors"
             >
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[13px] text-muted-foreground font-bold">
-                  {t(
-                    `${picked.snapshot.items.length}개 선택됨`,
-                    `${picked.snapshot.items.length} item${picked.snapshot.items.length > 1 ? "s" : ""} selected`,
-                    `${picked.snapshot.items.length}点選択`,
-                    `已选 ${picked.snapshot.items.length} 项`
-                  )}
+              <span className="text-[13px] text-muted-foreground font-bold">
+                {t(
+                  `${picked.snapshot.items.length}개 선택됨`,
+                  `${picked.snapshot.items.length} item${picked.snapshot.items.length > 1 ? "s" : ""} selected`,
+                  `${picked.snapshot.items.length}点選択`,
+                  `已选 ${picked.snapshot.items.length} 项`
+                )}
+              </span>
+              {/* 이름만 " · "로 이어붙인 한 줄 요약은 뭘 몇 개씩 얼마에 담았는지
+                  안 보였다 — 카트 시트와 같은 줄 단위 리스트로 바꾼다(2026-09-06). */}
+              <div className="mt-3 space-y-2.5">
+                {picked.snapshot.items.map((it, i) => {
+                  const img = imageOf(it.item_id);
+                  return (
+                    <div key={i} className="flex items-center gap-2.5">
+                      {img && (
+                        <div className="w-9 h-9 shrink-0 rounded-md bg-black overflow-hidden flex items-center justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={img} alt="" loading="lazy" className="w-full h-full object-contain pointer-events-none select-none" />
+                        </div>
+                      )}
+                      <span className="min-w-0 flex-1 text-[12px] text-foreground/90 truncate">
+                        {it.name_en}
+                        {it.qty > 1 && <span className="text-muted-foreground"> x{it.qty}</span>}
+                      </span>
+                      <span className="text-money font-bold tabular-nums text-[12px] shrink-0">
+                        ₩{(it.price * it.qty).toLocaleString("en-US")}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-2 pt-2 border-t border-border flex items-center justify-between gap-3">
+                <span className="text-[13px] font-bold">
+                  {t("합계", "Total", "合計", "合计")}
                 </span>
                 <span className="text-[17px] font-black text-money tabular-nums shrink-0">
                   ₩{picked.total.toLocaleString("en-US")}
                 </span>
               </div>
-              <p className="text-[12px] text-muted-foreground mt-1 leading-snug line-clamp-2">
-                {picked.snapshot.items
-                  .map((it) => `${it.name_en}${it.qty > 1 ? ` x${it.qty}` : ""}`)
-                  .join(" · ")}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-1.5">
+              <p className="text-[11px] text-muted-foreground mt-2">
                 {t("변경하려면 다시 탭", "tap to change", "タップで変更", "点按可更改")}
               </p>
             </button>
@@ -1383,25 +1518,47 @@ export function ForeignRequestForm({
           onClick={() => setMenuOpen(true)}
           className="w-full rounded-xl border border-amber-500/60 bg-card px-4 py-3 text-left transition-colors"
         >
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="text-[13px] text-muted-foreground font-bold">
-              {t(
-                `${picked.snapshot.items.length}개 선택됨`,
-                `${picked.snapshot.items.length} item${picked.snapshot.items.length > 1 ? "s" : ""} selected`,
-                `${picked.snapshot.items.length}点選択`,
-                `已选 ${picked.snapshot.items.length} 项`
-              )}
+          <span className="text-[13px] text-muted-foreground font-bold">
+            {t(
+              `${picked.snapshot.items.length}개 선택됨`,
+              `${picked.snapshot.items.length} item${picked.snapshot.items.length > 1 ? "s" : ""} selected`,
+              `${picked.snapshot.items.length}点選択`,
+              `已选 ${picked.snapshot.items.length} 项`
+            )}
+          </span>
+          {/* 이름만 " · "로 이어붙인 한 줄 요약은 뭘 몇 개씩 얼마에 담았는지
+              안 보였다 — 카트 시트와 같은 줄 단위 리스트로 바꾼다(2026-09-06). */}
+          <div className="mt-3 space-y-2.5">
+            {picked.snapshot.items.map((it, i) => {
+              const img = imageOf(it.item_id);
+              return (
+                <div key={i} className="flex items-center gap-2.5">
+                  {img && (
+                    <div className="w-9 h-9 shrink-0 rounded-md bg-black overflow-hidden flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img} alt="" loading="lazy" className="w-full h-full object-contain pointer-events-none select-none" />
+                    </div>
+                  )}
+                  <span className="min-w-0 flex-1 text-[12px] text-foreground/90 truncate">
+                    {it.name_en}
+                    {it.qty > 1 && <span className="text-muted-foreground"> x{it.qty}</span>}
+                  </span>
+                  <span className="text-money font-bold tabular-nums text-[12px] shrink-0">
+                    ₩{(it.price * it.qty).toLocaleString("en-US")}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-2 pt-2 border-t border-border flex items-center justify-between gap-3">
+            <span className="text-[13px] font-bold">
+              {t("합계", "Total", "合計", "合计")}
             </span>
             <span className="text-[17px] font-black text-money tabular-nums shrink-0">
               ₩{picked.total.toLocaleString("en-US")}
             </span>
           </div>
-          <p className="text-[12px] text-muted-foreground mt-1 leading-snug line-clamp-2">
-            {picked.snapshot.items
-              .map((it) => `${it.name_en}${it.qty > 1 ? ` x${it.qty}` : ""}`)
-              .join(" · ")}
-          </p>
-          <p className="text-[11px] text-muted-foreground mt-1.5">
+          <p className="text-[11px] text-muted-foreground mt-2">
             {t("변경하려면 다시 탭", "tap to change", "タップで変更", "点按可更改")}
           </p>
         </button>
@@ -1522,10 +1679,10 @@ export function ForeignRequestForm({
               </h2>
               <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">
                 {t(
-                  "클럽에 확인하고 24시간 안에 연락드릴게요.",
-                  "We'll check with the club and reach out within 24 hours.",
-                  "クラブに確認して24時間以内にご連絡します。",
-                  "我们会向夜店确认，24小时内联系你。"
+                  "24시간 안에 연락드릴게요.",
+                  "We'll reach out within 24 hours.",
+                  "24時間以内にご連絡します。",
+                  "我们会在24小时内联系你。"
                 )}
               </p>
             </div>

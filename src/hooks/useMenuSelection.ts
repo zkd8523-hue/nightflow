@@ -159,11 +159,14 @@ export function useMenuSelection({
     [],
   );
 
-  /** 수량 조절. 0 이하가 되면 줄 자체를 뺀다. */
+  /** 수량 조절. 0 밑으로는 못 내려간다 — 실수로 연타해도 마이너스가 되지 않는다.
+      0 자체는 그대로 유지한다("한 번 더 눌러야 진짜 삭제"). 0에서 -를 다시 누르면
+      그때 줄을 뺀다. 합계·개수·스냅샷에서는 resolved 단계에서 0을 걸러낸다. */
   const setQty = useCallback((key: string, qty: number) => {
-    setLines((prev) =>
-      qty <= 0 ? prev.filter((l) => l.key !== key) : prev.map((l) => (l.key === key ? { ...l, qty } : l)),
-    );
+    setLines((prev) => {
+      if (qty < 0) return prev.filter((l) => l.key !== key);
+      return prev.map((l) => (l.key === key ? { ...l, qty } : l));
+    });
   }, []);
 
   const remove = useCallback((key: string) => {
@@ -219,7 +222,9 @@ export function useMenuSelection({
   /** DB에 넣을 스냅샷. 이름·가격까지 통째로 박아 나중에 가격이 바뀌어도 남는다. */
   const snapshot = useCallback((): SelectedMenuSnapshot => {
     const snap: SelectedMenuSnapshot = {
-      items: resolved.map((l) => ({
+      // qty=0인 줄은 "삭제 직전, 한 번 더 누르면 빠지는" 화면용 상태일 뿐이라
+      // 실제 제출에는 담기지 않는다.
+      items: resolved.filter((l) => l.qty > 0).map((l) => ({
         item_id: l.item.id,
         variant_id: l.variantId,
         name_en: l.item.name_en,

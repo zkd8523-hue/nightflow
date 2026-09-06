@@ -172,6 +172,20 @@
     overscroll-behavior-x: none; /* 가로 overscroll bounce 방지 (Android WebView) */
     overflow-x: hidden; /* 좌우 흔들림(가로 스크롤) 방지 */
   }
+
+  /* 외국인 트랙(en/ja/zh/zh-tw layout wrapper: [lang="en"] 등) 안의 모든
+     스크롤 컨테이너에 오버스크롤 체이닝을 강제로 막는다.
+     body에만 걸어두면, 그 안에 있는 h-[92vh] overflow-y-auto 시트(메뉴 고르는
+     화면 등) 같은 안쪽 스크롤 컨테이너가 최상단에 닿는 순간 body 규칙을
+     건너뛰고 브라우저 pull-to-refresh로 스크롤이 새 나간다(2026-09-06 실측).
+     layout wrapper 하나에만 overscroll-none을 걸어도 안쪽 요소들까지는
+     안 먹혀서, 실제로 스크롤이 발생하는 모든 자손 요소를 셀렉터로 잡는다. */
+  [lang="en"] *,
+  [lang="ja"] *,
+  [lang="zh"] *,
+  [lang="zh-TW"] * {
+    overscroll-behavior: none;
+  }
 }
 
 @layer utilities {
@@ -187,6 +201,21 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* 메뉴 담기 애니메이션 (MenuPicker) — "눌림 + 리플" 안.
+     3가지 시안(펀치/흔들림/눌림)을 목업으로 비교한 뒤 선택됨(2026-09-06).
+     여러 개를 연달아 담는 화면이라 가장 짧고 차분한 쪽을 골랐다. */
+  @keyframes add-to-cart-press {
+    0% { transform: scale(1); }
+    40% { transform: scale(0.94); }
+    100% { transform: scale(1); }
+  }
+  @keyframes add-to-cart-ripple {
+    0% { opacity: 0.55; transform: scale(0); }
+    100% { opacity: 0; transform: scale(1); }
+  }
+  /* 카드→장바구니 fly는 좌표 기반이라 키프레임이 아니라 인라인 transition으로
+     처리한다(MenuPicker.tsx의 FlyItem 참고). */
 
   /* 숫자 flip 애니메이션 (10초 단위) */
   @keyframes flip {

@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { LoadingSpinner } from "@/components/ui/skeleton";
 
 function CallbackClient() {
   const params = useSearchParams();
@@ -45,16 +46,12 @@ function CallbackClient() {
     });
   }, [params, router]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-      <p className="text-sm">로그인 처리 중...</p>
-    </div>
-  );
+  return <LoadingSpinner minHeight="100vh" />;
 }
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+    <Suspense fallback={<LoadingSpinner minHeight="100vh" />}>
       <CallbackClient />
     </Suspense>
   );

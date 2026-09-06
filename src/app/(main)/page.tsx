@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { HomeContent } from "@/components/home/HomeContent";
+import { LoadingSpinner } from "@/components/ui/skeleton";
 import { LangAutoRedirect } from "@/components/layout/LangAutoRedirect";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
 import { hideTestData, hideForeignerFlags } from "@/lib/utils/testData";
@@ -247,8 +248,9 @@ export default async function HomePage() {
           ))}
         </ul>
       </div>
-      {/* fallback 높이를 첫 화면 높이만큼 확보 — 콘텐츠 로드 시 footer가 위로 밀려 올라오는 CLS(레이아웃 시프트) 방지 */}
-      <Suspense fallback={<div className="animate-pulse bg-card min-h-[100svh] rounded-3xl border border-border" />}>
+      {/* fallback 높이를 첫 화면 높이만큼 확보 — 콘텐츠 로드 시 footer가 위로 밀려 올라오는 CLS(레이아웃 시프트) 방지.
+          예전엔 무늬 없는 회색 블록이라 로딩 중인지 멈춘 건지 구분이 안 됐다 — 스피너를 얹는다(2026-09-06). */}
+      <Suspense fallback={<div className="bg-card min-h-[100svh] rounded-3xl border border-border"><LoadingSpinner minHeight="100svh" /></div>}>
         <HomeContent
           activeAuctions={activeAuctions || []}
           puzzles={puzzles || []}
