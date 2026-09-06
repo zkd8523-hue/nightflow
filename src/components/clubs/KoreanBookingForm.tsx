@@ -248,12 +248,10 @@ export function KoreanBookingForm({
       setShowConfirm(false);
       setStep(3);
     } catch (e) {
+      // 24시간 중복 제한은 Migration 655에서 제거했다 — 날짜가 다른 예약,
+      // 취소 후 재신청, 오타 수정 재제출을 전부 막아서 정상 사용을 방해했다.
       const msg = (e as { message?: string })?.message || "";
-      if (msg.includes("duplicate_korean_booking_within_24h")) {
-        toast.error("이미 접수됐어요. 같은 클럽은 24시간에 1건만 가능해요.");
-      } else {
-        toast.error("제출 중 오류가 발생했어요" + (msg ? ` (${msg})` : ""));
-      }
+      toast.error("제출 중 오류가 발생했어요" + (msg ? ` (${msg})` : ""));
     } finally {
       setLoading(false);
     }

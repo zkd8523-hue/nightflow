@@ -103,8 +103,10 @@ ALTER TABLE arrival_pings
     CHECK (request_type IN ('foreign', 'korean'));
 ALTER TABLE arrival_pings
   DROP CONSTRAINT IF EXISTS arrival_pings_request_id_fkey;
--- 기존 UNIQUE(request_id, kind)를 (request_type, request_id, kind)로 교체.
-ALTER TABLE arrival_pings
-  DROP CONSTRAINT IF EXISTS arrival_pings_request_id_kind_key;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_arrival_pings_type_request_kind
+-- ⚠️ UNIQUE로 만들면 안 된다. Migration 639가 "도착 알림 재발송(5분 쿨다운)"을
+-- 위해 UNIQUE(request_id, kind)를 일부러 제거했고, 실제로 kind='soon'이 여러 번
+-- 쌓여 있다. 여기서 (request_type, request_id, kind) UNIQUE를 다시 걸면 재발송이
+-- 막히고, 기존 중복 데이터 때문에 인덱스 생성 자체가 실패한다(2026-09-06 실측).
+-- 쿨다운은 API가 created_at을 보고 판단하므로 여기선 조회용 일반 인덱스만 둔다.
+CREATE INDEX IF NOT EXISTS idx_arrival_pings_type_request_kind
   ON arrival_pings(request_type, request_id, kind);
