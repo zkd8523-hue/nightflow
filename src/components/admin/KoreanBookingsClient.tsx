@@ -138,12 +138,35 @@ export function KoreanBookingsClient({ initial }: { initial: KoreanBookingReq[] 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ request_type: "korean", request_id: id, assigned_md_id: mdId }),
     });
+    const j = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const j = await res.json().catch(() => ({}));
       toast.error(j.error ?? "담당 MD 저장 실패");
       return false;
     }
-    setReqs((prev) => prev.map((r) => (r.id === id ? { ...r, assigned_md_id: mdId } : r)));
+    // MD가 바뀌면 서버가 이전 MD의 응답을 지우고 제안서 링크를 새로 발급한다.
+    // 화면도 같이 비워야 한다 — 안 그러면 새 MD 카드에 옛 거절이 남는다.
+    setReqs((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              assigned_md_id: mdId,
+              proposal_token: j.proposal_token ?? r.proposal_token,
+              ...(j.md_response_reset
+                ? {
+                    md_response: null,
+                    md_responded_at: null,
+                    md_reject_reason: null,
+                    md_required_amount: null,
+                    md_table_choosable: null,
+                    md_table_options: null,
+                  }
+                : {}),
+            }
+          : r
+      )
+    );
+    if (j.md_response_reset) toast.success("담당 MD 변경 — 새 제안서 링크가 발급됐어요");
     return true;
   };
 

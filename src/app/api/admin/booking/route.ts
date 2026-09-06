@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { randomBytes } from "crypto";
 
 // 클럽명 단어별 첫 글자 이니셜 (예: "Club Ace" → "CA"). "Club"으로 시작하는
 // 클럽이 8개나 있어 앞 2자 그대로 쓰면("CL") 전부 겹친다. 단어가 1개뿐이면
@@ -71,11 +72,62 @@ export async function POST(req: NextRequest) {
       : ((reqRow as unknown as { club_ids: string[] | null }).club_ids ?? []);
 
   // 담당 MD 지정 (요청 쪽에 저장 — 도착 알림이 여기를 읽는다)
+  //
+  // MD를 "다른 사람으로" 바꾸면 이전 MD의 응답은 무효다. 예전엔 assigned_md_id만
+  // 갈아끼워서, A가 거절한 뒤 B로 바꿔도 B가 받은 제안서에 A의 거절이 그대로
+  // 떠 있었다(2026-09-06). 응답 흔적을 지우고 proposal_token도 새로 발급한다 —
+  // 토큰을 유지하면 A가 예전에 받은 링크로 계속 답할 수 있어, 담당이 아닌
+  // 사람의 응답이 덮어써진다.
   if (body.assigned_md_id !== undefined) {
-    await sb
+    const nextMdId = (body.assigned_md_id as string | null) || null;
+
+    const { data: prev } = await sb
       .from(table)
-      .update({ assigned_md_id: body.assigned_md_id || null, updated_at: new Date().toISOString() })
-      .eq("id", requestId);
+      .select("assigned_md_id")
+      .eq("id", requestId)
+      .single();
+
+    const mdChanged = (prev?.assigned_md_id ?? null) !== nextMdId;
+
+    const assignPatch: Record<string, unknown> = {
+      assigned_md_id: nextMdId,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (mdChanged) {
+      assignPatch.md_response = null;
+      assignPatch.md_responded_at = null;
+      assignPatch.md_reject_reason = null;
+      assignPatch.md_required_amount = null;
+      assignPatch.md_table_choosable = null;
+      assignPatch.md_table_options = null;
+      // 새 토큰 — 이전 MD가 들고 있는 링크는 그 즉시 죽는다(404).
+      assignPatch.proposal_token = randomBytes(16).toString("hex");
+    }
+
+    const { data: assigned } = await sb
+      .from(table)
+      .update(assignPatch)
+      .eq("id", requestId)
+      .select("proposal_token")
+      .single();
+
+    // 제안서 카드의 "받는 MD" 지정은 확정서와 무관한 단계다 — 확정 내용이 하나도
+    // 없는데 여기서 확정서를 만들면 목록이 그 건을 "완료"로 분류해 버린다.
+    // MD 지정만 온 호출이면 여기서 끝낸다(2026-09-06).
+    const confirmationFields = [
+      "club_id", "table_info", "capacity_note", "confirmed_group_size",
+      "includes", "total_price", "arrival_time", "guest_request", "internal_memo",
+    ];
+    const hasConfirmationInput = confirmationFields.some((k) => body[k] !== undefined);
+    if (!hasConfirmationInput) {
+      return NextResponse.json({
+        ok: true,
+        assigned_md_id: nextMdId,
+        proposal_token: assigned?.proposal_token ?? null,
+        md_response_reset: mdChanged,
+      });
+    }
   }
 
   // 확정 클럽 — 미지정이면 요청의 1순위를 쓴다.

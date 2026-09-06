@@ -317,10 +317,19 @@ function ResponseBox({
             </div>
           )}
         </div>
+        {/* 승인 직후 MD가 "그래서 이제 뭘 하면 되나"를 몰라 담당자에게 되묻는 일이
+            잦았다 — 다음 절차를 알려준다. 승인 카드 안에 작게 넣었더니 결과 요약에
+            묻혀 안 읽혔다 — 카드 밖으로 빼서 독립된 안내로 세운다(2026-09-06). */}
+        {approved && (
+          <p className="mt-3 text-[15px] font-bold text-foreground leading-relaxed">
+            해당 사항을 고객에게 전달 후<br />
+            예약 확인서를 전달해드리겠습니다.
+          </p>
+        )}
         <button
           type="button"
           onClick={() => setResponse(null)}
-          className="mt-2 text-[12px] text-muted-foreground underline"
+          className={`text-[12px] text-muted-foreground underline ${approved ? "mt-4" : "mt-2"}`}
         >
           다시 답하기
         </button>

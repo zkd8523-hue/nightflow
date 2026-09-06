@@ -85,6 +85,8 @@ function MdPicker({
   const [mdOpen, setMdOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  // 모바일에선 목록이 fixed 하단 시트로 boxRef 밖에 그려지므로 별도 ref로 바깥클릭을 판정한다.
+  const panelRef = useRef<HTMLDivElement>(null);
   const matchedMd = candidates.find((m) => m.id === mdId) ?? null;
 
   const filtered = useMemo(() => {
@@ -95,7 +97,9 @@ function MdPicker({
 
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
+      const t = e.target as Node;
+      if (panelRef.current?.contains(t)) return;
+      if (boxRef.current && !boxRef.current.contains(t)) {
         setMdOpen(false);
       }
     };
@@ -125,24 +129,37 @@ function MdPicker({
         {matchedMd ? mdLabel(matchedMd) : "MD 선택"}
       </button>
       {mdOpen && (
-        <div className="absolute z-10 mt-1 right-0 w-56 rounded-lg border border-border bg-background shadow-lg overflow-hidden">
+        <div
+          className="fixed inset-0 z-[60] bg-black/50 sm:hidden"
+          onClick={() => setMdOpen(false)}
+        />
+      )}
+      {mdOpen && (
+        <div
+          ref={panelRef}
+          className="fixed inset-x-0 bottom-0 z-[61] max-h-[70vh] rounded-t-2xl border-t border-border bg-background shadow-lg overflow-hidden sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:z-10 sm:mt-1 sm:w-56 sm:max-h-none sm:rounded-lg sm:border"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="px-3 pt-3 pb-1 text-[12px] font-bold text-muted-foreground sm:hidden">
+            받는 MD 선택
+          </div>
           <input
             autoFocus
             value={mdQuery}
             onChange={(e) => setMdQuery(e.target.value)}
             placeholder="이름으로 좁히기"
-            className="w-full h-9 px-3 border-b border-border bg-background text-foreground text-[12.5px] outline-none focus:border-amber-500"
+            className="w-full h-11 px-3 border-b border-border bg-background text-foreground text-[14px] outline-none focus:border-amber-500 sm:h-9 sm:text-[12.5px]"
           />
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-[46vh] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)] sm:max-h-48 sm:pb-0">
             {filtered.length === 0 ? (
-              <div className="px-3 py-2 text-[12px] text-muted-foreground">일치하는 MD 없음</div>
+              <div className="px-3 py-3 text-[13px] text-muted-foreground sm:py-2 sm:text-[12px]">일치하는 MD 없음</div>
             ) : (
               filtered.map((m) => (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => pick(m)}
-                  className={`w-full text-left px-3 py-2 hover:bg-muted text-[12.5px] truncate ${
+                  className={`w-full text-left px-3 py-3 hover:bg-muted text-[14px] truncate sm:py-2 sm:text-[12.5px] ${
                     m.id === mdId ? "text-brand-amber font-bold" : "text-foreground"
                   }`}
                 >
@@ -154,7 +171,7 @@ function MdPicker({
               <button
                 type="button"
                 onClick={() => pick(null)}
-                className="w-full text-left px-3 py-2 border-t border-border text-[12px] text-muted-foreground hover:text-foreground"
+                className="w-full text-left px-3 py-3 border-t border-border text-[13px] text-muted-foreground hover:text-foreground sm:py-2 sm:text-[12px]"
               >
                 지정 해제
               </button>

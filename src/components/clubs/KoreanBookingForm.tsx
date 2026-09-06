@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ClubDateCalendar } from "./ClubDateCalendar";
+import { formatOpenDows, isClubOpenOn } from "@/lib/utils/clubOpenDays";
 import { Calendar, Users, UserRound, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -54,17 +56,16 @@ export function KoreanBookingForm({
   const router = useRouter();
 
   const [eventDate, setEventDate] = useState("");
-  const [dateFocused, setDateFocused] = useState(false);
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  const openDatePicker = useCallback(() => {
-    const el = dateInputRef.current;
-    if (!el) return;
-    try {
-      el.showPicker?.();
-    } catch {
-      el.focus();
-    }
-  }, []);
+  // 네이티브 <input type="date">로는 휴무 요일을 회색 처리할 방법이 없다 —
+  // 클럽이 안 여는 날을 아예 못 고르게 하려고 달력을 직접 띄운다(2026-09-06).
+  const [dateOpen, setDateOpen] = useState(false);
+  const [openDows, setOpenDows] = useState<number[] | null>(null);
+  const openDatePicker = useCallback(() => setDateOpen(true), []);
+
+  // 영업요일이 등록된 클럽만 안내한다. 미설정이면 막는 날도 없으니 할 말도 없다.
+  const closedNotice = openDows?.length
+    ? `${formatOpenDows(openDows)} 영업 · 그 외 요일은 선택할 수 없어요 (공휴일·공휴일 전날은 가능)`
+    : null;
 
   const [groupSize, setGroupSize] = useState(2);
 
@@ -103,7 +104,7 @@ export function KoreanBookingForm({
         supabase.from("club_menu_combos").select("*").eq("club_id", clubId),
         supabase
           .from("clubs")
-          .select("table_charge_weekday, table_charge_weekend")
+          .select("table_charge_weekday, table_charge_weekend, open_dows")
           .eq("id", clubId)
           .maybeSingle(),
       ]);
@@ -114,6 +115,7 @@ export function KoreanBookingForm({
         weekday: clubRes.data?.table_charge_weekday ?? null,
         weekend: clubRes.data?.table_charge_weekend ?? null,
       });
+      setOpenDows(clubRes.data?.open_dows ?? null);
       setMenuLoading(false);
     })();
     return () => {
@@ -215,6 +217,13 @@ export function KoreanBookingForm({
       openDatePicker();
       return;
     }
+    // 저장된 임시저장(draft)에서 복원된 날짜가 그 사이 휴무일이 됐을 수 있다 —
+    // 달력에서 막았다고 끝이 아니다.
+    if (!isClubOpenOn(openDows, eventDate)) {
+      toast.error("그 날은 클럽이 쉬는 날이에요. 날짜를 다시 골라주세요");
+      setDateOpen(true);
+      return;
+    }
     if (menuLoading) return toast.error("메뉴를 불러오는 중이에요");
     if (!picked) return toast.error("술을 먼저 골라주세요");
     if (!guestName.trim()) return toast.error("예약자 이름을 입력해주세요");
@@ -306,28 +315,33 @@ export function KoreanBookingForm({
               {/* 날짜 */}
               <section>
                 {label(<Calendar className="w-4 h-4 text-money" />, "날짜")}
-                <div className="relative cursor-pointer" onClick={openDatePicker}>
-                  <div
-                    className={`w-full h-12 px-4 rounded-xl bg-card border flex items-center justify-between pointer-events-none transition-colors ${
-                      dateFocused ? "border-amber-500" : "border-border"
-                    }`}
-                  >
-                    <span className={`text-[15px] ${eventDate ? "text-foreground" : "text-muted-foreground"}`}>
-                      {eventDate ? formatEventDate(eventDate) : "날짜 선택"}
-                    </span>
-                    <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                <button
+                  type="button"
+                  onClick={() => setDateOpen((v) => !v)}
+                  className={`w-full h-12 px-4 rounded-xl bg-card border flex items-center justify-between transition-colors ${
+                    dateOpen ? "border-amber-500" : "border-border"
+                  }`}
+                >
+                  <span className={`text-[15px] ${eventDate ? "text-foreground" : "text-muted-foreground"}`}>
+                    {eventDate ? formatEventDate(eventDate) : "날짜 선택"}
+                  </span>
+                  <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                </button>
+                {dateOpen && (
+                  <div className="mt-2 rounded-xl bg-card border border-border p-2">
+                    <ClubDateCalendar
+                      openDows={openDows}
+                      value={eventDate}
+                      onSelect={(d) => {
+                        setEventDate(d);
+                        setDateOpen(false);
+                      }}
+                    />
                   </div>
-                  <input
-                    ref={dateInputRef}
-                    type="date"
-                    lang="ko"
-                    value={eventDate}
-                    onChange={(e) => setEventDate(e.target.value)}
-                    onFocus={() => setDateFocused(true)}
-                    onBlur={() => setDateFocused(false)}
-                    className="absolute inset-0 w-full h-full opacity-0 pointer-events-none"
-                  />
-                </div>
+                )}
+                {closedNotice && (
+                  <p className="text-[12px] text-muted-foreground mt-1.5">{closedNotice}</p>
+                )}
               </section>
 
               {/* 인원 */}

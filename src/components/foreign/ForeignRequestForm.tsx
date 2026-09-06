@@ -14,6 +14,8 @@ import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from 
 import { krwToAll, formatAsOfLocale } from "@/lib/utils/currency";
 import { useKrwRates } from "@/lib/utils/useKrwRates";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
+import { ClubDateCalendar } from "@/components/clubs/ClubDateCalendar";
+import { formatOpenDows, formatOpenDowsEn, isClubOpenOn } from "@/lib/utils/clubOpenDays";
 import { trackForeignEvent, trackEvent } from "@/lib/analytics/events";
 import { getCurrentUtm } from "@/lib/analytics/userEvents";
 import { useSavedClubs } from "@/lib/clubs/savedClubs";
@@ -122,20 +124,11 @@ export function ForeignRequestForm({
   }, []);
 
   const [eventDate, setEventDate] = useState("");
-  const [dateFocused, setDateFocused] = useState(false);
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  // 날짜 박스 어디를 눌러도, 그리고 날짜 없이 다음 단계를 누른 경우에도 같은 방식으로
-  // 달력을 띄운다. 네이티브 date input은 브라우저마다 "달력 아이콘을 정확히 눌러야만
-  // 열리는" 차이가 있어 showPicker()로 통일한다(미지원 브라우저는 focus 폴백).
-  const openDatePicker = useCallback(() => {
-    const el = dateInputRef.current;
-    if (!el) return;
-    try {
-      el.showPicker?.();
-    } catch {
-      el.focus();
-    }
-  }, []);
+  // 네이티브 date input을 버리고 달력을 직접 띄운다 — 브라우저 기본 달력으로는
+  // 그 클럽이 안 여는 요일을 못 고르게 막을 방법이 없다(2026-09-06).
+  // 덤으로 iOS Safari의 로케일 누수(한글 표기가 새는 문제)도 같이 사라진다.
+  const [dateOpen, setDateOpen] = useState(false);
+  const openDatePicker = useCallback(() => setDateOpen(true), []);
   const detailTouchStartXRef = useRef<number | null>(null);
   const [area, setArea] = useState<string>(presetArea && AREAS.includes(presetArea) ? presetArea : "이태원");
   const [groupSize, setGroupSize] = useState(2);
@@ -205,6 +198,20 @@ export function ForeignRequestForm({
   const [menuDraft, setMenuDraft] = useState<{ snapshot: SelectedMenuSnapshot; total: number } | null>(null);
 
   const selectedClubId = selectedClubIds[0] ?? null;
+
+  // 고른 클럽의 영업요일 — 달력에서 휴무일을 막는 근거. 클럽을 안 골랐으면
+  // 막을 근거가 없으니 null(=제한 없음)이다.
+  const selectedClubOpenDows =
+    (selectedClubId ? clubs.find((c) => c.id === selectedClubId)?.open_dows : null) ?? null;
+
+  const closedNotice = selectedClubOpenDows?.length
+    ? t(
+        `${formatOpenDows(selectedClubOpenDows)} 영업 · 그 외 요일은 선택할 수 없어요 (공휴일·공휴일 전날은 가능)`,
+        `Open ${formatOpenDowsEn(selectedClubOpenDows)} · other days can't be selected (holidays and their eves are open)`,
+        `${formatOpenDowsEn(selectedClubOpenDows)} 営業 · 他の曜日は選択できません（祝日・祝日前日は可）`,
+        `${formatOpenDowsEn(selectedClubOpenDows)} 营业 · 其他日期无法选择（节假日及前一天可选）`
+      )
+    : null;
 
   // 금·토는 주말 가격표를 쓴다. 클럽 영업이 새벽까지라 "금요일 밤"이 주말의 시작이다.
   const isWeekend = (() => {
@@ -620,6 +627,19 @@ export function ForeignRequestForm({
     if (!eventDate) return toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期"));
     if (!area && selectedClubIds.length === 0)
       return toast.error(t("지역이나 클럽을 골라주세요", "Pick an area or a club", "エリアかクラブを選択", "请选择区域或夜店"));
+    // 임시저장에서 복원된 날짜, 혹은 날짜를 고른 뒤 클럽을 바꾼 경우 — 달력에서
+    // 막았다고 끝이 아니다.
+    if (!isClubOpenOn(selectedClubOpenDows, eventDate)) {
+      setDateOpen(true);
+      return toast.error(
+        t(
+          "그 날은 클럽이 쉬는 날이에요. 날짜를 다시 골라주세요",
+          "The club is closed that day. Please pick another date",
+          "その日はクラブが休みです。別の日を選んでください",
+          "该夜店当天休息，请另选日期"
+        )
+      );
+    }
     // 메뉴가 있는 클럽은 담은 총액이 곧 예약 금액이다. 이때 예산 입력칸은 아예
     // 렌더되지 않으므로 budgetAmount()만 보면 영원히 0이라 제출이 통째로 막힌다.
     if (menuLoading) {
@@ -904,31 +924,33 @@ export function ForeignRequestForm({
             렌더링(placeholder/포맷 둘 다 우리 통제 하에 있어 로케일 새는 문제 자체가 없음).
             네이티브 입력은 브라우저마다 "달력 아이콘 부분 클릭해야만 피커가 열리고 텍스트 영역
             클릭은 그냥 포커스만 됨" — 그래서 showPicker()로 박스 어디를 눌러도 피커가 열리게 함. */}
-        <div
-          className="relative cursor-pointer"
-          onClick={openDatePicker}
+        <button
+          type="button"
+          onClick={() => setDateOpen((v) => !v)}
+          className={`w-full h-12 px-4 rounded-xl bg-card border flex items-center justify-between transition-colors ${
+            dateOpen ? "border-amber-500" : "border-border"
+          }`}
         >
-          <div
-            className={`w-full h-12 px-4 rounded-xl bg-card border flex items-center justify-between pointer-events-none transition-colors ${
-              dateFocused ? "border-amber-500" : "border-border"
-            }`}
-          >
-            <span className={`text-[15px] ${eventDate ? "text-foreground" : "text-muted-foreground"}`}>
-              {eventDate ? formatEventDate(eventDate, lang) : t("연도. 월. 일.", "Select date", "日付を選択", "选择日期")}
-            </span>
-            <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+          <span className={`text-[15px] ${eventDate ? "text-foreground" : "text-muted-foreground"}`}>
+            {eventDate ? formatEventDate(eventDate, lang) : t("연도. 월. 일.", "Select date", "日付を選択", "选择日期")}
+          </span>
+          <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+        </button>
+        {dateOpen && (
+          <div className="mt-2 rounded-xl bg-card border border-border p-2">
+            <ClubDateCalendar
+              openDows={selectedClubOpenDows}
+              value={eventDate}
+              onSelect={(d) => {
+                setEventDate(d);
+                setDateOpen(false);
+              }}
+            />
           </div>
-          <input
-            ref={dateInputRef}
-            type="date"
-            lang={lang}
-            value={eventDate}
-            onChange={(e) => setEventDate(e.target.value)}
-            onFocus={() => setDateFocused(true)}
-            onBlur={() => setDateFocused(false)}
-            className="absolute inset-0 w-full h-full opacity-0 pointer-events-none"
-          />
-        </div>
+        )}
+        {closedNotice && (
+          <p className="text-[12px] text-muted-foreground mt-1.5">{closedNotice}</p>
+        )}
       </section>
       </>
       )}

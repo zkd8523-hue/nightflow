@@ -29,6 +29,8 @@ export type ForeignClubDetail = {
   floor_plan_url: string | null;
   floor_plan_urls: string[] | null;
   operating_hours: string | null;
+  /** 영업 요일 0=일~6=토 (Migration 659). NULL이면 미설정 — 날짜를 막지 않는다. */
+  open_dows?: number[] | null;
   entry_fee_detail: string | null;
   google_rating: number | null;
   google_review_count: number | null;
