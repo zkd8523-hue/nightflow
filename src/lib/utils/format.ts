@@ -296,3 +296,42 @@ export function formatGenderComposition(
   if (f > 0) parts.push(`${fL}${f}`);
   return parts.join(" ");
 }
+
+
+/**
+ * 예약 연락처 입력값 정규화 (korean_booking_requests.contact_value).
+ *
+ * 채널마다 형태가 완전히 달라서 한 함수로 분기한다 —
+ *   phone:    숫자만 남기고 010-1234-5678 꼴로 하이픈 자동 삽입 (최대 11자리)
+ *   instagram: 공백 제거 + 앞 @는 하나만 유지 (인스타 핸들 최대 30자)
+ *   openchat:  URL이라 공백만 제거하고 길이 상한만 둔다
+ *
+ * 입력 중에 호출되므로(onChange) 미완성 값도 그대로 통과시켜야 한다 —
+ * 검증(validateContact)은 제출 시점에 따로 한다.
+ */
+export function formatBookingContact(
+  type: "phone" | "instagram" | "openchat",
+  raw: string
+): string {
+  if (type === "phone") {
+    // 숫자만 추출. 국내 번호 기준 최대 11자리(010 + 8자리).
+    const d = raw.replace(/\D/g, "").slice(0, 11);
+    // 02(서울 지역번호)만 2자리, 나머지는 3자리 국번으로 끊는다.
+    const head = d.startsWith("02") ? 2 : 3;
+    if (d.length <= head) return d;
+    const rest = d.slice(head);
+    // 뒤 4자리를 항상 마지막 블록으로 떼어낸다. 그래야 입력 도중에
+    // "010-123-4"처럼 어색하게 끊기지 않고 "010-1234"로 자연스럽게 이어진다.
+    // 마지막 블록이 다 차기 전(rest ≤ 4)에는 하이픈을 하나만 둔다.
+    if (rest.length <= 4) return `${d.slice(0, head)}-${rest}`;
+    const mid = rest.slice(0, rest.length - 4);
+    const tail = rest.slice(rest.length - 4);
+    return `${d.slice(0, head)}-${mid}-${tail}`;
+  }
+  if (type === "instagram") {
+    const h = raw.replace(/\s/g, "").replace(/^@+/, "");
+    return h ? `@${h.slice(0, 30)}` : "";
+  }
+  // openchat: URL. 공백만 털고 상한만 둔다.
+  return raw.replace(/\s/g, "").slice(0, 200);
+}
