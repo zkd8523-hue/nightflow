@@ -38,6 +38,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
 
+  // 이 클럽이 실제로 예약 가능한지 — 제목·설명에 "예약"을 넣을지 가른다.
+  // 판정은 lib/clubs/bookable.ts와 동일(담당 MD + 주대 메뉴 둘 다). 단 여기선 한 곳만
+  // 보면 되므로 fetchMenuClubIds(전 클럽 목록)를 쓰지 않고 해당 클럽만 조회한다.
+  //
+  // 왜 예약 가능한 곳에만 넣나: 106곳 중 19곳만 예약이 되는데 전부에 "예약"을 달면
+  // 검색해서 들어온 사람이 "예약 준비중" 비활성 버튼만 보고 나간다(외국인 트랙에서
+  // 같은 문제를 이미 확인). 되는 곳만 알린다.
+  const [{ data: mdRows }, { count: menuCount }] = await Promise.all([
+    supabase.from("club_partners").select("md_id").eq("club_id", id).limit(1),
+    supabase
+      .from("club_menu_items")
+      .select("id", { count: "exact", head: true })
+      .eq("club_id", id),
+  ]);
+  const isBookableClub = (mdRows?.length ?? 0) > 0 && (menuCount ?? 0) > 0;
+
   const area = club.area || "";
   // clubDisplayAlias: 정적 큐레이션(57곳) 우선 → DB clubs.aliases 첫 한글 표기
   // 폴백(나머지 49곳). 감사 결과 DB 한글 별칭이 SEO 메타로 흐르는 페이지가
@@ -59,8 +75,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     // 새 모델의 핵심인 "라인업"을 제목에 넣는다. 기존 제목엔 라인업이 제목·설명·
     // 키워드 어디에도 없어서, 클럽명으로 들어온 사람에게 라인업의 존재 자체가
     // 안 보였다.
-    title: `${headName} 위치·영업시간·입장료·라인업`,
-    description: `${headName}${descAliases} 위치·영업시간·입장료·드레스코드, DJ 라인업과 공연 일정, 테이블 가격·주대 확인. 무료입장·프리드링크 게스트 간판 혜택까지 나플에서 한 번에.`,
+    // 예약 가능한 곳만 제목 맨 앞에 "예약". 검색 수요를 새로 만드는 게 아니라
+    // (네이버 "클럽예약" 월 30회로 카테고리 자체가 없음), 이미 "강남클럽"(월 4,170)
+    // 같은 검색으로 들어온 사람에게 "여기서 예약된다"를 알리는 CTR·전환 목적이다.
+    title: isBookableClub
+      ? `${headName} 예약 - 테이블·위치·영업시간·라인업`
+      : `${headName} 위치·영업시간·입장료·라인업`,
+    description: isBookableClub
+      ? `${headName}${descAliases} 테이블 예약하기. 주대(술값)를 미리 보고 고른 뒤 예약 요청하면 담당자가 자리를 잡아드립니다. 위치·영업시간·입장료·DJ 라인업과 공연 일정, 무료입장·프리드링크 게스트 간판 혜택까지 나플에서 한 번에.`
+      : `${headName}${descAliases} 위치·영업시간·입장료·드레스코드, DJ 라인업과 공연 일정, 테이블 가격·주대 확인. 무료입장·프리드링크 게스트 간판 혜택까지 나플에서 한 번에.`,
     keywords: [
       club.name,
       ...aliases,
@@ -83,10 +106,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       `${club.name} 공연`,
       `${club.name} 테이블`,
       `${club.name} 입장료`,
-      `${club.name} 예약`,
       // 드레스코드는 실제로 채워진 클럽에만. 현재 106곳 중 3곳뿐이라 전부에 걸면
       // 검색해서 들어온 사람이 답을 못 찾고 나간다.
       ...(club.dresscode ? [`${club.name} 드레스코드`] : []),
+      // 예약 축 — 실제로 예약되는 곳에만. 클럽명·별칭·지역 각각에 붙여서
+      // "에이스 예약" / "강남 에이스 예약" / "강남 클럽 예약" 어느 조합으로 쳐도 걸리게.
+      ...(isBookableClub
+        ? [
+            `${club.name} 예약`,
+            `${club.name} 테이블 예약`,
+            `${club.name} 부킹`,
+            ...aliases.map((a) => `${a} 예약`),
+            ...aliases.map((a) => `${a} 테이블 예약`),
+            ...(area
+              ? [`${area} 클럽 예약`, `${area} 클럽 테이블 예약`, `${area} 룸 예약`]
+              : []),
+          ]
+        : []),
       ...aliases.map((a) => `${a} 라인업`),
       ...aliases.map((a) => `${a} 위치`),
       ...aliases.map((a) => `${a} 클럽`),
@@ -95,8 +131,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ],
     alternates: { canonical: `https://nightflow.kr/clubs/${id}` },
     openGraph: {
-      title: `${headName} 위치·영업시간·라인업·무료입장`,
-      description: `${headName}${descAliases} 위치·영업시간·DJ 라인업과 공연 일정, 테이블 가격 확인, 무료입장·프리드링크 게스트 간판 혜택까지.`,
+      title: isBookableClub
+        ? `${headName} 예약 - 테이블·위치·영업시간·라인업`
+        : `${headName} 위치·영업시간·라인업·무료입장`,
+      description: isBookableClub
+        ? `${headName}${descAliases} 테이블 예약. 주대를 미리 보고 골라서 요청하면 담당자가 자리를 잡아드립니다. 위치·영업시간·DJ 라인업까지 나플에서.`
+        : `${headName}${descAliases} 위치·영업시간·DJ 라인업과 공연 일정, 테이블 가격 확인, 무료입장·프리드링크 게스트 간판 혜택까지.`,
       url: `https://nightflow.kr/clubs/${id}`,
       type: "website",
       // 클럽 대표 사진이 있으면 그걸 카톡 공유 카드 이미지로 — 없으면 나플 공통
