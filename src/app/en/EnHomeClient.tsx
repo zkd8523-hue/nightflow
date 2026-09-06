@@ -5,14 +5,15 @@ import Link from "next/link";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { FaqTab } from "./FaqTab";
-import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map, Check, X } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ForeignAppCta } from "@/components/layout/ForeignAppCta";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
-import { SavedClubsButton } from "@/components/clubs/SavedClubsButton";
+import { recordRecentClub, useRecentClubs, removeRecentClub } from "@/lib/clubs/recentClubs";
+import { clubTagline } from "@/lib/clubs/bookable";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { trackForeignEvent } from "@/lib/analytics/events";
 import { ForeignSidebar, type ForeignNavKey } from "@/components/foreign/ForeignShell";
@@ -237,11 +238,21 @@ const REGIONS = [
     emoji: "🎧",
     tagline: "Young, wild night",
   },
+  // 부산 추가(2026-09-06): 예약 가능한 클럽이 3곳 생겼는데(그루브&스팟·Azit·BELPOS)
+  // 홈에 진입 버튼이 없어 서울 3구 밖으로 나갈 길이 아예 막혀 있었다.
+  // /{lang}/clubs/busan 상세 페이지는 이미 있고 검색 유입도 들어오던 중이었다.
+  {
+    ko: "부산",
+    en: "Busan",
+    emoji: "🌊",
+    tagline: "Beach city night",
+  },
 ] as const;
 
-function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
+function ClubThumb({ club, onOpen, lang }: { club: ClubItem; onOpen: () => void; lang: Lang }) {
   const { tr } = useTr();
   const name = displayClubName(club);
+  const tagline = clubTagline(club, lang);
   // 홈에서 이탈시키지 않고 제자리에서 상세 모달을 띄움 — "How it works" 교육 기회를 잃지 않도록.
   // (예전엔 /clubs 페이지로 바로 이동했음. RegionSection이 오픈 상태를 관리.)
   return (
@@ -259,6 +270,13 @@ function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
         )}
       </div>
       <p className="text-[12px] font-bold text-foreground mt-1.5 truncate lg:text-[13px] lg:mt-2">{name}</p>
+      {/* 한 줄 소개 — 예약 가능한 곳이 19곳뿐이라 이름만으론 뭘 고를지 알 수 없다.
+          비면 줄 자체를 접는다(빈 자리를 남기지 않는다). */}
+      {tagline && (
+        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2 leading-snug break-keep">
+          {tagline}
+        </p>
+      )}
     </button>
   );
 }
@@ -492,6 +510,15 @@ function GuideIndex() {
 function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags: FlagItem[]; bookCtaRef?: React.RefObject<HTMLAnchorElement | null> }) {
   const { lang, t, tr } = useTr();
 
+  // 최근 본 클럽 — "Clubs in Seoul" 바로 위, 이커머스/여행 사이트의 "최근 본
+  // 상품" 자리와 같은 위치. clubs 목록에 있으면 최신 정보(썸네일 등)로 덮어써서
+  // 저장 시점 이후 바뀐 정보가 있어도 어긋나지 않게 한다.
+  const recent = useRecentClubs();
+  const recentClubItems = recent
+    .map((r) => clubs.find((c) => c.id === r.id) ?? null)
+    .filter((c): c is ClubItem => !!c)
+    .slice(0, 10);
+
   // 클럽 상세 모달 — 열린 캐러셀(지역별) 내에서 좌우 이동 가능
   const [detailList, setDetailList] = useState<ClubItem[]>([]);
   const [detailIndex, setDetailIndex] = useState(0);
@@ -500,6 +527,15 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
     const idx = list.findIndex((c) => c.id === club.id);
     setDetailList(list);
     setDetailIndex(idx >= 0 ? idx : 0);
+    // 찜과 달리 손님이 아무것도 안 눌러도 상세를 열어본 것만으로 쌓인다 —
+    // "아까 봤던 그 클럽"을 다시 찾을 때 하트를 깜빡한 경우를 커버한다.
+    recordRecentClub({
+      id: club.id,
+      name: club.name,
+      name_en: club.name_en,
+      area: club.area,
+      thumbnail_url: club.thumbnail_url,
+    });
   };
   const closeDetail = () => setDetailList([]);
   const hasPrevDetail = detailIndex > 0;
@@ -519,10 +555,11 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
   const visibleRegions = REGIONS.filter((r) => !activeArea || r.ko === activeArea);
   const hasFilter = !!activeGenre || onlyRecommended;
 
-  // 추천 기준: 구글 평점 4.0 이상 + 리뷰 30건 이상.
-  // featured_rank는 77곳 중 76곳이 0이라 신호로 쓸 수 없어 평점·리뷰수로 대체했다.
-  const isRecommended = (c: ClubItem) =>
-    (c.google_rating ?? 0) >= 4 && (c.google_review_count ?? 0) >= 30;
+  // "추천"은 무엇이 추천인지 손님에게 아무 정보도 주지 않는 데다, 평점 4.0+리뷰 30건
+  // 기준이라 예약이 안 되는 클럽도 잔뜩 걸렸다. 이 토글의 쓸모는 "지금 우리가 잡아줄
+  // 수 있는 곳만 보기"이므로 그대로 바꾼다 — 카드마다 배지를 달지 않아도
+  // 목록 자체가 무엇인지 설명한다(배지 19개는 화면 소음이 됐다).
+  const isRecommended = (c: ClubItem) => Boolean(c.has_md && c.has_menu);
 
   const matchesFilters = (c: ClubItem) =>
     (!activeGenre || (c.tags ?? []).includes(`genre:${activeGenre}`)) &&
@@ -530,7 +567,7 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
 
   // 실제 태그 분포 기준 상위 장르만 노출(hiphop 37·techno 18·house 13·edm 11·rnb 11·kpop 6).
   // 1~2곳뿐인 롱테일(rock·indie·funk 등)은 칩을 눌러도 빈 화면이 되어 제외.
-  const GENRES: { code: string; label: string }[] = [
+  const ALL_GENRES: { code: string; label: string }[] = [
     { code: "hiphop", label: t("힙합", "Hip-hop", "ヒップホップ", "嘻哈", "嘻哈") },
     { code: "techno", label: "Techno" },
     { code: "house", label: "House" },
@@ -539,8 +576,27 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
     { code: "kpop", label: "K-pop" },
   ];
 
-  const chipCls = (on: boolean) =>
-    `px-4 py-2 rounded-full text-[13px] transition-colors ${
+  // 지금 선택한 지역·예약가능 조건에서 실제로 클럽이 나오는 장르만 남긴다.
+  // 6개를 항상 다 깔면 대부분이 빈 화면으로 가는 함정 버튼이 된다 —
+  // 예약가능 19곳 기준 지역×장르 24칸 중 14칸이 0곳이고, House는 전국에 0곳이라
+  // 어느 지역을 골라도 무조건 "No clubs match these filters"였다.
+  // 이미 고른 장르는 결과가 0이어도 남긴다(누른 칩이 사라지면 어디를 눌렀는지 잃는다).
+  const GENRES = ALL_GENRES.filter(
+    (g) =>
+      g.code === activeGenre ||
+      clubs.some(
+        (c) =>
+          (!activeArea || c.area === activeArea) &&
+          (!onlyRecommended || isRecommended(c)) &&
+          (c.tags ?? []).includes(`genre:${g.code}`),
+      ),
+  );
+
+  // 지역이 1차 선택(어디로 갈지), 장르가 2차(거기서 뭘 들을지)라 크기로 위계를 준다.
+  // 같은 크기로 두 줄이면 무엇을 먼저 고르는 화면인지 안 읽힌다.
+  const chipCls = (on: boolean, size: "lg" | "sm" = "sm") =>
+    // shrink-0: 모바일 가로 스크롤에서 칩이 눌려 글자가 깨지는 걸 막는다.
+    `shrink-0 whitespace-nowrap ${size === "lg" ? "px-5 py-2.5 text-[15px]" : "px-3.5 py-1.5 text-[12px]"} rounded-full transition-colors ${
       on
         ? "bg-inverse text-inverse-foreground font-black"
         : "bg-card border border-border text-foreground font-bold hover:border-amber-500/50"
@@ -548,6 +604,52 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
 
   return (
     <div className="pt-5 pb-6 border-b border-border space-y-5">
+      {/* 최근 본 클럽 — "Clubs in Seoul" 바로 위. 찜과 달리 자동 기록이라
+          손님이 뭘 봤는지 스스로도 모를 수 있어, 본문 상단에서 바로 보여준다. */}
+      {recentClubItems.length > 0 && (
+        <div className="px-4">
+          <p className="text-[15px] font-black text-foreground mb-2">
+            {tr("Recently viewed")}
+          </p>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x">
+            {recentClubItems.map((c) => (
+              // 카드 전체가 버튼이면 그 안에 삭제 버튼을 못 넣는다(button 중첩 불가).
+              // 바깥을 div로 두고 "열기"와 "지우기"를 형제 버튼으로 나눈다.
+              <div
+                key={c.id}
+                className="relative shrink-0 w-[220px] snap-start"
+              >
+                <button
+                  type="button"
+                  onClick={() => openDetail(recentClubItems, c)}
+                  className="w-full flex items-center gap-3 p-2.5 pr-11 rounded-2xl bg-card border border-border text-left"
+                >
+                  <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-muted">
+                    {c.thumbnail_url && (
+                      <img src={c.thumbnail_url} alt={displayClubName(c)} className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] text-muted-foreground">{areaLabel(c.area, lang)}</p>
+                    <p className="text-[14px] font-bold text-foreground truncate">{displayClubName(c)}</p>
+                  </div>
+                </button>
+                {/* 터치 타겟 44px — p-1.5(약 26px)이라 모바일에서 누르기 어렵고
+                    옆 카드 탭과 겹쳤다. 아이콘 크기는 두고 여백만 넓혔다. */}
+                <button
+                  type="button"
+                  onClick={() => removeRecentClub(c.id)}
+                  aria-label={t("최근 목록에서 지우기", "Remove from recently viewed", "履歴から削除", "从最近浏览中移除", "從最近瀏覽中移除")}
+                  className="absolute top-0 right-0 w-11 h-11 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground active:bg-muted transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="px-4 flex items-center justify-between gap-2">
         <p className="text-[22px] font-black text-foreground tracking-tight">{tr("Clubs in Seoul")}</p>
         <Link
@@ -558,20 +660,25 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
         </Link>
       </div>
 
-      {/* 필터 칩 (lg 이상). 데스크톱은 전 지역·전 클럽이 한 화면에 안 들어와 좁히는 수단이 필요하다. */}
-      <div className="hidden lg:flex lg:flex-col gap-2.5 px-4">
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setActiveArea(null)} className={chipCls(activeArea === null)}>
-            {t("서울 전체", "All Seoul", "すべて", "全部", "全部")}
+      {/* 필터 칩.
+          모바일에도 보여준다(2026-09-06): 원래 `hidden lg:flex`라 데스크톱 전용이었는데,
+          이 서비스는 모바일이 주력인데도 지역(부산 포함)·장르·예약가능 필터를
+          손님이 아예 만질 수 없었다.
+          다만 모바일에서 flex-wrap으로 풀면 칩이 두세 줄로 쌓여 첫 화면을 먹으므로,
+          좁은 화면에서는 한 줄 가로 스크롤, lg부터 기존처럼 줄바꿈으로 편다. */}
+      <div className="flex flex-col gap-2 px-4 lg:gap-2.5">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible">
+          <button type="button" onClick={() => setActiveArea(null)} className={chipCls(activeArea === null, "lg")}>
+            {t("전체", "All areas", "すべて", "全部", "全部")}
           </button>
           {REGIONS.map((r) => (
-            <button key={r.ko} type="button" onClick={() => setActiveArea(r.ko)} className={chipCls(activeArea === r.ko)}>
+            <button key={r.ko} type="button" onClick={() => setActiveArea(r.ko)} className={chipCls(activeArea === r.ko, "lg")}>
               {r.emoji} {areaLabel(r.ko, lang)}
             </button>
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible">
           <button type="button" onClick={() => setActiveGenre(null)} className={chipCls(activeGenre === null)}>
             {t("전체 장르", "All genres", "すべての音楽", "全部曲风", "全部曲風")}
           </button>
@@ -581,17 +688,17 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
             </button>
           ))}
 
-          {/* 추천 토글 — 다른 칩과 성격이 달라(좁히기가 아니라 품질 기준) 앰버로 구분한다. */}
+          {/* 예약가능 토글 — 다른 칩과 성격이 달라(장르 좁히기가 아니라 예약 가능 여부) 앰버로 구분. */}
           <button
             type="button"
             onClick={() => setOnlyRecommended((v) => !v)}
-            className={`ml-1 px-4 py-2 rounded-full text-[13px] transition-colors ${
+            className={`shrink-0 whitespace-nowrap ml-1 px-4 py-2 rounded-full text-[13px] transition-colors ${
               onlyRecommended
                 ? "bg-amber-500 text-black font-black"
                 : "bg-card border border-amber-500/40 text-brand-amber font-bold hover:border-amber-500"
             }`}
           >
-            ⭐ {t("추천", "Recommended", "おすすめ", "推荐", "推薦")}
+            ⚡ {t("예약가능", "Bookable", "予約可能", "可预订", "可預訂")}
           </button>
         </div>
       </div>
@@ -600,18 +707,29 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
         const regionClubs = clubs.filter((c) => c.area === r.ko && matchesFilters(c));
         // 필터를 걸었을 때만 빈 지역을 감춘다(필터 없는 모바일 화면은 기존 동작 그대로).
         if (regionClubs.length === 0 && hasFilter) return null;
+        // 데스크탑은 6열 그리드라 클럽이 많은 지역(이태원 22곳)이 4줄까지 늘어나
+        // 그 아래 지역(강남·홍대)이 스크롤 한참 아래로 밀린다. 1줄(6곳)로 잘라
+        // 지역 간 균형을 맞춘다 — 모바일은 가로 스크롤이라 원래 문제가 없어 그대로 둔다.
+        const desktopClubs = regionClubs.slice(0, 6);
         return (
           <div key={r.ko} className="space-y-2.5">
             <div className="px-4">
-              <p className="text-[15px] leading-snug">
-                <span className="font-black">{r.emoji} {areaLabel(r.ko, lang)}</span>
-                <span className="text-muted-foreground font-medium text-[13px]"> — {tr(r.tagline)}</span>
+              {/* 지역명을 눈에 띄게 키운다 — 태그라인과 크기가 비슷해서 어디서
+                  지역이 바뀌는지 스캔하기 어려웠다. */}
+              <p className="leading-snug">
+                <span className="font-black text-[19px]">{r.emoji} {areaLabel(r.ko, lang)}</span>{" "}
+                <span className="text-muted-foreground font-medium text-[13px]">— {tr(r.tagline)}</span>
               </p>
             </div>
             {regionClubs.length > 0 && (
-              <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x lg:grid lg:grid-cols-6 lg:overflow-x-visible lg:px-0">
-                {regionClubs.map((c) => <ClubThumb key={c.id} club={c} onOpen={() => openDetail(regionClubs, c)} />)}
-              </div>
+              <>
+                <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x lg:hidden">
+                  {regionClubs.map((c) => <ClubThumb key={c.id} club={c} lang={lang} onOpen={() => openDetail(regionClubs, c)} />)}
+                </div>
+                <div className="hidden lg:grid lg:grid-cols-6 lg:gap-3">
+                  {desktopClubs.map((c) => <ClubThumb key={c.id} club={c} lang={lang} onOpen={() => openDetail(regionClubs, c)} />)}
+                </div>
+              </>
             )}
           </div>
         );
@@ -815,9 +933,21 @@ function FlagsTab({
       {/* ① 타겟 후킹 + 설명 (헤더 아래) */}
       <div className="px-5 pt-6 pb-5 text-center space-y-3">
         <h1 className="text-[24px] font-black leading-[1.18] tracking-tight">
-          {tr("Unforgettable night in Seoul Club?")}
+          {tr("Looking for a VIP night in Korea's clubs?")}
         </h1>
-        <p className="text-[18px] font-black text-brand-amber pt-1">{tr("You're in the right place.")}</p>
+        {/* -mt-2로 부모 space-y-3(12px) 위에 얹힌 pt-1(4px)까지 눌러 제목·부제를
+            한 덩어리로 붙인다 — 원래는 16px 가까이 떨어져 있었다. */}
+        <p className="text-[18px] font-black text-brand-amber -mt-2">{tr("You're in the right place.")}</p>
+        {/* 소셜프루프 — 원래 하단 sticky CTA에만 있었는데, 처음 진입한 화면에서
+            바로 보여야 신뢰가 생긴다. sticky는 이 문구가 사라지고 버튼만 남는다
+            (중복 방지, 아래 sticky 블록 참고). */}
+        {!!openRequestCount && (
+          <p className="text-center text-[13.5px] text-foreground">
+            <span className="font-bold text-amber-500 tabular-nums">{openRequestCount}</span>
+            {" "}
+            {tr("requests on-going right now")}
+          </p>
+        )}
       </div>
 
       {/* ② How it works (드롭다운) — 신뢰 배지 + 3단계 설명 + 바가지 보장 통합 */}
@@ -843,8 +973,8 @@ function FlagsTab({
             <div className="space-y-3">
               {[
                 { n: "1", title: "Pick your club", body: "Choose the clubs you want (or just tell us your vibe) — date, budget, group size." },
-                { n: "2", title: "We help you book", body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup." },
-                { n: "3", title: "Walk in like a VIP", body: "Best table booked, no line, no broker. Show your passport at the door (19+)." },
+                { n: "2", title: "Choose your drinks", body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup." },
+                { n: "3", title: "Walk in like a VIP", body: "Best table booked, no line. Show your passport at the door (19+)." },
               ].map((s) => (
                 <div key={s.n} className="flex gap-3">
                   <div className="shrink-0 w-7 h-7 rounded-full bg-inverse text-inverse-foreground font-black text-[12px] flex items-center justify-center">{s.n}</div>
@@ -947,16 +1077,8 @@ function FlagsTab({
             : "opacity-0 translate-y-3"
         }`}
       >
-        {/* 신뢰 문구 — 숫자는 하드코딩이 아니라 요청 시점의 실제 열린 건수(count_open_
-            foreign_requests). 0이면 렌더 안 함: 빈 서비스처럼 보이는 게 소셜 프루프 없는
-            것보다 나쁘다. */}
-        {!!openRequestCount && (
-          <p className="text-center text-[13.5px] text-foreground mb-2.5">
-            <span className="font-bold text-amber-500 tabular-nums">{openRequestCount}</span>
-            {" "}
-            {tr("requests on-going right now")}
-          </p>
-        )}
+        {/* 소셜프루프는 위(헤드라인 아래)로 옮겼다 — 여기 또 두면 스크롤할 때마다
+            같은 문구가 반복돼 신뢰 문구가 아니라 소음이 된다. */}
         <Link
           href={`/flags/new?lang=${lang}`}
           tabIndex={showStickyCta ? 0 : -1}
@@ -1091,11 +1213,6 @@ function EnHomeInner({
             <span className="text-[15px] font-black">NightFlow</span>
           </button>
         )}
-        </div>
-        {/* 상단 예약 버튼은 제거 — 하단 sticky "Book with NightFlow" CTA와 중복이라
-            같은 화면에 예약 버튼이 두 개 떠 있었다. 찜 진입점만 남긴다(0개면 스스로 숨음). */}
-        <div className="flex items-center gap-2">
-          <SavedClubsButton lang={lang} clubs={clubs} />
         </div>
       </header>
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
 import { EnHomeClient } from "./EnHomeClient";
 import { orderForeignHome } from "@/lib/clubs/foreignSort";
+import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 
 export const revalidate = 30;
 
@@ -157,12 +158,13 @@ export default async function EnHomePage() {
     .order("created_at", { ascending: false })
     .limit(30);
 
-  // 강남·홍대·이태원 클럽 (지역 섹션용). 이태원은 쇼케이스 노출용(등록은 준비중)
+  // 지역 섹션용 클럽. 부산 추가(2026-09-06): 홈 지역 칩에 Busan을 넣었는데
+  // 이 쿼리가 서울 3구만 가져와 "No clubs match these filters"가 떴다.
   // /en/clubs 와 동일한 필터: 삭제·운영자·테스트 클럽 제외 + 썸네일 있는 것만 + 이름 중복 제거
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, name_en, area, thumbnail_url, address, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, partners:club_partners(md_id)")
-    .in("area", ["강남", "홍대", "이태원"])
+    .select("id, name, name_en, area, thumbnail_url, address, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, partners:club_partners(md_id)")
+    .in("area", ["강남", "홍대", "이태원", "부산"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
     .eq("is_test", false)
@@ -170,7 +172,9 @@ export default async function EnHomePage() {
     .not("thumbnail_url", "is", null)
     .neq("thumbnail_url", "")
     .order("google_review_count", { ascending: false, nullsFirst: false })
-    .limit(60);
+    .limit(80);
+  // 주대가 등록된 클럽 — MD와 함께 "즉시 예약 가능" 판정에 쓴다(배지·정렬).
+  const menuIds = await fetchMenuClubIds(supabase);
   const seenClubNames = new Set<string>();
   // 목록 "Recommend"와 동일 로직으로 통일: 지역별 MD보유→리뷰순 + featured_rank 고정위치.
   const clubs = orderForeignHome(
@@ -202,7 +206,13 @@ export default async function EnHomePage() {
         google_reviews: c.google_reviews,
         featured_rank: c.featured_rank,
         google_review_count: c.google_review_count,
+        tagline_ko: c.tagline_ko,
+        tagline_en: c.tagline_en,
+        tagline_ja: c.tagline_ja,
+        tagline_zh: c.tagline_zh,
+        tagline_zh_tw: c.tagline_zh_tw,
         has_md: (((c as { partners?: unknown[] }).partners?.length) ?? 0) > 0,
+        has_menu: menuIds.has((c as { id: string }).id),
       }))
   );
 

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { BackButton } from "@/components/foreign/BackButton";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
@@ -137,21 +136,14 @@ export default async function PuzzleNewPage({
       <div className="max-w-lg lg:max-w-[900px] mx-auto px-4 lg:px-8 py-6 lg:py-10">
         {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 외국인 홈(/en, /ja, /zh) 복귀 링크 제공 */}
         {isForeigner && (
-          <Link
-            href={foreignHome}
-            aria-label={t("뒤로", "Back", "戻る", "返回")}
-            className="inline-flex items-center gap-1 -ml-1 mb-4 px-2 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-            <span className="text-[14px] font-bold">{t("뒤로", "Back", "戻る", "返回")}</span>
-          </Link>
+          <BackButton label={t("뒤로", "Back", "戻る", "返回")} fallbackHref={foreignHome} />
         )}
 
         {/* 외국인만 헤더 유지(자체 chrome이라 타이틀 필요). 한국인은 게이트/폼이 헤더 역할 */}
         {isForeigner && (
           <div className="mb-8">
-            {/* 제목=결과, 부제=무엇을 하면 무슨 일이 일어나는지 + 여러 개 고를 이유("up to 5"의 근거).
-                이전 문구는 제목·부제가 "클럽을 고르세요"를 두 번 말하고 이유를 안 줬음. */}
+            {/* 제목 한 줄로 통일 — 부제(무엇을 하면 무슨 일이 일어나는지)는 이미
+                1장 폼의 클럽 카드·Choose drinks 버튼이 스스로 설명해서 중복이었다. */}
             <h1 className="text-2xl font-black text-foreground tracking-tight">
               {t(
                 "서울의 밤 예약하기",
@@ -160,14 +152,6 @@ export default async function PuzzleNewPage({
                 "预订你的首尔夜晚"
               )}
             </h1>
-            <p className="text-muted-foreground text-sm font-medium mt-1 break-keep leading-relaxed">
-              {t(
-                "가고 싶은 클럽을 고르면 우리가 직접 연락해 테이블을 잡아드려요. 여러 곳 고를수록 붐비는 날 성공률이 올라가요.",
-                "Pick the clubs you want — we contact them directly and lock in your table, in English. More picks, better odds on a busy night.",
-                "行きたいクラブを選べば、私たちが直接連絡してテーブルを確保します。複数選ぶほど、混雑する日に取れる可能性が上がります。",
-                "选好想去的夜店,我们直接联系并帮你锁定卡座。多选几家,人多的日子成功率更高。"
-              )}
-            </p>
           </div>
         )}
 

@@ -6,7 +6,8 @@ import Image from "next/image";
 import { ChevronRight, ChevronLeft, ChevronDown, Info, Check } from "lucide-react";
 import { ForeignClubDetailPanel, displayClubName } from "@/components/clubs/ForeignClubDetailPanel";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
-import { pinFeatured } from "@/lib/clubs/foreignSort";
+import { pinFeatured, recommendCompare } from "@/lib/clubs/foreignSort";
+import { clubTagline } from "@/lib/clubs/bookable";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
@@ -37,6 +38,12 @@ type Club = {
   google_reviews: GoogleReview[] | null;
   /** club_partners에 담당 MD가 있는지 — "Recommend" 정렬용 */
   has_md?: boolean;
+  has_menu?: boolean;
+  tagline_ko?: string | null;
+  tagline_en?: string | null;
+  tagline_ja?: string | null;
+  tagline_zh?: string | null;
+  tagline_zh_tw?: string | null;
   /** 상위노출 랭크 — 높을수록 모든 정렬에서 최상단 (Promoted Listings) */
   featured_rank?: number | null;
 };
@@ -128,15 +135,14 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
     return () => window.removeEventListener("scroll", onScroll);
   }, [lang]);
 
-  // 정렬: 추천순(MD 있는 클럽 우선+리뷰순) 기본 / 리뷰 많은순 / 평점순
+  // 정렬: 추천순(즉시 예약 가능 우선 → MD 보유 → 리뷰순) 기본 / 리뷰 많은순 / 평점순.
+  // 추천순 비교는 foreignSort의 recommendCompare를 그대로 쓴다 — 여기서 따로 구현하면
+  // 홈과 목록이 다른 순서로 갈린다(실제로 MD만 보는 옛 규칙이 여기 남아 있었다).
   const sorted = useMemo(() => {
     const arr = [...clubs];
     arr.sort((a, b) => {
       if (sortKey === "rating") return (b.google_rating ?? 0) - (a.google_rating ?? 0);
-      if (sortKey === "recommend") {
-        const md = (b.has_md ? 1 : 0) - (a.has_md ? 1 : 0);
-        if (md !== 0) return md;
-      }
+      if (sortKey === "recommend") return recommendCompare(a, b);
       return (b.google_review_count ?? 0) - (a.google_review_count ?? 0);
     });
     return arr;
@@ -151,9 +157,22 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   }, [sorted, venueType, genre]);
   const activeFilterCount = (venueType ? 1 : 0) + (genre ? 1 : 0);
 
-  // 강남/홍대/이태원 가로 스크롤 (한국 가이드처럼). 해당 지역 클럽 없으면 섹션 생략.
+  // 지역별 가로 스크롤 (한국 가이드처럼). 해당 지역 클럽 없으면 섹션 생략.
   // featured_rank(고정 노출 위치)는 Recommend에서만 적용 — 리뷰순/평점순 등 명시적 정렬엔 미적용(공평).
-  const groups = ["이태원", "강남", "홍대"]
+  //
+  // 지역 목록을 하드코딩하지 않는다(2026-09-06): 서울 3구만 박아둬서 부산 클럽 15곳이
+  // /{lang}/clubs/busan 을 열어도 카드가 한 장도 안 나왔다 — 예약 가능한 3곳
+  // (그루브&스팟·Azit·BELPOS)까지 통째로 묻혔다. 클럽이 있는 지역이면 자동으로 뜨게 한다.
+  // 순서는 서울 3구를 먼저 두고(주력), 나머지는 클럽 수가 많은 순.
+  const AREA_ORDER = ["이태원", "강남", "홍대"];
+  const areasInData = [...new Set(filtered.map((c) => c.area).filter(Boolean) as string[])];
+  const extraAreas = areasInData
+    .filter((a) => !AREA_ORDER.includes(a))
+    .sort(
+      (a, b) =>
+        filtered.filter((c) => c.area === b).length - filtered.filter((c) => c.area === a).length,
+    );
+  const groups = [...AREA_ORDER, ...extraAreas]
     .map((ko) => {
       const items = filtered.filter((c) => c.area === ko);
       return { ko, items: sortKey === "recommend" ? pinFeatured(items) : items };
@@ -226,7 +245,10 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
       `🍾 ${name}を予約`,
       `🍾 预订 ${name}`,
     );
-  const sortRecommendLabel = t("추천순", "Recommend", "おすすめ順", "推荐");
+  // "추천"은 무엇이 추천인지 손님에게 아무 정보도 주지 않는다. 이 정렬의 실제 의미는
+  // "지금 우리가 잡아줄 수 있는 곳이 먼저"이므로 그대로 이름을 붙인다 — 그러면
+  // 카드마다 배지를 달지 않아도 목록 자체가 무엇인지 설명한다.
+  const sortRecommendLabel = t("예약가능순", "Bookable", "予約可能", "可预订", "可預訂");
   const sortPopularLabel = t("리뷰 많은순", "Most reviewed", "レビュー数順", "评价最多");
   const sortRatingLabel = t("평점순", "Top rated", "評価順", "评分");
   const resetFiltersLabel = t("초기화", "Reset", "リセット", "重置");
@@ -308,7 +330,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   },
                   {
                     n: "2",
-                    title: t("예약을 도와드려요", "We help you book", "予約をお手伝いします", "我们协助你预订", "我們協助你預訂"),
+                    title: t("주류 선택", "Choose your drinks", "お酒を選ぶ", "选择酒水", "選擇酒水"),
                     body: t(
                       "저희가 클럽에 직접 연락해 예산에 맞는 최적의 테이블을 잡아드려요 — 실제 가격, 중개 수수료 없음.",
                       "We contact the club directly and lock in the best table for your budget — real price, no broker markup.",
@@ -321,7 +343,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                     title: t("VIP처럼 입장", "Walk in like a VIP", "VIPのように入場", "像VIP一样入场"),
                     body: t(
                       "최고의 자리 예약 완료, 줄 설 필요 없음. 입구에서 여권만 보여주세요 (만 19세 이상).",
-                      "Best table booked, no line, no broker. Show your passport at the door (19+).",
+                      "Best table booked, no line. Show your passport at the door (19+).",
                       "最高の席を予約済み、列に並ぶ必要なし。入口でパスポートをご提示ください（19歳以上）。",
                       "已订好最佳卡座,无需排队。在门口出示护照即可（19岁以上）。"
                     ),
@@ -472,6 +494,9 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   }}
                   className="shrink-0 w-[140px] snap-start text-left active:opacity-70 transition-opacity lg:w-full lg:shrink"
                 >
+                  {/* relative 필수 — 안쪽 Image가 fill(=position:absolute)이라
+                      positioned 조상이 없으면 이 칸을 건너뛰고 바깥까지 올라가
+                      썸네일이 통째로 어긋난다. */}
                   <div className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden bg-muted border border-border lg:w-full lg:h-[168px]">
                     {club.thumbnail_url ? (
                       <Image src={club.thumbnail_url} alt={displayClubName(club)} fill className="object-cover" sizes="140px" />
@@ -480,6 +505,11 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                     )}
                   </div>
                   <p className="text-[13px] font-bold text-foreground mt-2 truncate">{displayClubName(club)}</p>
+                  {clubTagline(club, lang) && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2 leading-snug break-keep">
+                      {clubTagline(club, lang)}
+                    </p>
+                  )}
                   {club.google_rating != null && (
                     <p className="text-[12px] text-brand-amber mt-0.5">
                       ⭐ {club.google_rating.toFixed(1)}

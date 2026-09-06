@@ -13,7 +13,7 @@ export default async function AdminForeignPage() {
 
   const { data: rows } = await supabase
     .from("foreign_requests")
-    .select("id, lang, area, event_date, group_size, budget, club_ids, guest_name, assigned_md_id, contact_type, contact_value, notes, status, created_at")
+    .select("id, proposal_token, lang, area, event_date, group_size, budget, selected_menu, selected_menu_total, club_ids, guest_name, assigned_md_id, contact_type, contact_value, notes, status, created_at, md_response, md_responded_at, md_table_choosable, md_table_options, md_reject_reason, md_required_amount")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -45,9 +45,11 @@ export default async function AdminForeignPage() {
   const { data: mds } = mdIds.length
     ? await supabase.from("users").select("id, display_name, phone").in("id", mdIds)
     : { data: [] as { id: string; display_name: string | null; phone: string | null }[] };
-  const mdById: Record<string, { id: string; name: string; hasPhone: boolean }> = {};
+  // phone을 그대로 넘긴다 — 예전엔 hasPhone(있다/없다)만 보내서, 운영자가
+  // 링크를 복사한 뒤 번호는 다른 데서 찾아 카톡을 보내야 했다.
+  const mdById: Record<string, { id: string; name: string; phone: string | null }> = {};
   mds?.forEach((m) => {
-    mdById[m.id] = { id: m.id, name: m.display_name ?? "(이름없음)", hasPhone: !!m.phone };
+    mdById[m.id] = { id: m.id, name: m.display_name ?? "(이름없음)", phone: m.phone };
   });
   const mdsByClub: Record<string, string[]> = {};
   (partners ?? []).forEach((p) => {

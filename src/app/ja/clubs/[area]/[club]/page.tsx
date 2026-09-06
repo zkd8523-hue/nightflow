@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound, permanentRedirect } from "next/navigation";
-import { MapPin, Clock, Ticket, Shirt, Star, ExternalLink, ChevronLeft } from "lucide-react";
+import { MapPin, Clock, Ticket, Shirt, Star, ExternalLink, ChevronLeft, Instagram } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
 import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
@@ -11,6 +11,8 @@ import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
+import { isBookable } from "@/lib/clubs/bookable";
+import { BookingComingSoon } from "@/components/foreign/BookingComingSoon";
 
 // 일본어판 클럽 개별 페이지 — /en/clubs/[area]/[club] 과 완전히 동일한 구조를 복제.
 // (이 사이트의 기존 관례: /ja, /zh, /zh-tw 지역 페이지도 공용 컴포넌트로 추상화하지 않고
@@ -31,10 +33,12 @@ const AREA_JA: Record<string, string> = {
 
 const SELECT =
   "id, name, name_en, area, address, thumbnail_url, operating_hours, entry_fee_detail, " +
-  "google_rating, google_review_count, google_reviews, instagram, dresscode, tags, drink_menu_url";
+  "google_rating, google_review_count, google_reviews, instagram, dresscode, tags, drink_menu_url, " +
+  "partners:club_partners(md_id)";
 
 type ClubRow = {
   id: string;
+  partners?: { md_id: string }[] | null;
   name: string;
   name_en: string | null;
   area: string;
@@ -70,12 +74,32 @@ async function findClub(areaSlug: string, clubParam: string) {
   );
   if (!club) return null;
 
+  // 주대(club_menu_items)가 등록된 클럽 집합 — MD와 함께 "즉시 예약 가능" 판정에 쓴다.
+  // 이웃 클럽 배지에도 필요하므로 한 번만 조회해 Set으로 돌린다.
+  const { data: menuRows } = await supabase.from("club_menu_items").select("club_id");
+  const menuIds = new Set((menuRows ?? []).map((r) => r.club_id as string));
+
+  const bookable = isBookable({
+    has_md: (club.partners?.length ?? 0) > 0,
+    has_menu: menuIds.has(club.id),
+  });
+
+  // 같은 지역의 다른 클럽 — 내부 링크(거미줄)용.
+  // 예약 가능한 이웃을 앞으로 — 이 페이지에서 예약이 안 될 때 대안으로 보내는 자리다.
   const siblings = rows
     .filter((c) => c.id !== club.id && c.area === club.area && c.name_en?.trim())
-    .sort((a, b) => (b.google_review_count ?? 0) - (a.google_review_count ?? 0))
+    .map((c) => ({
+      ...c,
+      bookable: isBookable({ has_md: (c.partners?.length ?? 0) > 0, has_menu: menuIds.has(c.id) }),
+    }))
+    .sort(
+      (a, b) =>
+        Number(b.bookable) - Number(a.bookable) ||
+        (b.google_review_count ?? 0) - (a.google_review_count ?? 0),
+    )
     .slice(0, 8);
 
-  return { club, siblings };
+  return { club, siblings, bookable };
 }
 
 export async function generateMetadata({
@@ -159,7 +183,10 @@ export default async function JaClubDetailPage({
   const { area, club: clubParam } = await params;
   const found = await findClub(area, clubParam);
   if (!found) notFound();
-  const { club, siblings } = found;
+  const { club, siblings, bookable } = found;
+  // 예약 불가 페이지에서 "아래에서 고르세요"라고 안내하므로, 실제로 고를 게
+  // 있는지 먼저 본다 — 예약 가능한 이웃이 0곳이면 그 문구가 거짓이 된다.
+  const bookableSiblings = siblings.filter((s) => s.bookable);
 
   const canonical = canonicalAreaSlug(club.area);
   if (canonical && canonical !== area) {
@@ -186,7 +213,11 @@ export default async function JaClubDetailPage({
     fee && { q: `${name}の入場料はいくらですか？`, a: `${name}の入場料は${fee}です。` },
     dress && { q: `${name}のドレスコードは？`, a: `${name}のドレスコード：${dress}。` },
     club.address && { q: `${name}はどこにありますか？`, a: `${name}は${areaJa}（ソウル）の${club.address}にあります。` },
-    { q: `${name}を日本語で予約できますか？`, a: `はい。NightFlowが${name}に直接連絡してテーブルを確保します。英語・日本語対応、ブローカー手数料なし。` },
+    // ⚠️ 예약 중개가 가능한 클럽에만 넣는다. 담당 MD나 주대가 없으면 실제로 잡아줄 수
+    // 없는데 구조화 데이터로 "예, 잡아드립니다"를 선언하면 검색결과가 거짓말이 된다.
+    bookable
+      ? { q: `${name}を日本語で予約できますか？`, a: `はい。NightFlowが${name}に直接連絡してテーブルを確保します。英語・日本語対応、ブローカー手数料なし。` }
+      : null,
   ].filter(Boolean) as { q: string; a: string }[];
 
   const jsonLd = {
@@ -241,6 +272,29 @@ export default async function JaClubDetailPage({
       },
     ],
   };
+
+  // 인스타는 값이 링크라 fact()와 따로 만든다 — 클럽의 최신 소식(라인업·휴무)은
+  // 거의 인스타에만 올라오는데, 지금까지 JSON-LD(sameAs)에만 있고 화면엔 없었다.
+  const igRow = (handle: string) => (
+    <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
+      <span className="shrink-0 mt-0.5 text-muted-foreground"><Instagram className="w-4 h-4" /></span>
+      <div className="min-w-0">
+        <dt className="text-[12px] font-bold text-muted-foreground">Instagram</dt>
+        <dd className="text-[15px] break-all">
+          <a
+            href={`https://instagram.com/${handle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-nf-track="outbound_instagram"
+            className="text-brand-amber hover:underline inline-flex items-center gap-1"
+          >
+            @{handle}
+            <ExternalLink className="w-3 h-3 shrink-0" />
+          </a>
+        </dd>
+      </div>
+    </div>
+  );
 
   const fact = (icon: React.ReactNode, label: string, value: string) => (
     <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
@@ -316,6 +370,7 @@ export default async function JaClubDetailPage({
             {fee && fact(<Ticket className="w-4 h-4" />, "入場料", fee)}
             {club.address && fact(<MapPin className="w-4 h-4" />, "住所", club.address)}
             {dress && fact(<Shirt className="w-4 h-4" />, "ドレスコード", dress)}
+            {club.instagram?.trim() && igRow(club.instagram.trim().replace(/^@/, ""))}
           </dl>
         </section>
 
@@ -354,11 +409,24 @@ export default async function JaClubDetailPage({
         )}
 
         <section className="rounded-2xl bg-card border border-border p-5 space-y-1.5">
-          <h2 className="text-[18px] font-black">{name}のテーブル予約</h2>
-          <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
-            日程・人数・予算を教えてください。NightFlowが{name}に直接連絡し、韓国語で交渉、
-            日本語でご案内します。ブローカー手数料なし、デポジットなし。
-          </p>
+          {bookable ? (
+            <>
+              <h2 className="text-[18px] font-black">{name}のテーブル予約</h2>
+              <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
+                日程・人数・予算を教えてください。NightFlowが{name}に直接連絡し、韓国語で交渉、
+                日本語でご案内します。ブローカー手数料なし、デポジットなし。
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-[18px] font-black">まだ予約できません</h2>
+              <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
+                {bookableSiblings.length > 0
+                  ? `${name}のテーブルはまだお取り扱いしていません。下の${areaJa}のクラブからお選びいただければ、日本語のままテーブルをお取りします。`
+                  : `${name}のテーブルはまだお取り扱いしていません。今すぐご予約いただけるクラブをご覧ください。`}
+              </p>
+            </>
+          )}
         </section>
 
         {faqs.length > 0 && (
@@ -375,11 +443,16 @@ export default async function JaClubDetailPage({
           </section>
         )}
 
-        {siblings.length > 0 && (
+        {/* 예약 불가 페이지에서는 "今すぐ予約できる"라고 제목을 다므로 실제로 예약되는
+            이웃만 남긴다 — 제목과 목록이 어긋나면 그것도 거짓말이 된다.
+            그런 이웃이 하나도 없으면 섹션 자체를 접는다. */}
+        {(bookable ? siblings : bookableSiblings).length > 0 && (
           <section>
-            <h2 className="text-[18px] font-black mb-2">{areaJa}の他のクラブ</h2>
+            <h2 className="text-[18px] font-black mb-2">
+              {bookable ? `${areaJa}の他のクラブ` : `${areaJa}で今すぐ予約できるクラブ`}
+            </h2>
             <div className="flex flex-wrap gap-2">
-              {siblings.map((s) => (
+              {(bookable ? siblings : bookableSiblings).map((s) => (
                 <Link key={s.id} href={`/ja/clubs/${area}/${clubSlug(s.name_en!)}`}
                   data-nf-track="sibling_club"
                   className="px-3 py-1.5 rounded-full bg-muted border border-border text-[13px] font-bold hover:text-brand-amber">
@@ -396,11 +469,17 @@ export default async function JaClubDetailPage({
 
       <div className="fixed bottom-0 inset-x-0 lg:left-[248px] z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
         <div className="flex items-stretch gap-2 w-full max-w-lg lg:max-w-[900px] mx-auto">
-          <Link href={bookHref}
-            data-nf-track="book_cta"
-            className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
-            🍾 {name}を予約
-          </Link>
+          {bookable ? (
+            <Link href={bookHref}
+              data-nf-track="book_cta"
+              className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
+              🍾 {name}を予約
+            </Link>
+          ) : (
+            <div className="flex-[8] min-w-0">
+              <BookingComingSoon lang="ja" />
+            </div>
+          )}
           <SaveClubButton
             variant="cta"
             className="flex-[2] min-w-0"

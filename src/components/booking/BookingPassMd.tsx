@@ -1,7 +1,7 @@
 "use client";
 
 // MD용 확정서. 손님용과 보여주는 정보가 다르다 —
-// 수령액·준비 내역·응대 언어를 보여주고, 손님 연락처는 넘기지 않는다.
+// 금액·준비 내역·응대 언어를 보여주고, 손님 연락처는 넘기지 않는다.
 
 import { useState } from "react";
 import { Check, Phone } from "lucide-react";
@@ -173,7 +173,7 @@ export function BookingPassMd(p: Props) {
                 </Row>
               )}
               {p.totalPrice != null && (
-                <Row k="수령액">
+                <Row k="금액">
                   <div className="font-mono text-[21px] font-bold text-money tabular-nums">
                     {p.totalPrice.toLocaleString()}원
                   </div>

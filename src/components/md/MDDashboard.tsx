@@ -31,7 +31,7 @@ import { ShareOptionManager } from "@/components/md/ShareOptionManager";
 import { ShareWeekdayPlanBoard } from "@/components/md/ShareWeekdayPlanBoard";
 import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
 import { ShareLiveToggleList } from "@/components/md/ShareLiveToggleList";
-import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle, Pencil } from "lucide-react";
+import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle, Pencil, Globe, Users, Calendar } from "lucide-react";
 import { FeatureGate } from "@/components/common/FeatureGate";
 import { toast } from "sonner";
 import { getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
@@ -140,6 +140,18 @@ interface MDDashboardProps {
     shareWeekdayPlans?: ShareWeekdayPlan[];
     /** 내 쿠폰 발행 목록 (Migration 539) — 쿠폰 인라인 영역용 */
     initialCoupons?: CouponIssue[];
+    /** 본인에게 배정된 외국인 컨시어지 요청 — 실제로 있을 때만 "외국인" 섹션을 노출한다 */
+    initialForeignRequests?: {
+        id: string;
+        guestName: string | null;
+        eventDate: string;
+        groupSize: number;
+        status: string;
+        clubName: string | null;
+        price: number | null;
+        priceConfirmed: boolean;
+        mdToken: string | null;
+    }[];
 }
 
 export function MDDashboard({
@@ -161,6 +173,7 @@ export function MDDashboard({
     shareOptions = [],
     shareWeekdayPlans = [],
     initialCoupons = [],
+    initialForeignRequests = [],
 }: MDDashboardProps) {
     const [auctions, setAuctions] = useState<Auction[]>(initialAuctions);
     const [clubs, setClubs] = useState<Club[]>(initialClubs);
@@ -711,6 +724,73 @@ export function MDDashboard({
                             defaultClubId={defaultClubId}
                             embedded
                         />
+                    </div>
+                </div>
+            )}
+
+            {/* 외국인 컨시어지 요청 — 본인에게 배정된 요청이 실제로 있을 때만 노출한다.
+                운영자가 어드민에서 assigned_md_id로 지정한 건만 여기 뜬다. */}
+            {initialForeignRequests.length > 0 && (
+                <div className="px-4 mt-5">
+                    <p className="text-[13px] font-black text-muted-foreground mb-2 px-1 text-center flex items-center justify-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5" />
+                        외국인
+                    </p>
+                    <div className="space-y-2">
+                        {initialForeignRequests.map((r) => {
+                            const cardBody = (
+                                <>
+                                    <div className="mb-1.5">
+                                        <span className="text-[14px] font-black text-foreground">
+                                            {r.clubName ?? "클럽 미정"}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-[12.5px] text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                            <Calendar className="w-3.5 h-3.5" />
+                                            {r.eventDate}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <Users className="w-3.5 h-3.5" />
+                                            {r.groupSize}명
+                                        </span>
+                                        {r.guestName && <span>· {r.guestName}</span>}
+                                    </div>
+                                    {r.price != null && (
+                                        <div className="mt-1.5 flex items-center gap-1.5">
+                                            <Coins className="w-3.5 h-3.5 text-muted-foreground" />
+                                            <span
+                                                className={`text-[13px] font-bold ${
+                                                    r.priceConfirmed ? "text-money" : "text-muted-foreground"
+                                                }`}
+                                            >
+                                                {r.price.toLocaleString()}원
+                                            </span>
+                                            {!r.priceConfirmed && (
+                                                <span className="text-[11px] text-muted-foreground">(희망 예산)</span>
+                                            )}
+                                        </div>
+                                    )}
+                                </>
+                            );
+                            // 확정서(md_token)가 있어야 예약 상세로 갈 수 있다 — 아직 확정
+                            // 전이면(어드민이 확정서를 안 만든 상태) 카드만 보여주고 안 눌린다.
+                            return r.mdToken ? (
+                                <a
+                                    key={r.id}
+                                    href={`/booking/md/${r.mdToken}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block bg-card border border-border rounded-2xl p-3.5 active:scale-[0.98] transition-transform"
+                                >
+                                    {cardBody}
+                                </a>
+                            ) : (
+                                <div key={r.id} className="bg-card border border-border rounded-2xl p-3.5">
+                                    {cardBody}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

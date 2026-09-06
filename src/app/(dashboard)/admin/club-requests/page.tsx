@@ -36,6 +36,7 @@ export default async function AdminClubRequestsPage() {
 
   const rows: ClubRequest[] = requests ?? [];
 
+
   // 요청자 닉네임 조회
   const userIds = [...new Set(rows.map((r) => r.user_id).filter((x): x is string => !!x))];
   const { data: users } = userIds.length

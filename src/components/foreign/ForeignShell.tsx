@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Home, User, HelpCircle, Map } from "lucide-react";
-import { type Lang, makeT } from "@/lib/i18n";
+import { Home, User, HelpCircle, Map, Heart, X } from "lucide-react";
+import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { createClient } from "@/lib/supabase/client";
+import { useSavedClubs, removeSavedClub } from "@/lib/clubs/savedClubs";
 
 // ── 외국인 트랙 데스크톱 셸 ────────────────────────────────────────
 // 외국인 트래픽은 데스크톱 비중이 한국어(25%)의 두 배 안팎이다(ZH 63%·JA 51%·ZH-TW 39%·EN 38%).
@@ -71,6 +72,7 @@ export function ForeignSidebar({
     { href: `/${lang}/club-entry-rules`, label: t("입장 규정", "Entry rules", "入場ルール", "入场规定", "入場規定") },
   ];
 
+  const saved = useSavedClubs();
   const itemCls = (on: boolean) =>
     `flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-bold transition-colors ${
       on ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
@@ -119,6 +121,51 @@ export function ForeignSidebar({
           </Link>
         ))}
       </nav>
+
+      {/* 찜한 클럽 — 팝업 시트 대신 사이드바에 상시 노출한다. 이전엔 헤더의
+          하트 버튼을 눌러야만 보이는 시트였는데, 그러면 "찜했다는 사실"이
+          화면 밖으로 사라져서 고민 중인 후보를 계속 보며 비교할 수가 없었다.
+          20곳 넘는 외국인 페이지가 이 사이드바를 공유하므로 여기 한 번만
+          넣으면 어디서든(클럽 상세를 보다가도, 예약 폼을 채우다가도) 보인다. */}
+      {saved.length > 0 && (
+        <div className="mt-5">
+          <p className="px-3 mb-2.5 text-[11px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <Heart className="w-3 h-3 text-brand-amber fill-current" />
+            {tr("Saved clubs")}
+          </p>
+          <div className="flex flex-col gap-1.5 px-1 max-h-[260px] overflow-y-auto">
+            {saved.map((c) => (
+              <div key={c.id} className="flex items-center gap-1 rounded-xl bg-card border border-border">
+                <Link
+                  href={`/flags/new?lang=${lang}&club=${c.id}`}
+                  className="flex items-center gap-2.5 min-w-0 flex-1 p-2 text-left"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-muted overflow-hidden shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {c.thumbnail_url && (
+                      <img src={c.thumbnail_url} alt={c.name_en || c.name} className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-bold text-foreground truncate">
+                      {c.name_en?.trim() || c.name}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">{areaLabel(c.area, lang)}</p>
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  aria-label={t("찜 해제", "Remove", "解除", "移除")}
+                  onClick={() => removeSavedClub(c.id)}
+                  className="shrink-0 p-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex-1" />
 

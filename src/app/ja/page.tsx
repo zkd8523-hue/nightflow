@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { hideTestData } from "@/lib/utils/testData";
 import { EnHomeClient } from "../en/EnHomeClient";
 import { orderForeignHome } from "@/lib/clubs/foreignSort";
+import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 
 export const revalidate = 30;
 
@@ -181,8 +182,8 @@ export default async function JaHomePage() {
   // 강남·홍대 클럽 (지역 섹션 "Spots competing for you"용) — /en 홈과 동일 로직
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, name_en, area, thumbnail_url, address, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, partners:club_partners(md_id)")
-    .in("area", ["강남", "홍대", "이태원"])
+    .select("id, name, name_en, area, thumbnail_url, address, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, partners:club_partners(md_id)")
+    .in("area", ["강남", "홍대", "이태원", "부산"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
     .eq("is_test", false)
@@ -190,7 +191,9 @@ export default async function JaHomePage() {
     .not("thumbnail_url", "is", null)
     .neq("thumbnail_url", "")
     .order("google_review_count", { ascending: false, nullsFirst: false })
-    .limit(60);
+    .limit(80);
+  // 주대가 등록된 클럽 — MD와 함께 "즉시 예약 가능" 판정에 쓴다(배지·정렬).
+  const menuIds = await fetchMenuClubIds(supabase);
   const seenClubNames = new Set<string>();
   // 목록 "Recommend"와 동일 로직으로 통일: 지역별 MD보유→리뷰순 + featured_rank 고정위치.
   const clubs = orderForeignHome(
@@ -222,7 +225,13 @@ export default async function JaHomePage() {
         google_reviews: c.google_reviews,
         featured_rank: c.featured_rank,
         google_review_count: c.google_review_count,
+        tagline_ko: c.tagline_ko,
+        tagline_en: c.tagline_en,
+        tagline_ja: c.tagline_ja,
+        tagline_zh: c.tagline_zh,
+        tagline_zh_tw: c.tagline_zh_tw,
         has_md: (((c as { partners?: unknown[] }).partners?.length) ?? 0) > 0,
+        has_menu: menuIds.has((c as { id: string }).id),
       }))
   );
 

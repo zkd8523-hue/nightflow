@@ -37,6 +37,14 @@ export type ForeignClubDetail = {
   google_reviews: GoogleReview[] | null;
   /** club_partners에 담당 MD가 있는지 — "Recommend" 정렬용 (표시용 아님, 옵셔널) */
   has_md?: boolean;
+  /** 주대 등록 여부. has_md와 둘 다 true여야 실제로 예약을 잡아줄 수 있다. */
+  has_menu?: boolean;
+  /** 한 줄 소개(Migration 650) — 언어별로 따로 쓴 문장. */
+  tagline_ko?: string | null;
+  tagline_en?: string | null;
+  tagline_ja?: string | null;
+  tagline_zh?: string | null;
+  tagline_zh_tw?: string | null;
   /** 상위노출 랭크 — 지역 내 "고정 노출 위치"(1-based). Recommend 정렬에서만 적용. (Promoted Listings) */
   featured_rank?: number | null;
 };

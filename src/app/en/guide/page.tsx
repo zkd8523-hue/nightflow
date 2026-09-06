@@ -107,13 +107,13 @@ const STEPS = [
   },
   {
     n: "2",
-    title: "We help you book",
+    title: "Choose your drinks",
     body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup.",
   },
   {
     n: "3",
     title: "Walk in like a VIP",
-    body: "Best table booked, no line, no broker. Message the club on Instagram and show your passport at the door (19+).",
+    body: "Best table booked, no line. Message the club on Instagram and show your passport at the door (19+).",
   },
 ];
 

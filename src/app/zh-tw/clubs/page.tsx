@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 import { ClubsClient } from "../../en/clubs/ClubsClient";
 
 export const metadata: Metadata = {
@@ -67,7 +68,7 @@ export default async function ZhTwClubsPage() {
   const { data: clubs } = await supabase
     .from("clubs")
     .select(
-      "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, partners:club_partners(md_id)"
+      "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, partners:club_partners(md_id)"
     )
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -75,7 +76,13 @@ export default async function ZhTwClubsPage() {
     .eq("hidden_from_guide", false)
     .order("google_review_count", { ascending: false, nullsFirst: false });
 
-  const clubList = (clubs ?? []).map((c) => ({ ...c, has_md: (c.partners?.length ?? 0) > 0 }));
+  const menuIds = await fetchMenuClubIds(supabase);
+  const clubList = (clubs ?? []).map((c) => ({
+    ...c,
+    has_md: (c.partners?.length ?? 0) > 0,
+    // 주대까지 있어야 실제로 예약을 잡아줄 수 있다 — 배지·정렬의 기준.
+    has_menu: menuIds.has(c.id),
+  }));
   const clubCount = clubList.length;
 
   return (

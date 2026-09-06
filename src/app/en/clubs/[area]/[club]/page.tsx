@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound, permanentRedirect } from "next/navigation";
-import { MapPin, Clock, Ticket, Shirt, Star, ExternalLink, ChevronLeft } from "lucide-react";
+import { MapPin, Clock, Ticket, Shirt, Star, ExternalLink, ChevronLeft, Instagram } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
 import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
@@ -11,6 +11,8 @@ import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
+import { isBookable } from "@/lib/clubs/bookable";
+import { BookingComingSoon } from "@/components/foreign/BookingComingSoon";
 
 // 클럽 개별 페이지 — 외국인 롱테일 SEO의 핵심.
 //
@@ -31,10 +33,12 @@ const AREA_EN: Record<string, string> = {
 
 const SELECT =
   "id, name, name_en, area, address, thumbnail_url, operating_hours, entry_fee_detail, " +
-  "google_rating, google_review_count, google_reviews, instagram, dresscode, tags, drink_menu_url";
+  "google_rating, google_review_count, google_reviews, instagram, dresscode, tags, drink_menu_url, " +
+  "partners:club_partners(md_id)";
 
 type ClubRow = {
   id: string;
+  partners?: { md_id: string }[] | null;
   name: string;
   name_en: string | null;
   area: string;
@@ -71,13 +75,32 @@ async function findClub(areaSlug: string, clubParam: string) {
   );
   if (!club) return null;
 
+  // 주대(club_menu_items)가 등록된 클럽 집합 — MD와 함께 "즉시 예약 가능" 판정에 쓴다.
+  // 이웃 클럽 배지에도 필요하므로 한 번만 조회해 Set으로 돌린다.
+  const { data: menuRows } = await supabase.from("club_menu_items").select("club_id");
+  const menuIds = new Set((menuRows ?? []).map((r) => r.club_id as string));
+
+  const bookable = isBookable({
+    has_md: (club.partners?.length ?? 0) > 0,
+    has_menu: menuIds.has(club.id),
+  });
+
   // 같은 지역의 다른 클럽 — 내부 링크(거미줄)용. 크롤러가 한 페이지에서 이웃으로 퍼져나감.
+  // 예약 가능한 이웃을 앞으로 — 이 페이지에서 예약이 안 될 때 대안으로 보내는 자리다.
   const siblings = rows
     .filter((c) => c.id !== club.id && c.area === club.area && c.name_en?.trim())
-    .sort((a, b) => (b.google_review_count ?? 0) - (a.google_review_count ?? 0))
+    .map((c) => ({
+      ...c,
+      bookable: isBookable({ has_md: (c.partners?.length ?? 0) > 0, has_menu: menuIds.has(c.id) }),
+    }))
+    .sort(
+      (a, b) =>
+        Number(b.bookable) - Number(a.bookable) ||
+        (b.google_review_count ?? 0) - (a.google_review_count ?? 0),
+    )
     .slice(0, 8);
 
-  return { club, siblings };
+  return { club, siblings, bookable };
 }
 
 export async function generateMetadata({
@@ -165,7 +188,10 @@ export default async function EnClubDetailPage({
   const { area, club: clubParam } = await params;
   const found = await findClub(area, clubParam);
   if (!found) notFound();
-  const { club, siblings } = found;
+  const { club, siblings, bookable } = found;
+  // 예약 불가 페이지에서 "아래에서 고르세요"라고 안내하므로, 실제로 고를 게
+  // 있는지 먼저 본다 — 예약 가능한 이웃이 0곳이면 그 문구가 거짓이 된다.
+  const bookableSiblings = siblings.filter((s) => s.bookable);
 
   // apgujeong 등 별칭 경로로 들어오면 정본으로 보냄 (중복 콘텐츠 방지)
   const canonical = canonicalAreaSlug(club.area);
@@ -194,7 +220,11 @@ export default async function EnClubDetailPage({
     fee && { q: `How much is the entry fee at ${name}?`, a: `Entry at ${name} is ${fee}.` },
     dress && { q: `What is the dress code at ${name}?`, a: `${name} dress code: ${dress}.` },
     club.address && { q: `Where is ${name} located?`, a: `${name} is at ${club.address}, ${areaEn}, Seoul.` },
-    { q: `Can I book a table at ${name} in English?`, a: `Yes. NightFlow contacts ${name} directly and locks in your table — you deal only in English, with no broker fee.` },
+    // ⚠️ 예약 중개가 가능한 클럽에만 넣는다. 담당 MD나 주대가 없으면 실제로 잡아줄 수
+    // 없는데 구조화 데이터로 "예, 잡아드립니다"를 선언하면 검색결과가 거짓말이 된다.
+    bookable
+      ? { q: `Can I book a table at ${name} in English?`, a: `Yes. NightFlow contacts ${name} directly and locks in your table — you deal only in English, with no broker fee.` }
+      : null,
   ].filter(Boolean) as { q: string; a: string }[];
 
   const jsonLd = {
@@ -251,6 +281,29 @@ export default async function EnClubDetailPage({
       },
     ],
   };
+
+  // 인스타는 값이 링크라 fact()와 따로 만든다 — 클럽의 최신 소식(라인업·휴무)은
+  // 거의 인스타에만 올라오는데, 지금까지 JSON-LD(sameAs)에만 있고 화면엔 없었다.
+  const igRow = (handle: string) => (
+    <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
+      <span className="shrink-0 mt-0.5 text-muted-foreground"><Instagram className="w-4 h-4" /></span>
+      <div className="min-w-0">
+        <dt className="text-[12px] font-bold text-muted-foreground">Instagram</dt>
+        <dd className="text-[15px] break-all">
+          <a
+            href={`https://instagram.com/${handle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-nf-track="outbound_instagram"
+            className="text-brand-amber hover:underline inline-flex items-center gap-1"
+          >
+            @{handle}
+            <ExternalLink className="w-3 h-3 shrink-0" />
+          </a>
+        </dd>
+      </div>
+    </div>
+  );
 
   const fact = (icon: React.ReactNode, label: string, value: string) => (
     <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
@@ -332,6 +385,7 @@ export default async function EnClubDetailPage({
             {fee && fact(<Ticket className="w-4 h-4" />, "Entry fee", fee)}
             {club.address && fact(<MapPin className="w-4 h-4" />, "Address", club.address)}
             {dress && fact(<Shirt className="w-4 h-4" />, "Dress code", dress)}
+            {club.instagram?.trim() && igRow(club.instagram.trim().replace(/^@/, ""))}
           </dl>
         </section>
 
@@ -370,11 +424,24 @@ export default async function EnClubDetailPage({
         )}
 
         <section className="rounded-2xl bg-card border border-border p-5 space-y-1.5">
-          <h2 className="text-[18px] font-black">Book a table at {name}</h2>
-          <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
-            Tell us your date, group size and budget. We contact {name} directly, negotiate your
-            table in Korean, and reply to you in English. No broker fee, no deposit.
-          </p>
+          {bookable ? (
+            <>
+              <h2 className="text-[18px] font-black">Book a table at {name}</h2>
+              <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
+                Tell us your date, group size and budget. We contact {name} directly, negotiate your
+                table in Korean, and reply to you in English. No broker fee, no deposit.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-[18px] font-black">Not bookable yet</h2>
+              <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
+                {bookableSiblings.length > 0
+                  ? `We don't handle tables at ${name} yet. Pick one of the ${areaEn} clubs we can book below, and we'll lock in your table in English.`
+                  : `We don't handle tables at ${name} yet. See which Seoul clubs we can book for you right now.`}
+              </p>
+            </>
+          )}
         </section>
 
         {/* FAQ — 화면에도 보여준다. JSON-LD만 있고 본문에 없으면 구글이 신뢰하지 않음. */}
@@ -393,11 +460,16 @@ export default async function EnClubDetailPage({
         )}
 
         {/* 이웃 클럽 — 크롤러가 지역 안을 돌아다니게 하는 거미줄 */}
-        {siblings.length > 0 && (
+        {/* 예약 불가 페이지에서는 "Bookable now"라고 제목을 다므로 실제로 예약되는
+            이웃만 남긴다 — 제목과 목록이 어긋나면 그것도 거짓말이 된다.
+            그런 이웃이 하나도 없으면 섹션 자체를 접는다. */}
+        {(bookable ? siblings : bookableSiblings).length > 0 && (
           <section>
-            <h2 className="text-[18px] font-black mb-2">Other clubs in {areaEn}</h2>
+            <h2 className="text-[18px] font-black mb-2">
+              {bookable ? `Other clubs in ${areaEn}` : `Bookable now in ${areaEn}`}
+            </h2>
             <div className="flex flex-wrap gap-2">
-              {siblings.map((s) => (
+              {(bookable ? siblings : bookableSiblings).map((s) => (
                 <Link key={s.id} href={`/en/clubs/${area}/${clubSlug(s.name_en!)}`}
                   data-nf-track="sibling_club"
                   className="px-3 py-1.5 rounded-full bg-muted border border-border text-[13px] font-bold hover:text-brand-amber">
@@ -415,11 +487,17 @@ export default async function EnClubDetailPage({
       {/* 예약(8) : 찜(2) — ForeignClubDetailPanel의 하단 sticky CTA와 같은 패턴·비율. */}
       <div className="fixed bottom-0 inset-x-0 lg:left-[248px] z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
         <div className="flex items-stretch gap-2 w-full max-w-lg lg:max-w-[900px] mx-auto">
-          <Link href={bookHref}
-            data-nf-track="book_cta"
-            className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
-            🍾 Book {name}
-          </Link>
+          {bookable ? (
+            <Link href={bookHref}
+              data-nf-track="book_cta"
+              className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
+              🍾 Book {name}
+            </Link>
+          ) : (
+            <div className="flex-[8] min-w-0">
+              <BookingComingSoon lang="en" />
+            </div>
+          )}
           <SaveClubButton
             variant="cta"
             className="flex-[2] min-w-0"

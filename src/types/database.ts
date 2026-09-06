@@ -1827,3 +1827,90 @@ export interface SuggestionComment {
 }
 
 
+
+// ---------------------------------------------------------------------------
+// 클럽 주대(술값) 메뉴 — Migration 642
+//
+// 메뉴판 이미지(clubs.drink_menu_urls)를 읽어 구조화한 것. 손님이 직접 고르면
+// 가격이 확정된 채로 요청이 들어와 운영자-MD 왕복이 4번에서 1번으로 준다.
+// ---------------------------------------------------------------------------
+
+export type MenuCategory =
+  | "champagne" | "liqueur" | "whisky" | "tequila"
+  | "vodka" | "cognac" | "gin" | "rum" | "set";
+
+export interface ClubMenuVariant {
+  id: string;
+  item_id: string;
+  label_en: string;
+  label_ko: string | null;
+  /** 평일가. 요일 구분이 없는 품목은 이 값이 곧 상시가. */
+  price: number;
+  /** 주말가. null이면 평일가와 동일. */
+  price_weekend: number | null;
+  sort_order: number;
+}
+
+/** 선택형 세트에서 손님이 고르는 후보. slot_no가 "택1" 슬롯을 구분한다. */
+export interface ClubMenuChoice {
+  id: string;
+  item_id: string;
+  slot_no: number;
+  name_en: string;
+  name_ko: string | null;
+  image_url: string | null;
+  /** 이 후보를 고르면 붙는 업차지. 0이면 추가금 없음. */
+  extra_price: number;
+  sort_order: number;
+}
+
+export interface ClubMenuItem {
+  id: string;
+  club_id: string;
+  category: MenuCategory;
+  name_en: string;
+  name_ko: string | null;
+  description: string | null;
+  image_url: string | null;
+  /** "00:30 이전 입장 테이블 한정" 같은 주문 자격 조건. 시스템이 판정하지 않고 문구로만 노출. */
+  condition_note: string | null;
+  /** 조건 문구 영어판(Migration 651). 외국인 트랙에서 이걸 쓴다. */
+  condition_note_en: string | null;
+  /** 층별로 가격표가 갈리는 클럽용("3F EDM ZONE"). null이면 클럽 전체 공통. */
+  zone: string | null;
+  /** 카테고리(장르)와 직교하는 등급 축. 화면에서 별도 탭으로 뺀다. */
+  is_vvip: boolean;
+  sort_order: number;
+  is_active: boolean;
+  variants?: ClubMenuVariant[];
+  choices?: ClubMenuChoice[];
+}
+
+/** 샴페인 N + 하드 M 조합별 가격 (Club Ace 형태). */
+export interface ClubMenuCombo {
+  id: string;
+  club_id: string;
+  cham_count: number;
+  hard_count: number;
+  price: number;
+}
+
+/**
+ * foreign_requests.selected_menu에 저장되는 스냅샷.
+ * FK가 아니라 이름·가격을 통째로 박는다 — 클럽이 나중에 가격을 바꿔도
+ * "손님이 신청 당시 본 가격"이 남아야 분쟁이 안 생긴다.
+ */
+export interface SelectedMenuSnapshot {
+  items: {
+    item_id: string;
+    variant_id: string;
+    name_en: string;
+    label_en: string;
+    price: number;
+    qty: number;
+    choices?: { slot_no: number; name_en: string; extra_price: number }[];
+  }[];
+  combo?: { cham_count: number; hard_count: number; price: number };
+  table_charge?: { amount: number; basis: "weekday" | "weekend" };
+  zone?: string;
+}

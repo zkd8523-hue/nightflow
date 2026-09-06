@@ -52,6 +52,44 @@ const sb = createClient(
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * 검색 결과가 정말 그 클럽인지 본다.
+ *
+ * 왜 필요한가(2026-09-06): "K-bat 빠따 서울 마포구 잔다리로 5"로 검색했더니
+ * 첫 결과가 홍대야구연습장이었다("빠따"=야구방망이). 그대로 저장돼서 평점 4.4·
+ * 리뷰 85건이 통째로 남의 업소 것으로 8개월간 노출됐다. 에러가 아니라 조용한
+ * 오염이라 아무도 눈치채지 못했다.
+ *
+ * 두 가지를 본다.
+ *  1) 업종 — 클럽/바/라운지 계열이 아니면 버린다(야구장·카페·헬스장 등).
+ *  2) 주소 — 도로명 번지가 서로 다르면 버린다. 같은 이름의 다른 지점을 막는다.
+ * 애매하면 저장하지 않는다: 빈 값보다 틀린 값이 훨씬 나쁘다.
+ */
+const PLACE_TYPES_OK = new Set([
+  "night_club", "bar", "pub", "restaurant", "event_venue",
+  "performing_arts_theater", "banquet_hall",
+]);
+
+/** "서울 마포구 잔다리로 5 지하2층" → "잔다리로5" (비교용 정규화) */
+function roadKey(addr) {
+  if (!addr) return "";
+  const m = String(addr).match(/([가-힣A-Za-z]+(?:로|길)\s?\d+(?:-\d+)?)/);
+  return m ? m[1].replace(/\s+/g, "") : "";
+}
+
+function placeLooksRight(place, club) {
+  const types = [place.primaryType, ...(place.types ?? [])].filter(Boolean);
+  if (types.length && !types.some((t) => PLACE_TYPES_OK.has(t))) {
+    return { ok: false, why: `업종 불일치(${place.primaryType ?? types[0]})` };
+  }
+  const a = roadKey(club.address);
+  const b = roadKey(place.formattedAddress);
+  if (a && b && a !== b) {
+    return { ok: false, why: `주소 불일치(${b} ≠ ${a})` };
+  }
+  return { ok: true };
+}
+
 /** Places API(New) 텍스트 검색 → 첫 결과 반환 (없으면 null) */
 async function searchPlace(query) {
   const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
@@ -61,7 +99,7 @@ async function searchPlace(query) {
       "X-Goog-Api-Key": GOOGLE_KEY,
       // rating/userRatingCount 는 Enterprise SKU 필드 (그래도 120개면 무료크레딧 내)
       "X-Goog-FieldMask":
-        "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress",
+        "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.primaryType,places.types",
     },
     body: JSON.stringify({ textQuery: query, languageCode: "en", regionCode: "KR" }),
   });
@@ -136,6 +174,14 @@ for (const c of clubs) {
     if (!place) {
       miss++;
       console.log(`✗ MISS  ${c.name}`);
+      await sleep(150);
+      continue;
+    }
+    // 엉뚱한 업소를 붙이느니 비워둔다 — 틀린 평점은 빈 평점보다 나쁘다.
+    const verdict = placeLooksRight(place, c);
+    if (!verdict.ok) {
+      miss++;
+      console.log(`✗ SKIP  ${c.name} — ${verdict.why} [${place.displayName?.text ?? "?"}]`);
       await sleep(150);
       continue;
     }

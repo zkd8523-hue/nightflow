@@ -159,6 +159,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         { data: slotRows },
         { data: mySlotRows },
         { data: shareSlotRows },
+        { data: foreignRequestRows, error: foreignRequestsError },
     ] = await Promise.all([
         auctionsQuery,
         supabase
@@ -196,9 +197,55 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                   .in("club_id", slotClubIds)
                   .eq("week_start", thisWeekISO)
             : Promise.resolve({ data: [] as { id: string; club_id: string; md_id: string; week_start: string; expires_at: string }[], error: null }),
+        // 본인에게 배정된 외국인 컨시어지 요청 — "내 오퍼" 위에 실제로 있을 때만 노출.
+        // status는 취소만 제외(new/contacted는 진행중, done도 최근 것은 참고용으로 보여준다).
+        supabase
+            .from("foreign_requests")
+            .select("id, guest_name, event_date, group_size, club_ids, status, budget, created_at")
+            .eq("assigned_md_id", userId)
+            .neq("status", "cancelled")
+            .order("event_date", { ascending: true })
+            .limit(10),
     ]);
 
     if (puzzleOffersError) console.error("puzzleOffers query error:", puzzleOffersError);
+    if (foreignRequestsError) console.error("foreignRequests query error:", foreignRequestsError);
+
+    // 카드에 클럽명을 보여주려면 1순위 클럽만 조회한다(요청은 최대 3곳을 고르지만
+    // 카드 한 줄에는 확정 여부와 무관하게 대표 클럽 하나만 필요).
+    const foreignReqClubIds = Array.from(
+        new Set((foreignRequestRows ?? []).map((r) => (r.club_ids as string[] | null)?.[0]).filter(Boolean) as string[])
+    );
+    const { data: foreignReqClubs } = foreignReqClubIds.length
+        ? await supabase.from("clubs").select("id, name").in("id", foreignReqClubIds)
+        : { data: [] as { id: string; name: string }[] };
+    const foreignReqClubNameById = Object.fromEntries((foreignReqClubs ?? []).map((c) => [c.id, c.name]));
+
+    // 확정서(booking_confirmations)가 있으면 확정가·MD 링크를 붙인다 — 없으면
+    // 카드에 손님 희망 예산(budget)만 참고로 보여준다(확정 전이라는 뜻).
+    const foreignReqIds = (foreignRequestRows ?? []).map((r) => r.id);
+    const { data: foreignReqConfs } = foreignReqIds.length
+        ? await supabase
+              .from("booking_confirmations")
+              .select("request_id, total_price, md_token")
+              .in("request_id", foreignReqIds)
+        : { data: [] as { request_id: string; total_price: number | null; md_token: string }[] };
+    const foreignReqConfByReqId = Object.fromEntries((foreignReqConfs ?? []).map((c) => [c.request_id, c]));
+
+    const initialForeignRequests = (foreignRequestRows ?? []).map((r) => {
+        const conf = foreignReqConfByReqId[r.id];
+        return {
+            id: r.id,
+            guestName: r.guest_name,
+            eventDate: r.event_date,
+            groupSize: r.group_size,
+            status: r.status,
+            clubName: foreignReqClubNameById[(r.club_ids as string[] | null)?.[0] ?? ""] ?? null,
+            price: conf?.total_price ?? r.budget ?? null,
+            priceConfirmed: !!conf?.total_price,
+            mdToken: conf?.md_token ?? null,
+        };
+    });
 
     // 유저가 상담을 시작한(leader_chat_started_at) 대기중 오퍼 중, MD 본인이 이미 답장한 것 집합
     // → 대시보드 배지를 "대기중" / "유저가 답장을 기다리고 있어요" / "상담중" 으로 세분화
@@ -316,6 +363,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 initialClubs={clubs || []}
                 initialTopBids={topBids}
                 initialPuzzleOffers={puzzleOffers || []}
+                initialForeignRequests={initialForeignRequests}
                 mdRepliedOfferIds={mdRepliedOfferIds}
                 guestSignClubs={hotdealClubs.map((c) => ({
                     id: c.id,
