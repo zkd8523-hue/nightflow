@@ -14,7 +14,7 @@ export default async function AdminKoreanBookingsPage() {
   const { data: rows } = await supabase
     .from("korean_booking_requests")
     .select(
-      "id, club_id, event_date, group_size, budget, selected_menu, selected_menu_total, guest_name, contact_type, contact_value, notes, status, created_at, proposal_token, assigned_md_id, md_response, md_responded_at, md_table_choosable, md_table_options, md_reject_reason, md_required_amount"
+      "id, club_id, event_date, group_size, selected_menu, selected_menu_total, guest_name, contact_type, contact_value, notes, status, created_at, proposal_token, assigned_md_id, md_response, md_responded_at, md_table_choosable, md_table_options, md_reject_reason, md_required_amount"
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -59,6 +59,10 @@ export default async function AdminKoreanBookingsPage() {
 
   const enriched: KoreanBookingReq[] = requests.map((r) => ({
     ...r,
+    // korean_booking_requests에는 budget 컬럼이 없다(Migration 652 — 예산은
+    // selected_menu_total로 갈음). 제안서 공용 컴포넌트가 budget을 받으므로
+    // 다른 한국 트랙 화면들과 같이 null로 맞춘다.
+    budget: null,
     clubName: clubNameById[r.club_id] ?? r.club_id.slice(0, 8),
     mdCandidates: (mdsByClub[r.club_id] ?? []).map((id) => mdById[id]).filter(Boolean),
     conf: confByReq[r.id] ?? null,
