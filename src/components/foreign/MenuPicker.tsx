@@ -505,15 +505,18 @@ function MenuRow({
   // 그 아래 항목을 못 누르게 만들어서 뺐고, 대신 누른 칩 자체가 반응하게 한다.
   const [justAdded, setJustAdded] = useState<string | null>(null);
   // "눌림 + 리플" 담기 애니메이션(2026-09-06, 목업 3안 채택) 트리거 상태.
-  // ripple은 클릭 좌표를 받아 그 지점에서 원이 퍼지게 한다. pressing은 카드
-  // 전체가 살짝 눌리는 스케일 애니메이션 클래스를 잠깐 붙였다 뗀다.
-  const [ripple, setRipple] = useState<{ x: number; y: number; key: number } | null>(null);
-  const [pressing, setPressing] = useState(false);
-  const triggerAddAnim = (e: React.MouseEvent<HTMLElement>) => {
+  // 클릭 좌표를 받아 그 지점에서 원이 퍼지고, 누른 요소가 살짝 눌린다.
+  //
+  // ⚠️ target을 반드시 같이 담는다. 예전엔 좌표와 on/off 플래그만 들고 있어서,
+  // 옵션 칩을 눌러도 행 전체 버튼이 같이 눌리고 칩 기준 좌표가 행 버튼에 그대로
+  // 찍혀 엉뚱한 자리에서 빛이 번졌다(2026-09-06). 행("row")과 칩(variantId)을
+  // 구분해 실제로 누른 것 하나만 반응하게 한다.
+  const [ripple, setRipple] = useState<
+    { x: number; y: number; key: number; target: string } | null
+  >(null);
+  const triggerAddAnim = (e: React.MouseEvent<HTMLElement>, target: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setRipple({ x: e.clientX - rect.left, y: e.clientY - rect.top, key: Date.now() });
-    setPressing(true);
-    window.setTimeout(() => setPressing(false), 380);
+    setRipple({ x: e.clientX - rect.left, y: e.clientY - rect.top, key: Date.now(), target });
     window.setTimeout(() => setRipple(null), 460);
   };
   const single = variants.length === 1;
@@ -531,7 +534,7 @@ function MenuRow({
         onClick={(e) => {
           if (!single) return setOpen((o) => !o);
           // 단품은 행 전체가 담기 버튼이라 여기서도 같은 피드백을 준다.
-          triggerAddAnim(e);
+          triggerAddAnim(e, "row");
           // 카드 자체(li)의 화면 좌표에서 장바구니까지 실제로 날아간다 —
           // 목업 3안 그대로. e.currentTarget은 button이라 li 기준으로 잰다.
           onLaunchFly?.(e.currentTarget.closest("li")!.getBoundingClientRect(), itemName(item, lang));
@@ -542,14 +545,18 @@ function MenuRow({
             600,
           );
         }}
-        style={pressing ? { animation: "add-to-cart-press 0.38s cubic-bezier(.4,0,.2,1)" } : undefined}
+        style={
+          ripple?.target === "row"
+            ? { animation: "add-to-cart-press 0.38s cubic-bezier(.4,0,.2,1)" }
+            : undefined
+        }
         className={`relative overflow-hidden w-full flex items-center gap-3 px-4 py-2.5 text-left lg:px-3 transition-colors duration-200 disabled:cursor-not-allowed ${
           single && justAdded === variants[0]?.id ? "bg-money/10" : ""
         }`}
       >
         {/* 리플 — 클릭한 지점에서 원이 퍼지며 사라진다. key로 매번 새 DOM을
             강제해 연타해도 애니메이션이 처음부터 다시 재생되게 한다. */}
-        {ripple && (
+        {ripple?.target === "row" && (
           <span
             key={ripple.key}
             aria-hidden
@@ -652,19 +659,23 @@ function MenuRow({
                     if ((item.choices?.length ?? 0) > 0) return;
                     // 옵션 칩도 같은 담기 애니메이션을 쓴다 — 단품 행과 느낌이
                     // 갈리면 "여긴 다른 동작인가" 하고 헷갈린다.
-                    triggerAddAnim(e);
+                    triggerAddAnim(e, v.id);
                     onLaunchFly?.(e.currentTarget.getBoundingClientRect(), v.label_en);
                     setJustAdded(v.id);
                     window.setTimeout(() => setJustAdded((cur) => (cur === v.id ? null : cur)), 600);
                   }}
-                  style={pressing && added ? { animation: "add-to-cart-press 0.38s cubic-bezier(.4,0,.2,1)" } : undefined}
+                  style={
+                    ripple?.target === v.id
+                      ? { animation: "add-to-cart-press 0.38s cubic-bezier(.4,0,.2,1)" }
+                      : undefined
+                  }
                   className={`relative overflow-hidden rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-all duration-200 disabled:cursor-not-allowed ${
                     added
                       ? "border-money bg-money/20 scale-95"
                       : "border-border bg-muted hover:bg-muted/70"
                   }`}
                 >
-                  {ripple && added && (
+                  {ripple?.target === v.id && (
                     <span
                       key={`chip-ripple-${ripple.key}`}
                       aria-hidden
