@@ -347,16 +347,7 @@ export function MenuPicker({
   // sticky nav가 top-0을 이 wrapper 기준으로 잡으므로, 패딩은 부모에 준다.
   return (
    <FxContext.Provider value={{ currency, rates }}>
-    <div
-      ref={rootRef}
-      className="relative flex gap-0 items-start pt-12 px-3 overscroll-none"
-      // 술을 고르다 목록 위에서 아래로 당기면 브라우저가 새로고침으로 채가고
-      // 담은 게 전부 날아간다. 이 화면은 /flags/new(main 라우트)라 외국인
-      // 트랙 레이아웃(en/layout의 overscroll-none)을 안 거친다 — 여기에 직접 건다.
-      // touch-action: pan-y — 세로 스크롤은 그대로 두고 오버스크롤만 막는다.
-      // (DrinkMenuViewer에서 "auto"로 뒀다가 pull-to-refresh로 샌 전례가 있다)
-      style={{ touchAction: "pan-y", overscrollBehaviorY: "contain" }}
-    >
+    <div ref={rootRef} className="relative flex gap-0 items-start pt-12 px-3">
       {/* 왼쪽 카테고리 레일 — 화면 높이만큼 고정, 자체 스크롤.
           112px: 92px는 특별한 근거 없이 좁게 잡힌 값이었다(2026-09-06).
           오른쪽 목록 이름이 두 줄로 넘치는 항목(Moët & Chandon N.I.R Rose 등)이
