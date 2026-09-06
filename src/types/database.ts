@@ -1914,3 +1914,24 @@ export interface SelectedMenuSnapshot {
   table_charge?: { amount: number; basis: "weekday" | "weekend" };
   zone?: string;
 }
+
+/** 한국 유저 클럽 예약 요청 (korean_booking_requests, Migration 652). foreign_requests와 같은 컨시어지 모델. */
+export type KoreanBookingContactType = "phone" | "instagram" | "openchat";
+export type KoreanBookingStatus = "new" | "contacted" | "done" | "cancelled";
+
+export interface KoreanBookingRequest {
+  id: string;
+  user_id: string;
+  club_id: string;
+  event_date: string;
+  group_size: number;
+  selected_menu: SelectedMenuSnapshot | null;
+  selected_menu_total: number | null;
+  guest_name: string;
+  contact_type: KoreanBookingContactType;
+  contact_value: string;
+  notes: string | null;
+  status: KoreanBookingStatus;
+  created_at: string;
+  updated_at: string;
+}
