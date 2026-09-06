@@ -610,7 +610,8 @@ export function KoreanBookingForm({
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent
           side="bottom"
-          className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto"
+          /* overscroll-contain: 목록 맨 위에서 당기면 pull-to-refresh로 새서 담은 게 날아간다. */
+          className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto overscroll-contain"
         >
           <SheetTitle className="sr-only">주류 선택</SheetTitle>
           <MenuPicker

@@ -1857,7 +1857,9 @@ export function ForeignRequestForm({
              부모(폼)가 lg:max-w-lg 안에 있어서 그 폭을 그대로 물려받아 데스크탑에서도
              좁게 잡혔다 — 2열 그리드 오른쪽 절반이 화면 밖으로 잘리던 원인.
              전체 뷰포트 폭을 쓰도록 명시한다. */
-          className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto"
+          /* overscroll-contain: 목록 맨 위에서 아래로 당기면 브라우저가 새로고침으로
+             채가서 담은 게 전부 날아갔다. 실제 스크롤 컨테이너가 이 시트라 여기에 건다. */
+          className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto overscroll-contain"
         >
           <SheetTitle className="sr-only">
             {t("술 고르기", "Choose drinks", "ドリンクを選ぶ", "选择酒水")}
