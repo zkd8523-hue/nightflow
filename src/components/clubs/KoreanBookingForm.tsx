@@ -406,7 +406,7 @@ export function KoreanBookingForm({
                     }}
                     className="w-full h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.99] transition-all flex items-center justify-center"
                   >
-                    술 고르기
+                    주류 선택
                   </button>
                 )}
               </section>
@@ -600,7 +600,7 @@ export function KoreanBookingForm({
           side="bottom"
           className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto"
         >
-          <SheetTitle className="sr-only">술 고르기</SheetTitle>
+          <SheetTitle className="sr-only">주류 선택</SheetTitle>
           <MenuPicker
             lang="ko"
             items={menuItems}
