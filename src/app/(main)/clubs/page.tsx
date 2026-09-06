@@ -12,7 +12,7 @@ import type { HotdealBenefitsByDow } from "@/types/database";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "전국 클럽 가이드 - 강남·홍대·이태원 클럽 정보·테이블 예약",
+  title: "전국 클럽 정보·예약 가이드 - 강남·홍대·이태원 테이블 가격·영업시간",
   description:
     "우리나라 클럽 정보를 한눈에. 강남·홍대·이태원·부산·광주·대구 인기 클럽의 테이블 가격·주대·영업시간을 비교하고, 주대를 미리 보고 고른 뒤 테이블 예약까지. 이번 주 무료입장·프리드링크 게스트 간판도 함께 확인하세요.",
   // 이 페이지엔 keywords가 아예 없었다. 지역×의도 조합을 명시적으로 넣되,
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "https://nightflow.kr/clubs" },
   openGraph: {
-    title: "전국 클럽 가이드 - 강남·홍대·이태원 클럽 정보·테이블 예약",
+    title: "전국 클럽 정보·예약 가이드 - 강남·홍대·이태원 테이블 가격·영업시간",
     description:
       "전국 인기 클럽의 가격·영업시간·게스트 간판 혜택 비교와 테이블 예약. 나플.",
     url: "https://nightflow.kr/clubs",
@@ -172,7 +172,7 @@ export default async function ClubsIndexPage() {
               {
                 "@type": "ListItem",
                 position: 2,
-                name: "전국 클럽 가이드",
+                name: "전국 클럽 정보·예약 가이드",
                 item: "https://nightflow.kr/clubs",
               },
             ],
@@ -182,7 +182,7 @@ export default async function ClubsIndexPage() {
       {/* SEO용 SSR 텍스트 — 화면엔 안 보이지만 검색엔진은 읽음.
           ClubList가 client-only라 SSR HTML에 클럽 이름이 빠지는 문제 보완. */}
       <div className="sr-only">
-        <h1>전국 클럽 가이드 - 강남·홍대·이태원·부산·광주·대구 클럽 정보</h1>
+        <h1>전국 클럽 정보·예약 가이드 - 강남·홍대·이태원·부산·광주·대구 클럽 정보와 테이블 예약</h1>
         <p>
           나플에서 운영 중인 전국 클럽 목록입니다.
           강남, 홍대, 이태원, 부산, 광주, 대구 지역의 인기 클럽을
