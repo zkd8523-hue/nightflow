@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 export const metadata: Metadata = {
   title: {
@@ -76,6 +77,8 @@ export default function EnSeoulNightlifePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="en" meta={{ page: "seoul-nightlife" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
@@ -122,7 +125,7 @@ export default function EnSeoulNightlifePage() {
           <p className="text-[13px] text-muted-foreground leading-relaxed">
             Pick your club (or just tell us your vibe) — date, group size, and budget. We contact the club directly and lock in the best table for your budget, in English. Show up, walk in.
           </p>
-          <Link href="/flags/new?lang=en" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
+          <Link data-nf-track="book_cta" href="/flags/new?lang=en" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             🍾 Book with NightFlow
           </Link>
         </section>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 export const metadata: Metadata = {
   title: {
@@ -116,6 +117,8 @@ export default function ZhTwFaqPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="zh-tw" meta={{ page: "faq" }} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
@@ -160,7 +163,7 @@ export default function ZhTwFaqPage() {
 
         <section className="space-y-3 pt-4 text-center">
           <Link
-            href="/flags/new?lang=zh-tw"
+            data-nf-track="book_cta" href="/flags/new?lang=zh-tw"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             🍾 透過 NightFlow 預訂

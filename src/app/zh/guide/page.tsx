@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { krwToAll, getKrwRates } from "@/lib/utils/currency";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 export const metadata: Metadata = {
   title: {
@@ -82,6 +83,8 @@ export default async function ZhGuidePage() {
   return (
     <ForeignShell lang="zh">
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="zh" meta={{ page: "guide" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <div className="sr-only">
         <h1>韩国夜店预订指南 — 在江南、弘大、梨泰院做 VIP (首尔)</h1>
@@ -182,7 +185,7 @@ export default async function ZhGuidePage() {
           <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
             设定您的预算 — 我们会为您匹配最好的桌位。带的人越多，夜晚就越 VIP。
           </p>
-          <Link href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
+          <Link data-nf-track="book_cta" href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             通过 NightFlow 预订
           </Link>
         </section>
@@ -240,7 +243,7 @@ export default async function ZhGuidePage() {
         </section>
 
         <section className="space-y-3 pt-2">
-          <Link href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
+          <Link data-nf-track="book_cta" href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             获取 VIP 通道 — 无需注册
           </Link>
           <p className="text-[12px] text-muted-foreground text-center leading-relaxed">

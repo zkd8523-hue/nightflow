@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 export const metadata: Metadata = {
   title: { absolute: "ソウルのK-POPクラブ — K-POPライブが聴ける場所 (日本人旅行者ガイド 2026)" },
@@ -36,6 +37,8 @@ export default function JaKpopClubsPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="ja" meta={{ page: "kpop-clubs" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
@@ -61,7 +64,7 @@ export default function JaKpopClubsPage() {
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">K-POP観光客向け予約のヒント</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed">ほとんどのK-POP観光客は弘大NB2に直行。可能ですが、週末は90分待ちもあります。入場保証とテーブル予約を希望する場合、NightFlowで予約すれば弘大K-POPクラブに直接連絡し、日本語で席を確保します。</p>
-          <Link href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
+          <Link data-nf-track="book_cta" href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
         </section>
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">関連ガイド</h2>

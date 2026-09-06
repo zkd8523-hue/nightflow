@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { krwToAll, getKrwRates } from "@/lib/utils/currency";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 export const metadata: Metadata = {
   title: {
@@ -84,6 +85,8 @@ export default async function ZhTwGuidePage() {
   return (
     <ForeignShell lang="zh-tw">
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="zh-tw" meta={{ page: "guide" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <div className="sr-only">
         <h1>韓國夜店預訂指南 — 在江南、弘大、梨泰院做 VIP (首爾)</h1>
@@ -197,7 +200,7 @@ export default async function ZhTwGuidePage() {
             設定您的預算 — 我們會為您找到最合適的桌位。帶的人越多,這一夜就越 VIP。
           </p>
           <Link
-            href="/flags/new?lang=zh-tw"
+            data-nf-track="book_cta" href="/flags/new?lang=zh-tw"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
             透過 NightFlow 預訂
@@ -261,7 +264,7 @@ export default async function ZhTwGuidePage() {
         </section>
 
         <section className="space-y-3 pt-2">
-          <Link href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
+          <Link data-nf-track="book_cta" href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             獲取 VIP 通道 — 無需註冊
           </Link>
           <p className="text-[12px] text-muted-foreground text-center leading-relaxed">

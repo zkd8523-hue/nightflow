@@ -7,6 +7,7 @@ import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { createClient } from "@/lib/supabase/client";
 import { useSavedClubs, removeSavedClub } from "@/lib/clubs/savedClubs";
+import { trackForeignEvent } from "@/lib/analytics/events";
 
 // ── 외국인 트랙 데스크톱 셸 ────────────────────────────────────────
 // 외국인 트래픽은 데스크톱 비중이 한국어(25%)의 두 배 안팎이다(ZH 63%·JA 51%·ZH-TW 39%·EN 38%).
@@ -138,6 +139,13 @@ export function ForeignSidebar({
               <div key={c.id} className="flex items-center gap-1 rounded-xl bg-card border border-border">
                 <Link
                   href={`/flags/new?lang=${lang}&club=${c.id}`}
+                  onClick={() =>
+                    trackForeignEvent("foreign_sidebar_saved_club_click", {
+                      lang,
+                      club_id: c.id,
+                      club_name: c.name_en?.trim() || c.name,
+                    })
+                  }
                   className="flex items-center gap-2.5 min-w-0 flex-1 p-2 text-left"
                 >
                   <div className="w-9 h-9 rounded-lg bg-muted overflow-hidden shrink-0">
@@ -182,6 +190,14 @@ export function ForeignSidebar({
         )}
         <Link
           href={`/flags/new?lang=${lang}`}
+          // 모든 외국어 페이지에 상시 노출되는 CTA인데 클릭 추적이 없어서, 여기로
+          // 전환한 사람이 퍼널 분모·분자 양쪽에서 통째로 빠져 있었다(2026-09-06).
+          onClick={() =>
+            trackForeignEvent("foreign_sidebar_cta_click", {
+              lang,
+              saved_count: saved.length,
+            })
+          }
           className="block text-center py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors"
         >
           {tr("Book with NightFlow")}

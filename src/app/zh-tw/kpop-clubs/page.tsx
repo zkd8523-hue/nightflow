@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 export const metadata: Metadata = {
   title: {
@@ -84,6 +85,8 @@ export default function ZhTwKpopClubsPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="zh-tw" meta={{ page: "kpop-clubs" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
@@ -113,7 +116,7 @@ export default function ZhTwKpopClubsPage() {
           <p className="text-[13px] text-muted-foreground leading-relaxed">
             大多數 K-POP 旅客直接前往弘大 NB2。可行 — 但週末排隊可能 90 分鐘。如果您想確保入場並預訂包廂,通過 NightFlow 預訂,我們會直接聯絡弘大 K-POP 夜店,用中文為您確認座位。
           </p>
-          <Link href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
+          <Link data-nf-track="book_cta" href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 透過 NightFlow 預訂
           </Link>
         </section>

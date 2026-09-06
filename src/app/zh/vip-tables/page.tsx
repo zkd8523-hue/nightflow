@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 export const metadata: Metadata = {
   title: {
@@ -77,6 +78,8 @@ export default function ZhVipTablesPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="zh" meta={{ page: "vip-tables" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
@@ -106,7 +109,7 @@ export default function ZhVipTablesPage() {
           <p className="text-[13px] text-muted-foreground leading-relaxed">
             选好想去的夜店（或者只告诉我们喜好），填写日期、人数和预算。NightFlow 直接联系夜店，为您锁定预算内最好的桌位 — 真实价格，真实瓶装套餐。到场后直接入场。
           </p>
-          <Link href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
+          <Link data-nf-track="book_cta" href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 通过 NightFlow 预订
           </Link>
         </section>

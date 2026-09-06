@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 export const metadata: Metadata = {
   title: { absolute: "ソウルVIPルーム予約 — 韓国クラブボトルサービスガイド (2026)" },
@@ -35,6 +36,8 @@ export default function JaVipTablesPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="ja" meta={{ page: "vip-tables" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
@@ -60,7 +63,7 @@ export default function JaVipTablesPage() {
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">VIP予約の流れ</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed">行きたいクラブを選ぶ（または雰囲気だけ伝える）— 日付・人数・予算と一緒に。NightFlowが直接クラブに連絡し、予算内で一番良い席を確保 — 本物の価格、本物のボトルサービス。到着して直接入場。</p>
-          <Link href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
+          <Link data-nf-track="book_cta" href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">エリア別</h2>

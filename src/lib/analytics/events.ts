@@ -219,6 +219,18 @@ export const trackForeignEvent = (
     | 'foreign_guide_page_view'
     | 'foreign_guide_page_scroll'
     | 'foreign_guide_page_click'
+    // 정보 페이지 (faq / vip-tables / kpop-clubs / hiphop-clubs / seoul-nightlife / guide)
+    // — 기존 kind가 club·guide 둘뿐이라 이 6종이 계측에서 통째로 빠져 있었다(2026-09-06).
+    | 'foreign_info_page_view'
+    | 'foreign_info_page_scroll'
+    | 'foreign_info_page_click'
+    // 이탈 지점 — 페이지를 떠나는 순간의 스크롤 깊이·체류시간. 기존 이벤트는 전부
+    // "진입·클릭·스크롤 도달" 같은 긍정 행동뿐이라 "어디서 나갔나"를 못 봤다.
+    | 'foreign_page_exit'
+    // 사이드바 CTA — 모든 외국어 페이지 공통 컴포넌트(ForeignShell)라 노출량이 가장
+    // 큰데 클릭 추적이 아예 없었다.
+    | 'foreign_sidebar_cta_click'
+    | 'foreign_sidebar_saved_club_click'
     // 외국어 홈 진입 (Admin 인사이트가 이 이름들로 집계)
     | 'en_home_view'
     | 'ja_home_view'

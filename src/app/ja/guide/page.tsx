@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { krwToAll, getKrwRates } from "@/lib/utils/currency";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 // 外国人観光客向け 詐欺注意アコーディオン（英語版 TIPS と同じ内容）
 const TIPS = [
@@ -88,6 +89,8 @@ export default async function JaGuidePage() {
   return (
     <ForeignShell lang="ja">
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="ja" meta={{ page: "guide" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <div className="sr-only">
         <h1>韓国クラブ予約ガイド — 江南・弘大・梨泰院でVIPに (ソウル)</h1>
@@ -169,7 +172,7 @@ export default async function JaGuidePage() {
           <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
             予算を伝えれば、それに合った最高のテーブルを探します。人数が多いほど、夜はもっとVIPに。
           </p>
-          <Link href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">NightFlowで予約する</Link>
+          <Link data-nf-track="book_cta" href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">NightFlowで予約する</Link>
         </section>
 
         {/* Safety tips — collapsible (native details, no JS) */}
@@ -199,7 +202,7 @@ export default async function JaGuidePage() {
         </section>
 
         <section className="space-y-3 pt-2">
-          <Link href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">VIPアクセス取得 — 登録不要</Link>
+          <Link data-nf-track="book_cta" href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">VIPアクセス取得 — 登録不要</Link>
           <p className="text-[12px] text-muted-foreground text-center leading-relaxed">19+ · パスポート持参<br />夜をもっと美しく</p>
         </section>
       </div>

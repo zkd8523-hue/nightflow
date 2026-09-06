@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 export const metadata: Metadata = {
   title: { absolute: "首爾夜生活指南 2026 — 去哪裡、訂哪裡 (外國旅客版)" },
@@ -31,6 +32,8 @@ export default function ZhTwSeoulNightlifePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="zh-tw" meta={{ page: "seoul-nightlife" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
@@ -68,7 +71,7 @@ export default function ZhTwSeoulNightlifePage() {
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">無需韓語如何預訂</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed">選好想去的夜店(或者只告訴我們喜好),填寫日期、人數和預算。NightFlow 直接聯絡夜店,用中文為您鎖定桌位。到場後直接入場。</p>
-          <Link href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">🍾 透過 NightFlow 預訂</Link>
+          <Link data-nf-track="book_cta" href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">🍾 透過 NightFlow 預訂</Link>
         </section>
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">更多指南</h2>

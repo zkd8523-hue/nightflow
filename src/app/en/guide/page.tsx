@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { krwToAll, getKrwRates } from "@/lib/utils/currency";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
 export const metadata: Metadata = {
   // absolute = root layout의 "%s | 나플" template 무시 (한글 노출 차단)
@@ -273,6 +274,8 @@ export default async function EnglishLanding() {
   return (
     <ForeignShell lang="en">
     <div className="min-h-screen bg-background text-foreground">
+      {/* SEO 유입 계측 — 서버 컴포넌트라 훅을 못 써서 별도 트래커를 얹음 */}
+      <ForeignPageTracker kind="info" lang="en" meta={{ page: "guide" }} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
@@ -365,7 +368,7 @@ export default async function EnglishLanding() {
             Browse Seoul clubs with real prices →
           </Link>
           <Link
-            href="/flags/new?lang=en"
+            data-nf-track="book_cta" href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
             Skip all this — be the VIP
@@ -456,7 +459,7 @@ export default async function EnglishLanding() {
             The more you bring, the more VIP the night.
           </p>
           <Link
-            href="/flags/new?lang=en"
+            data-nf-track="book_cta" href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
             Book with NightFlow
@@ -508,7 +511,7 @@ export default async function EnglishLanding() {
         {/* CTA */}
         <section className="space-y-3 pt-2">
           <Link
-            href="/flags/new?lang=en"
+            data-nf-track="book_cta" href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
             Get VIP access — no signup needed
