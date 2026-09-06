@@ -90,3 +90,10 @@ verify_jwt = false
 entrypoint = "./functions/collect-club-events/index.ts"
 # 크론: 수 09:00 KST (00:00 UTC) — Migration 571 pg_cron 등록 (Apify 무료 크레딧 절약)
 # schedule = "0 0 * * 3"
+
+[functions.sync-fx-rates]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/sync-fx-rates/index.ts"
+# 크론: 월 03:00 KST (일 18:00 UTC) — Migration 661 pg_cron 등록
+# schedule = "0 18 * * 0"

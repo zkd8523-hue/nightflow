@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
-import { krwToAll, formatAsOfLocale } from "@/lib/utils/currency";
+import { krwToAll, formatAsOfLocale, resolveCurrency } from "@/lib/utils/currency";
 import { useKrwRates } from "@/lib/utils/useKrwRates";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
 import { ClubDateCalendar } from "@/components/clubs/ClubDateCalendar";
@@ -101,12 +101,16 @@ const LANGS: { code: Lang; label: string }[] = [
 export function ForeignRequestForm({
   userId,
   lang,
+  countryCode = null,
   clubs,
   presetArea,
   presetClubId,
 }: {
   userId: string | null; // 비로그인 익명 신청 허용 (Mig 489)
   lang: Lang;
+  /** 로그인 유저의 country_code. 메뉴 가격의 표시 통화를 정하는 데 쓴다 —
+      lang보다 정확하다(/en 안에 미국·홍콩·싱가포르가 섞여 있다). */
+  countryCode?: string | null;
   clubs: ClubItem[];
   presetArea?: string;
   presetClubId?: string;
@@ -116,6 +120,8 @@ export function ForeignRequestForm({
   const fx = useKrwRates();
   const fxRates = fx.rates;
   const fxAsOf = formatAsOfLocale(fx.asOfIso, lang);
+  // 메뉴 가격 옆에 붙일 통화. country_code가 없으면 lang으로 떨어진다.
+  const menuCurrency = resolveCurrency(countryCode, lang);
 
   // 외국인 컨시어지 폼 노출 — 전환 퍼널 측정 (SOP 5단계 대체 지표)
   useEffect(() => {
@@ -1865,6 +1871,9 @@ export function ForeignRequestForm({
             tableChargeWeekend={menuCharge.weekend}
             zone={menuZone}
             onZoneChange={setMenuZone}
+            rates={fxRates}
+            fxAsOf={fxAsOf}
+            defaultCurrency={menuCurrency}
             /* 시트 안에서는 앱 하단 네비가 오버레이에 가려지므로 바닥에 붙인다. */
             bottomOffset={0}
             minAmount={minBudget}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, createContext, useContext } from "react";
 import { Check, Plus, Minus, Info, ChevronDown } from "lucide-react";
 import { type Lang } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -11,6 +11,14 @@ import type {
   SelectedMenuSnapshot,
 } from "@/types/database";
 import { useMenuSelection, type ResolvedLine } from "@/hooks/useMenuSelection";
+import {
+  krwTo,
+  quoteRate,
+  CURRENCY_NAMES,
+  CURRENCY_ORDER,
+  type CurrencyCode,
+  type KrwRates,
+} from "@/lib/utils/currency";
 
 // 손님이 술 메뉴를 직접 고르는 화면.
 //
@@ -42,6 +50,47 @@ function fmt(won: number, lang: Lang): string {
     return `₩${m.toFixed(won % 1000000 === 0 ? 0 : 1)}M`;
   }
   return `₩${(won / 1000).toLocaleString()}k`;
+}
+
+/**
+ * 환산 병기 — "≈ HK$2,200". 통화가 없으면(한국어 트랙, 또는 미지원 국가) null이라
+ * 호출부가 아무것도 그리지 않는다.
+ *
+ * 원화가 정본이고 이건 참고값이다 — 실결제는 전액 원화(Model B)라서
+ * 화면에서든 신청서에서든 원화를 대체하지 않는다.
+ */
+function fmtFx(won: number, currency: CurrencyCode | null, rates: KrwRates | undefined): string | null {
+  if (!currency || !rates || won <= 0) return null;
+  const s = krwTo(won, currency, rates);
+  return s ? `≈ ${s}` : null;
+}
+
+/**
+ * 환산 표시 설정. MenuRow·ComboPicker·Summary가 다 같은 값을 쓰는데,
+ * 가격이 나오는 자리마다 prop 두 개를 뚫으면 중간 컴포넌트가 지저분해진다.
+ */
+const FxContext = createContext<{ currency: CurrencyCode | null; rates?: KrwRates }>({
+  currency: null,
+});
+
+/** 원화 밑에 붙는 작은 회색 환산가. 통화가 없으면 아무것도 그리지 않는다. */
+function FxSub({ won, className = "" }: { won: number; className?: string }) {
+  const { currency, rates } = useContext(FxContext);
+  const s = fmtFx(won, currency, rates);
+  if (!s) return null;
+  return (
+    <span className={`block text-[10px] font-medium text-muted-foreground tabular-nums ${className}`}>
+      {s}
+    </span>
+  );
+}
+
+/** 옵션 칩 안 — 같은 줄 뒤에 붙인다. 세로로 쌓으면 칩 높이가 두 배가 된다. */
+function FxVariantSuffix({ won }: { won: number }) {
+  const { currency, rates } = useContext(FxContext);
+  const s = fmtFx(won, currency, rates);
+  if (!s) return null;
+  return <span className="ml-1 text-[10px] font-medium text-muted-foreground tabular-nums">{s}</span>;
 }
 
 function itemName(item: ClubMenuItem, lang: Lang): string {
@@ -101,6 +150,13 @@ export type MenuPickerProps = {
    *  (이 컴포넌트는 시트가 닫히면 언마운트돼서 자체 상태로는 못 지킨다) */
   onDraftChange?: (snapshot: SelectedMenuSnapshot, total: number) => void;
   onDone: (snapshot: SelectedMenuSnapshot, total: number) => void;
+  /** 환율. 안 넘기면 원화만 보여준다(한국어 트랙이 그대로 동작하는 이유). */
+  rates?: KrwRates;
+  /** 환율 기준일 — "Aug 11, 2026". 고지 문구에 쓴다. */
+  fxAsOf?: string;
+  /** 기본 표시 통화. country_code → lang 순으로 부모가 정해 내린다(resolveCurrency).
+   *  null이면 환산을 아예 그리지 않는다. */
+  defaultCurrency?: CurrencyCode | null;
 };
 
 export function MenuPicker({
@@ -117,7 +173,17 @@ export function MenuPicker({
   initialSnapshot = null,
   onDraftChange,
   onDone,
+  rates,
+  fxAsOf,
+  defaultCurrency = null,
 }: MenuPickerProps) {
+  // 손님이 시트에서 바꾼 통화. 안 바꾸면 부모가 추정한 값(defaultCurrency)을 쓴다.
+  // "KRW"는 환산을 끄는 선택지다 — 원화만 보고 싶은 손님이 있다.
+  const [currency, setCurrency] = useState<CurrencyCode | null>(defaultCurrency);
+  const [fxSheetOpen, setFxSheetOpen] = useState(false);
+  // 통화를 고를 수 있게 하는 건 en·zh-tw뿐이다. ja·zh는 통화가 1:1로 정해져
+  // 셀렉터가 화면만 차지한다(방한객 1·2위라 대다수는 지금 화면 그대로다).
+  const canPickCurrency = defaultCurrency != null && (lang === "en" || lang === "zh-tw");
   const sel = useMenuSelection({
     items, combos, isWeekend, tableChargeWeekday, tableChargeWeekend, zone, initialSnapshot,
   });
@@ -272,13 +338,14 @@ export function MenuPicker({
     );
   }
 
+  // 배달앱처럼 왼쪽 세로 카테고리 + 오른쪽 스크롤 목록. 모바일도 데스크탑도
+  // 같은 좌우 분할 구조 — 예전엔 모바일만 상단 가로 pill이었는데, 항목이
+  // 접혔다 펼쳐지는 구조(Best 탭 등)와 안 맞아 "진짜 카테고리 탭"으로 통일한다.
+  // pt-12 px-3: 이 화면도 SheetContent(p-0)에 바로 얹혀서 시트 기본 닫기 X
+  // (absolute top-4 right-4)가 카테고리 첫 탭·목록 첫 줄과 겹쳤다(2026-09-06).
+  // sticky nav가 top-0을 이 wrapper 기준으로 잡으므로, 패딩은 부모에 준다.
   return (
-    // 배달앱처럼 왼쪽 세로 카테고리 + 오른쪽 스크롤 목록. 모바일도 데스크탑도
-    // 같은 좌우 분할 구조 — 예전엔 모바일만 상단 가로 pill이었는데, 항목이
-    // 접혔다 펼쳐지는 구조(Best 탭 등)와 안 맞아 "진짜 카테고리 탭"으로 통일한다.
-    // pt-12 px-3: 이 화면도 SheetContent(p-0)에 바로 얹혀서 시트 기본 닫기 X
-    // (absolute top-4 right-4)가 카테고리 첫 탭·목록 첫 줄과 겹쳤다(2026-09-06).
-    // sticky nav가 top-0을 이 wrapper 기준으로 잡으므로, 패딩은 부모에 준다.
+   <FxContext.Provider value={{ currency, rates }}>
     <div ref={rootRef} className="relative flex gap-0 items-start pt-12 px-3">
       {/* 왼쪽 카테고리 레일 — 화면 높이만큼 고정, 자체 스크롤.
           112px: 92px는 특별한 근거 없이 좁게 잡힌 값이었다(2026-09-06).
@@ -313,6 +380,31 @@ export function MenuPicker({
 
       {/* 항목 목록 — 모바일 1열, 데스크탑 2열 */}
       <div className="flex-1 min-w-0 pl-3 lg:pl-6">
+        {/* 통화 줄 — 지금 무슨 통화로 보고 있는지 밝히고 바꿀 길을 준다.
+            en·zh-tw에서만 뜬다(ja·zh는 통화가 1:1이라 화면만 차지한다). */}
+        {canPickCurrency && (
+          <button
+            type="button"
+            onClick={() => setFxSheetOpen(true)}
+            className="mb-2 flex w-full items-center justify-between gap-2 rounded-xl bg-muted/50 px-3 py-2 text-left"
+          >
+            <span className="min-w-0 truncate text-xs text-muted-foreground">
+              {currency ? (
+                <>
+                  <span className="font-bold text-foreground">{currency}</span>
+                  <span className="ml-1.5">{CURRENCY_NAMES[currency]}</span>
+                </>
+              ) : (
+                <span className="font-bold text-foreground">
+                  {lang === "zh-tw" ? "只顯示韓元" : "Korean won only"}
+                </span>
+              )}
+            </span>
+            <span className="shrink-0 text-[11px] font-semibold text-money">
+              {lang === "zh-tw" ? "變更" : "Change"}
+            </span>
+          </button>
+        )}
         {activeTab === "combo" ? (
           <ComboPicker
             lang={lang}
@@ -364,6 +456,7 @@ export function MenuPicker({
             lang={lang}
             sel={sel}
             minAmount={minAmount}
+            fxAsOf={fxAsOf}
             onDone={() => onDone(sel.snapshot(), sel.total)}
           />
         </div>
@@ -379,7 +472,7 @@ export function MenuPicker({
         <div className="rounded-xl border border-border bg-card p-4">
           <CartList lang={lang} sel={sel} />
           <div className="mt-4 border-t border-border pt-3">
-            <Summary lang={lang} sel={sel} minAmount={minAmount} onDone={() => onDone(sel.snapshot(), sel.total)} />
+            <Summary lang={lang} sel={sel} minAmount={minAmount} fxAsOf={fxAsOf} onDone={() => onDone(sel.snapshot(), sel.total)} />
           </div>
         </div>
       </aside>
@@ -422,7 +515,62 @@ export function MenuPicker({
           )}
         </SheetContent>
       </Sheet>
+
+      {/* 통화 선택 — en·zh-tw에서만. 추정이 맞으면 손님은 이걸 안 연다.
+          "원화만"을 첫 항목으로 두는 이유: 실결제가 원화라, 환산이 오히려
+          헷갈리는 손님에게 끄는 길을 준다. */}
+      <Sheet open={fxSheetOpen} onOpenChange={setFxSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl p-5 pb-8 max-h-[70vh] overflow-y-auto">
+          <SheetTitle className="text-base font-bold">
+            {lang === "zh-tw" ? "顯示貨幣" : "Display currency"}
+          </SheetTitle>
+          {/* 기준일만 — 결제 안내는 합계 옆 고지에 이미 있어서 여기선 중복이다.
+              시트는 통화를 고르는 자리라 환율이 언제 기준인지만 알면 된다. */}
+          {fxAsOf && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {lang === "zh-tw" ? `匯率基準：${fxAsOf}` : `Rate as of ${fxAsOf}.`}
+            </p>
+          )}
+          <div className="mt-3 flex flex-col gap-1.5">
+            <button
+              type="button"
+              onClick={() => { setCurrency(null); setFxSheetOpen(false); }}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm ${
+                currency === null ? "bg-money/10 border border-money/40" : "bg-muted/50"
+              }`}
+            >
+              <span className="w-14 shrink-0 font-mono text-xs font-semibold text-money">KRW</span>
+              <span className="flex-1 text-foreground">
+                {lang === "zh-tw" ? "只顯示韓元" : "Korean won only"}
+              </span>
+              {currency === null && <Check className="w-4 h-4 text-money" />}
+            </button>
+            {CURRENCY_ORDER.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => { setCurrency(c); setFxSheetOpen(false); }}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm ${
+                  currency === c ? "bg-money/10 border border-money/40" : "bg-muted/50"
+                }`}
+              >
+                <span className="w-14 shrink-0 font-mono text-xs font-semibold text-money">{c}</span>
+                <span className="flex-1 truncate text-foreground">{CURRENCY_NAMES[c]}</span>
+                {/* 여기 숫자는 환율이지 금액이 아니다. 메뉴 가격은 5.5만~7,000만원으로
+                    1,270배 범위(중앙값 50만)라 "기준 금액 하나"를 잡으면 어떤 값을
+                    골라도 대부분의 술과 안 맞는다. 금액 환산은 목록의 각 가격 밑에
+                    이미 붙어 있으므로, 시트는 통화를 고르는 일만 한다. */}
+                <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                  {quoteRate(c, rates)}
+                </span>
+                {currency === c && <Check className="w-4 h-4 shrink-0 text-money" />}
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
+   </FxContext.Provider>
   );
 }
 
@@ -622,7 +770,8 @@ function MenuRow({
           ) : (
             <>
               {/* 옵션이 여럿이면 최저가에 ~를 붙여 "여기서부터"임을 알린다. */}
-              {fmt(cheapest, lang)}{!single && "~"}
+              <span className="block">{fmt(cheapest, lang)}{!single && "~"}</span>
+              <FxSub won={cheapest} />
             </>
           )}
           {/* 미니 태그 — 담은 순간 가격 위로 살짝 튀어나왔다 아래로(장바구니 방향)
@@ -696,6 +845,7 @@ function MenuRow({
                     <>
                       <span className="mr-1 opacity-70">{v.label_en}</span>
                       <span className="text-money">{fmt(priceOf(v.id), lang)}</span>
+                      <FxVariantSuffix won={priceOf(v.id)} />
                     </>
                   )}
                 </button>
@@ -1024,13 +1174,16 @@ function CartList({
 
 /** 합계 + 다음 버튼. 테이블 차지는 손님이 놓치기 쉬워 별도 줄로 드러낸다. */
 function Summary({
-  lang, sel, minAmount, onDone,
+  lang, sel, minAmount, onDone, fxAsOf,
 }: {
   lang: Lang;
   sel: ReturnType<typeof useMenuSelection>;
   minAmount?: number;
   onDone: () => void;
+  /** 환율 기준일. 통화가 켜져 있을 때만 고지 문구를 띄운다. */
+  fxAsOf?: string;
 }) {
+  const { currency: fxCurrency, rates: fxRates } = useContext(FxContext);
   // 아무것도 안 담았으면 테이블 차지만 있는 금액을 합계로 띄우지 않는다 —
   // 0개 선택인데 ₩100k가 보이면 이미 뭔가 청구되는 것처럼 읽힌다.
   const empty = sel.count === 0;
@@ -1067,6 +1220,10 @@ function Summary({
           <p className="text-lg font-black text-money leading-tight tabular-nums">
             {empty ? "—" : fmt(sel.total, lang)}
           </p>
+          <p className="text-xs font-semibold text-muted-foreground tabular-nums leading-tight">
+            {empty ? "" : (fmtFx(sel.total, fxCurrency, fxRates) ?? "")}
+          </p>
+
         </div>
         <button
           type="button"

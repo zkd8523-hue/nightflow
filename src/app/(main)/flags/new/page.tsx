@@ -52,12 +52,16 @@ export async function generateMetadata({
 
 // country_code → 언어 매핑. 회원가입 완료 후 lang 파라미터 없이 도착한 외국인을 위한 폴백.
 // 실제 이탈 사례: en 유저 signup_completed 직후 /flags/new(lang 없음) → getLang="ko" → 한국어 폼.
-function inferLangFromCountry(countryCode: string | null | undefined): "ko" | "en" | "ja" | "zh" | null {
+//
+// TW·HK·MO는 번체(zh-tw)다 — 예전엔 CN과 함께 zh(간체)로 보냈는데, 대만 189만 명(방한 3위)과
+// 홍콩 62만 명(5위)이 간체 화면을 받고 있었다. /zh-tw 라우트는 이미 있다.
+function inferLangFromCountry(countryCode: string | null | undefined): "ko" | "en" | "ja" | "zh" | "zh-tw" | null {
   if (!countryCode) return null;
   const c = countryCode.toUpperCase();
   if (c === "KR") return "ko";
   if (c === "JP") return "ja";
-  if (c === "CN" || c === "TW" || c === "HK" || c === "MO") return "zh";
+  if (c === "CN") return "zh";
+  if (c === "TW" || c === "HK" || c === "MO") return "zh-tw";
   return "en"; // 그 외 국가는 영어 폴백
 }
 
@@ -148,6 +152,9 @@ export default async function PuzzleNewPage({
           <ForeignRequestForm
             userId={user?.id ?? null}
             lang={lang}
+            /* 표시 통화 추정용. /en에는 미국·홍콩·싱가포르가 섞여 있어
+               lang만으로는 USD 하나로 뭉개진다. */
+            countryCode={profile?.country_code ?? null}
             clubs={foreignClubs}
             presetArea={area}
             presetClubId={club}
