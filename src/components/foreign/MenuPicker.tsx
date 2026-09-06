@@ -181,9 +181,10 @@ export function MenuPicker({
   // "KRW"는 환산을 끄는 선택지다 — 원화만 보고 싶은 손님이 있다.
   const [currency, setCurrency] = useState<CurrencyCode | null>(defaultCurrency);
   const [fxSheetOpen, setFxSheetOpen] = useState(false);
-  // 통화를 고를 수 있게 하는 건 en·zh-tw뿐이다. ja·zh는 통화가 1:1로 정해져
-  // 셀렉터가 화면만 차지한다(방한객 1·2위라 대다수는 지금 화면 그대로다).
-  const canPickCurrency = defaultCurrency != null && (lang === "en" || lang === "zh-tw");
+  // 환산이 켜진 화면이면 어디서든 바꿀 수 있어야 한다. 예전엔 en·zh-tw로 막았는데
+  // ("ja·zh는 통화가 1:1"), 언어와 통화는 1:1이 아니다 — 일본어를 읽는 한국 거주자,
+  // 엔화 말고 달러로 감을 잡는 손님이 있고, 무엇보다 "원화만 보기"로 끌 길이 막혔다.
+  const canPickCurrency = defaultCurrency != null;
   const sel = useMenuSelection({
     items, combos, isWeekend, tableChargeWeekday, tableChargeWeekend, zone, initialSnapshot,
   });
@@ -381,7 +382,7 @@ export function MenuPicker({
       {/* 항목 목록 — 모바일 1열, 데스크탑 2열 */}
       <div className="flex-1 min-w-0 pl-3 lg:pl-6">
         {/* 통화 줄 — 지금 무슨 통화로 보고 있는지 밝히고 바꿀 길을 준다.
-            en·zh-tw에서만 뜬다(ja·zh는 통화가 1:1이라 화면만 차지한다). */}
+            한국어 트랙은 defaultCurrency가 null이라 여기까지 오지 않는다. */}
         {canPickCurrency && (
           <button
             type="button"
@@ -396,12 +397,15 @@ export function MenuPicker({
                 </>
               ) : (
                 <span className="font-bold text-foreground">
-                  {lang === "zh-tw" ? "只顯示韓元" : "Korean won only"}
+                  {lang === "ja" ? "韓国ウォンのみ"
+                    : lang === "zh" ? "仅显示韩元"
+                    : lang === "zh-tw" ? "只顯示韓元"
+                    : "Korean won only"}
                 </span>
               )}
             </span>
             <span className="shrink-0 text-[11px] font-semibold text-money">
-              {lang === "zh-tw" ? "變更" : "Change"}
+              {lang === "ja" ? "変更" : lang === "zh" ? "更改" : lang === "zh-tw" ? "變更" : "Change"}
             </span>
           </button>
         )}
@@ -522,13 +526,19 @@ export function MenuPicker({
       <Sheet open={fxSheetOpen} onOpenChange={setFxSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl p-5 pb-8 max-h-[70vh] overflow-y-auto">
           <SheetTitle className="text-base font-bold">
-            {lang === "zh-tw" ? "顯示貨幣" : "Display currency"}
+            {lang === "ja" ? "表示通貨"
+              : lang === "zh" ? "显示货币"
+              : lang === "zh-tw" ? "顯示貨幣"
+              : "Display currency"}
           </SheetTitle>
           {/* 기준일만 — 결제 안내는 합계 옆 고지에 이미 있어서 여기선 중복이다.
               시트는 통화를 고르는 자리라 환율이 언제 기준인지만 알면 된다. */}
           {fxAsOf && (
             <p className="mt-1 text-xs text-muted-foreground">
-              {lang === "zh-tw" ? `匯率基準：${fxAsOf}` : `Rate as of ${fxAsOf}.`}
+              {lang === "ja" ? `${fxAsOf} 時点の為替レート`
+                : lang === "zh" ? `汇率基准：${fxAsOf}`
+                : lang === "zh-tw" ? `匯率基準：${fxAsOf}`
+                : `Rate as of ${fxAsOf}.`}
             </p>
           )}
           <div className="mt-3 flex flex-col gap-1.5">
@@ -541,7 +551,10 @@ export function MenuPicker({
             >
               <span className="w-14 shrink-0 font-mono text-xs font-semibold text-money">KRW</span>
               <span className="flex-1 text-foreground">
-                {lang === "zh-tw" ? "只顯示韓元" : "Korean won only"}
+                {lang === "ja" ? "韓国ウォンのみ"
+                  : lang === "zh" ? "仅显示韩元"
+                  : lang === "zh-tw" ? "只顯示韓元"
+                  : "Korean won only"}
               </span>
               {currency === null && <Check className="w-4 h-4 text-money" />}
             </button>
