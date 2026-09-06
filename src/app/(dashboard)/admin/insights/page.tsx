@@ -49,6 +49,31 @@ interface DropoffByLang {
   pct: number;
 }
 
+// Migration 658 — 외국인 전환 대시보드.
+// 비율은 전부 "랜딩 대비"다. 단계 간 비율로 계산하면 안 된다 —
+// 폼 도달의 69%가 CTA를 안 거쳐서(실측) form_rate > cta_rate가 정상적으로 나온다.
+interface ForeignFunnel {
+  lang: string;
+  landed: number;
+  cta_clicked: number;
+  form_viewed: number;
+  gate_passed: number;
+  submitted: number;
+  cta_rate: number | null;
+  form_rate: number | null;
+  gate_rate: number | null;
+  submit_rate: number | null;
+}
+
+interface ForeignExitPoint {
+  path: string;
+  lang: string;
+  page_kind: string | null;
+  exits: number;
+  avg_scroll_depth: number | null;
+  avg_time_sec: number | null;
+}
+
 export default async function InsightsPage() {
   const supabase = await createClient();
 
@@ -63,18 +88,24 @@ export default async function InsightsPage() {
     .single();
   if (ud?.role !== "admin") redirect("/");
 
-  // 4개 뷰 병렬 조회
-  const [hotspotsRes, funnelRes, acquisitionRes, langRes] = await Promise.all([
-    supabase.from("dropoff_hotspots").select("*").limit(10),
-    supabase.from("signup_funnel").select("*").single(),
-    supabase.from("acquisition_quality").select("*").limit(15),
-    supabase.from("dropoff_by_lang").select("*"),
-  ]);
+  // 6개 뷰 병렬 조회 (Migration 658로 외국인 퍼널 2개 추가)
+  const [hotspotsRes, funnelRes, acquisitionRes, langRes, fgFunnelRes, fgExitRes] =
+    await Promise.all([
+      supabase.from("dropoff_hotspots").select("*").limit(10),
+      supabase.from("signup_funnel").select("*").single(),
+      supabase.from("acquisition_quality").select("*").limit(15),
+      supabase.from("dropoff_by_lang").select("*"),
+      supabase.from("foreign_funnel_by_lang").select("*"),
+      supabase.from("foreign_exit_points").select("*"),
+    ]);
 
   const hotspots: DropoffHotspot[] = (hotspotsRes.data as DropoffHotspot[]) || [];
   const funnel: SignupFunnel | null = (funnelRes.data as SignupFunnel) || null;
   const acquisition: AcquisitionQuality[] = (acquisitionRes.data as AcquisitionQuality[]) || [];
   const byLang: DropoffByLang[] = (langRes.data as DropoffByLang[]) || [];
+  // 마이그레이션 미적용 환경에서도 페이지 전체가 죽지 않게 빈 배열로 폴백
+  const foreignFunnel: ForeignFunnel[] = (fgFunnelRes.data as ForeignFunnel[]) || [];
+  const foreignExits: ForeignExitPoint[] = (fgExitRes.data as ForeignExitPoint[]) || [];
 
   return (
     <div className="min-h-screen bg-background text-foreground pt-12 pb-24">
@@ -136,6 +167,8 @@ export default async function InsightsPage() {
           funnel={funnel}
           acquisition={acquisition}
           byLang={byLang}
+          foreignFunnel={foreignFunnel}
+          foreignExits={foreignExits}
         />
       </div>
     </div>

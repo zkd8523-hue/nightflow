@@ -87,9 +87,84 @@ interface Props {
     total_sessions: number;
     pct: number;
   }[];
+  // Migration 658 — 외국인 전환 대시보드. 비율은 전부 "랜딩 대비"다.
+  foreignFunnel: {
+    lang: string;
+    landed: number;
+    cta_clicked: number;
+    form_viewed: number;
+    gate_passed: number;
+    submitted: number;
+    cta_rate: number | null;
+    form_rate: number | null;
+    gate_rate: number | null;
+    submit_rate: number | null;
+  }[];
+  foreignExits: {
+    path: string;
+    lang: string;
+    page_kind: string | null;
+    exits: number;
+    avg_scroll_depth: number | null;
+    avg_time_sec: number | null;
+  }[];
 }
 
-export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props) {
+// 언어별 고정색 — 어느 차트에서든 같은 색 = 같은 언어로 읽히게.
+const LANG_COLOR: Record<string, string> = {
+  en: "#f2a2c0",
+  ja: "#6fd7f5",
+  zh: "#a99cf0",
+  "zh-tw": "#8ee9b8",
+  "zh-TW": "#8ee9b8",
+};
+const langColor = (lang: string) => LANG_COLOR[lang] ?? "#9aa0d0";
+
+/** 도넛 게이지 — stroke-dasharray로 그린다(차트 라이브러리 불필요). */
+function Donut({
+  pct,
+  color,
+  label,
+  sub,
+}: {
+  pct: number;
+  color: string;
+  label: string;
+  sub: string;
+}) {
+  const R = 47;
+  const C = 2 * Math.PI * R; // 295.3
+  // 값이 0이면 링을 아예 안 그린다 — 0%인데 점이 찍혀 있으면 오해를 부른다.
+  const offset = pct > 0 ? C - (C * Math.min(pct, 100)) / 100 : C;
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <svg width="116" height="116" viewBox="0 0 116 116" role="img" aria-label={`${label} ${pct}%`}>
+        <circle cx="58" cy="58" r={R} fill="none" stroke="currentColor" strokeWidth="11" className="text-muted" />
+        {pct > 0 && (
+          <circle
+            cx="58" cy="58" r={R} fill="none" stroke={color} strokeWidth="11" strokeLinecap="round"
+            strokeDasharray={C} strokeDashoffset={offset} transform="rotate(-90 58 58)"
+          />
+        )}
+        <text x="58" y="55" textAnchor="middle" fontSize="20" fontWeight="800"
+              fill={pct > 0 ? "currentColor" : "#ff6b8a"} className={pct > 0 ? "text-foreground" : ""}>
+          {pct > 0 ? `${pct}%` : "0%"}
+        </text>
+        <text x="58" y="72" textAnchor="middle" fontSize="10" fill="currentColor" className="text-muted-foreground">
+          {sub}
+        </text>
+      </svg>
+      <span className="text-[13px] font-bold flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: color }} />
+        {label}
+      </span>
+    </div>
+  );
+}
+
+export function InsightsClient({
+  hotspots, funnel, acquisition, byLang, foreignFunnel, foreignExits,
+}: Props) {
   const maxHotspot = Math.max(...hotspots.map((h) => h.session_count), 1);
 
   // 언어별로 그룹핑
@@ -405,6 +480,234 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
               );
             })}
           </div>
+        )}
+      </section>
+
+      {/* ============================================ */}
+      {/* Section 5: 외국인 예약 전환 (Migration 658)   */}
+      {/* 요약 도넛 → 단계 막대 → 원인(CTA·이탈 경로)  */}
+      {/* ============================================ */}
+      <section className="bg-card border border-border rounded-2xl p-6 space-y-8">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Globe2 className="w-5 h-5 text-brand-amber" />
+          <h2 className="text-xl font-black tracking-tight">외국인 예약 전환</h2>
+          <span className="text-xs text-muted-foreground font-medium">
+            최근 60일 · 랜딩 대비 비율
+          </span>
+        </div>
+
+        {foreignFunnel.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            데이터가 없습니다. Migration 658이 적용됐는지 확인하세요.
+          </p>
+        ) : (
+          <>
+            {/* ── 나라별 전환율 도넛 ── */}
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-4">
+                나라별 예약 전환율
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {foreignFunnel.map((f) => (
+                  <Donut
+                    key={f.lang}
+                    pct={Number(f.submit_rate ?? 0)}
+                    color={langColor(f.lang)}
+                    label={LANG_LABELS[f.lang] ?? f.lang}
+                    sub={`${f.submitted} / ${f.landed}`}
+                  />
+                ))}
+              </div>
+              {/* 표본이 적을 때 0%를 "나쁘다"로 오독하는 걸 막는다 */}
+              {foreignFunnel.reduce((s, f) => s + f.submitted, 0) < 30 && (
+                <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border">
+                  제출 총{" "}
+                  <b className="text-foreground">
+                    {foreignFunnel.reduce((s, f) => s + f.submitted, 0)}
+                  </b>
+                  건 — 전환율로 판단하기엔 표본이 적습니다. 30건이 쌓이기 전까진 아래{" "}
+                  <b className="text-foreground">CTA 클릭률</b>을 대신 보세요.
+                </p>
+              )}
+            </div>
+
+            {/* ── 언어별 단계 막대 ── */}
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-4">
+                단계 통과율{" "}
+                <span className="normal-case tracking-normal font-medium">
+                  — 각 언어의 랜딩을 100%로 본 값
+                </span>
+              </p>
+              <div className="space-y-5">
+                {foreignFunnel.map((f) => {
+                  const color = langColor(f.lang);
+                  const steps: [string, number, number, number][] = [
+                    ["랜딩", f.landed, 100, 1],
+                    ["CTA", f.cta_clicked, Number(f.cta_rate ?? 0), 0.72],
+                    ["폼", f.form_viewed, Number(f.form_rate ?? 0), 0.54],
+                    ["게이트", f.gate_passed, Number(f.gate_rate ?? 0), 0.38],
+                    ["제출", f.submitted, Number(f.submit_rate ?? 0), 1],
+                  ];
+                  return (
+                    <div key={f.lang} className="grid md:grid-cols-[86px_1fr] gap-3 items-center">
+                      <span className="text-[13px] font-bold flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: color }} />
+                        {LANG_LABELS[f.lang] ?? f.lang}
+                      </span>
+                      <div className="space-y-1">
+                        {steps.map(([name, count, pct, op], i) => (
+                          <div
+                            key={name}
+                            className="grid grid-cols-[52px_1fr_92px] gap-2 items-center text-[11px]"
+                          >
+                            <span className="text-muted-foreground text-right">{name}</span>
+                            <div className="h-[15px] bg-muted rounded-sm overflow-hidden">
+                              <div
+                                className="h-full rounded-sm"
+                                style={{
+                                  // 제출은 0.5% 수준이라 그대로 그리면 안 보인다 — 최소 폭 보장
+                                  width: `${i === 4 ? Math.max(pct, 1.2) : pct}%`,
+                                  background: i === 4 && count === 0 ? "#ff6b8a" : color,
+                                  opacity: op,
+                                }}
+                              />
+                            </div>
+                            <span className="text-muted-foreground tabular-nums">
+                              <b className="text-foreground">{count.toLocaleString()}</b> {pct}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border">
+                <b className="text-foreground">퍼널이 선형이 아닙니다.</b> 폼이 CTA보다 큰 건 오류가
+                아니라, 폼 도달의 다수가 CTA를 안 거치기 때문입니다(사이드바·저장된 링크·직접 진입).
+                그래서 단계 간 비율이 아니라 랜딩 대비로 그립니다.
+              </p>
+            </div>
+
+            {/* ── CTA 클릭률 비교 ── */}
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-4">
+                CTA 클릭률{" "}
+                <span className="normal-case tracking-normal font-medium">
+                  — 표본이 쌓이기 전까지의 대체 지표
+                </span>
+              </p>
+              <div className="space-y-2.5">
+                {[...foreignFunnel]
+                  .sort((a, b) => Number(b.cta_rate ?? 0) - Number(a.cta_rate ?? 0))
+                  .map((f) => {
+                    const rate = Number(f.cta_rate ?? 0);
+                    const max = Math.max(
+                      ...foreignFunnel.map((x) => Number(x.cta_rate ?? 0)),
+                      1
+                    );
+                    return (
+                      <div
+                        key={f.lang}
+                        className="grid grid-cols-[72px_1fr_52px] gap-3 items-center text-xs"
+                      >
+                        <span className="font-bold flex items-center gap-1.5">
+                          <span
+                            className="w-2 h-2 rounded-sm shrink-0"
+                            style={{ background: langColor(f.lang) }}
+                          />
+                          {f.lang}
+                        </span>
+                        <div className="h-[21px] bg-muted rounded-sm overflow-hidden">
+                          <div
+                            className="h-full rounded-sm flex items-center pl-2 text-[10px] font-black text-black"
+                            style={{
+                              width: `${(rate / max) * 100}%`,
+                              background: langColor(f.lang),
+                            }}
+                          >
+                            {f.cta_clicked}건
+                          </div>
+                        </div>
+                        <span
+                          className={`text-right tabular-nums font-bold ${
+                            rate < 4 ? "text-red-400" : "text-muted-foreground"
+                          }`}
+                        >
+                          {rate}%
+                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* ── 이탈 경로 표 ── */}
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-4">
+                이탈 지점{" "}
+                <span className="normal-case tracking-normal font-medium">
+                  — 어디까지 보고 나갔나
+                </span>
+              </p>
+              {foreignExits.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  아직 데이터가 없습니다.{" "}
+                  <code className="text-foreground">foreign_page_exit</code>는 2026-09-06에
+                  배포돼 수집 중이고, 세션 5개 이상 쌓인 경로부터 표시됩니다.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-muted-foreground">
+                        <th className="text-left font-black pb-2 pr-3">경로</th>
+                        <th className="text-left font-black pb-2 pr-3">언어</th>
+                        <th className="text-right font-black pb-2 pr-3">이탈</th>
+                        <th className="text-right font-black pb-2 pr-3">평균 깊이</th>
+                        <th className="text-right font-black pb-2">평균 체류</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {foreignExits.map((e) => {
+                        const depth = Number(e.avg_scroll_depth ?? 0);
+                        const sec = Number(e.avg_time_sec ?? 0);
+                        // 깊이 30%↓ + 체류 15초↓ = 검색 의도와 콘텐츠 불일치 의심
+                        const mismatch = depth < 30 && sec < 15;
+                        return (
+                          <tr key={`${e.path}-${e.lang}`} className="border-t border-border">
+                            <td className="py-2 pr-3 text-foreground truncate max-w-[280px]">
+                              {e.path}
+                            </td>
+                            <td className="py-2 pr-3 text-muted-foreground">{e.lang}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
+                              {e.exits}
+                            </td>
+                            <td
+                              className={`py-2 pr-3 text-right tabular-nums ${
+                                mismatch ? "text-red-400 font-bold" : "text-muted-foreground"
+                              }`}
+                            >
+                              {depth}%
+                            </td>
+                            <td className="py-2 text-right tabular-nums text-muted-foreground">
+                              {sec}초
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
+                    깊이 <b className="text-foreground">30%↓</b> + 체류{" "}
+                    <b className="text-foreground">15초↓</b>(빨강) = 검색 의도와 콘텐츠 불일치.
+                    깊이 <b className="text-foreground">70%↑</b>인데 CTA 클릭이 없으면 CTA 문제.
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </section>
     </div>
