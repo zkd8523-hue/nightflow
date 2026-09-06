@@ -203,6 +203,60 @@ export function resetUserEventCache() {
 }
 
 /**
+ * 페이지가 파기되는 순간(이탈)에도 살아남는 이벤트 전송.
+ *
+ * 일반 trackUserEvent는 `await supabase.auth.getUser()` → `await insert()` 로
+ * 두 번 기다리는데, visibilitychange(hidden)·pagehide 시점엔 브라우저가 진행 중인
+ * fetch를 죽인다. 그래서 foreign_page_exit이 배포 후 0건이었다(2026-09-06 확인).
+ *
+ * sendBeacon은 페이지가 사라져도 OS가 전송을 보장한다. 대신 응답을 못 받고
+ * 커스텀 헤더도 못 붙여서, PostgREST에 필요한 apikey를 쿼리스트링으로 넘긴다
+ * (anon 키는 원래 공개값이라 노출 문제 없음 — RLS가 실제 방어선).
+ *
+ * user_id는 싣지 않는다 — auth.getUser()가 비동기라 이 시점에 못 기다린다.
+ * anon_id·session_id만으로 이탈 분석엔 충분하다.
+ */
+export function trackUserEventBeacon(
+  eventName: string,
+  properties: Record<string, unknown> = {},
+): void {
+  try {
+    if (typeof window === "undefined" || !navigator.sendBeacon) return;
+
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) return;
+
+    const anonId = getOrCreateAnonId();
+    const session = getOrRotateSession(anonId);
+
+    const body = JSON.stringify({
+      anon_id: anonId,
+      user_id: null,
+      session_id: session.session_id,
+      event_name: eventName,
+      utm_source: session.utm_source,
+      utm_medium: session.utm_medium,
+      utm_campaign: session.utm_campaign,
+      referrer: session.referrer,
+      landing_path: session.landing_path,
+      path: window.location.pathname,
+      device_type: detectDeviceType(),
+      lang: detectLang(),
+      properties,
+    });
+
+    // Blob으로 Content-Type을 지정한다 — sendBeacon은 헤더를 못 붙인다.
+    navigator.sendBeacon(
+      `${url}/rest/v1/user_events?apikey=${encodeURIComponent(key)}`,
+      new Blob([body], { type: "application/json" }),
+    );
+  } catch {
+    // 이탈 계측이 실패해도 사용자 경험엔 영향 없어야 한다 — 조용히 무시
+  }
+}
+
+/**
  * 현재 세션의 유입 채널(UTM)을 읽기만 한다 — getOrRotateSession()과 같은
  * localStorage 키를 보되, 세션을 새로 굴리거나 이벤트를 기록하지 않는다.
  * foreign_requests INSERT처럼 "이 제출이 어느 채널에서 왔는지"만 필요한

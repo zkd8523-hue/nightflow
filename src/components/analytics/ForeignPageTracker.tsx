@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { trackForeignEvent } from "@/lib/analytics/events";
+import { trackUserEventBeacon } from "@/lib/analytics/userEvents";
 
 /**
  * SEO로 유입되는 외국어 정적 페이지(클럽 개별 328p, 실용정보 16p)의 계측기.
@@ -155,7 +156,11 @@ export function ForeignPageTracker({
         ? 100
         : Math.min(100, Math.round((window.scrollY / scrollable) * 100));
 
-      trackForeignEvent("foreign_page_exit", {
+      // ⚠️ trackForeignEvent(일반 fetch)를 쓰면 안 된다 — 페이지가 파기되는
+      // 순간이라 브라우저가 요청을 죽인다. 실제로 그래서 배포 후 0건이었다.
+      // sendBeacon만 이 시점 전송을 보장한다.
+      trackUserEventBeacon("foreign_page_exit", {
+        funnel: "foreign",
         lang,
         path: pathname,
         page_kind: kind,
