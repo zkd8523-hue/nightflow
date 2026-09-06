@@ -18,21 +18,37 @@ export default async function BookingMdPage({
 
   const { data: conf } = await sb
     .from("booking_confirmations")
-    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, request_id, md_checked_in_at")
+    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, request_id, md_checked_in_at, request_type")
     .eq("md_token", token)
     .maybeSingle();
 
   if (!conf) notFound();
 
-  const { data: req } = await sb
-    .from("foreign_requests")
-    .select("guest_name, event_date, group_size, status, lang, assigned_md_id, club_ids")
+  // 확정서가 외국인/한국 요청 중 무엇인지에 따라 원본 테이블이 다르다
+  // (2026-09-06, Migration 654). korean_booking_requests는 lang 컬럼이 없다 —
+  // 한국인 전용 트랙이라 항상 "ko"로 고정한다.
+  const isKorean = conf.request_type === "korean";
+  const { data: reqRow } = await sb
+    .from(isKorean ? "korean_booking_requests" : "foreign_requests")
+    .select(`guest_name, event_date, group_size, status, assigned_md_id, ${isKorean ? "club_id" : "club_ids"}${isKorean ? "" : ", lang"}`)
     .eq("id", conf.request_id)
     .single();
 
-  if (!req) notFound();
+  if (!reqRow) notFound();
+  const req = reqRow as unknown as {
+    guest_name: string;
+    event_date: string;
+    group_size: number;
+    status: string;
+    assigned_md_id: string | null;
+    lang?: string;
+    club_ids?: string[] | null;
+    club_id?: string | null;
+  };
+  const reqClubIds = isKorean ? [req.club_id].filter(Boolean) as string[] : (req.club_ids ?? []);
+  const lang = isKorean ? "ko" : (req.lang ?? "ko");
 
-  const clubId = conf.club_id ?? (req.club_ids as string[] | null)?.[0] ?? null;
+  const clubId = conf.club_id ?? reqClubIds[0] ?? null;
   const { data: club } = clubId
     ? await sb.from("clubs").select("name").eq("id", clubId).maybeSingle()
     : { data: null };
@@ -57,7 +73,7 @@ export default async function BookingMdPage({
       eventDate={req.event_date}
       groupSize={conf.confirmed_group_size ?? req.group_size}
       cancelled={req.status === "cancelled"}
-      lang={req.lang}
+      lang={lang}
       clubName={club?.name ?? null}
       tableInfo={conf.table_info}
       includes={conf.includes ?? []}

@@ -342,7 +342,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
             }`}
           >
             <MapPin className="w-4 h-4" />
-            주변
+            지도로 보기
           </button>
         </div>
         {/* 지역 필터는 항상 표시 (1차 필터) */}

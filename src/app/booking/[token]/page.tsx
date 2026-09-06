@@ -20,21 +20,35 @@ export default async function BookingPage({
 
   const { data: conf } = await sb
     .from("booking_confirmations")
-    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, request_id")
+    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, request_id, request_type")
     .eq("public_token", token)
     .maybeSingle();
 
   if (!conf) notFound();
 
-  const { data: req } = await sb
-    .from("foreign_requests")
-    .select("guest_name, event_date, group_size, status, assigned_md_id, club_ids")
+  // 확정서가 외국인 요청인지 한국 예약 요청인지에 따라 원본 테이블이 다르다
+  // (2026-09-06, Migration 654) — club_ids(배열)/club_id(단일) 차이만 통일해서 다룬다.
+  const reqTable = conf.request_type === "korean" ? "korean_booking_requests" : "foreign_requests";
+  const clubIdCol = conf.request_type === "korean" ? "club_id" : "club_ids";
+  const { data: reqRow } = await sb
+    .from(reqTable)
+    .select(`guest_name, event_date, group_size, status, assigned_md_id, ${clubIdCol}`)
     .eq("id", conf.request_id)
     .single();
 
-  if (!req) notFound();
+  if (!reqRow) notFound();
+  const req = reqRow as unknown as {
+    guest_name: string;
+    event_date: string;
+    group_size: number;
+    status: string;
+    assigned_md_id: string | null;
+    club_ids?: string[] | null;
+    club_id?: string | null;
+  };
+  const reqClubIds = conf.request_type === "korean" ? [req.club_id].filter(Boolean) as string[] : (req.club_ids ?? []);
 
-  const clubId = conf.club_id ?? (req.club_ids as string[] | null)?.[0] ?? null;
+  const clubId = conf.club_id ?? reqClubIds[0] ?? null;
   const { data: club } = clubId
     ? await sb
         .from("clubs")
@@ -65,6 +79,7 @@ export default async function BookingPage({
     <BookingPass
       publicToken={token}
       requestId={conf.request_id}
+      requestType={conf.request_type}
       refNo={conf.ref_no}
       arrivalConfirmed={(pings ?? []).length > 0}
       existingReview={existingReview ?? null}

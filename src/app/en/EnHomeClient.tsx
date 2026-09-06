@@ -4,6 +4,7 @@ import { useState, useEffect, createContext, useContext, useRef } from "react";
 import Link from "next/link";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
+import { isBookable } from "@/lib/clubs/bookable";
 import { FaqTab } from "./FaqTab";
 import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map, Check, X } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -13,7 +14,6 @@ import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ForeignAppCta } from "@/components/layout/ForeignAppCta";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
 import { recordRecentClub, useRecentClubs, removeRecentClub } from "@/lib/clubs/recentClubs";
-import { clubTagline } from "@/lib/clubs/bookable";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { trackForeignEvent } from "@/lib/analytics/events";
 import { ForeignSidebar, type ForeignNavKey } from "@/components/foreign/ForeignShell";
@@ -249,12 +249,15 @@ const REGIONS = [
   },
 ] as const;
 
-function ClubThumb({ club, onOpen, lang }: { club: ClubItem; onOpen: () => void; lang: Lang }) {
+function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
   const { tr } = useTr();
   const name = displayClubName(club);
-  const tagline = clubTagline(club, lang);
   // 홈에서 이탈시키지 않고 제자리에서 상세 모달을 띄움 — "How it works" 교육 기회를 잃지 않도록.
   // (예전엔 /clubs 페이지로 바로 이동했음. RegionSection이 오픈 상태를 관리.)
+  //
+  // 한 줄 소개(tagline)는 여기 안 넣는다 — 19곳 중 예약 가능한 클럽에만 있어서
+  // 카드 높이가 들쭉날쭉해지고, 훑어보는 홈 그리드에서는 정보보다 노이즈로
+  // 읽혔다(2026-09-06). 클릭해서 관심을 보인 뒤인 상세 시트로 옮겼다.
   return (
     <button
       type="button"
@@ -270,13 +273,6 @@ function ClubThumb({ club, onOpen, lang }: { club: ClubItem; onOpen: () => void;
         )}
       </div>
       <p className="text-[12px] font-bold text-foreground mt-1.5 truncate lg:text-[13px] lg:mt-2">{name}</p>
-      {/* 한 줄 소개 — 예약 가능한 곳이 19곳뿐이라 이름만으론 뭘 고를지 알 수 없다.
-          비면 줄 자체를 접는다(빈 자리를 남기지 않는다). */}
-      {tagline && (
-        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2 leading-snug break-keep">
-          {tagline}
-        </p>
-      )}
     </button>
   );
 }
@@ -724,10 +720,10 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
             {regionClubs.length > 0 && (
               <>
                 <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x lg:hidden">
-                  {regionClubs.map((c) => <ClubThumb key={c.id} club={c} lang={lang} onOpen={() => openDetail(regionClubs, c)} />)}
+                  {regionClubs.map((c) => <ClubThumb key={c.id} club={c} onOpen={() => openDetail(regionClubs, c)} />)}
                 </div>
                 <div className="hidden lg:grid lg:grid-cols-6 lg:gap-3">
-                  {desktopClubs.map((c) => <ClubThumb key={c.id} club={c} lang={lang} onOpen={() => openDetail(regionClubs, c)} />)}
+                  {desktopClubs.map((c) => <ClubThumb key={c.id} club={c} onOpen={() => openDetail(regionClubs, c)} />)}
                 </div>
               </>
             )}
@@ -794,39 +790,58 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
                 club={detailClub}
                 lang={lang}
                 cta={
-                  <div className="flex gap-2 mt-2">
-                    <Link
-                      href={buildFlagHref(lang, detailClub.area, detailClub.id)}
-                      onClick={() => {
-                        // 회원가입 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트 — ClubsClient와 동일 패턴.
-                        if (typeof window !== "undefined") {
-                          try {
-                            sessionStorage.setItem(
-                              "nightflow_book_intent",
-                              JSON.stringify({
-                                club_id: detailClub.id,
-                                club_name: detailClub.name,
-                                area: detailClub.area,
-                                lang,
-                                savedAt: Date.now(),
-                              })
-                            );
-                          } catch { /* noop */ }
-                        }
-                        if (lang !== "ko") {
-                          trackForeignEvent("foreign_book_at_club_click", {
-                            area: detailClub.area,
-                            club_id: detailClub.id,
-                            club_name: detailClub.name,
-                          });
-                        }
-                        closeDetail();
-                      }}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
-                    >
-                      {bookAtClubLabel(displayClubName(detailClub))}
-                    </Link>
-                  </div>
+                  // 닫힌 지역은 폼에서 area 선택 자체가 안 된다 — ClubsClient.tsx와 동일 게이팅.
+                  !isFlagAreaOpen(detailClub.area) ? (
+                    <div className="mt-2 w-full py-3.5 rounded-xl bg-card border border-amber-500/30 text-brand-amber font-black text-[15px] text-center">
+                      🚀 {t(
+                        "준비중이에요",
+                        "Coming soon to NightFlow",
+                        "NightFlowで近日開始",
+                        "即将上线 NightFlow",
+                      )}
+                    </div>
+                  ) : !isBookable(detailClub) ? (
+                    // 지역은 열려 있어도 담당 MD·주대(club_menu_items)가 없으면 폼까지
+                    // 가도 예약이 성립하지 않는다 — 예전엔 이 체크가 없어서 has_md/has_menu가
+                    // false인 클럽도 예약 버튼이 그냥 활성화됐다(2026-09-06).
+                    <div className="mt-2 w-full py-3.5 rounded-xl bg-card border border-border text-muted-foreground font-black text-[15px] text-center">
+                      {t("예약 준비중", "Booking coming soon", "予約準備中", "预订即将开放")}
+                    </div>
+                  ) : (
+                    <div className="flex gap-2 mt-2">
+                      <Link
+                        href={buildFlagHref(lang, detailClub.area, detailClub.id)}
+                        onClick={() => {
+                          // 회원가입 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트 — ClubsClient와 동일 패턴.
+                          if (typeof window !== "undefined") {
+                            try {
+                              sessionStorage.setItem(
+                                "nightflow_book_intent",
+                                JSON.stringify({
+                                  club_id: detailClub.id,
+                                  club_name: detailClub.name,
+                                  area: detailClub.area,
+                                  lang,
+                                  savedAt: Date.now(),
+                                })
+                              );
+                            } catch { /* noop */ }
+                          }
+                          if (lang !== "ko") {
+                            trackForeignEvent("foreign_book_at_club_click", {
+                              area: detailClub.area,
+                              club_id: detailClub.id,
+                              club_name: detailClub.name,
+                            });
+                          }
+                          closeDetail();
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
+                      >
+                        {bookAtClubLabel(displayClubName(detailClub))}
+                      </Link>
+                    </div>
+                  )
                 }
               />
             </>

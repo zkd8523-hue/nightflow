@@ -73,9 +73,9 @@ function firstOf(v) {
 }
 
 function parseArgs() {
-  const args = { date: null, area: null };
+  const args = { date: null, area: null, first: null };
   for (const arg of process.argv.slice(2)) {
-    const m = /^--(date|area)=(.+)$/.exec(arg);
+    const m = /^--(date|area|first)=(.+)$/.exec(arg);
     if (m) args[m[1]] = m[2];
   }
   return args;
@@ -90,7 +90,7 @@ async function main() {
     process.exit(1);
   }
 
-  const { date: dateArg, area: areaArg } = parseArgs();
+  const { date: dateArg, area: areaArg, first: firstArg } = parseArgs();
   const supabase = createClient(url, key);
   const today = dateArg || getBusinessDateISO();
 
@@ -165,6 +165,22 @@ async function main() {
     });
   }
 
+  // --first=클럽명 이 오면 그 클럽을 맨 앞으로 보낸다. 표지 히어로 사진이
+  // 첫 클럽 대표사진이라, "이 클럽을 표지에 세우고 싶다"는 요구를 이걸로
+  // 해결한다. 아래 6곳 상한보다 먼저 적용해야 잘려나가지 않는다.
+  // 부분 일치(대소문자 무시) — "딥스"로 등록된 Dibs처럼 표기가 갈릴 수 있다.
+  if (firstArg) {
+    const idx = clubs.findIndex((c) =>
+      c.club_name.toLowerCase().includes(firstArg.toLowerCase())
+    );
+    if (idx > 0) {
+      const [picked] = clubs.splice(idx, 1);
+      clubs.unshift(picked);
+    } else if (idx === -1) {
+      console.error(`[경고] --first="${firstArg}"와 일치하는 클럽이 없습니다. 원래 순서를 유지합니다.`);
+    }
+  }
+
   // 지역편은 클럽 3곳 이상일 때만 만든다(사용자 확정, 2026-09-03 —
   // 처음엔 "이태원/홍대/강남은 무조건 지역편"이었다가, 실제로 홍대가
   // 1클럽뿐인 날에도 지역편이 나오는 걸 보고 "모든 지역 공통 3곳 이상"
@@ -179,11 +195,40 @@ async function main() {
     process.exit(1);
   }
 
+  // 클럽 수 상한 — 인스타 캐러셀은 최대 20장이고, 그 전에 사람이 끝까지
+  // 넘겨보지도 않는다. 미리듣기 필터를 걷어내면서 클럽이 확 늘어(이태원
+  // 9/5가 11곳 = 카드 21장으로 인스타 한도 초과) 상한이 필요해졌다.
+  // 6곳이면 표지 + 6장 + 요약 = 8장으로 끝까지 볼 만한 분량이다
+  // (사용자 확정, 2026-09-03).
+  //
+  // 자를 때는 미리듣기 가능한 DJ가 있는 클럽을 우선 남긴다 — 이 카드뉴스의
+  // 존재 이유가 "미리듣고 고르기"라서, 잘려나갈 클럽을 고를 땐 그 가치를
+  // 살리는 쪽이 맞다. 같은 조건이면 원래 순서를 유지한다(안정 정렬).
+  // ⚠️ --first로 지정한 클럽(index 0)은 미리듣기 유무와 무관하게 항상 남긴다 —
+  // "이 클럽을 표지에 세워달라"는 명시적 지시가 자동 우선순위보다 위다.
+  const MAX_CLUBS = 6;
+  let picked = clubs;
+  if (clubs.length > MAX_CLUBS) {
+    picked = clubs
+      .map((c, i) => ({ c, i, hasPreview: c.sets.some((s) => s.has_preview) }))
+      .sort((a, b) => {
+        if (firstArg && (a.i === 0 || b.i === 0)) return a.i === 0 ? -1 : 1;
+        return (b.hasPreview - a.hasPreview) || (a.i - b.i);
+      })
+      .slice(0, MAX_CLUBS)
+      .sort((a, b) => a.i - b.i)
+      .map((x) => x.c);
+    console.error(
+      `[${areaArg || "전체"}] 클럽 ${clubs.length}곳 중 ${MAX_CLUBS}곳만 사용합니다 ` +
+        `(인스타 캐러셀 분량 상한). 제외: ${clubs.filter((c) => !picked.includes(c)).map((c) => c.club_name).join(", ")}`
+    );
+  }
+
   // --area로 필터링했으면 그 지역명을 출력에도 담는다 — build-cards-html.mjs가
   // 이 최상위 area 필드를 읽어 표지 문구(지역 배지·타이틀)를 바꾼다.
   // 예전엔 필터링에만 쓰고 출력에 안 넣어서, 실제 파이프라인으로 만든
   // 지역편 표지가 지역명 없이 나오는 버그가 있었다(2026-09-03 발견).
-  console.log(JSON.stringify({ date: today, area: areaArg || null, clubs }, null, 2));
+  console.log(JSON.stringify({ date: today, area: areaArg || null, clubs: picked }, null, 2));
 }
 
 main();

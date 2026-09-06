@@ -5,6 +5,7 @@ import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
 import { clubFeatureLabels } from "@/lib/clubs/tagLabelsI18n";
+import { clubTagline } from "@/lib/clubs/bookable";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
 
 export type GoogleReview = {
@@ -90,6 +91,9 @@ export function ForeignClubDetailPanel({
   // 구글 지도 검색은 실제 등록명(한글)이 정확도 높음 — 표시명(name_en)과 분리
   const googleUrl = getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, lang);
   const name = displayClubName(club);
+  // 홈 그리드에서는 이 문구를 뺐다(2026-09-06) — 훑어보는 화면에서는 노이즈였다.
+  // 클릭해서 관심을 보인 뒤인 여기 상세 시트에서만 보여준다.
+  const tagline = clubTagline(club, lang);
 
   return (
     <div>
@@ -100,7 +104,15 @@ export function ForeignClubDetailPanel({
       )}
       <div className="p-5 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-black text-[20px] text-foreground leading-tight">{name}</p>
+          <div className="min-w-0">
+            {/* 클럽명이 이 시트에서 가장 중요한 정보인데 20px/13px는 소개 문구와
+                무게 차이가 거의 없었다(2026-09-06 지적). 이름을 확실히 키우고
+                소개 문구는 크기·색을 더 낮춰 한눈에 위계가 갈리게 한다. */}
+            <p className="font-black text-[26px] text-foreground leading-[1.15] tracking-tight break-keep">{name}</p>
+            {tagline && (
+              <p className="text-[12.5px] text-muted-foreground/70 mt-1.5 leading-snug break-keep">{tagline}</p>
+            )}
+          </div>
           <span className="shrink-0 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground">
             {areaI18n(club.area, lang)}
           </span>

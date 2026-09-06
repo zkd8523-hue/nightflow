@@ -26,6 +26,8 @@ import { uploadImage } from "@/lib/utils/upload";
 import { toast } from "sonner";
 import { AuctionList } from "@/components/auctions/AuctionList";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
+import { KoreanBookingForm } from "./KoreanBookingForm";
+import { isBookable } from "@/lib/clubs/bookable";
 import { ClubShareButton } from "./ClubShareButton";
 import { DrinkMenuViewer } from "./DrinkMenuViewer";
 import { ClubLocationModal } from "./ClubLocationModal";
@@ -91,6 +93,10 @@ interface ClubDetailContentProps {
   /** 오늘부터 앞으로 예정된 라인업 전체. "어떤 DJ들이 올까?" 시트 진입점용 */
   upcomingLineups?: UpcomingLineup[];
   upcomingEvents?: ClubUpcomingEvent[];
+  /** 한국인 예약 스티키바 게이팅 — 담당 MD(club_partners)가 있는가. */
+  hasMd?: boolean;
+  /** 한국인 예약 스티키바 게이팅 — 주대 데이터(club_menu_items)가 있는가. */
+  hasMenu?: boolean;
 }
 
 export function ClubDetailContent({
@@ -102,6 +108,8 @@ export function ClubDetailContent({
   todayLineup = null,
   upcomingLineups = [],
   upcomingEvents = [],
+  hasMd = false,
+  hasMenu = false,
 }: ClubDetailContentProps) {
   const activeAuctions = useMemo(() => {
     return rawActiveAuctions.map(adjustMockAuctionDates);
@@ -135,7 +143,7 @@ export function ClubDetailContent({
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(club.thumbnail_url);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const [guestSignCopied, setGuestSignCopied] = useState<"guest" | "reserve" | null>(null);
+  const [guestSignCopied, setGuestSignCopied] = useState<"guest" | null>(null);
   const [clubTags, setClubTags] = useState<string[]>(club.tags ?? []);
   const [clubName, setClubName] = useState<string>(club.name);
   const [clubNameEn, setClubNameEn] = useState<string>(club.name_en ?? "");
@@ -281,6 +289,12 @@ export function ClubDetailContent({
   // 지역 깃발 CTA는 숨겨 전환 충돌을 막는다. 없을 때만 노출.
   // 한국어 트랙은 깃발 신규 진입점 숨김 — 외국어 트랙(isForeigner)은 깃발이 유일한 전환 수단이라 유지.
   const showFlagCta = isForeigner && !guestSignSlot && !hideShareList;
+
+  // 한국인 예약 스티키바 — 외국인 트랙(isBookable, lib/clubs/bookable.ts)과 동일 게이팅을
+  // 한국 트랙에도 적용. MD+주대가 모두 있어야 실제로 예약을 중개할 수 있다.
+  // 게스트 간판(무료입장 혜택)과는 목적이 달라 공존한다 — 간판이 있어도 테이블 예약은 별개로 노출.
+  const bookable = !isForeigner && isBookable({ has_md: hasMd, has_menu: hasMenu });
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   return (
     <div className="container mx-auto max-w-lg px-4 pt-4 pb-40">
@@ -441,45 +455,6 @@ export function ClubDetailContent({
             </div>
           </div>
 
-          {/* 파트너 MD용 편집 Sheet (트리거 없이 외부 제어) */}
-          {canPartnerEdit && (
-            <ClubProfileEditor
-              clubId={club.id}
-              initialTags={clubTags}
-              initialName={clubName}
-              initialNameEn={clubNameEn}
-              initialAddress={clubAddress}
-              initialOperatingHours={clubOperatingHours}
-              initialEntryFeeDetail={clubEntryFeeDetail}
-              initialInstagram={clubInstagram}
-              initialAliases={clubAliases}
-              initialDresscode={clubDresscode}
-              initialDrinkMenuUrl={clubDrinkMenuUrl}
-              initialDrinkMenuUrls={clubDrinkMenuUrls}
-              initialFloorPlanUrl={clubFloorPlanUrl}
-              initialFloorPlanUrls={clubFloorPlanUrls}
-              mode="partner"
-              hideTrigger
-              externalOpen={partnerEditorOpen}
-              onExternalOpenChange={setPartnerEditorOpen}
-              onSaved={(next) => {
-                setClubTags(next.tags);
-                setClubOperatingHours(next.operatingHours);
-                setClubDresscode(next.dresscode);
-                const urls = next.drinkMenuUrls ?? (next.drinkMenuUrl ? [next.drinkMenuUrl] : []);
-                const head = urls[0] ?? null;
-                setClubDrinkMenuUrls(urls);
-                setClubDrinkMenuUrl(head);
-                if (head !== clubDrinkMenuUrl) {
-                  setClubDrinkMenuUpdatedAt(head ? new Date().toISOString() : null);
-                }
-                const floorUrls = next.floorPlanUrls ?? (next.floorPlanUrl ? [next.floorPlanUrl] : []);
-                setClubFloorPlanUrls(floorUrls);
-                setClubFloorPlanUrl(floorUrls[0] ?? null);
-              }}
-            />
-          )}
-
           {/* 게스트 간판 — 이번 주 차지 MD 정보 (각진 '간판' 스타일 + 밝은 내부 배경으로 배경과 분리) */}
           {guestSignSlot && (() => {
             // MD가 문구를 안 쓰고 칩만 고른 경우도 있으므로, 텍스트가 없으면
@@ -563,7 +538,7 @@ export function ClubDetailContent({
                   )}
                 </div>
                 {(guestSignSlot.md.instagram || guestSignSlot.md.kakao_open_chat_url) && (
-                  <div className="grid grid-cols-2 divide-x divide-border/60 border-t-2 border-border bg-background/40 overflow-hidden">
+                  <div className="border-t-2 border-border bg-background/40 overflow-hidden">
                     <button
                       type="button"
                       onClick={async () => {
@@ -587,34 +562,51 @@ export function ClubDetailContent({
                       {guestSignCopied === "guest" ? <Check className="w-3.5 h-3.5 text-money" /> : <Copy className="w-3.5 h-3.5" />}
                       {guestSignCopied === "guest" ? "복사됐어요" : "게스트 문의 복사"}
                     </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const message = [
-                          "[나플 예약 문의] 안녕하세요!",
-                          `${clubName} 테이블 예약 가능할까요?`,
-                        ].join("\n");
-                        try {
-                          await navigator.clipboard.writeText(message);
-                          setGuestSignCopied("reserve");
-                          toast.success("메시지가 복사됐어요");
-                          trackGuestSignClick(guestSignSlot.slot_id, "copy_message");
-                          setTimeout(() => setGuestSignCopied(null), 2000);
-                        } catch {
-                          toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
-                        }
-                      }}
-                      className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 hover:bg-muted text-[12px] font-bold text-foreground/70 hover:text-foreground active:scale-[0.98] transition"
-                    >
-                      {guestSignCopied === "reserve" ? <Check className="w-3.5 h-3.5 text-money" /> : <Copy className="w-3.5 h-3.5" />}
-                      {guestSignCopied === "reserve" ? "복사됐어요" : "예약 문의 복사"}
-                    </button>
                   </div>
                 )}
               </div>
             </div>
             );
           })()}
+
+          {/* 파트너 MD용 편집 Sheet (트리거 없이 외부 제어) */}
+          {canPartnerEdit && (
+            <ClubProfileEditor
+              clubId={club.id}
+              initialTags={clubTags}
+              initialName={clubName}
+              initialNameEn={clubNameEn}
+              initialAddress={clubAddress}
+              initialOperatingHours={clubOperatingHours}
+              initialEntryFeeDetail={clubEntryFeeDetail}
+              initialInstagram={clubInstagram}
+              initialAliases={clubAliases}
+              initialDresscode={clubDresscode}
+              initialDrinkMenuUrl={clubDrinkMenuUrl}
+              initialDrinkMenuUrls={clubDrinkMenuUrls}
+              initialFloorPlanUrl={clubFloorPlanUrl}
+              initialFloorPlanUrls={clubFloorPlanUrls}
+              mode="partner"
+              hideTrigger
+              externalOpen={partnerEditorOpen}
+              onExternalOpenChange={setPartnerEditorOpen}
+              onSaved={(next) => {
+                setClubTags(next.tags);
+                setClubOperatingHours(next.operatingHours);
+                setClubDresscode(next.dresscode);
+                const urls = next.drinkMenuUrls ?? (next.drinkMenuUrl ? [next.drinkMenuUrl] : []);
+                const head = urls[0] ?? null;
+                setClubDrinkMenuUrls(urls);
+                setClubDrinkMenuUrl(head);
+                if (head !== clubDrinkMenuUrl) {
+                  setClubDrinkMenuUpdatedAt(head ? new Date().toISOString() : null);
+                }
+                const floorUrls = next.floorPlanUrls ?? (next.floorPlanUrl ? [next.floorPlanUrl] : []);
+                setClubFloorPlanUrls(floorUrls);
+                setClubFloorPlanUrl(floorUrls[0] ?? null);
+              }}
+            />
+          )}
 
           {/* 쿠폰 띠 — 배민식 띠+시트. 활성 쿠폰 없으면 자체적으로 렌더 안 함 (Migration 539) */}
           <ClubCouponBar clubId={club.id} />
@@ -840,6 +832,50 @@ export function ClubDetailContent({
           clubName={clubName}
           ctaHref={ctaHref}
           lang={lang}
+        />
+      )}
+
+      {/* 한국인 예약 스티키바 — MD+주대가 있는 클럽만 활성. 없으면 회색 "준비중"으로
+          카탈로그는 유지하되(SEO) 예약은 못 누르게 한다 (외국인 트랙과 동일 규칙).
+          게스트 간판(무료입장 혜택)이 있어도 함께 노출 — 목적이 다른 별개 CTA. */}
+      {!isForeigner && (
+        <div
+          className="fixed left-0 right-0 bottom-0 z-40 px-4 pt-8 bg-gradient-to-t from-background via-background via-[70%] to-transparent pointer-events-none"
+          style={{ paddingBottom: "calc(60px + env(safe-area-inset-bottom) + 12px)" }}
+        >
+          <div className="max-w-lg mx-auto pointer-events-auto">
+            <button
+              type="button"
+              disabled={!bookable}
+              onClick={() => {
+                if (!bookable) return;
+                if (!user) {
+                  router.push(`/login?redirect=${encodeURIComponent(`/clubs/${club.id}`)}`);
+                  return;
+                }
+                trackEvent("club_detail_book_click", { club_id: club.id, club_name: club.name, area: club.area });
+                setIsBookingOpen(true);
+              }}
+              className={`w-full h-12 rounded-full font-black text-[15px] shadow-lg shadow-black/40 transition-colors active:scale-[0.98] ${
+                bookable
+                  ? "bg-amber-500 hover:bg-amber-400 text-black"
+                  : "bg-muted text-muted-foreground cursor-not-allowed"
+              }`}
+            >
+              {bookable ? "예약하기" : "예약 준비중"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {bookable && user && (
+        <KoreanBookingForm
+          open={isBookingOpen}
+          onOpenChange={setIsBookingOpen}
+          clubId={club.id}
+          clubName={clubName}
+          clubThumbnailUrl={thumbnailUrl}
+          userId={user.id}
         />
       )}
     </div>

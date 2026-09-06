@@ -6,7 +6,7 @@
 
 import { chromium } from "playwright";
 import { readFileSync } from "node:fs";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, existsSync, readdirSync, unlinkSync } from "node:fs";
 import { resolve } from "node:path";
 
 const [, , htmlPath, outDir] = process.argv;
@@ -15,7 +15,15 @@ if (!htmlPath || !outDir) {
   process.exit(1);
 }
 
+// 기존 PNG를 먼저 지운다 — 클럽 수가 줄면(예: 12곳 → 6곳 상한 적용) 예전
+// 렌더링 결과가 그대로 남아 실제보다 카드가 많아 보인다. 실제로 강남
+// 9/5가 8장이어야 하는데 15장으로 섞여 나온 사고가 있었다(2026-09-03).
 mkdirSync(outDir, { recursive: true });
+if (existsSync(outDir)) {
+  for (const f of readdirSync(outDir)) {
+    if (f.endsWith(".png")) unlinkSync(resolve(outDir, f));
+  }
+}
 const html = readFileSync(htmlPath, "utf-8");
 const tmpHtmlPath = resolve(outDir, "_render.html");
 writeFileSync(tmpHtmlPath, html);

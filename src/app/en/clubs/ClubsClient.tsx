@@ -7,7 +7,7 @@ import { ChevronRight, ChevronLeft, ChevronDown, Info, Check } from "lucide-reac
 import { ForeignClubDetailPanel, displayClubName } from "@/components/clubs/ForeignClubDetailPanel";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { pinFeatured, recommendCompare } from "@/lib/clubs/foreignSort";
-import { clubTagline } from "@/lib/clubs/bookable";
+import { clubTagline, isBookable } from "@/lib/clubs/bookable";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
@@ -664,6 +664,13 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                             )}
                           </Link>
                         </div>
+                      </div>
+                    ) : !isBookable(club) ? (
+                      // 지역은 열려 있어도 담당 MD·주대(club_menu_items)가 없으면 폼까지
+                      // 가도 예약이 성립하지 않는다 — 예전엔 이 체크가 없어서 has_md/has_menu가
+                      // false인 클럽도 "Book" 버튼이 그냥 활성화됐다(2026-09-06).
+                      <div className="mt-2 w-full py-3.5 rounded-xl bg-card border border-border text-muted-foreground font-black text-[15px] text-center">
+                        {t("예약 준비중", "Booking coming soon", "予約準備中", "预订即将开放")}
                       </div>
                     ) : (
                       <div className="flex gap-2 mt-2">

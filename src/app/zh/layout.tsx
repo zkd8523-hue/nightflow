@@ -33,8 +33,11 @@ export const metadata: Metadata = {
 export default function ZhLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // overscroll-none: 외국인 트랙 전체에서 pull-to-refresh를 끈다(2026-09-06).
+  // 이유는 en/layout.tsx 주석 참조 — DrinkMenuViewer의 사진 1장짜리 케이스에서
+  // 세로 드래그가 브라우저 새로고침으로 새는 걸 트랙 전체에서 차단한다.
   return (
-    <div lang="zh">
+    <div lang="zh" className="overscroll-none">
       <CrawlerLangLinks />
       {children}
     </div>

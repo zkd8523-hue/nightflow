@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BackButton } from "@/components/foreign/BackButton";
+import { FOREIGN_BOOKING_DRAFT_KEY } from "@/lib/utils/formDraft";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
@@ -136,23 +137,11 @@ export default async function PuzzleNewPage({
       <div className="max-w-lg lg:max-w-[900px] mx-auto px-4 lg:px-8 py-6 lg:py-10">
         {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 외국인 홈(/en, /ja, /zh) 복귀 링크 제공 */}
         {isForeigner && (
-          <BackButton label={t("뒤로", "Back", "戻る", "返回")} fallbackHref={foreignHome} />
-        )}
-
-        {/* 외국인만 헤더 유지(자체 chrome이라 타이틀 필요). 한국인은 게이트/폼이 헤더 역할 */}
-        {isForeigner && (
-          <div className="mb-8">
-            {/* 제목 한 줄로 통일 — 부제(무엇을 하면 무슨 일이 일어나는지)는 이미
-                1장 폼의 클럽 카드·Choose drinks 버튼이 스스로 설명해서 중복이었다. */}
-            <h1 className="text-2xl font-black text-foreground tracking-tight">
-              {t(
-                "서울의 밤 예약하기",
-                "Book your Seoul night",
-                "ソウルの夜を予約",
-                "预订你的首尔夜晚"
-              )}
-            </h1>
-          </div>
+          <BackButton
+            label={t("뒤로", "Back", "戻る", "返回")}
+            fallbackHref={foreignHome}
+            guardDraftKey={FOREIGN_BOOKING_DRAFT_KEY}
+          />
         )}
 
         {isForeigner ? (

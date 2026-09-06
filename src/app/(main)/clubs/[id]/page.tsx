@@ -5,6 +5,7 @@ import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { normalizeDowSlots, summarizeSlots, pickUpcomingBenefit, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import { getBusinessDateISO } from "@/lib/lineups/time";
+import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 import type { TodayLineup } from "@/components/clubs/ClubLineupSection";
 import type { UpcomingLineup } from "@/components/clubs/UpcomingLineupSheet";
 import type { ClubUpcomingEvent, ClubEventPerformer } from "@/components/clubs/ClubUpcomingEvents";
@@ -135,6 +136,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     { data: lineupRow },
     { data: upcomingLineupRows },
     { data: upcomingEventRows },
+    { data: partnerRows },
   ] = await Promise.all([
     (() => {
       const q = supabase.from("clubs").select("*").eq("id", id).is("deleted_at", null);
@@ -200,11 +202,19 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
       .gte("event_date", todayKstISO)
       .order("event_date", { ascending: true })
       .limit(10),
+    // 한국인 예약 스티키바 게이팅(isBookable) — 담당 MD 유무. lib/clubs/bookable.ts와 동일 판정.
+    supabase.from("club_partners").select("md_id").eq("club_id", id),
   ]);
 
   if (!club) {
     notFound();
   }
+
+  const hasMd = (partnerRows?.length ?? 0) > 0;
+  // fetchMenuClubIds: club_menu_items를 통째로 select하면 1000행 상한에 잘려 조용히
+  // "주대 없음"으로 오판되는 버그가 있어(bookable.ts 참고), RPC 기반 헬퍼를 그대로 재사용한다.
+  const menuClubIds = await fetchMenuClubIds(supabase);
+  const hasMenu = menuClubIds.has(id);
 
   // 오늘 라인업 정규화. 셋이 없으면(라인업 자체가 없거나 빈 경우) null로 통일 —
   // ClubLineupSection이 자기소거하도록.
@@ -636,6 +646,8 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         todayLineup={todayLineup}
         upcomingLineups={upcomingLineups}
         upcomingEvents={upcomingEvents}
+        hasMd={hasMd}
+        hasMenu={hasMenu}
       />
     </>
   );

@@ -140,9 +140,11 @@ interface MDDashboardProps {
     shareWeekdayPlans?: ShareWeekdayPlan[];
     /** 내 쿠폰 발행 목록 (Migration 539) — 쿠폰 인라인 영역용 */
     initialCoupons?: CouponIssue[];
-    /** 본인에게 배정된 외국인 컨시어지 요청 — 실제로 있을 때만 "외국인" 섹션을 노출한다 */
+    /** 본인에게 배정된 컨시어지 요청(외국인+한국) — 실제로 있을 때만 섹션을 노출한다.
+     *  requestType으로 두 트랙을 한 목록에 합쳐서 보여준다(2026-09-06). */
     initialForeignRequests?: {
         id: string;
+        requestType: "foreign" | "korean";
         guestName: string | null;
         eventDate: string;
         groupSize: number;
@@ -728,21 +730,31 @@ export function MDDashboard({
                 </div>
             )}
 
-            {/* 외국인 컨시어지 요청 — 본인에게 배정된 요청이 실제로 있을 때만 노출한다.
-                운영자가 어드민에서 assigned_md_id로 지정한 건만 여기 뜬다. */}
+            {/* 컨시어지 요청(외국인+한국) — 본인에게 배정된 요청이 실제로 있을 때만
+                노출한다. 운영자가 어드민에서 assigned_md_id로 지정한 건만 여기 뜬다.
+                두 트랙을 한 목록에 합치고 카드마다 뱃지로 구분한다(2026-09-06). */}
             {initialForeignRequests.length > 0 && (
                 <div className="px-4 mt-5">
                     <p className="text-[13px] font-black text-muted-foreground mb-2 px-1 text-center flex items-center justify-center gap-1.5">
                         <Globe className="w-3.5 h-3.5" />
-                        외국인
+                        컨시어지 예약
                     </p>
                     <div className="space-y-2">
                         {initialForeignRequests.map((r) => {
                             const cardBody = (
                                 <>
-                                    <div className="mb-1.5">
+                                    <div className="mb-1.5 flex items-center gap-1.5">
                                         <span className="text-[14px] font-black text-foreground">
                                             {r.clubName ?? "클럽 미정"}
+                                        </span>
+                                        <span
+                                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                                r.requestType === "korean"
+                                                    ? "bg-amber-500/15 text-brand-amber"
+                                                    : "bg-blue-500/15 text-blue-400"
+                                            }`}
+                                        >
+                                            {r.requestType === "korean" ? "국내" : "외국인"}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-3 text-[12.5px] text-muted-foreground">

@@ -8,6 +8,8 @@ import { MapPin, Check, Star } from "lucide-react";
 
 type Props = {
   requestId: string;
+  /** foreign_requests인지 korean_booking_requests인지 — /api/arrival이 이걸로 원본 테이블을 분기한다. */
+  requestType: "foreign" | "korean";
   refNo: string;
   guestName: string | null;
   eventDate: string;
@@ -98,7 +100,7 @@ export function BookingPass(p: Props) {
       const res = await fetch("/api/arrival", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ request_id: p.requestId, kind }),
+        body: JSON.stringify({ request_id: p.requestId, request_type: p.requestType, kind }),
       });
       if (res.ok) {
         setSentAt((prev) => ({ ...prev, [kind]: Date.now() }));

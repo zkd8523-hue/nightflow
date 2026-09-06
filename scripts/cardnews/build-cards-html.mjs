@@ -77,22 +77,10 @@ function hi(word) {
   return `<span class="cover-highlight-word">${word}</span>`;
 }
 
-// 타이틀에 시각 위계를 준다(사용자 확정, 2026-09-03 — 3줄이 전부 같은 크기라
-// 어디가 핵심인지 눈이 헤맨다는 지적). 강조 단어(hi())가 들어간 줄만 크게
-// 키우고 나머지는 작게 둔다.
-//
-// ⚠️ "마지막 줄을 크게" 같은 고정 규칙은 못 쓴다 — COVER_TITLES 40종은
-// 강조 단어 위치가 제각각(첫 줄·중간·마지막)이라서다. 그래서 줄을 <br/>로
-// 쪼갠 뒤 cover-highlight-word가 실제로 들어있는 줄을 찾아 표시한다.
-function layoutTitle(titleHtml) {
-  return titleHtml
-    .split("<br/>")
-    .map((line) => {
-      const isAccent = line.includes("cover-highlight-word");
-      return `<span class="t-line${isAccent ? " t-accent" : ""}">${line}</span>`;
-    })
-    .join("");
-}
+// ⚠️ 예전엔 타이틀을 줄 단위로 감싸 크기 위계를 주는 layoutTitle()이 있었다.
+// 헤더 구조가 "날짜+지역(대)/홍보문구(소)"로 바뀌면서(2026-09-03) 타이틀은
+// 한 줄로 합쳐 쓰게 돼 더는 필요 없어졌다 — COVER_TITLES의 <br/>는
+// coverCard()에서 공백으로 치환된다.
 
 // 서브텍스트 = 날짜/요일 재반복(상단 날짜·하이라이트 배지와 겹침, 사용자
 // 지적으로 제거) 대신 클럽명을 보여줘 "이 안에 이런 곳들이 있다"는 기대감을
@@ -162,11 +150,15 @@ const CLUB_TEASER_HOOKS = [
 const TEASER_STEP = 37;
 const TITLE_STEP = 17;
 
+// 서브텍스트는 클럽명 나열까지만 쓴다(사용자 확정, 2026-09-03).
+// 뒤에 붙이던 훅 문구("— 다녀온 사람들 표정이 다 좋았음" 등)는 제거했다 —
+// 헤더가 이미 헤드라인+홍보문구 2단이라 여기까지 카피가 붙으면 문장이
+// 세 겹으로 쌓여 산만했다. CLUB_TEASER_HOOKS 배열은 남겨두되 쓰지 않는다.
 function clubTeaser(clubList) {
   const names = clubList.map((c) => c.club_name);
-  const list = names.length <= 2 ? names.join(" · ") : `${names.slice(0, 2).join(" · ")} 외 ${names.length - 2}곳`;
-  const hook = CLUB_TEASER_HOOKS[(editionNo * TEASER_STEP) % CLUB_TEASER_HOOKS.length];
-  return `${list} — ${hook}`;
+  return names.length <= 2
+    ? names.join(" · ")
+    : `${names.slice(0, 2).join(" · ")} 외 ${names.length - 2}곳`;
 }
 
 // ⚠️ 표지 하단의 "넘겨서 보기" 안내 문구는 제거했다(사용자 확정, 2026-09-03).
@@ -255,14 +247,35 @@ function coverCard() {
   // 좌우 여백 없이 전폭으로 깔고 위쪽만 배경색으로 페이드시켜 텍스트와 잇는다.
   const hero = clubs[0] || null;
   const heroImg = hero && hero.club_thumbnail ? escapeHtml(hero.club_thumbnail) : null;
+  // 헤더 구조(사용자 확정, 2026-09-03):
+  //   [상단바] 왼쪽 비움 / 오른쪽 NIGHTFLOW 로고
+  //   ─── 노란 선 ───
+  //   날짜 + 지역 + DJ라인업   ← 카드에서 가장 크게(제일 먼저 읽혀야 할 정보)
+  //   홍보문구 한 줄            ← 그 아래 작게
+  //
+  // 타이틀 40종은 원래 2~3줄(<br/>)로 짜여 있는데, 여기서는 한 줄로 합친다 —
+  // 헤더의 주인공은 "언제 어디"이고 홍보문구는 거드는 역할이라서다.
+  const promoLine = h.title.replace(/<br\/>/g, " ");
+  // 헤드라인 색은 회차마다 돌린다(사용자 확정, 2026-09-03 — 앰버·시안·핑크
+  // 3색 로테이션). 매일 같은 색이면 피드가 단조로워지고, 이 세 색은 다크
+  // 배경에서 다 선명하면서 서로 붙어 있어도 안 싸운다. 초록은 반려됨.
+  const HEADLINE_COLORS = [AMBER, "#22D3EE", "#F472B6"];
+  const headlineColor = HEADLINE_COLORS[editionNo % HEADLINE_COLORS.length];
+  // 헤드라인은 반드시 한 줄이어야 한다(사용자 지적, 2026-09-03 — "이태원"에서
+  // "DJ라인업"이 둘째 줄로 밀려 헤더가 깨졌다). 지역명 길이에 따라 글자 수가
+  // 달라지므로(강남 19자 / 이태원 20자 / 지역 없으면 15자) 길이에 맞춰
+  // 크기를 줄인다. 한글은 폭이 넓어 20자쯤부터 1080px을 넘긴다.
+  const headlineLen = dateLine.length;
+  const headlineSize = headlineLen >= 20 ? 76 : headlineLen >= 18 ? 82 : 88;
   return `
   <section class="card cover">
     <div class="cover-topbar">
-      <div class="cover-date">${dateLine}</div>
+      <div></div>
       <div class="cover-logo">NIGHTFLOW</div>
     </div>
     <div class="cover-inner">
-      <div class="cover-title">${layoutTitle(h.title)}</div>
+      <div class="cover-headline" style="color:${headlineColor};font-size:${headlineSize}px">${dateLine}</div>
+      <div class="cover-promo">${promoLine}</div>
       <div class="cover-sub">${h.sub}</div>
     </div>
     ${heroImg ? `
@@ -434,23 +447,32 @@ const html = `<!doctype html>
   }
 
   /* 표지 — Layout 3 참조: 상단 에피소드 바, 형광 하이라이트 배지, 리본, 별 장식 */
+  /* 노란 선 아래 여백 — 56px일 땐 선과 헤드라인이 따로 놀았다(사용자 지적,
+     2026-09-03). 20px로 좁혀 헤더 3줄이 한 덩어리로 읽히게 한다. */
   .cover-topbar {
     display: flex; justify-content: space-between; align-items: baseline;
-    border-bottom: 3px solid ${AMBER}; padding-bottom: 20px; margin-bottom: 56px;
+    border-bottom: 3px solid ${AMBER}; padding-bottom: 20px; margin-bottom: 20px;
   }
   .cover-episode { font-size: 30px; font-weight: 800; color: ${AMBER}; letter-spacing: 1px; }
   .cover-logo { font-size: 30px; font-weight: 900; letter-spacing: 2px; }
   .cover-inner { flex: 1; }
-  /* 날짜 줄은 상단바(노란 밑줄 위)에서 로고와 같은 라인에 앉는다
-     (사용자 확정, 2026-09-03). 로고와 균형 맞춰 같은 크기로. */
-  .cover-date { font-size: 30px; font-weight: 800; color: #ccc; }
-  /* 타이틀은 줄마다 <span class="t-line">으로 감싸 위계를 준다(layoutTitle).
-     강조 단어가 있는 줄(.t-accent)만 크게 — 시선이 거기 먼저 꽂힌다. */
-  .cover-title { font-weight: 900; margin-bottom: 28px; }
-  .t-line { display: block; font-size: 72px; line-height: 1.2; }
-  .t-line.t-accent { font-size: 92px; }
+  /* 헤더 1행 — 날짜+지역+DJ라인업. 카드에서 가장 크고 먼저 읽혀야 할 정보.
+     색(HEADLINE_COLORS 로테이션)과 크기(지역명 길이별 76~88px)는
+     coverCard()에서 인라인으로 지정한다.
+     white-space:nowrap은 안전장치 — 예상 못 한 긴 지역명이 와도 줄바꿈으로
+     헤더가 깨지지 않게 한다(넘치면 글자가 살짝 잘리는 게 낫다). */
+  .cover-headline {
+    font-weight: 900; line-height: 1.0; margin-bottom: 4px;
+    white-space: nowrap;
+  }
+  /* 헤더 2행 — 홍보문구 한 줄. 헤드라인을 거드는 역할이라 한 단계 작게.
+     강조 단어(.cover-highlight-word)만 앰버로 남아 포인트가 된다. */
+  .cover-promo {
+    font-size: 42px; font-weight: 800; line-height: 1.3; color: #ddd;
+    margin-bottom: 24px;
+  }
   .cover-highlight-word { color: ${AMBER}; }
-  .cover-sub { font-size: 32px; color: #ccc; font-weight: 500; }
+  .cover-sub { font-size: 30px; color: #aaa; font-weight: 500; }
   /* 표지 히어로 — 첫 클럽 대표사진 1장을 좌우 꽉 채워 바닥까지 깐다.
      위쪽만 배경색으로 페이드시켜 텍스트 영역과 자연스럽게 잇는다. */
   .cover-fullbleed {

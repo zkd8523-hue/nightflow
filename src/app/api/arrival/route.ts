@@ -5,7 +5,10 @@
 // 앱 푸시 대신 SMS인 이유: 한국 앱스토어 심사가 안 끝나 앱 배포가 막혀 있고,
 // 알림톡은 템플릿 사전승인(1~3일)이 필요하다. SMS는 즉시 쓸 수 있다.
 //
-// Body: { request_id: string, kind: "soon" | "arrived" }
+// 외국인 요청과 한국 예약 요청 확인서 모두에서 호출될 수 있다 — request_type으로
+// 원본 테이블을 분기한다(2026-09-06, Migration 654).
+//
+// Body: { request_id: string, request_type?: "foreign" | "korean" (기본 foreign), kind: "soon" | "arrived" }
 // 200: { ok: true, notified: { admin, md } }
 // 409: 이미 같은 신호를 보냄(중복 클릭)
 
@@ -24,7 +27,7 @@ const ADMIN_PHONES = (process.env.ARRIVAL_ADMIN_PHONES ?? "01022051052")
   .filter(Boolean);
 
 export async function POST(req: NextRequest) {
-  let body: { request_id?: string; kind?: string };
+  let body: { request_id?: string; request_type?: string; kind?: string };
   try {
     body = await req.json();
   } catch {
@@ -36,13 +39,15 @@ export async function POST(req: NextRequest) {
   if (!requestId || (kind !== "soon" && kind !== "arrived")) {
     return NextResponse.json({ error: "bad_params" }, { status: 400 });
   }
+  const requestType = body.request_type === "korean" ? "korean" : "foreign";
 
   const sb = createAdminClient();
 
-  // 예약 + 담당 MD 정보
+  // 예약 + 담당 MD 정보. foreign_requests는 club_ids(배열), korean_booking_requests는
+  // club_id(단일) — 조회 컬럼만 분기하고 이후 로직은 배열로 통일해 다룬다.
   const { data: reqRow, error: reqErr } = await sb
-    .from("foreign_requests")
-    .select("id, guest_name, event_date, group_size, club_ids, assigned_md_id, status")
+    .from(requestType === "korean" ? "korean_booking_requests" : "foreign_requests")
+    .select(`id, guest_name, event_date, group_size, assigned_md_id, status, ${requestType === "korean" ? "club_id" : "club_ids"}`)
     .eq("id", requestId)
     .single();
 
@@ -52,6 +57,20 @@ export async function POST(req: NextRequest) {
   if (reqRow.status === "cancelled") {
     return NextResponse.json({ error: "cancelled_booking" }, { status: 409 });
   }
+  const reqRowTyped = reqRow as unknown as {
+    id: string;
+    guest_name: string | null;
+    event_date: string;
+    group_size: number;
+    assigned_md_id: string | null;
+    status: string;
+    club_ids?: string[] | null;
+    club_id?: string | null;
+  };
+  const reqClubIds =
+    requestType === "korean"
+      ? ([reqRowTyped.club_id].filter(Boolean) as string[])
+      : (reqRowTyped.club_ids ?? []);
 
   // 예약 당일(KST)에만 허용 — 클라이언트에서 버튼을 비활성화해도 devtools로
   // 우회 가능하니 서버에서도 같은 기준으로 다시 막는다.
@@ -67,6 +86,7 @@ export async function POST(req: NextRequest) {
   const { data: recent } = await sb
     .from("arrival_pings")
     .select("created_at")
+    .eq("request_type", requestType)
     .eq("request_id", requestId)
     .eq("kind", kind)
     .order("created_at", { ascending: false })
@@ -79,7 +99,7 @@ export async function POST(req: NextRequest) {
 
   const { error: insErr } = await sb
     .from("arrival_pings")
-    .insert({ request_id: requestId, kind });
+    .insert({ request_type: requestType, request_id: requestId, kind });
 
   if (insErr) {
     return NextResponse.json({ error: insErr.message }, { status: 500 });
@@ -91,10 +111,11 @@ export async function POST(req: NextRequest) {
   const { data: conf } = await sb
     .from("booking_confirmations")
     .select("club_id, confirmed_group_size, ref_no, md_token")
+    .eq("request_type", requestType)
     .eq("request_id", requestId)
     .maybeSingle();
 
-  const clubId = conf?.club_id ?? (reqRow.club_ids as string[] | null)?.[0];
+  const clubId = conf?.club_id ?? reqClubIds[0];
   let clubName = "";
   if (clubId) {
     const { data: club } = await sb
@@ -105,8 +126,8 @@ export async function POST(req: NextRequest) {
     clubName = club?.name ?? "";
   }
 
-  const guest = reqRow.guest_name?.trim() || "게스트";
-  const groupSizeText = conf?.confirmed_group_size ?? `${reqRow.group_size}명`;
+  const guest = reqRowTyped.guest_name?.trim() || "게스트";
+  const groupSizeText = conf?.confirmed_group_size ?? `${reqRowTyped.group_size}명`;
   const when = kind === "soon" ? "10분 후 도착 예정" : "도착했습니다";
   const head = clubName ? `${clubName} ` : "";
   const refTag = conf?.ref_no ? ` (${conf.ref_no})` : "";
@@ -138,8 +159,8 @@ export async function POST(req: NextRequest) {
   let notifiedMd = false;
   const mdChannels: ("push" | "sms")[] = [];
 
-  if (reqRow.assigned_md_id) {
-    const mdId = reqRow.assigned_md_id;
+  if (reqRowTyped.assigned_md_id) {
+    const mdId = reqRowTyped.assigned_md_id;
 
     const { count: tokenCount } = await sb
       .from("push_tokens")
@@ -187,12 +208,13 @@ export async function POST(req: NextRequest) {
     .update({
       notified_admin: notifiedAdmin,
       notified_md: notifiedMd,
-      note: !reqRow.assigned_md_id
+      note: !reqRowTyped.assigned_md_id
         ? "담당 MD 미지정"
         : mdChannels.length > 0
           ? `MD ${mdChannels.join("+")}`
           : "MD 발송 실패",
     })
+    .eq("request_type", requestType)
     .eq("request_id", requestId)
     .eq("kind", kind);
 

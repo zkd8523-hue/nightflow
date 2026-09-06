@@ -3,20 +3,15 @@
 //
 // 손님이 먼저 "I'm here"(arrival_pings, kind='arrived')를 보낸 적이 있는지 확인한다.
 // 없는데 MD가 입장 완료를 누르면 — 실제로 안 왔는데 실수/허위로 눌렀을 가능성이 있어
-// 저장은 하되 관리자+MD에게 경고 SMS를 보낸다. 이건 차단이 아니라 로그다: MD가 손님을
+// 저장은 하되 운영자에게 경고 푸시를 보낸다. 이건 차단이 아니라 로그다: MD가 손님을
 // 직접 보고 확인했을 수도 있으니(손님이 앱 링크를 못 열었을 뿐) 입장 자체를 막지 않는다.
+// MD 본인에게는 보내지 않는다 — 방금 자기가 누른 걸 다시 알려줄 필요가 없다(2026-09-06).
 //
 // Body: { action: "checkin" | "undo", md_token: string }
 // 200: { ok: true, checked_in_at: string | null, warned: boolean }
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendSms } from "@/lib/notifications/alimtalk";
-
-const ADMIN_PHONES = (process.env.ARRIVAL_ADMIN_PHONES ?? "01022051052")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
 
 export async function POST(req: NextRequest) {
   let body: { action?: string; md_token?: string };
@@ -35,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   const { data: conf, error: confErr } = await sb
     .from("booking_confirmations")
-    .select("request_id, ref_no, club_id")
+    .select("request_id, ref_no, club_id, request_type")
     .eq("md_token", md_token)
     .maybeSingle();
 
@@ -69,9 +64,11 @@ export async function POST(req: NextRequest) {
 
   let warned = false;
   if (!arrivedPing) {
+    // 확정서가 외국인/한국 요청 중 무엇인지에 따라 원본 테이블이 다르다
+    // (2026-09-06, Migration 654).
     const { data: reqRow } = await sb
-      .from("foreign_requests")
-      .select("guest_name, assigned_md_id")
+      .from(conf.request_type === "korean" ? "korean_booking_requests" : "foreign_requests")
+      .select("guest_name")
       .eq("id", conf.request_id)
       .single();
 
@@ -81,25 +78,21 @@ export async function POST(req: NextRequest) {
       clubName = club?.name ?? "";
     }
 
-    const warnText =
-      `[나이트플로우] ⚠️ ${clubName} ${reqRow?.guest_name ?? "게스트"}님 (${conf.ref_no}) — ` +
-      `손님 도착 신호 없이 MD가 입장 완료를 처리했습니다. 확인해주세요.`;
+    const warnBody = `${clubName} ${reqRow?.guest_name ?? "게스트"}님 (${conf.ref_no}) — 손님 도착 신호 없이 MD가 입장 완료를 처리했습니다.`;
 
-    for (const phone of ADMIN_PHONES) {
+    const { data: admins } = await sb.from("users").select("id").eq("role", "admin");
+    for (const admin of admins ?? []) {
       try {
-        await sendSms(phone, warnText);
+        await sb.rpc("notify_user_push", {
+          p_user_id: admin.id,
+          p_title: "⚠️ 도착 신호 없이 입장 처리",
+          p_body: warnBody,
+          p_data: { type: "md_checkin_warning", request_id: conf.request_id },
+          p_url: conf.request_type === "korean" ? "/admin/korean-bookings" : "/admin/foreign",
+          p_category: "transaction",
+        });
       } catch (e) {
-        console.error("[md-checkin] admin 경고 sms 실패", e);
-      }
-    }
-    if (reqRow?.assigned_md_id) {
-      const { data: md } = await sb.from("users").select("phone").eq("id", reqRow.assigned_md_id).single();
-      if (md?.phone) {
-        try {
-          await sendSms(md.phone, warnText);
-        } catch (e) {
-          console.error("[md-checkin] md 경고 sms 실패", e);
-        }
+        console.error("[md-checkin] admin 경고 push 실패", e);
       }
     }
     warned = true;

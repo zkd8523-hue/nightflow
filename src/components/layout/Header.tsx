@@ -40,6 +40,7 @@ import {
   ChevronRight,
   Headset,
   Globe,
+  Wine,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
@@ -177,6 +178,7 @@ export function Header({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [pendingMDCount, setPendingMDCount] = useState(0);
   const [foreignNewCount, setForeignNewCount] = useState(0);
+  const [koreanNewCount, setKoreanNewCount] = useState(0);
 
   useEffect(() => {
     if (user?.role !== "admin") return;
@@ -190,6 +192,11 @@ export function Header({
       .select("id", { count: "exact", head: true })
       .eq("status", "new")
       .then(({ count }) => setForeignNewCount(count || 0));
+    supabase
+      .from("korean_booking_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "new")
+      .then(({ count }) => setKoreanNewCount(count || 0));
   }, [user?.role, supabase]);
 
   const minSwipeDistance = 50;
@@ -528,6 +535,19 @@ export function Header({
                             </span>
                           )}
                         </Link>
+                        <Link
+                          href="/admin/korean-bookings"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                        >
+                          <Wine className="w-5 h-5 text-brand-amber" />
+                          <span className="text-[15px] font-bold">국내 요청</span>
+                          {koreanNewCount > 0 && (
+                            <span className="ml-auto bg-red-500 text-white text-[10px] font-black rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                              {koreanNewCount}
+                            </span>
+                          )}
+                        </Link>
                       </>
                     )}
 
@@ -566,6 +586,14 @@ export function Header({
                     </Link>
 
                     <Link
+                      href="/my-bookings"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
+                    >
+                      <span className="text-[15px] font-bold">내 예약</span>
+                    </Link>
+
+                    <Link
                       href="/favorites"
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
@@ -591,16 +619,6 @@ export function Header({
                       <span className="text-[15px] font-bold">공연 정보</span>
                     </Link>
 
-                    {/* DJ 라인업/공연 정보와 같은 DJ 발견 계열 — 데이터를 재미로
-                        먼저 만나는 입구라 바로 아래 붙인다 */}
-                    <Link
-                      href="/dj-cup"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
-                    >
-                      <span className="text-[15px] font-bold">DJ 이상형 월드컵</span>
-                    </Link>
-
                     <div className="h-px bg-muted/50 my-2" />
 
                     {/* ── 지원: 필요할 때만 찾는 것들 ── */}
@@ -610,17 +628,6 @@ export function Header({
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
                       <span className="text-[15px] font-bold">자주 묻는 질문</span>
-                    </Link>
-
-                    <Link
-                      href="/contact"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
-                    >
-                      <span className="text-[15px] font-bold">고객 문의</span>
-                      {supportUnread && (
-                        <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
-                      )}
                     </Link>
 
                     <Link
@@ -723,14 +730,6 @@ export function Header({
                     <span className="text-[15px] font-bold">공연 정보</span>
                   </Link>
 
-                  <Link
-                    href="/dj-cup"
-                    onClick={() => setGuestMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
-                  >
-                    <span className="text-[15px] font-bold">DJ 이상형 월드컵</span>
-                  </Link>
-
                   <div className="h-px bg-muted/50 my-2" />
 
                   <Link
@@ -739,14 +738,6 @@ export function Header({
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                   >
                     <span className="text-[15px] font-bold">자주 묻는 질문</span>
-                  </Link>
-
-                  <Link
-                    href="/contact"
-                    onClick={() => setGuestMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
-                  >
-                    <span className="text-[15px] font-bold">고객 문의</span>
                   </Link>
 
                   <Link

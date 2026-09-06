@@ -1591,11 +1591,11 @@ FROM ins JOIN src ON src.name_en = ins.name_en;
 WITH src(name_en, name_ko, description, cond, price, ord) AS (VALUES
   ('Entry Set - 2 Bottle Set', '엔트리 세트 - 2 보틀 세트',
    'Haute Couture 1 + Tina / MUA / Sierra choice 1',
-   '00:30 이전에 입장한 VIP 테이블 고객에 한하여 주문 가능합니다. / Ordering is available only for VIP tables before 00:30.',
+   '00:30 이전에 입장한 고객에 한하여 주문 가능합니다. / Ordering is available only for VIP tables before 00:30.',
    450000, 40),
   ('Entry Set - 3 Bottle Set', '엔트리 세트 - 3 보틀 세트',
    'Haute Couture 1 + Tina / MUA / Sierra choice 2',
-   '00:30 이전에 입장한 VIP 테이블 고객에 한하여 주문 가능합니다. / Ordering is available only for VIP tables before 00:30.',
+   '00:30 이전에 입장한 고객에 한하여 주문 가능합니다. / Ordering is available only for VIP tables before 00:30.',
    650000, 41)
 ),
 ins AS (

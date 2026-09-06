@@ -39,8 +39,14 @@ export default function EnLayout({
   // html lang 자체를 바꾸진 못하지만(Next App Router 제약),
   // 안쪽 div에 lang="en" 명시 + meta로 콘텐츠 언어 신호를 영어로 강제.
   // 구글/브라우저 자동 번역기는 가장 가까운 lang 속성을 우선 인식.
+  //
+  // overscroll-none: 외국인 트랙 전체에서 pull-to-refresh를 끈다(2026-09-06).
+  // 메뉴판 사진이 1장뿐인 클럽은 DrinkMenuViewer의 touch-action이 "auto"로 풀려
+  // 있어(가로 스와이프할 상대가 없어서), 그 위에서 세로로 살짝만 드래그해도
+  // 브라우저가 페이지 새로고침으로 채간다. body의 overscroll-behavior만으로는
+  // 이 케이스를 못 막아서, 외국인 트랙 루트에도 명시적으로 건다.
   return (
-    <div lang="en">
+    <div lang="en" className="overscroll-none">
       <CrawlerLangLinks />
       {children}
     </div>

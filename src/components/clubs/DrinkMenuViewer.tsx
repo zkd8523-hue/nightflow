@@ -219,8 +219,11 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                     ? `translateX(calc(${-inlineIdx * 100}% + ${dragX}px))`
                     : "none",
                   transition: isDraggingRef.current ? "none" : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
-                  // 1장이면 touch-action 제약 없음, 다장이면 세로만 허용
-                  touchAction: hasMultiple ? "pan-y" : "auto",
+                  // 사진 개수와 무관하게 항상 pan-y — 예전엔 1장일 때 "auto"로 풀어뒀는데,
+                  // 그러면 브라우저가 이 영역을 스크롤 대상으로 인식하지 못해 세로 드래그가
+                  // body의 overscroll-behavior를 건너뛰고 pull-to-refresh로 샜다(2026-09-06).
+                  // pan-y로 명시하면 세로 스크롤은 그대로 되면서 오버스크롤만 막힌다.
+                  touchAction: "pan-y",
                 }}
               >
                 {sources.map((src, i) => {
@@ -329,7 +332,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
       {/* 라이트박스 (풀스크린 모달) */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center"
+          className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center overscroll-none"
           onClick={() => setLightbox(false)}
           role="dialog"
           aria-modal="true"

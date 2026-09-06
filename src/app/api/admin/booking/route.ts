@@ -1,7 +1,12 @@
-// 운영자가 외국인 요청에 담당 MD와 확정 내용을 입력해 확인서를 발급한다.
+// 운영자가 외국인/한국 요청에 담당 MD와 확정 내용을 입력해 확인서를 발급한다.
 // 요청(손님 희망)과 확정(MD 합의)을 분리해 저장 — 예산과 확정가가 섞이면 구분이 사라진다.
 //
+// 두 트랙(foreign_requests, korean_booking_requests)이 컬럼 구조는 같지만
+// 테이블이 다르다 — request_type으로 분기한다(2026-09-06, Migration 654).
+// booking_confirmations은 request_type+request_id 조합으로 1:1을 보장한다.
+//
 // POST Body: {
+//   request_type?: "foreign" | "korean" (기본 foreign, 하위호환),
 //   request_id, assigned_md_id?, club_id?, table_info?, capacity_note?,
 //   includes?: string[], total_price?, confirmed_group_size?, arrival_time?, guest_request?, internal_memo?
 // }
@@ -44,28 +49,37 @@ export async function POST(req: NextRequest) {
   const requestId = body.request_id as string | undefined;
   if (!requestId) return NextResponse.json({ error: "request_id_required" }, { status: 400 });
 
+  const requestType = body.request_type === "korean" ? "korean" : "foreign";
+  const table = requestType === "korean" ? "korean_booking_requests" : "foreign_requests";
+  // foreign_requests는 club_ids(배열, 우선순위 최대 3곳), korean_booking_requests는
+  // club_id(단일) — 조회 컬럼만 분기하고 이후 로직은 배열로 통일해 다룬다.
+  const clubIdColumn = requestType === "korean" ? "club_id" : "club_ids";
+
   const sb = createAdminClient();
 
   const { data: reqRow, error: reqErr } = await sb
-    .from("foreign_requests")
-    .select("id, club_ids, event_date")
+    .from(table)
+    .select(`id, ${clubIdColumn}, event_date`)
     .eq("id", requestId)
     .single();
   if (reqErr || !reqRow) {
     return NextResponse.json({ error: "request_not_found" }, { status: 404 });
   }
+  const reqClubIds =
+    requestType === "korean"
+      ? [(reqRow as unknown as { club_id: string }).club_id]
+      : ((reqRow as unknown as { club_ids: string[] | null }).club_ids ?? []);
 
   // 담당 MD 지정 (요청 쪽에 저장 — 도착 알림이 여기를 읽는다)
   if (body.assigned_md_id !== undefined) {
     await sb
-      .from("foreign_requests")
+      .from(table)
       .update({ assigned_md_id: body.assigned_md_id || null, updated_at: new Date().toISOString() })
       .eq("id", requestId);
   }
 
   // 확정 클럽 — 미지정이면 요청의 1순위를 쓴다.
-  const clubId =
-    (body.club_id as string | undefined) || (reqRow.club_ids as string[] | null)?.[0] || null;
+  const clubId = (body.club_id as string | undefined) || reqClubIds[0] || null;
 
   let clubName = "";
   if (clubId) {
@@ -77,6 +91,7 @@ export async function POST(req: NextRequest) {
   const { data: existing } = await sb
     .from("booking_confirmations")
     .select("id, ref_no, public_token, md_token")
+    .eq("request_type", requestType)
     .eq("request_id", requestId)
     .maybeSingle();
 
@@ -85,6 +100,7 @@ export async function POST(req: NextRequest) {
     `${clubPrefix(clubName || "NightFlow")}-${String(Math.floor(1000 + Math.random() * 9000))}`;
 
   const payload = {
+    request_type: requestType,
     request_id: requestId,
     club_id: clubId,
     ref_no: refNo,
@@ -101,7 +117,7 @@ export async function POST(req: NextRequest) {
 
   const { data: saved, error: saveErr } = await sb
     .from("booking_confirmations")
-    .upsert(payload, { onConflict: "request_id" })
+    .upsert(payload, { onConflict: "request_type,request_id" })
     .select("ref_no, public_token, md_token")
     .single();
 
