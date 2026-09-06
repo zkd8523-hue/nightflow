@@ -1348,7 +1348,8 @@ export function ForeignRequestForm({
 
       {/* 클럽 둘러보기 팝업 — /clubs 수준 정렬+필터, 카드 클릭은 선택(toggleClub)으로 */}
       <Sheet open={browseOpen} onOpenChange={setBrowseOpen}>
-        <SheetContent side="bottom" className="bg-background border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
+        {/* overscroll-contain: 목록 맨 위에서 당기면 pull-to-refresh로 새서 화면이 날아간다. */}
+        <SheetContent side="bottom" className="bg-background border-border rounded-t-3xl max-h-[88vh] overflow-y-auto overscroll-contain p-0">
           <div className="p-5 space-y-4">
             <div className="flex items-center justify-between">
               <SheetTitle className="font-black text-[18px] text-foreground">
@@ -1478,7 +1479,8 @@ export function ForeignRequestForm({
       <Sheet open={!!detailClub} onOpenChange={(o) => !o && closeDetail()}>
         <SheetContent
           side="bottom"
-          className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0"
+          // overscroll-contain: 목록 맨 위에서 당기면 pull-to-refresh로 새서 화면이 날아간다.
+          className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto overscroll-contain p-0"
           onTouchStart={(e) => {
             detailTouchStartXRef.current = e.touches[0].clientX;
           }}
@@ -1857,9 +1859,18 @@ export function ForeignRequestForm({
              부모(폼)가 lg:max-w-lg 안에 있어서 그 폭을 그대로 물려받아 데스크탑에서도
              좁게 잡혔다 — 2열 그리드 오른쪽 절반이 화면 밖으로 잘리던 원인.
              전체 뷰포트 폭을 쓰도록 명시한다. */
-          /* overscroll-contain: 목록 맨 위에서 아래로 당기면 브라우저가 새로고침으로
-             채가서 담은 게 전부 날아갔다. 실제 스크롤 컨테이너가 이 시트라 여기에 건다. */
-          className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto overscroll-contain"
+          /* overscroll-none: 목록 맨 위에서 아래로 당기면 브라우저가 새로고침으로
+             채가서 담은 게 전부 날아갔다. 실제 스크롤 컨테이너가 이 시트라 여기에 건다.
+             contain으로는 iOS에서 pull-to-refresh가 계속 새서 none으로 강화(2026-09-07). */
+          className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto overscroll-none"
+          /* Android Chrome pull-to-refresh는 "터치 시작 시점에 scrollTop이 정확히 0"일
+             때만 발동한다. overscroll-behavior만으로 안 막혀서(2026-09-07 실측),
+             터치 시작 시 1px 밀어 그 조건 자체를 없앤다. */
+          onTouchStart={(e) => {
+            const el = e.currentTarget;
+            if (el.scrollTop === 0) el.scrollTop = 1;
+            else if (el.scrollTop + el.clientHeight >= el.scrollHeight) el.scrollTop -= 1;
+          }}
         >
           <SheetTitle className="sr-only">
             {t("술 고르기", "Choose drinks", "ドリンクを選ぶ", "选择酒水")}

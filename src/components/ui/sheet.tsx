@@ -62,6 +62,14 @@ function SheetContent({
       <SheetOverlay className={overlayClassName} />
       <SheetPrimitive.Content
         data-slot="sheet-content"
+        // 전역 PullToRefresh(홈 등 일부 라우트에서 document 레벨로 touchstart/touchmove를
+        // 가로챈다)가 시트 안쪽 제스처까지 "당겨서 새로고침" 후보로 오인해서 막았다
+        // (2026-09-07). 그 판정 기준이 window.scrollY인데, 시트가 열리면 배경 스크롤이
+        // 얼어붙어 이 값이 실제 위치와 무관해지고, Radix가 시트를 document.body에
+        // portal하는 탓에 document 리스너가 시트 안 터치도 그대로 받는다. 시트는 늘
+        // 자기 자신의 스크롤 문맥이라 페이지 pull-to-refresh가 끼어들 이유가 없으므로
+        // 모든 시트에 일괄로 건다(개별 시트마다 챙기면 새 시트가 생길 때마다 또 샌다).
+        data-no-pull-refresh="strict"
         className={cn(
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
           side === "right" &&

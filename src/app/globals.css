@@ -156,6 +156,24 @@
     @apply border-border outline-ring/50;
   }
 
+  /* <img>는 브라우저가 기본적으로 draggable + 롱프레스 콜아웃(이미지 저장 메뉴) 대상으로
+     취급한다. 클럽 카드 썸네일처럼 가로 스트립 안에 놓인 이미지를 손가락으로 누르고
+     그대로 위/아래로 끌면, 이 네이티브 드래그·콜아웃 인식이 먼저 끼어들어 스크롤
+     제스처 자체가 브라우저에 아예 안 잡힌다 — touch-action이 이미 pan-x/pan-y로
+     허용돼 있어도 마찬가지다(2026-09-07 실측: 이미지 위 좌표만 스크롤 델타 0,
+     같은 줄의 다른 지점은 정상). 이미지를 드래그해서 저장/공유하는 동작 자체가
+     이 앱에는 없으므로 걸어도 잃는 기능이 없다. */
+  img {
+    -webkit-user-drag: none;
+    user-drag: none;
+    -webkit-touch-callout: none;
+    /* touch-action은 상속되긴 하지만, img처럼 대체 요소(replaced element)에서는
+       조상에게 건 값이 실제 히트테스트 시점에 안 먹는 경우가 실측된다
+       (2026-09-07: 조상까지 전부 pan-x/pan-y인데도 이미지 좌표에서만 스크롤 0).
+       상속에 기대지 않고 이미지 자신에게 명시적으로 건다. */
+    touch-action: pan-x pan-y;
+  }
+
   /* html 에는 overflow 적용하지 않는다.
      html + body 둘 다에 overflow 가 잡히면 Chrome root scroller 가 꼬여서
      "JS scrollTo 는 동작하는데 wheel/touch 로는 viewport 가 안 움직이는" 증상이 발생함.
@@ -163,6 +181,11 @@
 
   html {
     overscroll-behavior-x: none; /* Capacitor WebView 가로 overscroll bounce 방지 */
+    /* pull-to-refresh는 "루트 요소(html)"의 값으로 결정된다 — body에 걸어도
+       뷰포트로 전파되지 않고, [lang="ja"] * 규칙도 html 자신은 못 잡는다
+       (html이 곧 lang을 가진 요소라 자손 선택자에서 빠진다).
+       그래서 body에 overscroll-behavior-y:none이 있는데도 당기면 새로고침됐다. */
+    overscroll-behavior-y: none;
   }
 
   body {
@@ -185,6 +208,31 @@
   [lang="zh"] *,
   [lang="zh-TW"] * {
     overscroll-behavior: none;
+  }
+
+  /* 가로 스트립(카테고리 칩, Recently viewed, 클럽 카드 줄 등) 위에서 시작한
+     세로 스와이프가 페이지를 스크롤하게 만든다.
+
+     overflow-x-auto인 요소는 CSS 규칙상 overflow-y도 auto로 계산돼, 세로로
+     스크롤할 게 없어도 "세로 스크롤 컨테이너"가 된다. 그래서 위 * 규칙의
+     overscroll-behavior:none이 세로 스와이프를 삼켜버려 스트립 위에서는
+     페이지가 안 내려갔다(2026-09-07 실측).
+
+     ⚠️ touch-action:pan-x만으로는 부족하다 — 세로 제스처를 받되 "삼키지 않고
+     체이닝"해야지, 아예 못 받게 하면 그 제스처 자체가 버려져 조상도 못
+     받는다(Playwright 터치 실측: 스트립 위 세로 스와이프 이동량 0).
+
+     ⚠️ [lang="en"] 등으로 스코프를 걸면 안 된다 — Radix Dialog/Sheet는
+     기본적으로 document.body에 바로 portal되는데(container prop 안 넘김),
+     lang wrapper(<div lang="en">)는 body의 자식일 뿐 body 자체를 감싸지
+     않는다. 그래서 시트(주류 선택 화면 등) 안의 .overflow-x-auto는 lang
+     스코프 셀렉터에 애초에 안 걸린다 — 술 메뉴 카테고리 칩이 정확히 이
+     케이스라 스코프를 걸어뒀을 때 거기서는 여전히 안 고쳐졌다(2026-09-07).
+     이 규칙 자체는 lang 트랙 한정일 이유가 없어(가로 스트립이 세로 스크롤을
+     삼키지 말아야 하는 건 어디서나 맞다) 아예 전역으로 건다. */
+  .overflow-x-auto {
+    touch-action: pan-x pan-y;
+    overscroll-behavior-y: auto;
   }
 }
 

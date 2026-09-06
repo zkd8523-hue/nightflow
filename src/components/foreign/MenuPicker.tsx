@@ -204,10 +204,18 @@ export function MenuPicker({
   const flyId = useRef(0);
 
   const launchFly = (fromRect: DOMRect, label: string) => {
-    const target =
-      mobileCartRef.current && mobileCartRef.current.offsetParent !== null
-        ? mobileCartRef.current
-        : desktopCartRef.current;
+    // ⚠️ offsetParent로 "보이는지" 판정하면 안 된다 — 모바일 카트 바는
+    // position:fixed라 offsetParent가 스펙상 항상 null이다. 그래서 늘 데스크탑
+    // 카트(모바일에선 display:none → rect 0,0)로 떨어져 담기 조각이 장바구니가
+    // 아니라 화면 왼쪽 위로 날아갔다(2026-09-07). display:none이면
+    // getClientRects()가 비므로 그걸로 판정한다.
+    const isVisible = (el: HTMLElement | null): el is HTMLElement =>
+      !!el && el.getClientRects().length > 0;
+    const target = isVisible(mobileCartRef.current)
+      ? mobileCartRef.current
+      : isVisible(desktopCartRef.current)
+        ? desktopCartRef.current
+        : null;
     if (!target) return;
     const toRect = target.getBoundingClientRect();
     const id = ++flyId.current;
@@ -339,27 +347,33 @@ export function MenuPicker({
     );
   }
 
-  // 배달앱처럼 왼쪽 세로 카테고리 + 오른쪽 스크롤 목록. 모바일도 데스크탑도
-  // 같은 좌우 분할 구조 — 예전엔 모바일만 상단 가로 pill이었는데, 항목이
-  // 접혔다 펼쳐지는 구조(Best 탭 등)와 안 맞아 "진짜 카테고리 탭"으로 통일한다.
+  // 모바일: 상단 가로 스크롤 칩 + 아래 목록. 데스크탑(lg): 왼쪽 세로 레일 + 오른쪽 목록.
+  // 한때 모바일도 왼쪽 세로 레일(112px)로 통일했는데, 390px 폭에서 레일이 목록 폭의
+  // 30%를 잡아먹어 항목 이름이 두 줄로 잘리고("2 Bottle Set - Absolut + 365 Bru…")
+  // 가격 칸도 비좁았다(2026-09-07). 카테고리는 9개 안팎이라 가로 한 줄 스크롤로
+  // 충분하고, 목록이 전체 폭을 쓰는 게 낫다.
   // pt-12 px-3: 이 화면도 SheetContent(p-0)에 바로 얹혀서 시트 기본 닫기 X
   // (absolute top-4 right-4)가 카테고리 첫 탭·목록 첫 줄과 겹쳤다(2026-09-06).
-  // sticky nav가 top-0을 이 wrapper 기준으로 잡으므로, 패딩은 부모에 준다.
+  // 닫기 X는 SheetContent(스크롤 컨테이너) 안의 absolute라 스크롤하면 같이 올라가므로,
+  // 모바일 sticky 칩 줄이 top-0에 붙어도 X와 겹치지 않는다.
   return (
    <FxContext.Provider value={{ currency, rates }}>
-    <div ref={rootRef} className="relative flex gap-0 items-start pt-12 px-3">
-      {/* 왼쪽 카테고리 레일 — 화면 높이만큼 고정, 자체 스크롤.
-          112px: 92px는 특별한 근거 없이 좁게 잡힌 값이었다(2026-09-06).
-          오른쪽 목록 이름이 두 줄로 넘치는 항목(Moët & Chandon N.I.R Rose 등)이
-          많아 살짝만 더 준다 — 카테고리 이름은 이미 한 줄로 들어가므로 과하게
-          넓힐 필요는 없다. */}
+    {/* shrink-0: SheetContent가 flex flex-col이라 이 div가 flex 아이템이 된다.
+        기본 flex-shrink:1이면 내용이 길어도 높이가 92vh로 눌려 시트가 스크롤을
+        만들지 않는다. 자연 높이를 지켜야 시트(overflow-y-auto)가 스크롤된다. */}
+    <div ref={rootRef} className="relative flex flex-col lg:flex-row shrink-0 gap-0 lg:items-start pt-12 px-3">
+      {/* 카테고리 — 모바일은 가로 스크롤 칩 줄(sticky top-0, 스크롤바 숨김),
+          데스크탑은 세로 레일. -mx-3/px-3: 칩이 화면 가장자리까지 스크롤되게
+          부모 패딩을 상쇄한다. 배경을 깔아야 sticky로 붙었을 때 뒤 목록이 비치지 않는다. */}
       <nav
         className="
-          w-[112px] shrink-0 sticky top-12
-          flex flex-col gap-0.5 overflow-y-auto overscroll-contain
-          max-h-[calc(100vh-140px)] lg:max-h-none lg:overflow-visible
-          border-r border-border pr-2 py-1
-          lg:w-44 lg:pr-4
+          sticky top-0 z-10 bg-background
+          flex gap-1.5 overflow-x-auto overscroll-x-contain scrollbar-hide
+          -mx-3 px-3 py-2
+          lg:z-auto lg:mx-0 lg:px-0 lg:py-1 lg:top-12
+          lg:w-44 lg:shrink-0
+          lg:flex-col lg:gap-0.5 lg:overflow-visible
+          lg:border-r lg:border-border lg:pr-4
         "
       >
         {categories.map((c) => {
@@ -369,8 +383,8 @@ export function MenuPicker({
               key={c}
               type="button"
               onClick={() => setTab(c as string)}
-              className={`w-full rounded-lg px-2.5 py-2.5 text-[12.5px] font-bold text-center leading-tight transition
-                lg:px-3 lg:py-2 lg:text-left lg:text-sm
+              className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[12.5px] font-bold leading-tight transition
+                lg:w-full lg:whitespace-normal lg:rounded-lg lg:px-3 lg:py-2 lg:text-left lg:text-sm
                 ${on ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}
             >
               {tabLabel(c as string)}
@@ -380,7 +394,7 @@ export function MenuPicker({
       </nav>
 
       {/* 항목 목록 — 모바일 1열, 데스크탑 2열 */}
-      <div className="flex-1 min-w-0 pl-3 lg:pl-6">
+      <div className="flex-1 min-w-0 w-full pt-1 lg:w-auto lg:pt-0 lg:pl-6">
         {/* 통화 줄 — 지금 무슨 통화로 보고 있는지 밝히고 바꿀 길을 준다.
             한국어 트랙은 defaultCurrency가 null이라 여기까지 오지 않는다. */}
         {canPickCurrency && (

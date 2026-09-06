@@ -586,7 +586,8 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
       <Sheet open={!!selectedClub} onOpenChange={(o) => !o && closeDetail()}>
         <SheetContent
           side="bottom"
-          className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0"
+          // overscroll-contain: 목록 맨 위에서 당기면 pull-to-refresh로 새서 화면이 날아간다.
+          className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto overscroll-contain p-0"
           onTouchStart={(e) => {
             detailTouchStartXRef.current = e.touches[0].clientX;
           }}
