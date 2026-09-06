@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 import { ClubsClient } from "../ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
-import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 // 동네별 단독 페이지 — 외국인 SEO 핵심 라우트.
 // "Gangnam club booking", "Hongdae nightclub", "Itaewon club" 등
@@ -339,7 +338,6 @@ export default async function EnClubsAreaPage({
   };
 
   return (
-    <ForeignShell lang="en">
     <>
       <script
         type="application/ld+json"
@@ -437,6 +435,5 @@ export default async function EnClubsAreaPage({
         </div>
       </nav>
     </>
-    </ForeignShell>
   );
 }

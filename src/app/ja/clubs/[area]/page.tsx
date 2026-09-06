@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 import { ClubsClient } from "../../../en/clubs/ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
-import { ForeignShell } from "@/components/foreign/ForeignShell";
 
 type AreaSlug = "gangnam" | "hongdae" | "itaewon" | "busan" | "apgujeong";
 
@@ -297,7 +296,6 @@ export default async function JaClubsAreaPage({
   };
 
   return (
-    <ForeignShell lang="ja">
     <>
       <script
         type="application/ld+json"
@@ -367,6 +365,5 @@ export default async function JaClubsAreaPage({
         </div>
       </nav>
     </>
-    </ForeignShell>
   );
 }
