@@ -7,6 +7,9 @@ import { isAndroid, isIOS } from "@/lib/utils/browser";
 export const PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=kr.nightflow.app&hl=ko";
 
+// iOS 앱스토어 (한국 스토어 포함, 2026-09-07부터)
+export const APP_STORE_URL = "https://apps.apple.com/app/id6769749996";
+
 const DISMISS_KEY = "naflAppBannerDismissed";
 
 // 지난달 누적 접속자 수 (MD 대상 사회적 증거). 실측치 — 주기적으로 갱신 필요.
@@ -43,18 +46,22 @@ export function getAppCtaCopy({
   };
 }
 
+export type AppStorePlatform = "android" | "ios" | null;
+
 /**
  * 앱 다운로드 CTA 노출 조건을 한 곳에서 관리.
  *
- * 노출 = 안드로이드 기기 && 웹 브라우저 && !iOS
+ * 노출 = 모바일 웹 브라우저(안드로이드 또는 iOS)
  *  - 네이티브 앱(Capacitor) 안에서는 숨김 — 앱 안에서 "앱 받기"는 무의미
- *  - iOS는 아직 미출시 → 숨김 (Play Store만 노출)
+ *  - 기기별로 맞는 스토어 링크(storeUrl)를 함께 반환 (스마트 배너 패턴)
  *
- * eligible: 안드로이드 웹 여부 (푸터 상시 버튼용)
+ * eligible: 모바일 웹 여부 (푸터 상시 버튼용)
+ * platform / storeUrl: 감지된 기기에 맞는 스토어
  * bannerVisible: eligible && 닫지 않음 (하단 플로팅 배너용)
  */
 export function useAppDownloadCta() {
   const [eligible, setEligible] = useState(false);
+  const [platform, setPlatform] = useState<AppStorePlatform>(null);
   // 기본 닫힘으로 시작해 SSR/초기 렌더 깜빡임 방지
   const [dismissed, setDismissed] = useState(true);
 
@@ -72,9 +79,16 @@ export function useAppDownloadCta() {
       }
       if (!active) return;
 
-      const androidWeb = isAndroid() && !isIOS() && !isNative;
-      setEligible(androidWeb);
-      if (androidWeb) {
+      const detected: AppStorePlatform = isNative
+        ? null
+        : isIOS()
+          ? "ios"
+          : isAndroid()
+            ? "android"
+            : null;
+      setPlatform(detected);
+      setEligible(detected !== null);
+      if (detected !== null) {
         // '닫기'를 누르면 어디서든(테스트/프로덕션) 영구히 다시 안 뜸.
         setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
       }
@@ -94,5 +108,7 @@ export function useAppDownloadCta() {
     setDismissed(true);
   };
 
-  return { eligible, bannerVisible: eligible && !dismissed, dismiss };
+  const storeUrl = platform === "ios" ? APP_STORE_URL : PLAY_STORE_URL;
+
+  return { eligible, platform, storeUrl, bannerVisible: eligible && !dismissed, dismiss };
 }

@@ -5,7 +5,6 @@ import { X } from "lucide-react";
 import {
   useAppDownloadCta,
   getAppCtaCopy,
-  PLAY_STORE_URL,
 } from "@/hooks/useAppDownloadCta";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useHasActivePuzzle } from "@/hooks/useHasActivePuzzle";
@@ -17,7 +16,7 @@ import { trackAppDownloadClick } from "@/lib/analytics/events";
  * 대상별 3단 분기: MD / 깃발 꽂은 유저 / 일반.
  */
 export function AppDownloadBanner() {
-  const { eligible, bannerVisible, dismiss } = useAppDownloadCta();
+  const { eligible, bannerVisible, dismiss, storeUrl } = useAppDownloadCta();
   const { user } = useCurrentUser();
   const isMd = user?.role === "md" || user?.role === "admin";
   // 배너가 노출되는 안드로이드 웹 + 비MD 유저일 때만 깃발 보유 조회
@@ -53,7 +52,7 @@ export function AppDownloadBanner() {
           <p className="mt-0.5 text-xs leading-tight text-muted-foreground">{subtitle}</p>
         </div>
         <a
-          href={PLAY_STORE_URL}
+          href={storeUrl}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() =>

@@ -8,7 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useAppDownloadCta, PLAY_STORE_URL } from "@/hooks/useAppDownloadCta";
+import { useAppDownloadCta } from "@/hooks/useAppDownloadCta";
 import { trackAppDownloadClick } from "@/lib/analytics/events";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { initPushNotifications } from "@/lib/native/pushNotifications";
@@ -30,14 +30,14 @@ const PUSH_SEEN_KEY = "naflLoginPushPrimingSeen";
  */
 export function LoginNotifyPromptSheet() {
   const { user } = useCurrentUser();
-  const { eligible: webEligible } = useAppDownloadCta();
+  const { eligible: webEligible, storeUrl } = useAppDownloadCta();
 
   const [mode, setMode] = useState<"none" | "web" | "push">("none");
   const [open, setOpen] = useState(false);
   const decidedRef = useRef(false);
 
-  // iOS 앱은 미국·중국·일본 스토어 출시(외국인 전용)라 네이티브 분기가 한국어만
-  // 보여주면 안 된다. 다른 화면과 동일하게 ?lang= 기준으로 번역한다.
+  // 네이티브 앱(iOS/Android 공용 빌드)이 한국어만 보여주면 안 된다.
+  // 다른 화면과 동일하게 ?lang= 기준으로 번역한다.
   // useSearchParams는 Suspense를 요구하므로 window에서 직접 읽는다(레이아웃과 동일 방식).
   const [lang, setLangCode] = useState<string | null>(null);
   useEffect(() => {
@@ -138,7 +138,7 @@ export function LoginNotifyPromptSheet() {
           <div className="w-full space-y-2 pt-2">
             {mode === "web" ? (
               <a
-                href={PLAY_STORE_URL}
+                href={storeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {

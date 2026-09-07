@@ -5,13 +5,13 @@ import Image from "next/image";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
-import { useAppDownloadCta, PLAY_STORE_URL } from "@/hooks/useAppDownloadCta";
+import { useAppDownloadCta } from "@/hooks/useAppDownloadCta";
 import { trackAppDownloadClick } from "@/lib/analytics/events";
 
 export function Footer() {
   const { user, isLoading } = useCurrentUser();
   const isPartner = isLoading || user?.role === "md" || user?.role === "admin";
-  const { eligible: showAppCta } = useAppDownloadCta();
+  const { eligible: showAppCta, storeUrl } = useAppDownloadCta();
 
   return (
     <footer className="border-t border-border bg-background">
@@ -78,7 +78,7 @@ export function Footer() {
           )}
           {showAppCta && (
             <a
-              href={PLAY_STORE_URL}
+              href={storeUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() =>

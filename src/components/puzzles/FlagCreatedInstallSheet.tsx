@@ -8,7 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useAppDownloadCta, PLAY_STORE_URL } from "@/hooks/useAppDownloadCta";
+import { useAppDownloadCta } from "@/hooks/useAppDownloadCta";
 import { trackAppDownloadClick } from "@/lib/analytics/events";
 
 const SEEN_KEY = "naflFlagInstallPromptSeen";
@@ -16,11 +16,11 @@ const SEEN_KEY = "naflFlagInstallPromptSeen";
 /**
  * 깃발 꽂은 직후 1회성 앱설치 팝업.
  * PuzzleForm 생성 성공 시 dispatch되는 "flag-created" 이벤트를 받아 노출.
- * - 안드로이드 웹에서만(인앱·iOS·PC 제외) — useAppDownloadCta.eligible 재사용
+ * - 모바일 웹에서만(인앱·네이티브 앱·PC 제외) — useAppDownloadCta.eligible 재사용
  * - 한 번 보면 어디서든(테스트/프로덕션) 다시 안 뜸(localStorage)
  */
 export function FlagCreatedInstallSheet() {
-  const { eligible } = useAppDownloadCta();
+  const { eligible, storeUrl } = useAppDownloadCta();
   const eligibleRef = useRef(eligible);
   eligibleRef.current = eligible;
   const [open, setOpen] = useState(false);
@@ -28,7 +28,7 @@ export function FlagCreatedInstallSheet() {
 
   useEffect(() => {
     const onFlagCreated = (e: Event) => {
-      if (!eligibleRef.current) return; // 안드로이드 웹에서만
+      if (!eligibleRef.current) return; // 모바일 웹에서만
       // 한 번 보면 어디서든(테스트/프로덕션) 다시 안 뜸.
       if (localStorage.getItem(SEEN_KEY) === "1") return;
       localStorage.setItem(SEEN_KEY, "1");
@@ -71,7 +71,7 @@ export function FlagCreatedInstallSheet() {
           </div>
           <div className="w-full space-y-2 pt-2">
             <a
-              href={PLAY_STORE_URL}
+              href={storeUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => {
