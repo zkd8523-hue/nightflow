@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">NightFlow</string>
-    <string name="title_activity_main">NightFlow</string>
+    <string name="app_name">나플</string>
+    <string name="title_activity_main">나플</string>
     <string name="package_name">kr.nightflow.app</string>
     <string name="custom_url_scheme">kr.nightflow.app</string>
     <string name="kakao_app_key">05e4bc59b65a9accadeb923e263e2212</string>

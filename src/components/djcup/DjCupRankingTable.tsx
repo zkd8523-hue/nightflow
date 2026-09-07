@@ -1,7 +1,10 @@
-import Link from "next/link";
+"use client";
+
+import { useState } from "react";
 import { youtubeVideoId } from "@/lib/lineups/youtubeUrl";
 import { usableDjArtwork, youtubeThumbnailUrl } from "@/lib/djCup/types";
 import { DjRankingAvatar } from "@/components/djcup/DjRankingAvatar";
+import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
 
 export interface DjCupRankingRow {
   dj_id: string;
@@ -10,6 +13,9 @@ export interface DjCupRankingRow {
   artwork_url: string | null;
   /** 사클 아트워크가 없을 때 썸네일을 조립할 원본 (Migration 627) */
   youtube_url: string | null;
+  /** 미리듣기 재생원. 있으면 이름 클릭 시 모달에서 바로 재생된다 (Migration 662) */
+  soundcloud_url: string | null;
+  instagram: string | null;
   champion_count: number;
   win_count: number;
   appear_count: number;
@@ -41,8 +47,10 @@ function rowArtwork(row: DjCupRankingRow): string | null {
  * 컴포넌트는 프로젝트에 없음)을 그대로 따른다 — thead 대문자 라벨, td 우측정렬
  * 숫자, 행 hover.
  *
- * DJ 이름은 전부 /dj/{slug}로 링크된다 — "나플에 DJ DB가 있구나" 각인의 실제
- * 착지점이 여기다.
+ * DJ 이름을 누르면 페이지 이동 없이 미리듣기 모달(DjProfileSheet)이 뜬다 —
+ * "나플에 DJ DB가 있구나" 각인의 실제 착지점이 여기다. 미리듣기 소스가 없는
+ * DJ도 시트 자체는 뜨고(프로필 정보·라인업만 보임) 재생 버튼만 조용히
+ * 숨는다 — DjPreviewButton의 폴백 규약을 그대로 물려받는다.
  *
  * ⚠️ 표본 최소치 가드 없음(의도적으로 제거, 사용자 확정) — 우승비율·승률 둘 다
  * 판수·등장 횟수와 무관하게 항상 % 그대로 보여준다. 예전엔 "표본이 적으면
@@ -63,6 +71,8 @@ function rowArtwork(row: DjCupRankingRow): string | null {
  * 가로 스크롤된다(`overflow-x-auto`).
  */
 export function DjCupRankingTable({ rows }: { rows: DjCupRankingRow[] }) {
+  const [openDj, setOpenDj] = useState<DjProfileTarget | null>(null);
+
   return (
     // min-w를 줘서 숫자 컬럼(계산식 부제 포함)에 늘어질 공간을 확보한다.
     // DJ 컬럼(max-w-0 w-full)이 나머지를 다 먹는 구조라, 표 자체를 좁게
@@ -95,12 +105,25 @@ export function DjCupRankingTable({ rows }: { rows: DjCupRankingRow[] }) {
             <tr key={row.dj_id} className="border-b border-border hover:bg-card/50 transition-colors">
               <td className="py-2 pl-1 pr-2 font-bold text-muted-foreground tabular-nums">{i + 1}</td>
               <td className="py-2 pr-2 pl-0 max-w-0 w-full">
-                <Link href={`/dj/${row.slug}`} className="flex items-center gap-3 group min-w-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenDj({
+                      id: row.dj_id,
+                      display_name: row.display_name,
+                      instagram: row.instagram,
+                      soundcloud_url: row.soundcloud_url,
+                      youtube_url: row.youtube_url,
+                      slug: row.slug,
+                    })
+                  }
+                  className="flex items-center gap-3 group min-w-0 text-left"
+                >
                   <DjRankingAvatar src={artwork} displayName={row.display_name} />
                   <span className="font-bold text-foreground truncate group-hover:text-amber-400 transition-colors">
                     {row.display_name}
                   </span>
-                </Link>
+                </button>
               </td>
               <td className="py-2 pl-1 pr-2 text-right font-bold tabular-nums whitespace-nowrap">
                 {row.champion_rate !== null ? `${row.champion_rate}%` : "—"}
@@ -125,6 +148,7 @@ export function DjCupRankingTable({ rows }: { rows: DjCupRankingRow[] }) {
           })}
         </tbody>
       </table>
+      <DjProfileSheet dj={openDj} onClose={() => setOpenDj(null)} />
     </div>
   );
 }
