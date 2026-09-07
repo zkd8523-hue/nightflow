@@ -53,7 +53,7 @@ export function ClubStrip({ clubs: initialClubs }: ClubStripProps) {
             href={`/clubs/${club.id}`}
             className="flex flex-col items-center gap-1.5 shrink-0 group"
           >
-            <div className="w-14 h-14 rounded-full overflow-hidden bg-muted border border-border group-hover:border-border transition-colors">
+            <div className="w-14 h-14 rounded-full overflow-clip bg-muted border border-border group-hover:border-border transition-colors">
               {club.thumbnail_url ? (
                 <Image
                   src={club.thumbnail_url}

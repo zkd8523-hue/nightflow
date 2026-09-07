@@ -239,10 +239,21 @@ export function MenuPicker({
   }, [sel.restored, sel.snapshot, sel.total]);
 
   // 이 클럽에 존이 있으면 손님이 먼저 골라야 한다 — 같은 술이 층마다 값이 다르다.
+  // (그루브&스팟: 34개 중 32개가 층마다 다른 값. 예거마이스터 2F 14만 / 3F 20만)
+  //
+  // 존마다 "여기 제일 싼 게 얼마"를 같이 들고 나온다 — 이름만 보고는 어느 쪽이
+  // 비싼 자리인지 알 수 없어서, 외국인 손님이 무슨 기준으로 고르는지 모른 채
+  // 아무거나 눌렀다. 최저가 하나만 있어도 층의 성격이 바로 읽힌다.
   const zones = useMemo(() => {
-    const s = new Set(items.map((i) => i.zone).filter((z): z is string => !!z));
-    return [...s];
-  }, [items]);
+    const names = [...new Set(items.map((i) => i.zone).filter((z): z is string => !!z))];
+    return names.map((name) => {
+      const prices = items
+        .filter((i) => i.zone === name)
+        .flatMap((i) => (i.variants ?? []).map((v) => (isWeekend && v.price_weekend) || v.price))
+        .filter((n): n is number => typeof n === "number" && n > 0);
+      return { name, from: prices.length ? Math.min(...prices) : null };
+    });
+  }, [items, isWeekend]);
   const needsZone = zones.length > 0 && !zone;
 
   // "Best" 탭 — 손님이 처음 보는 화면.
@@ -324,22 +335,31 @@ export function MenuPicker({
       // (absolute top-4 right-4)이 첫 줄 텍스트와 겹쳤다. X 버튼 높이만큼 띄운다.
       <div className="p-4 pt-12">
         <p className="text-sm font-bold mb-1">
-          {lang === "ko" ? "어느 층인가요?" : "Which floor?"}
+          {lang === "ko" ? "어느 층에 테이블을 잡을까요?" : "Which floor for your table?"}
         </p>
-        <p className="text-xs text-muted-foreground mb-3">
+        {/* "층을 고른다 = 한 층만 쓴다"로 읽혀서 손님이 멈췄다(2026-09-07).
+            입장하면 두 층을 오갈 수 있고, 고르는 건 테이블 자리(=주대 기준)뿐이다.
+            그 사실을 먼저 말해줘야 선택이 부담스럽지 않다. */}
+        <p className="text-xs text-muted-foreground mb-3 break-keep">
           {lang === "ko"
-            ? "층마다 가격이 다릅니다."
-            : "Prices differ by floor."}
+            ? "입장하면 두 층 모두 이용할 수 있어요. 테이블을 잡는 층만 고르면 되고, 주대는 층마다 다릅니다."
+            : "You can enjoy both floors once inside — just pick where your table goes. Drink prices differ by floor."}
         </p>
         <div className="grid gap-2">
           {zones.map((z) => (
             <button
-              key={z}
+              key={z.name}
               type="button"
-              onClick={() => onZoneChange?.(z)}
-              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-left text-sm font-semibold hover:bg-muted"
+              onClick={() => onZoneChange?.(z.name)}
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-left hover:bg-muted flex items-center justify-between gap-3"
             >
-              {z}
+              <span className="text-sm font-semibold">{z.name}</span>
+              {z.from != null && (
+                <span className="text-xs text-muted-foreground font-bold tabular-nums shrink-0">
+                  {lang === "ko" ? "최저 " : "from "}
+                  ₩{z.from.toLocaleString("en-US")}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -376,6 +396,48 @@ export function MenuPicker({
           lg:border-r lg:border-border lg:pr-4
         "
       >
+        {/* 존(층) 전환 — 층을 한 번 고르면 되돌아갈 길이 없어서, 다른 층 가격을
+            보려면 시트를 닫고 처음부터 다시 담아야 했다(2026-09-07).
+            카테고리 레일 안에 같이 둔다 — 밖에 별도 컬럼으로 빼면 데스크탑
+            2열(레일+목록) 배치가 3열로 깨진다.
+            담은 게 있으면 먼저 묻는다: 항목 id가 층마다 달라서 그대로 두면
+            2F 가격에 담은 술이 3F 주문에 섞인다. */}
+        {zone && zones.length > 1 && (
+          <>
+            {zones.map((z) => {
+              const on = z.name === zone;
+              return (
+                <button
+                  key={`zone:${z.name}`}
+                  type="button"
+                  onClick={() => {
+                    if (on) return;
+                    if (sel.count > 0) {
+                      const ok = window.confirm(
+                        lang === "ko"
+                          ? "층을 바꾸면 담은 술이 비워져요. 층마다 가격이 달라서예요. 바꿀까요?"
+                          : "Switching floors clears your cart — prices differ by floor. Continue?"
+                      );
+                      if (!ok) return;
+                      sel.clear();
+                    }
+                    onZoneChange?.(z.name);
+                  }}
+                  className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-2 text-[12px] font-bold leading-tight transition
+                    lg:w-full lg:whitespace-normal lg:rounded-lg lg:px-3 lg:text-left
+                    ${on
+                      ? "border-amber-500 bg-amber-500/15 text-brand-amber"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+                >
+                  {z.name}
+                </button>
+              );
+            })}
+            {/* 층 칩과 카테고리 칩은 성격이 다르다 — 붙여두면 같은 줄의 탭으로 읽힌다.
+                모바일은 세로 구분선, 데스크탑은 가로선으로 끊는다. */}
+            <span className="shrink-0 self-stretch w-px bg-border mx-1 lg:w-full lg:h-px lg:my-2 lg:mx-0" />
+          </>
+        )}
         {categories.map((c) => {
           const on = activeTab === c;
           return (

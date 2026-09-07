@@ -259,21 +259,29 @@ function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
   // 카드 높이가 들쭉날쭉해지고, 훑어보는 홈 그리드에서는 정보보다 노이즈로
   // 읽혔다(2026-09-06). 클릭해서 관심을 보인 뒤인 상세 시트로 옮겼다.
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
-      className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity text-left lg:w-full lg:shrink"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
+      className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity text-left cursor-pointer lg:w-full lg:shrink"
     >
-      <div className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-muted border border-border lg:w-full lg:h-[112px]">
+      {/* overflow-hidden이 아닌 overflow-clip을 쓴다 — overflow:hidden인 요소는
+          브라우저가 잠재적 스크롤 컨테이너로 취급해 그 위에서 시작된 터치
+          스와이프를 hit-test 단계에서 그대로 삼켜버린다(가로 스크롤 스트립
+          안에 있어도 부모로 제스처가 전파되지 않음). overflow:clip은 시각적
+          클리핑만 하고 스크롤 컨테이너가 아니라 이 문제가 없다(2026-09-07
+          실측: 같은 자리에서 hidden→clip 교체만으로 스와이프 delta 0→124). */}
+      <div className="w-[120px] h-[80px] rounded-xl overflow-clip bg-muted border border-border lg:w-full lg:h-[112px]">
         {club.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={club.thumbnail_url} alt={name} loading="lazy" className="w-full h-full object-cover" />
+          <img src={club.thumbnail_url} alt={name} loading="lazy" draggable={false} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[11px] font-bold">{tr("No image")}</div>
         )}
       </div>
       <p className="text-[12px] font-bold text-foreground mt-1.5 truncate lg:text-[13px] lg:mt-2">{name}</p>
-    </button>
+    </div>
   );
 }
 
@@ -620,9 +628,10 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
                   onClick={() => openDetail(recentClubItems, c)}
                   className="w-full flex items-center gap-3 p-2.5 pr-11 rounded-2xl bg-card border border-border text-left"
                 >
-                  <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-muted">
+                  {/* overflow-clip 이유는 위 ClubThumb 참고 — 가로 스트립 안 썸네일 */}
+                  <div className="w-14 h-14 shrink-0 rounded-xl overflow-clip bg-muted">
                     {c.thumbnail_url && (
-                      <img src={c.thumbnail_url} alt={displayClubName(c)} className="w-full h-full object-cover" />
+                      <img src={c.thumbnail_url} alt={displayClubName(c)} draggable={false} className="w-full h-full object-cover" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -719,7 +728,10 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
             </div>
             {regionClubs.length > 0 && (
               <>
-                <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x lg:hidden">
+                <div
+                  className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x lg:hidden"
+                  style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
+                >
                   {regionClubs.map((c) => <ClubThumb key={c.id} club={c} onOpen={() => openDetail(regionClubs, c)} />)}
                 </div>
                 <div className="hidden lg:grid lg:grid-cols-6 lg:gap-3">
@@ -730,6 +742,13 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
           </div>
         );
       })}
+
+      {/* 하단 sticky "Book with NightFlow" 버튼(showStickyCta) 높이만큼 여백을 확보한다.
+          이게 없으면 마지막 지역(주로 Busan) 클럽 스트립이 화면에 보이는 스크롤 위치에서
+          원본 CTA(이 아래 914행)는 아직 화면 밖이라 sticky CTA가 뜨는데, 그 버튼이 z-20으로
+          스트립 이미지와 같은 화면 좌표에 겹쳐 떠서 스와이프/탭을 가로챈다(2026-09-07 실측:
+          부산 스트립만 유독 스크롤 안 됨 — 실은 sticky 버튼이 터치를 받아간 것). */}
+      <div className="h-16" aria-hidden />
 
       {hasFilter &&
         visibleRegions.every((r) => clubs.filter((c) => c.area === r.ko && matchesFilters(c)).length === 0) && (

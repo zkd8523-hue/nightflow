@@ -497,7 +497,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   {/* relative 필수 — 안쪽 Image가 fill(=position:absolute)이라
                       positioned 조상이 없으면 이 칸을 건너뛰고 바깥까지 올라가
                       썸네일이 통째로 어긋난다. */}
-                  <div className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden bg-muted border border-border lg:w-full lg:h-[168px]">
+                  <div className="relative w-[140px] h-[140px] rounded-2xl overflow-clip bg-muted border border-border lg:w-full lg:h-[168px]">
                     {club.thumbnail_url ? (
                       <Image src={club.thumbnail_url} alt={displayClubName(club)} fill className="object-cover" sizes="140px" />
                     ) : (

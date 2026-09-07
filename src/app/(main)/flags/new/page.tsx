@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
 import { ForeignRequestForm } from "@/components/foreign/ForeignRequestForm";
 import type { ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
+import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import { getLang, makeT } from "@/lib/i18n";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
 
@@ -113,26 +114,39 @@ export default async function PuzzleNewPage({
   // 배경: 로그인 벽에서 80% 이탈(login_view 93 → 로그인 클릭 19). 외국인은 카카오 없고,
   //       소셜 로그인 강제 자체가 마찰 → 컨시어지 폼을 로그인 없이 열어줌.
 
-  // 외국인 컨시어지 폼용 클럽 목록 (강남·홍대·이태원, 썸네일 있는 것 — /en 클럽과 동일 필터).
+  // 외국인 컨시어지 폼용 클럽 목록 (썸네일 있는 것 — /en 클럽과 동일 필터).
   // ClubsClient(/en/clubs)와 동일한 전체 필드 — "Browse clubs" 팝업의 클럽상세 시트에서 재사용.
   // club_partners 조인 → has_md("Recommend" 정렬: 담당 MD 있는 클럽 우선, 그다음 리뷰 많은 순).
+  //
+  // ⚠️ 폼에는 isBookable(MD + 주대) 클럽만 넘긴다. 외국인 트랙은 손님이 그 클럽의
+  // 메뉴를 직접 담아 총액을 확정하는 구조라, 주대 없는 클럽을 고르면 예산을 손으로
+  // 적게 되고(시세를 모르는 외국인에겐 그게 곧 이탈) 성사도 안 된다.
+  // 카탈로그(/en/clubs 등)는 SEO 유입 통로라 그대로 두고, 예약 폼만 좁힌다.
   let foreignClubs: ForeignClubDetail[] = [];
   if (isForeigner) {
+    const menuIds = await fetchMenuClubIds(supabase);
     const { data } = await supabase
       .from("clubs")
       .select(
         "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, open_dows, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, partners:club_partners(md_id)"
       )
-      .in("area", ["강남", "홍대", "이태원"])
+      // 지역 화이트리스트(강남·홍대·이태원)는 뺐다(2026-09-07). 예약 가능 판정을
+      // isBookable(MD + 주대)로 옮긴 뒤로 이 목록은 "예약 중개가 되는 곳" 그 자체라
+      // 지역으로 또 거를 이유가 없다. 오히려 부산·대구·광주의 예약 가능한 클럽 6곳이
+      // 조용히 빠져서, /en/clubs/busan 상세에서 "예약" CTA를 눌러 폼에 와도
+      // presetClubId가 clubs에 없어 선택이 증발하고 클럽 선택창으로 떨어졌다.
       .is("deleted_at", null)
       .eq("is_test", false)
       .eq("hidden_from_guide", false)
       .not("thumbnail_url", "is", null)
       .order("google_review_count", { ascending: false, nullsFirst: false });
-    foreignClubs = (data ?? []).map((c) => ({
-      ...c,
-      has_md: (c.partners?.length ?? 0) > 0,
-    }));
+    foreignClubs = (data ?? [])
+      .map((c) => ({
+        ...c,
+        has_md: (c.partners?.length ?? 0) > 0,
+        has_menu: menuIds.has(c.id),
+      }))
+      .filter(isBookable);
   }
 
   return (

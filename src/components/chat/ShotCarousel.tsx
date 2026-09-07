@@ -187,7 +187,7 @@ export function ShotCarousel({
                   <ShotThumb shot={myGroup.rep} isMine isViewed={myGroup.allViewed} size={size} />
                 ) : (
                   <div className="rounded-full p-[2px] bg-muted" style={{ width: size, height: size }}>
-                    <div className="relative w-full h-full rounded-full overflow-hidden bg-card border-2 border-background">
+                    <div className="relative w-full h-full rounded-full overflow-clip bg-card border-2 border-background">
                       {currentUserProfile?.profile_image ? (
                         <Image src={currentUserProfile.profile_image} alt="" fill sizes={`${size}px`} className="object-cover" />
                       ) : (
@@ -301,7 +301,7 @@ function ShotThumb({
         : "bg-gradient-to-br from-[#A78BFA] to-[#C084FC]";
   return (
     <div className={`relative rounded-full p-[2px] ${ringClass}`} style={{ width: size, height: size }}>
-      <div className="relative w-full h-full rounded-full overflow-hidden bg-card border-2 border-background">
+      <div className="relative w-full h-full rounded-full overflow-clip bg-card border-2 border-background">
         {shot.media_type === "image" ? (
           <Image
             src={shot.media_url}

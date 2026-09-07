@@ -38,7 +38,7 @@ export function ClubBenefitSection({ items }: { items: ClubBenefitItem[] }) {
             className="flex-shrink-0 w-[44%] max-w-[180px] snap-start snap-always active:scale-[0.98] transition-transform"
           >
             {/* 혜택 띠 + 이미지를 하나의 테두리로 감싸 카드 경계를 명확히 함 (라이트에서 흰 로고가 배경과 붙어 보이는 문제 방지) */}
-            <div className="rounded-md border border-border overflow-hidden">
+            <div className="rounded-md border border-border overflow-clip">
               {/* 혜택 띠 (이미지 위 별도 영역).
                   MD가 문구를 안 쓰고 칩만 고른 경우도 있으므로, 텍스트가 없으면
                   칩 라벨을 이어붙여 띠를 만든다("무료입장 · 프리드링크"). */}

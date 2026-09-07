@@ -511,7 +511,7 @@ function ClubCard({
       href={`/clubs/${club.id}`}
       className="flex-shrink-0 w-[140px] snap-start snap-always group/card"
     >
-      <div className="relative w-[140px] h-[175px] rounded-2xl overflow-hidden bg-card">
+      <div className="relative w-[140px] h-[175px] rounded-2xl overflow-clip bg-card">
         {club.thumbnail_url ? (
           <Image
             src={club.thumbnail_url}

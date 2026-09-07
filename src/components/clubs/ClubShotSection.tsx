@@ -73,7 +73,7 @@ export function ClubShotSection({ clubId }: Props) {
                     : "bg-gradient-to-br from-red-500 via-pink-500 to-amber-500"
                 }`}
               >
-                <div className="relative w-full h-full rounded-full overflow-hidden bg-card border-2 border-background">
+                <div className="relative w-full h-full rounded-full overflow-clip bg-card border-2 border-background">
                   {shot.media_type === "image" ? (
                     <Image
                       src={shot.media_url}

@@ -404,7 +404,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
           {/* Row 1: Image + Info */}
           <div className="flex gap-3">
             {/* 110x80 Thumbnail */}
-            <div className="w-[110px] h-[64px] rounded-xl bg-card overflow-hidden flex-shrink-0 relative">
+            <div className="w-[110px] h-[64px] rounded-xl bg-card overflow-clip flex-shrink-0 relative">
               <AuctionImage
                 auctionThumbnail={auction.thumbnail_url}
                 clubThumbnail={club?.thumbnail_url}

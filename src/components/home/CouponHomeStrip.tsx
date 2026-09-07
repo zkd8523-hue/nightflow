@@ -96,7 +96,7 @@ function CouponHomeCard({ coupon, now }: { coupon: CouponIssue; now: number }) {
   return (
     <Link
       href={`/coupons/${coupon.id}`}
-      className="shrink-0 w-40 snap-start rounded-xl overflow-hidden bg-card border border-border active:opacity-70 transition-opacity"
+      className="shrink-0 w-40 snap-start rounded-xl overflow-clip bg-card border border-border active:opacity-70 transition-opacity"
     >
       <div className="relative w-full h-24 bg-muted">
         {thumb ? (

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search, X, Check, MapPin, Users, UserRound, Calendar, Coins, MessageCircle, Languages, ChevronRight, Heart, Plus } from "lucide-react";
+import { Search, X, Check, MapPin, Users, UserRound, Calendar, MessageCircle, Languages, ChevronRight, Heart, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
-import { krwToAll, formatAsOfLocale, resolveCurrency } from "@/lib/utils/currency";
+import { formatAsOfLocale, resolveCurrency } from "@/lib/utils/currency";
 import { useKrwRates } from "@/lib/utils/useKrwRates";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
 import { ClubDateCalendar } from "@/components/clubs/ClubDateCalendar";
@@ -49,8 +49,6 @@ const ITAEWON_RECOMMEND_CURATED = ["Dawn", "BADASS", "Day&night"];
 // 클럽은 한 곳만 고른다. 호텔을 잡을 때 세 곳을 동시에 찔러놓지 않는 것과 같다 —
 // 무엇보다 손님이 그 클럽의 메뉴를 직접 골라 총액을 확정하는 흐름이라, 클럽이
 // 여러 곳이면 어느 메뉴판을 담을지 정해지지 않는다.
-// 칩은 토글로 해제되므로 미선택 = 전 지역. "서울 어디든" 칩은 그 상태와 중복이라 뺐다.
-const AREAS = ["이태원", "홍대", "강남"];
 // 지역별 최소 예산(총액). 강남은 메인 VIP·보틀 단가가 높아 40만으로는 성사가 안 된다
 // (MD가 자리를 못 잡아 왕복만 늘고 결국 무산).
 // 배열의 첫 값만 쓴다(= 그 지역의 최소주문금액). 나머지 두 값은 예전에 VIP/VVIP/SVIP
@@ -136,46 +134,19 @@ export function ForeignRequestForm({
   const [dateOpen, setDateOpen] = useState(false);
   const openDatePicker = useCallback(() => setDateOpen(true), []);
   const detailTouchStartXRef = useRef<number | null>(null);
-  const [area, setArea] = useState<string>(presetArea && AREAS.includes(presetArea) ? presetArea : "이태원");
+  // 기본값 없이 시작한다(2026-09-07). 예전엔 "이태원"으로 시작했는데, 폼에 오는
+  // 클럽을 isBookable로 좁힌 뒤로 이태원 예약 가능 클럽이 3곳뿐이라 캐러셀에
+  // 3개만 뜨는 상태가 됐다. 지역 칩 UI는 이미 없어져서 손님이 직접 넓힐 수도 없다.
+  // 미선택 = 전 지역(= areaScope 기본값)이라 예약 가능한 클럽이 전부 노출된다.
+  // AREAS(서울 3곳)가 아니라 실제 목록의 지역으로 검증한다 — 부산·대구·광주에도
+  // 예약 가능한 클럽이 있어서, ?area=부산으로 와도 통과시켜야 한다.
+  const presetAreaValid =
+    !!presetArea && clubs.some((c) => c.area === presetArea);
+  const [area, setArea] = useState<string>(presetAreaValid ? presetArea! : "");
   const [groupSize, setGroupSize] = useState(2);
-  // 기본 40만원으로 시작. 빈칸이면 외국인은 시세를 몰라 아무 숫자도 못 적고 이탈했다
-  // (게이트까지 통과한 13명 중 12명이 폼에서 증발, 상당수가 클럽 목록으로 되돌아감).
-  // 40만 = private table + 보틀 2~3병 수준이라, 금액과 받는 것을 같이 보여줄 수 있는 기준점.
-  // 빈칸으로 시작한다. 기본값을 박아두면 그 숫자가 앵커가 돼서 대부분 그대로 보낸다
-  // (실제로 40만 기본값일 때 접수 3건 중 2건이 40만 이하였다).
-  // 대신 아래 금액 버튼으로 시세를 모르는 사람도 한 번에 고를 수 있게 한다.
-  const [budget, setBudget] = useState("");
-  const budgetAmount = () => Number(budget.replace(/[^0-9]/g, "")) || 0;
-
-
-  // 금액이 오르면 받는 것도 달라져야 한다 — 고정 문구면 "올려도 그대로"라 올릴 이유가 없어진다.
-  // 구간은 실제 업장 통념 기준(입장만 → 스탠딩 → 프라이빗+보틀 → VIP). 클럽마다 편차가 커서
-  // 단정하지 않고 "보통 이 정도"로 표현한다.
-  const budgetTier = (won: number) => {
-    if (won < 700000)
-      return t(
-        "프라이빗 테이블 + 보틀 2~3병 (클럽에 따라 다름)",
-        "Private table + 2–3 bottles (varies by club)",
-        "プライベートテーブル + ボトル2〜3本（クラブにより異なる）",
-        "私人卡座 + 2~3瓶酒（因店而异）",
-        "私人包廂 + 2~3瓶酒（因店而異）"
-      );
-    if (won < 1500000)
-      return t(
-        "좋은 자리의 프라이빗 테이블 + 보틀 4병 이상",
-        "Prime private table + 4+ bottles",
-        "良い位置のプライベートテーブル + ボトル4本以上",
-        "位置好的私人卡座 + 4瓶以上",
-        "位置好的私人包廂 + 4瓶以上"
-      );
-    return t(
-      "VIP 테이블 · 샴페인 세트 (대형 클럽 최상위 라인)",
-      "VIP table · champagne service",
-      "VIPテーブル・シャンパンサービス",
-      "VIP 卡座 · 香槟服务",
-      "VIP 包廂 · 香檳服務"
-    );
-  };
+  // 예산 입력은 없앴다(2026-09-07). 폼에 오는 클럽은 전부 isBookable(MD + 주대)이라
+  // 손님이 메뉴를 담으면 총액이 확정된다 — 시세를 모르는 외국인에게 금액을 손으로
+  // 적게 하는 것 자체가 이탈 지점이었고, 어차피 주대가 있으면 그 숫자는 쓰이지도 않았다.
   const [selectedClubIds, setSelectedClubIds] = useState<string[]>(
     presetClubId && clubs.some((c) => c.id === presetClubId) ? [presetClubId] : []
   );
@@ -273,9 +244,9 @@ export function ForeignRequestForm({
   // 기존처럼 예산만 받고 운영자가 조율한다.
   const hasMenu = menuItems.length > 0;
 
-  // 메뉴를 골랐으면 그 합계가, 아니면 직접 입력한 예산이 주문 금액이다.
+  // 담은 메뉴 합계가 곧 주문 금액이다 — 예산 입력을 없앤 뒤로 다른 출처가 없다.
   // 최소주문금액 검증과 DB 저장이 같은 값을 봐야 한다.
-  const orderAmount = picked ? picked.total : budgetAmount();
+  const orderAmount = picked?.total ?? 0;
 
   // 지역을 비우고 클럽만 고를 수 있어서(지역 칩은 토글로 해제됨) 클럽 쪽 지역도 같이 본다.
   // 여러 지역이 섞이면 가장 높은 하한을 적용 — 강남 한 곳만 껴도 강남 기준.
@@ -352,7 +323,6 @@ export function ForeignRequestForm({
     eventDate: string;
     groupSize: number;
     area: string;
-    budget: string;
     selectedClubIds: string[];
     picked: { snapshot: SelectedMenuSnapshot; total: number } | null;
     menuZone: string | null;
@@ -380,16 +350,15 @@ export function ForeignRequestForm({
   useEffect(() => {
     if (!hasProgress || formStep === 4) return;
     saveFormDraft<ForeignDraft>(draftKey, {
-      eventDate, groupSize, area, budget, selectedClubIds, picked, menuZone,
+      eventDate, groupSize, area, selectedClubIds, picked, menuZone,
       guestName, contactType, preferredLang, contactValue, notes,
     });
-  }, [hasProgress, formStep, eventDate, groupSize, area, budget, selectedClubIds, picked, menuZone, guestName, contactType, preferredLang, contactValue, notes]);
+  }, [hasProgress, formStep, eventDate, groupSize, area, selectedClubIds, picked, menuZone, guestName, contactType, preferredLang, contactValue, notes]);
 
   const applyDraft = (d: ForeignDraft) => {
     setEventDate(d.eventDate);
     setGroupSize(d.groupSize);
     setArea(d.area);
-    setBudget(d.budget);
     setSelectedClubIds(d.selectedClubIds);
     setPicked(d.picked);
     setMenuZone(d.menuZone);
@@ -428,7 +397,9 @@ export function ForeignRequestForm({
         );
         setIntentClubName((prev) => prev ?? displayClubName(match));
       }
-      if (intent.area && AREAS.includes(intent.area)) setArea((prev) => prev || intent.area!);
+      if (intent.area && clubs.some((c) => c.area === intent.area)) {
+        setArea((prev) => prev || intent.area!);
+      }
     } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -449,17 +420,26 @@ export function ForeignRequestForm({
   // 타입·장르 필터는 여기 넣지 않음 — 태그 커버리지가 낮아(83%) 리뷰 많은 주요 클럽 다수가
   // 태그 미입력 상태라 필터를 켜면 오히려 손해. 세밀한 필터링은 "Browse clubs" 팝업에서.
   const [clubSortKey, setClubSortKey] = useState<"recommend" | "reviews" | "rating">("recommend");
-  const RECOMMEND_QUOTA_PER_AREA = 4;
   const LOAD_MORE_BATCH = 8;
   const INITIAL_BATCH = 8;
-  // 위쪽 "지역" 탭에서 특정 지역을 고르면 그 지역 클럽만 보여줌 — 미선택이면 3지역 섞어서 노출.
+  // 목록에 실제로 들어온 지역만 쓴다(2026-09-07). 예전엔 BROWSE_AREAS(이태원·홍대·강남)를
+  // 그대로 돌렸는데, 폼 목록이 isBookable 기준으로 바뀌면서 부산·대구·광주의 예약 가능한
+  // 클럽이 clubs에는 들어와도 캐러셀 루프가 그 지역을 안 돌아 영영 안 보였다.
+  // 순서는 BROWSE_AREAS를 먼저 두고(서울이 주력) 나머지 지역을 뒤에 붙인다.
+  const scopeAreas = useMemo(() => {
+    const present = new Set(clubs.map((c) => c.area).filter(Boolean) as string[]);
+    const head = BROWSE_AREAS.filter((a) => present.has(a));
+    const tail = [...present].filter((a) => !BROWSE_AREAS.includes(a)).sort();
+    return [...head, ...tail];
+  }, [clubs]);
+  // 위쪽 "지역" 탭에서 특정 지역을 고르면 그 지역 클럽만 보여줌 — 미선택이면 전 지역 섞어서 노출.
   const areaScope = useMemo(
-    () => (area && BROWSE_AREAS.includes(area) ? [area] : BROWSE_AREAS),
-    [area]
+    () => (area && scopeAreas.includes(area) ? [area] : scopeAreas),
+    [area, scopeAreas]
   );
   const areaScopedClubs = useMemo(
-    () => (area && BROWSE_AREAS.includes(area) ? clubs.filter((c) => c.area === area) : clubs),
-    [clubs, area]
+    () => (area && scopeAreas.includes(area) ? clubs.filter((c) => c.area === area) : clubs),
+    [clubs, area, scopeAreas]
   );
 
   // 이태원 큐레이션 후보 3곳 — 매 로드마다 서로 순서만 섞음(노출 다양성).
@@ -482,21 +462,20 @@ export function ForeignRequestForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [curatedItaewon]);
 
-  // 추천순 전용: 지역별 상위 4개(강남·홍대·이태원 = 최대 12개), 담당 MD 우선 → 리뷰순으로 고정.
-  // featured_rank(고정 노출 위치)는 추천순에서만 적용 — 리뷰순/평점순엔 미적용(공평).
-  // 이태원만 위 큐레이션 3곳을 최상단에 두고(순서는 섞임), 나머지 슬롯은 알고리즘 정렬로 채움.
+  // 추천순 전용: 지역별로 리뷰 많은 순, featured_rank(고정 노출 위치)는 추천순에만 적용
+  // (리뷰순/평점순엔 미적용 — 공평). 이태원만 위 큐레이션 3곳을 최상단에 둔다(순서는 섞임).
+  //
+  // 지역별 상위 4개로 자르던 quota는 없앴다(2026-09-07). 그건 승인 클럽 106곳에서
+  // 볼 만한 것만 추리려던 장치인데, 폼 목록을 isBookable로 좁힌 뒤로 후보가 14곳뿐이라
+  // 자르면 예약 가능한 클럽을 오히려 숨기게 된다.
   const recommendPool = useMemo(() => {
     return areaScope.flatMap((a) => {
       const curated = a === "이태원" ? shuffledCurated : [];
       const curatedIds = new Set(curated.map((c) => c.id));
       const sorted = clubs
         .filter((c) => c.area === a && !curatedIds.has(c.id))
-        .sort((x, y) => {
-          const md = (y.has_md ? 1 : 0) - (x.has_md ? 1 : 0);
-          if (md !== 0) return md;
-          return (y.google_review_count ?? 0) - (x.google_review_count ?? 0);
-        });
-      return [...curated, ...pinFeatured(sorted)].slice(0, RECOMMEND_QUOTA_PER_AREA);
+        .sort((x, y) => (y.google_review_count ?? 0) - (x.google_review_count ?? 0));
+      return [...curated, ...pinFeatured(sorted)];
     });
   }, [clubs, areaScope, shuffledCurated]);
 
@@ -582,10 +561,11 @@ export function ForeignRequestForm({
       }
       return (b.google_review_count ?? 0) - (a.google_review_count ?? 0);
     });
-    return BROWSE_AREAS
+    // 지역 그룹도 실제 데이터 기준 — BROWSE_AREAS로 고정하면 부산·대구·광주가 통째로 빠진다.
+    return scopeAreas
       .map((a) => ({ area: a, items: sorted.filter((c) => c.area === a) }))
       .filter((g) => g.items.length > 0);
-  }, [clubs, browseSortKey, browseVenueType, browseGenre]);
+  }, [clubs, browseSortKey, browseVenueType, browseGenre, scopeAreas]);
 
   const contactPlaceholder: Record<ContactType, string> = {
     whatsapp: "+1 234 567 890",
@@ -646,17 +626,18 @@ export function ForeignRequestForm({
         )
       );
     }
-    // 메뉴가 있는 클럽은 담은 총액이 곧 예약 금액이다. 이때 예산 입력칸은 아예
-    // 렌더되지 않으므로 budgetAmount()만 보면 영원히 0이라 제출이 통째로 막힌다.
+    // 담은 총액이 곧 예약 금액이다 — 예산 입력을 없앤 뒤로 메뉴가 유일한 금액 출처라
+    // 클럽 선택과 술 담기가 둘 다 필수다.
+    if (!selectedClubId) {
+      return toast.error(t("클럽을 골라주세요", "Pick a club", "クラブを選択", "请选择夜店"));
+    }
     if (menuLoading) {
       return toast.error(t("메뉴를 불러오는 중이에요", "Loading the menu…", "メニューを読み込み中です", "正在加载酒单"));
     }
-    if (hasMenu && !picked) {
+    if (!picked) {
       return toast.error(t("술을 먼저 골라주세요", "Choose your drinks first", "先にドリンクを選んでください", "请先选择酒水"));
     }
-    // 최소주문금액 강제. 예전엔 `> 0` 조건이 붙어 있어 비워두면 그냥 통과했는데,
-    // 그러면 하한선이 안내문일 뿐 아무것도 막지 못한다. 이 금액 아래로는 MD가
-    // 자리를 못 잡아 왕복만 늘고 결국 무산되므로 입력 자체를 요구한다.
+    // 최소주문금액 강제. 이 금액 아래로는 MD가 자리를 못 잡아 왕복만 늘고 결국 무산된다.
     if (orderAmount < minBudget) {
       return toast.error(minBudgetNotice);
     }
@@ -1075,93 +1056,21 @@ export function ForeignRequestForm({
         </section>
       )}
 
-      {/* 예산 — 메뉴 데이터가 없는 클럽에서만. 있으면 위에서 총액이 확정된다. */}
-      {!hasMenu && !menuLoading && (
-        <section>
-          {/* 최소주문금액을 라벨 줄에 상시 띄운다. placeholder에만 두면 입력을 시작하는
-              순간 사라져서, 정작 금액을 고민하는 동안에는 하한선이 안 보인다. */}
-          <div className="flex items-center justify-between mb-2">
-            {label(<Coins className="w-4 h-4 text-money" />, t("총 예산", "Total budget", "予算", "总预算"))}
-            <span className="text-[12px] text-muted-foreground font-bold shrink-0">
-              {t(
-                `최소 ₩${minBudget.toLocaleString("en-US")}`,
-                `Min ₩${minBudget.toLocaleString("en-US")}`,
-                `最低 ₩${minBudget.toLocaleString("en-US")}`,
-                `最低 ₩${minBudget.toLocaleString("en-US")}`,
-                `最低 ₩${minBudget.toLocaleString("en-US")}`
-              )}
-            </span>
-          </div>
-          <div className="relative">
-            <input
-              inputMode="numeric"
-              value={budget}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/[^0-9]/g, "");
-                setBudget(raw ? Number(raw).toLocaleString("en-US") : "");
-              }}
-              placeholder={`${t("예)", "e.g.", "例)", "例)")} ${minBudget.toLocaleString("en-US")}`}
-              className="w-full h-12 pl-4 pr-9 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[15px] font-bold pointer-events-none">
-              ₩
-            </span>
-          </div>
-          {/* 가독성: 통화 4개를 한 줄에 나열하면 332px 안에 숫자가 뭉쳐 스캔이 안 된다.
-              2열로 펼치고 역할별로 크기를 나눈다(받는 것 = 가장 큼 > 환산 > 기준일). */}
-          {budget.trim() !== "" && budgetAmount() < minBudget && (
-            <p className="text-[12px] text-red-400 font-semibold mt-1.5 break-keep">
-              {minBudgetNotice}
-            </p>
+      {/* 예산 입력칸은 없앴다(2026-09-07). 폼에 오는 클럽은 전부 isBookable
+          (담당 MD + 주대)이라 손님이 메뉴를 담으면 총액이 확정된다 — 시세를
+          모르는 외국인에게 금액을 손으로 적게 하면 그 자체가 이탈 지점이었다.
+          클럽을 아직 안 골랐을 때만 "아래에서 고르라"고 안내한다 — 이 자리에
+          아무것도 없으면 Group size 다음에 뭘 해야 하는지가 안 보인다. */}
+      {!selectedClubId && (
+        <p className="text-[13px] text-muted-foreground break-keep">
+          {t(
+            "아래에서 클럽을 고르면 그 클럽의 주대에서 술을 직접 담을 수 있어요.",
+            "Pick a club below, then choose drinks from its menu to set your total.",
+            "下からクラブを選ぶと、そのお店のメニューからドリンクを選べます。",
+            "在下方选择夜店后，即可从该店酒单中选酒并确定总额。",
+            "在下方選擇夜店後，即可從該店酒單中選酒並確定總額。"
           )}
-          {budgetAmount() > 0 && (
-            <div className="mt-2 rounded-xl bg-card border border-border overflow-hidden">
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1 p-3">
-                {krwToAll(budgetAmount(), fxRates).split(" · ").map((v) => (
-                  <span key={v} className="text-[14px] text-foreground font-bold tabular-nums">
-                    ≈ {v}
-                  </span>
-                ))}
-              </div>
-              {/* 이 박스의 핵심 정보 — 구분선으로 띄우고 가장 크게 */}
-              <div className="border-t border-border px-3 py-2.5">
-                <p className="text-[14px] text-foreground leading-relaxed break-keep">
-                  <span className="text-money font-bold">✓</span> {budgetTier(budgetAmount())}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  {t(
-                    `환율 ${fxAsOf} 기준 · 참고용`,
-                    `Rates as of ${fxAsOf}`,
-                    `${fxAsOf} 時点のレート`,
-                    `汇率参考 ${fxAsOf}`,
-                    `匯率參考 ${fxAsOf}`
-                  )}
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* 1장 CTA. 메뉴가 있는 클럽은 위 "Choose drinks" 버튼 자체가 다음 단계로
-          가는 문이라 여기 따로 버튼을 안 둔다 — 두 개를 나란히 두면 뭘 눌러야
-          하는지 헷갈린다. 메뉴가 없는 클럽만 "다음"으로 3장(연락처)으로 간다. */}
-      {!hasMenu && !menuLoading && (
-        <button
-          type="button"
-          onClick={() => {
-            if (!eventDate) {
-              toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期"));
-              openDatePicker();
-              return;
-            }
-            if (orderAmount < minBudget) return toast.error(minBudgetNotice);
-            setFormStep(3);
-          }}
-          className="w-full h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.99] transition-all"
-        >
-          {t("다음", "Next", "次へ", "下一步")}
-        </button>
+        </p>
       )}
 
       {/* 클럽을 이미 골랐으면 재선택 목록(캐러셀·검색·정렬탭)은 위 카드로 대체됐으니 숨긴다.
@@ -1859,18 +1768,9 @@ export function ForeignRequestForm({
              부모(폼)가 lg:max-w-lg 안에 있어서 그 폭을 그대로 물려받아 데스크탑에서도
              좁게 잡혔다 — 2열 그리드 오른쪽 절반이 화면 밖으로 잘리던 원인.
              전체 뷰포트 폭을 쓰도록 명시한다. */
-          /* overscroll-none: 목록 맨 위에서 아래로 당기면 브라우저가 새로고침으로
-             채가서 담은 게 전부 날아갔다. 실제 스크롤 컨테이너가 이 시트라 여기에 건다.
-             contain으로는 iOS에서 pull-to-refresh가 계속 새서 none으로 강화(2026-09-07). */
-          className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto overscroll-none"
-          /* Android Chrome pull-to-refresh는 "터치 시작 시점에 scrollTop이 정확히 0"일
-             때만 발동한다. overscroll-behavior만으로 안 막혀서(2026-09-07 실측),
-             터치 시작 시 1px 밀어 그 조건 자체를 없앤다. */
-          onTouchStart={(e) => {
-            const el = e.currentTarget;
-            if (el.scrollTop === 0) el.scrollTop = 1;
-            else if (el.scrollTop + el.clientHeight >= el.scrollHeight) el.scrollTop -= 1;
-          }}
+          /* overscroll-contain: 목록 맨 위에서 아래로 당기면 브라우저가 새로고침으로
+             채가서 담은 게 전부 날아갔다. 실제 스크롤 컨테이너가 이 시트라 여기에 건다. */
+          className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto overscroll-contain"
         >
           <SheetTitle className="sr-only">
             {t("술 고르기", "Choose drinks", "ドリンクを選ぶ", "选择酒水")}
@@ -1930,7 +1830,11 @@ function ClubCard({
 
   return (
     <div className="shrink-0 w-[120px] snap-start select-none">
-      <div className={`relative w-[120px] h-[120px] rounded-2xl overflow-hidden bg-muted border-2 ${selected ? "border-amber-500" : "border-border"}`}>
+      {/* overflow-clip 이유: 가로 스크롤 스트립 안 카드 전체 크기 이미지 컨테이너에
+          overflow-hidden을 쓰면 브라우저가 그 요소를 잠재적 스크롤 컨테이너로 취급해
+          위에서 시작한 스와이프가 부모 스트립으로 전파되지 않는다(2026-09-07 실측,
+          EnHomeClient ClubThumb과 동일 패턴). */}
+      <div className={`relative w-[120px] h-[120px] rounded-2xl overflow-clip bg-muted border-2 ${selected ? "border-amber-500" : "border-border"}`}>
         <button
           type="button"
           onClick={onOpenDetail}
@@ -1938,7 +1842,7 @@ function ClubCard({
           className="block w-full h-full text-left active:opacity-70 transition-opacity"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {club.thumbnail_url && <img src={club.thumbnail_url} alt={displayClubName(club)} className="w-full h-full object-cover" />}
+          {club.thumbnail_url && <img src={club.thumbnail_url} alt={displayClubName(club)} draggable={false} className="w-full h-full object-cover" />}
         </button>
         {/* 시각 크기(24px 원)는 유지하되 터치 영역을 44px로 넓힌다 — 카드 전체는
             상세보기로 먹혀 있어, 이 버튼이 클럽을 고르는 유일하게 짧은 경로다. */}

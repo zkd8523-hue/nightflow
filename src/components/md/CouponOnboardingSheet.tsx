@@ -109,7 +109,7 @@ export function CouponOnboardingSheet({
             <div className="bg-black/40 rounded-xl p-3">
               <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
                 {SAMPLE_COUPONS.map((c, i) => (
-                  <div key={c.value} className="w-36 shrink-0 rounded-xl overflow-hidden bg-card border border-border">
+                  <div key={c.value} className="w-36 shrink-0 rounded-xl overflow-clip bg-card border border-border">
                     <div className="relative h-16">
                       <Image
                         src={SAMPLE_IMAGES[i]}

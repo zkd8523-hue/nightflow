@@ -299,7 +299,9 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT, area 
               return (
               // 썸네일 탭 = 상세시트, 우상단 체크 버튼 탭 = 선택/해제 (ForeignRequestForm ClubCard와 동일)
               <div key={c.id} className="shrink-0 w-[100px] snap-start select-none">
-                <div className={`relative w-[100px] h-[100px] rounded-2xl overflow-hidden bg-card border-2 ${selected ? "border-amber-500" : "border-border"}`}>
+                {/* overflow-clip 이유: ForeignRequestForm ClubCard와 동일 — 가로 스크롤
+                    스트립 안 카드 전체 크기 overflow-hidden은 스와이프를 삼킨다 */}
+                <div className={`relative w-[100px] h-[100px] rounded-2xl overflow-clip bg-card border-2 ${selected ? "border-amber-500" : "border-border"}`}>
                   <button
                     type="button"
                     onClick={() => openDetail(sortedBrowse, c)}

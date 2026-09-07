@@ -611,17 +611,8 @@ export function KoreanBookingForm({
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent
           side="bottom"
-          /* overscroll-none: 목록 맨 위에서 당기면 pull-to-refresh로 새서 담은 게 날아간다.
-             contain으로는 iOS에서 계속 새서 none으로 강화(2026-09-07). */
-          className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto overscroll-none"
-          /* Android Chrome pull-to-refresh는 "터치 시작 시점에 scrollTop이 정확히 0"일
-             때만 발동한다. overscroll-behavior만으로 안 막혀서(2026-09-07 실측),
-             터치 시작 시 1px 밀어 그 조건 자체를 없앤다. */
-          onTouchStart={(e) => {
-            const el = e.currentTarget;
-            if (el.scrollTop === 0) el.scrollTop = 1;
-            else if (el.scrollTop + el.clientHeight >= el.scrollHeight) el.scrollTop -= 1;
-          }}
+          /* overscroll-contain: 목록 맨 위에서 당기면 pull-to-refresh로 새서 담은 게 날아간다. */
+          className="rounded-t-3xl bg-background border-border h-[92vh] w-screen max-w-none p-0 overflow-y-auto overscroll-contain"
         >
           <SheetTitle className="sr-only">주류 선택</SheetTitle>
           <MenuPicker

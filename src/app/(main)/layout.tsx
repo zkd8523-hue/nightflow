@@ -120,7 +120,10 @@ export default function MainLayout({
     pathname === "/" ||
     // 깃발 상세: force-dynamic 서버 렌더인데 Realtime/폴링이 없어 남의 오퍼가 안 보인다.
     // /flags/[id]/edit, /review 같은 하위 폼 화면은 제외(새로고침되면 입력이 날아간다).
-    (!!pathname && /^\/flags\/[^/]+$/.test(pathname));
+    // ⚠️ /flags/new(신청 폼, ForeignRequestForm)도 [^/]+에 "new"가 걸려 오매칭됐다 —
+    // 폼 입력 다 날아가고 술 메뉴 시트 스크롤이 커스텀 pull-to-refresh와 충돌했다
+    // (2026-09-07). 진짜 깃발 id는 UUID라 "new" literal만 콕 집어 제외한다.
+    (!!pathname && /^\/flags\/[^/]+$/.test(pathname) && pathname !== "/flags/new");
 
   return (
     <PullToRefresh onRefresh={handleRefresh} disabled={!allowsPullToRefresh}>
