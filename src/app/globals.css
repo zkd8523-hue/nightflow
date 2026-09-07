@@ -158,20 +158,19 @@
 
   /* <img>는 브라우저가 기본적으로 draggable + 롱프레스 콜아웃(이미지 저장 메뉴) 대상으로
      취급한다. 클럽 카드 썸네일처럼 가로 스트립 안에 놓인 이미지를 손가락으로 누르고
-     그대로 위/아래로 끌면, 이 네이티브 드래그·콜아웃 인식이 먼저 끼어들어 스크롤
-     제스처 자체가 브라우저에 아예 안 잡힌다 — touch-action이 이미 pan-x/pan-y로
-     허용돼 있어도 마찬가지다(2026-09-07 실측: 이미지 위 좌표만 스크롤 델타 0,
-     같은 줄의 다른 지점은 정상). 이미지를 드래그해서 저장/공유하는 동작 자체가
-     이 앱에는 없으므로 걸어도 잃는 기능이 없다. */
+     그대로 끌면 이 네이티브 드래그·콜아웃 인식이 먼저 끼어들어 제스처가 씹힐 수 있다.
+     이미지를 드래그해서 저장/공유하는 동작 자체가 이 앱에는 없으므로 걸어도 잃는
+     기능이 없다.
+
+     ⚠️ touch-action은 여기 img에 개별로 걸지 않는다 — 대체 요소(replaced element)에
+     조상과 다른 touch-action 값을 명시하면 그 요소 자신의 히트테스트 영역이 별도로
+     계산되어, 오히려 이미지 좌표 위에서만 스와이프/탭이 먹통이 되는 현상이 실측됐다
+     (2026-09-07: 이미지 사이 빈 공간에서는 넘어가는데 이미지 위에서는 클릭도 스와이프도
+     안 먹음). touch-action은 조상(.overflow-x-auto 등)에만 걸고 img는 상속에 맡긴다. */
   img {
     -webkit-user-drag: none;
     user-drag: none;
     -webkit-touch-callout: none;
-    /* touch-action은 상속되긴 하지만, img처럼 대체 요소(replaced element)에서는
-       조상에게 건 값이 실제 히트테스트 시점에 안 먹는 경우가 실측된다
-       (2026-09-07: 조상까지 전부 pan-x/pan-y인데도 이미지 좌표에서만 스크롤 0).
-       상속에 기대지 않고 이미지 자신에게 명시적으로 건다. */
-    touch-action: pan-x pan-y;
   }
 
   /* html 에는 overflow 적용하지 않는다.
@@ -202,11 +201,24 @@
      화면 등) 같은 안쪽 스크롤 컨테이너가 최상단에 닿는 순간 body 규칙을
      건너뛰고 브라우저 pull-to-refresh로 스크롤이 새 나간다(2026-09-06 실측).
      layout wrapper 하나에만 overscroll-none을 걸어도 안쪽 요소들까지는
-     안 먹혀서, 실제로 스크롤이 발생하는 모든 자손 요소를 셀렉터로 잡는다. */
-  [lang="en"] *,
-  [lang="ja"] *,
-  [lang="zh"] *,
-  [lang="zh-TW"] * {
+     안 먹혀서, 실제로 스크롤이 발생하는 모든 자손 요소를 셀렉터로 잡는다.
+
+     ⚠️ 단, 시트(Radix Dialog) 안쪽은 반드시 제외한다.
+     lang은 <div> wrapper가 아니라 <html>에 붙는다(app/layout.tsx). 그래서
+     [lang="en"] *는 "en 트랙 페이지 안"이 아니라 **문서 전체**에 매칭되고,
+     Radix가 document.body로 portal한 시트도 <html>의 자손이라 그대로 걸린다
+     (portal이 탈출하는 건 /en/*의 <div lang="en"> wrapper이지 <html>이 아니다).
+     그 결과 /flags/new?lang=en의 주류 선택 시트에서 세로 스크롤이 통째로 죽었다
+     (2026-09-07 실측: scrollH 931 > clientH 685인데 scrollTop 0 고정, 강제 대입도
+     되돌아옴). 한국어(<html lang="ko">)에서 같은 시트가 멀쩡했던 이유도 이것 —
+     규칙이 아예 매칭되지 않아서였다.
+     시트 자신이 곧 스크롤 컨테이너이므로 시트 자신과 자손을 **둘 다** 빼야 한다.
+     시트가 필요로 하는 오버스크롤 차단은 SheetContent에 직접 붙은
+     overscroll-contain 유틸리티가 이미 담당한다. */
+  [lang="en"] *:not([data-slot="sheet-content"], [data-slot="sheet-content"] *),
+  [lang="ja"] *:not([data-slot="sheet-content"], [data-slot="sheet-content"] *),
+  [lang="zh"] *:not([data-slot="sheet-content"], [data-slot="sheet-content"] *),
+  [lang="zh-TW"] *:not([data-slot="sheet-content"], [data-slot="sheet-content"] *) {
     overscroll-behavior: none;
   }
 
@@ -222,18 +234,27 @@
      체이닝"해야지, 아예 못 받게 하면 그 제스처 자체가 버려져 조상도 못
      받는다(Playwright 터치 실측: 스트립 위 세로 스와이프 이동량 0).
 
-     ⚠️ [lang="en"] 등으로 스코프를 걸면 안 된다 — Radix Dialog/Sheet는
-     기본적으로 document.body에 바로 portal되는데(container prop 안 넘김),
-     lang wrapper(<div lang="en">)는 body의 자식일 뿐 body 자체를 감싸지
-     않는다. 그래서 시트(주류 선택 화면 등) 안의 .overflow-x-auto는 lang
-     스코프 셀렉터에 애초에 안 걸린다 — 술 메뉴 카테고리 칩이 정확히 이
-     케이스라 스코프를 걸어뒀을 때 거기서는 여전히 안 고쳐졌다(2026-09-07).
-     이 규칙 자체는 lang 트랙 한정일 이유가 없어(가로 스트립이 세로 스크롤을
-     삼키지 말아야 하는 건 어디서나 맞다) 아예 전역으로 건다. */
-  .overflow-x-auto {
-    touch-action: pan-x pan-y;
-    overscroll-behavior-y: auto;
-  }
+     ⚠️ 아래는 한때 여기 적혀 있던 **틀린 설명**이다. 다시 믿지 말 것:
+       "[lang="en"] 스코프를 걸면 안 된다 — Radix는 document.body로 portal되는데
+        lang wrapper(<div lang="en">)는 body의 자식일 뿐이라 시트는 lang 셀렉터에
+        애초에 안 걸린다"
+     lang은 <div> wrapper가 아니라 **<html>에 붙는다**(app/layout.tsx의
+     <html lang={htmlLang}>, ?lang= 쿼리로도 결정됨). 따라서 [lang="en"] *는
+     portal된 시트를 **포함해** 문서 전체에 매칭된다. portal이 탈출하는 건
+     /en/*의 <div lang="en">이지 <html>이 아니다.
+     이 틀린 전제 때문에 위쪽 [lang] 규칙이 계속 용의선상에서 빠졌고, 주류 선택
+     시트 스크롤 버그를 9번 헛짚었다(2026-09-07). 실제 원인은 그 [lang] 규칙이었다.
+
+     다만 이 .overflow-x-auto 규칙을 전역으로 두는 결론 자체는 그대로 유효하다 —
+     가로 스트립이 세로 스크롤을 삼키지 말아야 하는 건 언어 트랙과 무관하게 맞다.
+
+     ⚠️ 이 규칙은 반드시 @layer utilities에 있어야 한다 — Tailwind v4는
+     `@import "tailwindcss"`가 내부적으로 `@layer theme, base, components,
+     utilities;` 순서를 선언하고, CSS 캐스케이드 레이어는 먼저 선언된 레이어가
+     낮은 우선순위를 갖는다. 즉 base < utilities라서, 이 규칙이 base 레이어에
+     있으면 Tailwind가 생성하는 `.overflow-x-auto` 유틸리티(utilities 레이어)에
+     항상 밀려 무효화된다 — 이게 가로 스트립에서 좌우 스크롤이 먹통이 되는
+     실제 원인이었다(2026-09-07). */
 }
 
 @layer utilities {
@@ -241,12 +262,41 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /* 가로 스트립이 세로 스와이프를 삼키지 않게 하는 규칙 — 반드시 utilities
+     레이어여야 한다. base 레이어에 있으면 Tailwind의 `.overflow-x-auto`
+     유틸리티(마찬가지로 utilities 레이어)에 밀려 무효화된다. */
+  /* ⚠️ 시트(Radix Dialog) 안에서는 걸지 않는다 — 술 메뉴 시트의 카테고리 칩 줄이
+     overflow-x-auto라 이 규칙에 걸렸고, 그 결과 시트 안 세로 스크롤이 통째로
+     죽었다(2026-09-07 실측: scrollH 931 > clientH 685인데 scrollTop이 0 고정,
+     강제 대입조차 되돌아옴). c3f42ac1에서 MenuPicker 루트 인라인 touch-action으로
+     똑같은 사고가 났던 것과 같은 원인 — 스크롤 컨테이너가 아닌 요소에 touch-action을
+     걸면 안쪽 스크롤까지 같이 죽는다. 시트 밖 가로 스트립에만 적용한다. */
+  .overflow-x-auto:not([data-slot="sheet-content"] *) {
+    touch-action: pan-x pan-y;
+    overscroll-behavior-y: auto;
+  }
+
+  /* 외국 트랙 홈은 가로 스트립(.overflow-x-auto)이 세로 스크롤 컨테이너
+     (.overflow-y-auto, 예: 탭 콘텐츠 패널) 안에 중첩돼 있다. 위 [lang="en"] *
+     규칙이 이 바깥 .overflow-y-auto에도 overscroll-behavior:none을 걸어두면,
+     그 요소 자신이 실제 스크롤 컨테이너라 가로 스와이프 제스처가 이 요소의
+     터치 판정 단계에서 그대로 씹혀버려 안쪽 가로 스트립까지 제스처가
+     전달되지 않는다(2026-09-07 실측: 스트립 자신은 touch-action:pan-x pan-y로
+     정상인데도 이미지/버튼 위 스와이프가 전혀 안 먹음 — 원인은 스트립이 아니라
+     이 바깥 세로 스크롤러였다). pan-x를 명시로 허용해 가로 제스처가 안쪽
+     스트립까지 내려가게 한다. */
+  .overflow-y-auto {
+    touch-action: pan-x pan-y;
+  }
+
   /* 스크롤바 숨기기 (overflow-x-auto와 함께 사용) */
-  .scrollbar-hide {
+  .scrollbar-hide,
+  .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  .scrollbar-hide::-webkit-scrollbar {
+  .scrollbar-hide::-webkit-scrollbar,
+  .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
 
