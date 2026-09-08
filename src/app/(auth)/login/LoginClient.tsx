@@ -471,15 +471,6 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
                 <span className="text-emerald-400 shrink-0">✓</span>
                 <span>{tt(
                   "",
-                  "We book the club for you",
-                  "私たちが直接クラブを予約します",
-                  "我们直接为您预订夜店",
-                )}</span>
-              </li>
-              <li className="text-[13px] text-foreground/80 flex items-start gap-2">
-                <span className="text-emerald-400 shrink-0">✓</span>
-                <span>{tt(
-                  "",
                   "No deposit, no fees",
                   "予約金なし・手数料なし",
                   "无预付款、无手续费",

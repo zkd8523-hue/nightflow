@@ -7,6 +7,8 @@ import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { isBookable } from "@/lib/clubs/bookable";
 import { FaqTab } from "./FaqTab";
 import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map, Check, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
@@ -112,6 +114,38 @@ function useTr() {
 function HeaderAuthButton() {
   const { lang, tr } = useTr();
   const { user, isLoading } = useCurrentUser();
+  const router = useRouter();
+  const resetAuth = useAuthStore((s) => s.reset);
+  const [open, setOpen] = useState(false);
+
+  // 바깥 클릭으로 닫기
+  useEffect(() => {
+    if (!open) return;
+    const onDown = () => setOpen(false);
+    document.addEventListener("click", onDown);
+    return () => document.removeEventListener("click", onDown);
+  }, [open]);
+
+  // 로그아웃 — 한국어 Header.tsx의 검증된 패턴(3초 타임아웃 강제 탈출)을 그대로 따른다.
+  const handleLogout = async () => {
+    setOpen(false);
+    try {
+      const supabase = createClient();
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("signOut timeout")), 3000)
+        ),
+      ]);
+    } catch (e) {
+      console.error("[EnHeader] signOut 실패/timeout:", e);
+    } finally {
+      // 서버 세션 정리에 실패해도 로컬 state는 무조건 초기화
+      resetAuth();
+      router.push(`/${lang}`);
+      router.refresh();
+    }
+  };
 
   if (isLoading) return <div className="w-[72px] h-8" />;
 
@@ -127,13 +161,27 @@ function HeaderAuthButton() {
   }
 
   return (
-    <Link
-      href={`/profile/delete?lang=${lang}`}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-foreground/80 font-bold text-[13px] hover:bg-muted transition-colors"
-    >
-      <User className="w-3.5 h-3.5" />
-      {tr("Account")}
-    </Link>
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-foreground/80 font-bold text-[13px] hover:bg-muted transition-colors"
+      >
+        <User className="w-3.5 h-3.5 shrink-0" />
+        <span className="hidden sm:inline">{tr("Account")}</span>
+        <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-44 rounded-2xl bg-card border border-border shadow-2xl overflow-hidden z-50">
+          <button
+            onClick={handleLogout}
+            className="w-full text-left px-4 py-3 text-[13px] font-bold text-foreground/80 hover:bg-muted transition-colors"
+          >
+            {tr("Log out")}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1313,8 +1361,9 @@ function EnHomeInner({
           </button>
         )}
         </div>
-        {/* 우측: 로그인/계정 — 데스크톱에서도 보이도록 lg:hidden 밖에 둔다 */}
-        <div className="ml-auto">
+        {/* 우측: 로그인/계정 — 데스크톱에서도 보이도록 lg:hidden 밖에 둔다.
+            shrink-0로 좁은 폭에서 버튼이 눌려 잘리는 것을 막는다. */}
+        <div className="ml-auto shrink-0 pl-3">
           <HeaderAuthButton />
         </div>
       </header>
