@@ -104,6 +104,39 @@ function useTr() {
   return { lang, t, tr: (en: string) => t("", en) };
 }
 
+// 헤더 우측 로그인/계정 버튼.
+// 외국어 트랙은 Header/BottomNav가 숨겨져(=(main)/layout.tsx) 로그인 진입점이
+// My 탭 안에만 있었다 → 첫 화면에서 로그인할 방법이 없어 보인다.
+// 로그인 후에는 같은 자리가 계정 삭제 진입점이 된다.
+// App Store 심사 Guideline 5.1.1(v) 대응 — 제거 금지.
+function HeaderAuthButton() {
+  const { lang, tr } = useTr();
+  const { user, isLoading } = useCurrentUser();
+
+  if (isLoading) return <div className="w-[72px] h-8" />;
+
+  if (!user) {
+    return (
+      <Link
+        href={`/login?lang=${lang}`}
+        className="px-4 py-1.5 rounded-full bg-inverse text-inverse-foreground font-black text-[13px] hover:opacity-90 transition-opacity"
+      >
+        {tr("Log in")}
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href={`/profile/delete?lang=${lang}`}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-foreground/80 font-bold text-[13px] hover:bg-muted transition-colors"
+    >
+      <User className="w-3.5 h-3.5" />
+      {tr("Account")}
+    </Link>
+  );
+}
+
 // 로그인 유저용 계정 관리 섹션 — My 탭 하단 고정.
 // 외국어 트랙은 Header/BottomNav가 숨겨져(=(main)/layout.tsx) 설정 화면으로 갈 수 없다.
 // 홈 푸터에도 링크가 있지만 스크롤 3000px 아래라 발견이 어려워, 로그인 유저가
@@ -1279,6 +1312,10 @@ function EnHomeInner({
             <span className="text-[15px] font-black">NightFlow</span>
           </button>
         )}
+        </div>
+        {/* 우측: 로그인/계정 — 데스크톱에서도 보이도록 lg:hidden 밖에 둔다 */}
+        <div className="ml-auto">
+          <HeaderAuthButton />
         </div>
       </header>
 
