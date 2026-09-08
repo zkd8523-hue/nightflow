@@ -1096,6 +1096,10 @@ function FlagsTab({
           <Link href={`/terms?lang=${lang}`} className="hover:text-foreground transition-colors">{tr("Terms")}</Link>
           <Link href={`/privacy?lang=${lang}`} className="hover:text-foreground transition-colors">{tr("Privacy")}</Link>
           <a href="https://www.instagram.com/nightflow.kr" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">{tr("Contact")}</a>
+          {/* 계정 삭제 — 외국어 트랙은 Header/BottomNav가 숨겨져 있어(=(main)/layout.tsx)
+              햄버거 메뉴로 갈 수 없다. 여기가 유일한 진입점이므로 제거 금지.
+              App Store 심사 Guideline 5.1.1(v) 필수 요건. */}
+          <Link href={`/profile/delete?lang=${lang}`} className="hover:text-foreground transition-colors">{tr("Delete Account")}</Link>
         </nav>
         <BusinessInfo lang={lang} />
       </footer>

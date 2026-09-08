@@ -60,12 +60,21 @@ export default function SettingsPage() {
           ))}
         </div>
 
-        <Link
-          href="/profile/delete"
-          className="block text-center text-[12px] text-muted-foreground mt-6 hover:text-red-400 transition-colors"
-        >
-          회원탈퇴
-        </Link>
+        {/* 계정 삭제 — 정상 메뉴 항목으로 노출한다.
+            이전에는 12px 회색 텍스트라 App Store 심사자가 찾지 못해
+            Guideline 5.1.1(v)로 리젝됐다 (2026-09-08). 눈에 띄게 유지할 것. */}
+        <h2 className="text-[13px] font-bold text-muted-foreground mt-6 mb-2 px-1">
+          계정
+        </h2>
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <Link
+            href="/profile/delete"
+            className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors"
+          >
+            <span className="text-[14px] text-red-400">계정 삭제</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </Link>
+        </div>
       </div>
     </div>
   );

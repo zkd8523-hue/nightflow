@@ -2,9 +2,13 @@
 
 import { Apple, Smartphone } from "lucide-react";
 import type { Lang } from "@/lib/i18n";
+import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 
 // 외국인용 앱 다운로드 CTA. 기종 무관 App Store + Google Play 둘 다 노출
 // (플랫폼 감지는 iPad·인앱브라우저 등에서 오탐 → 항상 둘 다 보여줘 다운로드 옵션 최대화).
+// 단, Capacitor 네이티브 앱 안에서는 CTA 전체를 숨긴다.
+// 앱 안에서 "앱 받기"는 무의미할 뿐 아니라, iOS 앱에 Google Play 링크가 있으면
+// App Store 심사 Guideline 2.3.10(Accurate Metadata) 위반으로 리젝된다. (2026-09-08 실제 리젝)
 // iOS 앱은 미국·중국·일본 스토어 출시 (한국 제외 = 외국인 전용).
 const APP_STORE_URL = "https://apps.apple.com/app/id6769749996";
 const playUrl = (lang: Lang) =>
@@ -17,7 +21,12 @@ const STR: Record<"en" | "ja" | "zh", { title: string; sub: string; ios: string;
 };
 
 export function ForeignAppCta({ lang }: { lang: Lang }) {
+  const { isNative, resolved } = useIsNativeApp();
   const t = STR[lang === "ko" ? "en" : (lang as "en" | "ja" | "zh")] ?? STR.en;
+
+  // 판정 전(resolved=false)에도 숨긴다. 앱에서 한 프레임이라도 Play 버튼이
+  // 깜빡이면 심사에서 그대로 잡힌다. 웹에선 판정이 즉시 끝나 체감 지연 없음.
+  if (!resolved || isNative) return null;
 
   const AppStoreBtn = (
     <a
