@@ -106,15 +106,31 @@ async function verifySoundcloud(profileUrl: string): Promise<boolean> {
   } catch { return false; }
 }
 
-async function apify(body: unknown): Promise<any[] | null> {
-  try {
-    const res = await fetch(
-      `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(180_000) },
-    );
-    const data = await res.json().catch(() => null);
-    return Array.isArray(data) ? data : null;
-  } catch { return null; }
+/**
+ * Apify 호출.
+ *
+ * ⚠️ 실패를 삼키지 않는다. 전에는 try/catch 로 감싸 null 을 돌려줬는데, 그러면
+ * 토큰 만료·크레딧 소진(401/402)이 "결과 0건"과 구분되지 않는다. 실제로
+ * 2026-09-06 에 이 함수가 checked:0 을 HTTP 200 으로 돌려주면서 25명이 조용히
+ * 건너뛰어졌고, 원인을 찾는 데 한참 걸렸다.
+ *
+ * scripts/discover-dj-soundcloud.mjs 는 같은 이유로 이미 던지도록 고쳐져 있었는데
+ * (그 파일 39-58행 주석 참조) Edge Function 으로 옮기며 되살아난 회귀다.
+ *
+ * 호출부는 이 예외를 잡아 result.errors 에 남기고, 그 배치의 DJ 는
+ * links_checked_at 을 찍지 않는다 — 안 본 것을 봤다고 기록하면 안 된다.
+ */
+async function apify(body: unknown): Promise<any[]> {
+  const res = await fetch(
+    `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(180_000) },
+  );
+  const data = await res.json().catch(() => null);
+  if (!Array.isArray(data)) {
+    const msg = (data as any)?.error?.message ?? JSON.stringify(data ?? {}).slice(0, 200);
+    throw new Error(`Apify ${res.status}: ${msg}`);
+  }
+  return data;
 }
 
 Deno.serve(async (req) => {
@@ -129,6 +145,9 @@ Deno.serve(async (req) => {
     .from("djs")
     .select("id, display_name, instagram, links_checked_at")
     .is("deleted_at", null)
+    // 둘 다 없을 때만 대상. 하나라도 있으면 재생이 되므로 목적을 달성했다고 본다
+    // (사용자 결정 2026-09-03). 유튜브만 있는 143명은 사클을 얻을 기회가 없지만,
+    // 그건 의도된 절충이다 — 조회 104명분을 아끼는 쪽을 택했다.
     .is("soundcloud_url", null)
     .is("youtube_url", null)
     .not("instagram", "is", null)
@@ -144,7 +163,11 @@ Deno.serve(async (req) => {
     });
   }
 
-  const result = { targets: candidates.length, soundcloud: 0, youtube: 0, checked: 0, not_found: 0, dry_run: dryRun };
+  const result = {
+    targets: candidates.length, soundcloud: 0, youtube: 0, checked: 0,
+    not_found: 0, private: 0, linkpage_failed: 0, dry_run: dryRun,
+    errors: [] as string[],
+  };
   if (dryRun) {
     return new Response(JSON.stringify({ ...result, names: candidates.map((d) => d.display_name) }, null, 2), {
       headers: { "Content-Type": "application/json" },
@@ -155,23 +178,53 @@ Deno.serve(async (req) => {
 
   for (let i = 0; i < candidates.length; i += CHUNK) {
     const slice = candidates.slice(i, i + CHUNK);
-    const rows = await apify({
-      directUrls: slice.map((d) => `https://www.instagram.com/${d.instagram}/`),
-      resultsType: "details",
-      resultsLimit: 1,
-    });
-    if (!rows) continue;
+    let rows: any[];
+    try {
+      rows = await apify({
+        directUrls: slice.map((d) => `https://www.instagram.com/${d.instagram}/`),
+        resultsType: "details",
+        resultsLimit: 1,
+      });
+    } catch (e) {
+      // 조회 자체가 실패했다 — 이 배치는 links_checked_at 을 찍지 않고 넘어간다.
+      // 안 본 것을 봤다고 기록하면 90일간 재조회에서 빠진다(2026-08-30 사고).
+      const msg = String((e as Error)?.message ?? e);
+      result.errors.push(msg.slice(0, 200));
+      console.error(`[discover-dj-links] Apify 실패, ${slice.length}명 건너뜀: ${msg}`);
+      continue;
+    }
 
     const byUser = new Map<string, any>();
+    // Apify 가 error 를 돌려준 핸들. "계정이 없다"일 수도 있지만 rate-limit·일시적
+    // fetch 실패도 같은 모양으로 온다 — 구분이 안 되므로 "못 봤다"로 취급한다.
+    const errored = new Set<string>();
     for (const p of rows) {
       if (!p.username) continue;
-      if (p.error) { result.not_found++; continue; }
+      if (p.error) { result.not_found++; errored.add(String(p.username).toLowerCase()); continue; }
       byUser.set(String(p.username).toLowerCase(), p);
     }
 
     for (const dj of slice) {
       const p = byUser.get(String(dj.instagram).toLowerCase());
+
+      // 비공개 계정은 "링크가 없다"가 아니라 "볼 수 없다"이다. stamp 를 찍으면
+      // 90일간 재조회에서 빠지는데, 그 사이 공개로 바뀌어도 영영 못 본다.
+      // 다음 실행에서 다시 시도하도록 아무것도 기록하지 않고 넘어간다.
+      if (p?.private === true) {
+        result.private++;
+        continue;
+      }
+
+      // Apify 가 이 핸들에 error 를 준 경우도 stamp 하지 않는다. private 와 같은
+      // 이유다 — 없는 계정인지 일시적 실패인지 알 수 없는데 "봤다"고 찍으면
+      // 90일 잠긴다. Migration 632 가 되돌린 것이 바로 이 종류의 오염이다.
+      if (errored.has(String(dj.instagram).toLowerCase())) continue;
+
       // 조회를 시도한 사실 자체를 남긴다 — 못 찾은 경우를 기억해야 재조회를 막는다.
+      // 응답에 행 자체가 없는 경우(부분 잘림 등)는 "핸들 삭제"와 구분이 안 된다.
+      // stamp 는 하되(무한 재조회 방지) 눈에 보이게 남긴다.
+      if (!p) result.errors.push(`no apify row: ${dj.instagram}`);
+
       const patch: Record<string, unknown> = { links_checked_at: new Date().toISOString() };
       result.checked++;
 
@@ -198,25 +251,51 @@ Deno.serve(async (req) => {
 
         // 둘 다 못 찾았고 링크트리가 있으면 한 단계 더 (HTML fetch, 비용 0)
         if (!patch.soundcloud_url && !patch.youtube_url) {
-          const lt = /https?:\/\/(?:linktr\.ee|bio\.link|lnk\.bio|campsite\.bio|taplink\.[a-z]+|litelink\.[a-z]+|url\.kr)\/[A-Za-z0-9_.\-]+/i.exec(blob);
-          if (lt) linkPages.push({ dj, page: lt[0] });
+          // linktree.com 도 받는다 — 공식 단축 도메인은 linktr.ee 지만 프로필에
+          // 풀 도메인을 적어두는 사람이 있다(@kingmck 실측). 전에는 못 잡았다.
+          const lt = /https?:\/\/(?:www\.)?(?:linktr\.ee|linktree\.com|bio\.link|lnk\.bio|campsite\.bio|taplink\.[a-z]+|litelink\.[a-z]+|url\.kr)\/[A-Za-z0-9_.\-]+/i.exec(blob);
+          if (lt) {
+            // 링크트리를 아직 안 봤다 — 여기서 stamp 하면 그 페이지 fetch 가
+            // 실패했을 때 "봤는데 없더라"로 90일 잠긴다(@kingmck 시나리오 그대로).
+            // 2차 패스에서 결과를 보고 그때 찍는다.
+            delete patch.links_checked_at;
+            result.checked--;
+            linkPages.push({ dj, page: lt[0] });
+          }
         }
       }
 
-      await supabase.from("djs").update(patch).eq("id", dj.id);
+      // 링크트리 대기 중이면 patch 가 비어 있다 — 빈 update 왕복을 아낀다.
+      if (Object.keys(patch).length) {
+        const { error: upErr } = await supabase.from("djs").update(patch).eq("id", dj.id);
+        if (upErr) result.errors.push(`update ${dj.display_name}: ${upErr.message}`);
+      }
     }
     await sleep(500);
   }
 
-  // ── 링크트리 파기 (Apify 를 더 쓰지 않는다) ──
+  // ── 링크트리 파기 (Apify 를 더 쓰지 않는다 — 그냥 HTML fetch 라 비용 0) ──
+  //
+  // 첫 패스에서 이 DJ 들의 links_checked_at 은 일부러 미뤄 뒀다. 페이지를 못
+  // 읽었는데 "봤다"고 찍으면 90일 잠기기 때문이다.
   for (const { dj, page } of linkPages) {
     const dug = await digLinkPage(page);
     await sleep(300);
-    if (!dug) continue;
-    const patch: Record<string, unknown> = {};
+
+    if (!dug) {
+      // 페이지 fetch 실패(429·타임아웃 등) — 아직 안 본 것이다. stamp 하지 않아
+      // 다음 실행에서 다시 시도한다.
+      result.linkpage_failed++;
+      continue;
+    }
+
+    const patch: Record<string, unknown> = { links_checked_at: new Date().toISOString() };
+    result.checked++;
     if (dug.sc && await verifySoundcloud(dug.sc)) { patch.soundcloud_url = dug.sc; result.soundcloud++; }
     if (dug.yt) { patch.youtube_url = dug.yt; result.youtube++; }
-    if (Object.keys(patch).length) await supabase.from("djs").update(patch).eq("id", dj.id);
+
+    const { error: upErr } = await supabase.from("djs").update(patch).eq("id", dj.id);
+    if (upErr) result.errors.push(`update ${dj.display_name}: ${upErr.message}`);
   }
 
   console.log(`[discover-dj-links] ${JSON.stringify(result)}`);
