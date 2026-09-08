@@ -174,6 +174,7 @@ export const EN_TO_JA: Record<string, string> = {
   "Privacy": "プライバシー",
   "Contact": "お問い合わせ",
   "Delete Account": "アカウント削除",
+  "Account": "アカウント",
   "Log in to see your requests": "ログインしてリクエストを確認",
   "Track your requests and our replies.": "リクエストと返信を確認。",
   "Loading…": "読み込み中…",
@@ -436,6 +437,7 @@ export const EN_TO_ZH: Record<string, string> = {
   "Privacy": "隐私政策",
   "Contact": "联系我们",
   "Delete Account": "删除账号",
+  "Account": "账号",
   "Log in to see your requests": "登录查看你的请求",
   "Track your requests and our replies.": "管理你的请求和回复。",
   "Loading…": "加载中…",
@@ -541,6 +543,7 @@ export const EN_TO_ZH: Record<string, string> = {
 export const EN_TO_ZH_TW: Record<string, string> = {
   // 푸터
   "Delete Account": "刪除帳號",
+  "Account": "帳號",
   // 홈·랜딩
   "Book Seoul clubs, easily.": "輕鬆預訂首爾夜店。",
   "The easiest way to book Seoul clubs": "預訂首爾夜店最簡單的方式",

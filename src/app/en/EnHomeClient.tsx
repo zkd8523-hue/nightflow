@@ -104,6 +104,29 @@ function useTr() {
   return { lang, t, tr: (en: string) => t("", en) };
 }
 
+// 로그인 유저용 계정 관리 섹션 — My 탭 하단 고정.
+// 외국어 트랙은 Header/BottomNav가 숨겨져(=(main)/layout.tsx) 설정 화면으로 갈 수 없다.
+// 홈 푸터에도 링크가 있지만 스크롤 3000px 아래라 발견이 어려워, 로그인 유저가
+// 계정 관리를 하러 오는 My 탭에도 노출한다.
+// App Store 심사 Guideline 5.1.1(v) 필수 요건 — 제거 금지.
+function AccountSection() {
+  const { lang, tr } = useTr();
+  return (
+    <div className="mt-8 pt-5 border-t border-border">
+      <p className="text-[12px] font-black text-muted-foreground uppercase tracking-widest mb-2.5">
+        {tr("Account")}
+      </p>
+      <Link
+        href={`/profile/delete?lang=${lang}`}
+        className="flex items-center justify-between rounded-2xl bg-card border border-border px-5 py-4 hover:bg-muted/30 transition-colors"
+      >
+        <span className="text-[14px] text-red-400 font-bold">{tr("Delete Account")}</span>
+        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+      </Link>
+    </div>
+  );
+}
+
 function MyRequestsTab() {
   const { user, isLoading } = useCurrentUser();
   const { lang, t, tr } = useTr();
@@ -148,12 +171,15 @@ function MyRequestsTab() {
   // 로그인 + 깃발 없음
   if (flags.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-[15px] font-bold text-foreground/80">{tr("No requests yet")}</p>
-        <p className="text-[13px] text-muted-foreground">{tr("Pick a club & we'll help you book.")}</p>
-        <Link href={`/flags/new?lang=${lang}`} className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
-          {tr("Book with NightFlow")}
-        </Link>
+      <div className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center min-h-[50vh]">
+          <p className="text-[15px] font-bold text-foreground/80">{tr("No requests yet")}</p>
+          <p className="text-[13px] text-muted-foreground">{tr("Pick a club & we'll help you book.")}</p>
+          <Link href={`/flags/new?lang=${lang}`} className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
+            {tr("Book with NightFlow")}
+          </Link>
+        </div>
+        <AccountSection />
       </div>
     );
   }
@@ -187,6 +213,7 @@ function MyRequestsTab() {
           </div>
         );
       })}
+      <AccountSection />
     </div>
   );
 }
