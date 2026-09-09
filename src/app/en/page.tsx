@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
-import { EnHomeClient } from "./EnHomeClient";
+import { EnHomeClient, type RecentBooking } from "./EnHomeClient";
 import { orderForeignHome } from "@/lib/clubs/foreignSort";
 import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 
@@ -143,6 +143,9 @@ export default async function EnHomePage() {
   const { data: openRequestCount } = await supabase.rpc(
     "count_open_foreign_requests"
   );
+  // 히어로 소셜프루프 — 실제 확정 예약(익명, Migration 664). 없으면 위 카운트로 폴백.
+  const { data: recentBookingsRaw } = await supabase.rpc("recent_foreign_bookings", { p_limit: 3 });
+  const recentBookings = (recentBookingsRaw ?? []) as RecentBooking[];
 
   // 깃발 캐러셀 = "🇰🇷 한국인이 올린 깃발" 소셜 프루프.
   // 테스트 유저(is_test) 제외 + 한국인(country_code NULL)만 — 외국인 본인 깃발은 My flags에 별도.
@@ -312,10 +315,10 @@ export default async function EnHomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="sr-only">
-        <h1>
+        <h2>
           Korea Club Booking — Gangnam, Hongdae, Itaewon VIP Tables (NightFlow
           Seoul)
-        </h1>
+        </h2>
         <p>
           NightFlow is a Korean club booking platform for foreign travelers and
           tourists visiting Seoul. Book VIP tables at the best Korean clubs in
@@ -491,6 +494,7 @@ export default async function EnHomePage() {
         clubs={clubs}
         initialLang="en"
         openRequestCount={openRequestCount ?? null}
+        recentBookings={recentBookings}
       />
     </>
   );

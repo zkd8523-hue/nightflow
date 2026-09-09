@@ -2,8 +2,9 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
-import { Search, X, Check, MapPin, Users, UserRound, Calendar, MessageCircle, Languages, ChevronRight, Heart, Plus } from "lucide-react";
+import { Search, Check, MapPin, Users, UserRound, Calendar, MessageCircle, Languages, ChevronRight, ChevronLeft, Heart, Plus, Sparkles, Music2, ShieldCheck, Mail, Star, CalendarPlus, Instagram } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -11,9 +12,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
-import { formatAsOfLocale, resolveCurrency } from "@/lib/utils/currency";
+import { formatAsOfLocale, resolveCurrency, krwTo } from "@/lib/utils/currency";
 import { useKrwRates } from "@/lib/utils/useKrwRates";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
+import { clubTagline } from "@/lib/clubs/bookable";
 import { ClubDateCalendar } from "@/components/clubs/ClubDateCalendar";
 import { formatOpenDows, formatOpenDowsEn, isClubOpenOn } from "@/lib/utils/clubOpenDays";
 import { trackForeignEvent, trackEvent } from "@/lib/analytics/events";
@@ -24,9 +26,25 @@ import { saveFormDraft, loadFormDraft, clearFormDraft, FOREIGN_BOOKING_DRAFT_KEY
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import type { ClubMenuItem, ClubMenuCombo, SelectedMenuSnapshot } from "@/types/database";
 
+// 폼 Step 1의 "Where?" 카드에 붙는 지역 한 줄 설명 — 홈(EnHomeClient REGIONS)과 같은 문장.
+// 외국인은 지역 이름만으로는 못 고른다(2026-09-09). 이름 대신 "어떤 밤인지"로 고르게 한다.
+const SEOUL_AREAS = ["이태원", "홍대", "강남"];
+const AREA_TAGLINE: Record<string, [string, string, string, string, string]> = {
+  이태원: ["글로벌, 경계 없는 밤", "Global, borderless night", "グローバルで自由な夜", "国际化、无边界的夜晚", "國際化、無邊界的夜晚"],
+  홍대: ["젊고 거친 밤", "Young, wild night", "若くてワイルドな夜", "年轻、狂野的夜晚", "年輕、狂野的夜晚"],
+  강남: ["프리미엄, 럭셔리한 밤", "Premium, luxury night", "プレミアムで贅沢な夜", "高端、奢华的夜晚", "高端、奢華的夜晚"],
+  부산: ["해변 도시의 밤", "Beach city night", "ビーチシティの夜", "海滨城市的夜晚", "海濱城市的夜晚"],
+};
+
 
 // 날짜 input 표시용 로케일 — 네이티브 input의 텍스트 렌더링을 안 쓰고 직접 포맷하므로 여기서만 통제.
 const DATE_LOCALE: Record<Lang, string> = { ko: "ko-KR", en: "en-US", ja: "ja-JP", zh: "zh-CN", "zh-tw": "zh-TW" };
+/** 로컬 날짜를 YYYY-MM-DD로 — toISOString은 UTC라 UTC+9·UTC- 지역에서 하루가 밀린다. */
+function ymdLocal(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
 function formatEventDate(dateStr: string, lang: Lang): string {
   const d = new Date(dateStr + "T00:00:00");
   if (Number.isNaN(d.getTime())) return dateStr;
@@ -82,12 +100,9 @@ const AREA_MIN_BUDGET: Record<string, number> = Object.fromEntries(
 );
 const FALLBACK_MIN_BUDGET = FALLBACK_BUDGET_TIERS[0];
 
-// 여행 확정 게이트("Is your Korea trip confirmed?")를 한번 "Yes"로 통과하면
-// 7일간 다시 안 묻는다 — 매번 같은 질문을 또 받는 게 재방문 손님에게는
-// 마찰이었다. 7일로 끊는 이유: 그보다 길면 "지난번 여행은 끝났고 이번엔
-// 아직 미정"인 손님까지 걸러야 할 게이트를 건너뛰게 된다(2026-09-09).
+// 예전 하드 게이트가 "Yes"를 기억하던 키. 소프트 게이트 전환 후에도 Continue 시 계속 찍어둔다 —
+// 다른 화면이 이 키로 "확정 손님"을 판별할 수 있게 호환용으로 남긴다.
 const TRIP_GATE_KEY = "nf_trip_gate_qualified";
-const TRIP_GATE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const CONTACT_TYPES = ["whatsapp", "instagram", "email", "wechat", "line"] as const;
 type ContactType = (typeof CONTACT_TYPES)[number];
 const CONTACT_LABEL: Record<ContactType, string> = {
@@ -187,6 +202,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     { weekday: null, weekend: null },
   );
   const [menuLoading, setMenuLoading] = useState(false);
+  // 어느 클럽의 메뉴가 로드돼 있는지 — "클럽 고르면 바로 메뉴판" 자동 열기가 로딩 시작 전
+  // 빈 상태를 "메뉴 없음"으로 오판하지 않게 한다(2026-09-09).
+  const [menuLoadedFor, setMenuLoadedFor] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   // 스냅샷(DB 저장용, image_url 없음)에는 item_id만 있다 — 요약 카드에서
   // 한국인 폼(KoreanBookingForm)과 같은 수준(이미지 포함)으로 보여주려면
@@ -224,12 +242,20 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     prevHadClubRef.current = hasClub;
   }, [selectedClubIds, eventDate]);
 
+  // 요일 약어를 언어별로 — 일본어·중국어 화면에 "Fri·Sat"가 섞이지 않게.
+  const dowsIn = (lang2: "ja" | "zh") => {
+    const L = lang2 === "ja" ? ["日", "月", "火", "水", "木", "金", "土"] : ["日", "一", "二", "三", "四", "五", "六"];
+    const d = [...(selectedClubOpenDows ?? [])].sort((a, b) => a - b);
+    if (d.length === 7) return lang2 === "ja" ? "毎日" : "每天";
+    return d.map((x) => (lang2 === "ja" ? L[x] : `周${L[x]}`)).join("·");
+  };
   const closedNotice = selectedClubOpenDows?.length
     ? t(
         `${formatOpenDows(selectedClubOpenDows)} 영업 · 그 외 요일은 선택할 수 없어요 (공휴일·공휴일 전날은 가능)`,
         `Open ${formatOpenDowsEn(selectedClubOpenDows)} · other days can't be selected (holidays and their eves are open)`,
-        `${formatOpenDowsEn(selectedClubOpenDows)} 営業 · 他の曜日は選択できません（祝日・祝日前日は可）`,
-        `${formatOpenDowsEn(selectedClubOpenDows)} 营业 · 其他日期无法选择（节假日及前一天可选）`
+        `${dowsIn("ja")} 営業 · 他の曜日は選択できません（祝日・祝日前日は可）`,
+        `${dowsIn("zh")} 营业 · 其他日期无法选择（节假日及前一天可选）`,
+        `${dowsIn("zh").replace("周", "週")} 營業 · 其他日期無法選擇（假日及前一天可選）`
       )
     : null;
 
@@ -257,6 +283,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       setMenuDraft(null);
       setMenuZone(null);
     }
+    setMenuLoadedFor(null);
     if (!selectedClubId) {
       setMenuItems([]);
       setMenuCombos([]);
@@ -289,6 +316,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         weekend: clubRes.data?.table_charge_weekend ?? null,
       });
       setMenuLoading(false);
+      setMenuLoadedFor(selectedClubId);
     })();
     return () => {
       alive = false;
@@ -356,27 +384,30 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  // 여행 확정 게이트 — 계획중(막연) 유저는 깃발 마켓 오염·MD 오퍼 낭비라 걸러 홈으로 회유.
-  //
-  // ⚠️ 클럽을 지정해서 왔다고(presetClubId) 게이트를 건너뛰지 않는다.
-  // "Book at ○○" 버튼은 현재 관심을 표현하는 유일한 수단이라 사실상 찜 대용으로 눌린다 —
-  // 확정된 방문 의사로 보기엔 신호가 약해서, 게이트를 스킵하면 미확정 리드가 그대로 들어온다.
-  // 대신 게이트 화면에 고른 클럽명을 띄워 "내 선택이 살아있다"는 것만 보여준다.
-  //
-  // 서버 렌더링 시점엔 localStorage가 없어 항상 null로 시작해야 hydration이 어긋나지
-  // 않는다 — 7일 이내 "Yes"를 눌렀던 기록은 마운트 후 useEffect에서 반영한다.
-  const [tripStatus, setTripStatus] = useState<null | "qualified" | "planning">(null);
-  useEffect(() => {
-    if (loadFormDraft<true>(TRIP_GATE_KEY, TRIP_GATE_TTL_MS)) setTripStatus("qualified");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // 여행 확정 게이트는 소프트화했다(2026-09-09). 예전엔 폼 앞에 "확정됐나요?" 화면을 두고
+  // "아직 계획중"이면 홈으로 돌려보냈다 — 게이트 통과 91세션 중 8건만 제출, 계획 단계
+  // 손님은 이메일 하나 못 남기고 이탈. 지금은 Step 1 안의 토글로 두고, 켜면 요청 대신
+  // foreign_trip_reminders에 이메일+잠정 날짜만 남긴다(D-3에 링크 메일, Migration 664).
+  // 관리자 큐·MD 제안서에는 계획 단계가 섞이지 않는다.
+  const [remindMe, setRemindMe] = useState(false);
+  const [remindEmail, setRemindEmail] = useState("");
+  // 클럽을 고르는 방식 — 추천(기본) / 아는 클럽 직접 선택.
+  const [clubMode, setClubMode] = useState<"recommend" | "known">("recommend");
+  // 음악 취향(선택). 추천 쇼트리스트를 "부드럽게" 거른다 — 결과가 2곳 미만이면 무시.
+  const [genre, setGenre] = useState<string | null>(null);
+  // 예산 티어 — DB에 저장하지 않는다. 쇼트리스트 정렬 + 메뉴판 프리셋(세트 1개 미리 담기)용.
+  const [tier, setTier] = useState<"table" | "vip">("table");
+  // 클럽을 고른 직후 메뉴판을 자동으로 열기 위한 플래그(메뉴 로드가 끝나면 effect가 연다).
+  const [pendingMenuOpen, setPendingMenuOpen] = useState(false);
+  // 접수 번호 — id 앞 6자(대문자) = foreign_requests.ref_code(생성 컬럼, Migration 664). 이메일·관리자와 동일.
+  const [requestRef, setRequestRef] = useState<string | null>(null);
   // 폼을 세 장으로 나눈다 — 한 화면에 클럽+메뉴+연락처를 다 우겨넣으면 스크롤이
   // 너무 길어져 "지금 뭘 채우고 있는지"를 잃는다. 호텔 예약 사이트들이 이미
   // 검증한 패턴: 대상(1) → 상세 옵션(2) → 연락처(3).
   //   1장: 클럽(자동 확정) + 날짜 + 인원 → "주류 선택"
   //   2장: 메뉴 시트 (전체화면급) — 담기 완료하면 자동으로 3장
   //   3장: 이름·연락처·언어·메모 → 전송
-  const [formStep, setFormStep] = useState<1 | 3 | 4>(1);
+  const [formStep, setFormStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
   // 페이지 상단 "返回"(BackButton)에 노출하는 핸들 — ForeignBookingScreen이 ref로
   // 연결한다. true를 반환하면 "이 뒤로가기는 폼이 처리했다"는 뜻이라 BackButton은
@@ -390,11 +421,12 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // "주류 수정" 버튼을 쓰면 된다.
   useImperativeHandle(ref, () => ({
     stepBack: () => {
-      if (formStep === 3 || (formStep === 1 && selectedClubIds.length > 0)) {
-        setSelectedClubIds([]);
-        setFormStep(1);
-        return true;
-      }
+      if (formStep === 5) { setFormStep(1); return true; }
+      if (formStep === 3) { setFormStep(clubMode === "recommend" && !presetClubId ? 2 : 1); return true; }
+      if (formStep === 2) { setFormStep(1); return true; }
+      // 카트(picked)가 있으면 여기서 클럽을 지우지 않는다 — 지우면 담은 술이 통째로 사라진다.
+      // false를 돌려 BackButton의 초안 가드(guardDraftKey)가 "나가시겠어요?"를 묻게 한다.
+      if (formStep === 1 && selectedClubIds.length > 0 && !presetClubId && !picked) { setSelectedClubIds([]); return true; }
       return false;
     },
   }));
@@ -420,7 +452,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   const hasProgress = !!picked;
   // 이 폼은 페이지 자체라 감쌀 최상위 Sheet가 없다 — 바깥 클릭/ESC로 닫히는
   // 위험은 없고(메뉴 시트는 이미 draft로 보호됨), beforeunload만 필요하다.
-  useUnsavedFormGuard(hasProgress && formStep !== 4);
+  useUnsavedFormGuard(hasProgress && formStep !== 4 && formStep !== 5);
   const [resumePrompt, setResumePrompt] = useState<ForeignDraft | null>(null);
 
   // 마운트 시 1회 — 저장된 초안이 있으면 "이어하시겠습니까?"부터 묻는다.
@@ -432,7 +464,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
 
   // 진행 중인 입력을 계속 저장 — 강제종료돼도 다음 방문 때 복원 후보가 된다.
   useEffect(() => {
-    if (!hasProgress || formStep === 4) return;
+    if (!hasProgress || formStep === 4 || formStep === 5) return;
     saveFormDraft<ForeignDraft>(draftKey, {
       eventDate, groupSize, area, selectedClubIds, picked, menuZone,
       guestName, contactType, preferredLang, contactValue, notes,
@@ -470,19 +502,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     setPreferredLang(d.preferredLang);
     setContactValue(d.contactValue);
     setNotes(d.notes);
-    // 여행 확정 게이트는 이미 통과한 상태였다 — 다시 묻지 않는다.
-    setTripStatus("qualified");
     // 술까지 담았으면 연락처 단계(3장)로 바로 복귀한다.
     setFormStep(d.picked ? 3 : 1);
     setResumePrompt(null);
   };
-
-  // 게이트·폼에서 "네가 고른 클럽"을 확인시켜 줄 이름.
-  // 이게 없으면 "Book at BADASS"를 눌렀는데 클럽 얘기 없는 질문 화면이 떠서 선택이 증발한 걸로 보임.
-  const [intentClubName, setIntentClubName] = useState<string | null>(() => {
-    const preset = presetClubId ? clubs.find((c) => c.id === presetClubId) : undefined;
-    return preset ? displayClubName(preset) : null;
-  });
 
   // 클럽상세 CTA(ClubsClient)가 sessionStorage "nightflow_book_intent"에 club_id/area를 저장 →
   // 그 클럽을 자동 프리셀렉트 (Gemini의 기존 배관 재사용). 소비 후 삭제.
@@ -498,7 +521,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         setSelectedClubIds((prev) =>
           prev.includes(match.id) ? prev : [match.id]
         );
-        setIntentClubName((prev) => prev ?? displayClubName(match));
       }
       if (intent.area && clubs.some((c) => c.area === intent.area)) {
         setArea((prev) => prev || intent.area!);
@@ -525,7 +547,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // 정렬 탭(Recommend/Most reviewed/Top rated)은 뺐다(2026-09-09) — 예약 가능 클럽이
   // 20곳이라 정렬을 바꿔도 같은 카드가 순서만 뒤집힐 뿐이었고, 고를 게 셋으로 늘어
   // "뭘 눌러야 하지"를 먼저 시키는 화면이 됐다. 목록은 추천순 하나로 간다.
-  const LOAD_MORE_BATCH = 8;
   // 목록에 실제로 들어온 지역만 쓴다(2026-09-07). 예전엔 BROWSE_AREAS(이태원·홍대·강남)를
   // 그대로 돌렸는데, 폼 목록이 isBookable 기준으로 바뀌면서 부산·대구·광주의 예약 가능한
   // 클럽이 clubs에는 들어와도 캐러셀 루프가 그 지역을 안 돌아 영영 안 보였다.
@@ -596,7 +617,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     () => [...recommendPool, ...remainingPool.slice(0, visibleExtra)],
     [recommendPool, remainingPool, visibleExtra]
   );
-  const hasMoreDefault = visibleExtra < remainingPool.length;
 
   const filteredClubs = useMemo(() => {
     const q = clubSearch.trim().toLowerCase();
@@ -767,7 +787,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       // 유료 광고(구글애즈 등) 채널별 전환 분석용. 새 파싱 로직 없이 세션에 이미
       // 기록된 UTM(userEvents.ts SSOT)을 그대로 실어 보낸다.
       const utm = getCurrentUtm();
+      // id를 클라이언트에서 만든다 — 익명(anon)은 SELECT 정책이 없어 INSERT … RETURNING을
+      // 못 받는다. 접수 번호(NF-XXXXXX)는 이 id의 앞 6자 = DB ref_code 생성 컬럼과 같은 값.
+      const newId = crypto.randomUUID();
       const { error } = await supabase.from("foreign_requests").insert({
+        id: newId,
         user_id: userId,
         lang: preferredLang,
         area: area || null,
@@ -802,6 +826,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         anonymous: !userId,
       });
 
+      setRequestRef(`NF-${newId.slice(0, 6).toUpperCase()}`);
       setShowConfirm(false);
       // 예전엔 토스트 하나 띄우고 바로 홈으로 보냈다 — 몇 분간 술을 고르고
       // 연락처까지 넣은 손님이 토스트가 사라지면 정말 접수됐는지 확인할
@@ -825,6 +850,224 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     }
   };
 
+  // 날짜를 클럽보다 먼저 받으므로(2026-09-09 개편) 고른 날 쉬는 클럽이 목록에 섞인다.
+  // 추천 쇼트리스트는 아예 거르고, 둘러보기·검색·상세에서는 "그날 휴무"를 붙여 선택을 막는다.
+  const closedOnDate = (c: ClubItem) => !!eventDate && !isClubOpenOn(c.open_dows ?? null, eventDate);
+  const closedLabel = t("그날 휴무", "Closed that day", "その日は休み", "当天休息", "當天休息");
+
+  // ── Step 1 → 2 · 추천 쇼트리스트 · 메뉴 프리셋 (2026-09-09 개편) ─────────────
+  // 클럽을 고르면(어디서든) 바로 메뉴판을 연다 — 날짜가 있어야 평일/주말 가격이 정해진다.
+  const chooseClub = (club: ClubItem) => {
+    setSelectedClubIds([club.id]);
+    closeDetail();
+    setBrowseOpen(false);
+    if (!eventDate) {
+      setFormStep(1);
+      toast.error(t("날짜를 골라주세요", "Pick a date first", "先に日付を選択", "请先选择日期", "請先選擇日期"));
+      openDatePicker();
+      return;
+    }
+    if (!isClubOpenOn(club.open_dows ?? null, eventDate)) {
+      setFormStep(1);
+      setDateOpen(true);
+      toast.error(t("그 날은 클럽이 쉬는 날이에요", "The club is closed that day — pick another date", "その日はクラブが休みです", "该夜店当天休息，请另选日期", "該夜店當天休息，請另選日期"));
+      return;
+    }
+    setPendingMenuOpen(true);
+  };
+  useEffect(() => {
+    if (!pendingMenuOpen || !selectedClubId || menuLoadedFor !== selectedClubId) return;
+    setPendingMenuOpen(false);
+    if (hasMenu) setMenuOpen(true);
+    else toast.error(t("이 클럽은 아직 메뉴가 없어요", "This club has no menu yet", "このクラブはまだメニューがありません", "该夜店暂无酒单", "該夜店暫無酒單"));
+  }, [pendingMenuOpen, selectedClubId, menuLoadedFor, hasMenu]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // "Where?" 카드 — 실제 목록에 있는 지역만, 예약 가능 수 + 최소금액을 같이 보여준다.
+  const whereOptions = useMemo(() => {
+    const seoulCount = clubs.filter((c) => SEOUL_AREAS.includes(c.area)).length;
+    const areas = CHIP_AREAS.filter((a) => scopeAreas.includes(a)).map((a) => ({
+      key: a,
+      count: clubs.filter((c) => c.area === a).length,
+      min: AREA_MIN_BUDGET[a] ?? FALLBACK_MIN_BUDGET,
+    }));
+    return { seoulCount, areas };
+  }, [clubs, scopeAreas]);
+
+  // 음악 칩 — "고른 지역 안에서" 예약 가능한 클럽이 1곳 이상인 장르만. 지역과 무관하게 칩을 깔면
+  // 강남+K-POP처럼 실제로는 없는 조합이 눌리고, 추천이 엉뚱한 클럽으로 채워진다(2026-09-09).
+  const genrePool = useMemo(
+    () => (area ? clubs.filter((c) => c.area === area) : clubs.filter((c) => SEOUL_AREAS.includes(c.area))),
+    [clubs, area]
+  );
+  const genreOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    genrePool.forEach((c) => (c.tags ?? []).forEach((tg) => {
+      if (tg.startsWith("genre:")) counts.set(tg.slice(6), (counts.get(tg.slice(6)) ?? 0) + 1);
+    }));
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k]) => k);
+  }, [genrePool]);
+  // 지역을 바꿔서 고른 장르가 그 지역에 없어지면 조용히 해제한다 — 유령 필터 방지.
+  useEffect(() => {
+    if (genre && !genreOptions.includes(genre)) setGenre(null);
+  }, [genre, genreOptions]);
+
+  // 추천 쇼트리스트 3곳 — 폼에 오는 clubs는 전부 isBookable(MD + 주대)이라 여기서 추가로
+  // 예약 가능 여부를 볼 필요는 없다. 지역·그날 영업·장르(소프트)로 거르고 리뷰순.
+  // VIP 티어면 강남(최소 ₩1M)이 위로 온다.
+  const shortlist = useMemo(() => {
+    // VIP(₩1M~)인데 지역이 "어디든"이면 강남만 — VIP 하한을 채우는 메뉴가 강남에 몰려 있다.
+    const pool = area
+      ? clubs.filter((c) => c.area === area)
+      : clubs.filter((c) => (tier === "vip" ? c.area === "강남" : SEOUL_AREAS.includes(c.area)));
+    const openOnDate = eventDate ? pool.filter((c) => isClubOpenOn(c.open_dows ?? null, eventDate)) : pool;
+    // 장르는 엄격하게 거른다 — 부족하다고 다른 장르로 채우면 "K-POP 골랐는데 EDM 클럽" 미스매치가 된다.
+    const base = genre ? openOnDate.filter((c) => (c.tags ?? []).includes(makeTag("genre", genre))) : openOnDate;
+    // 평점 4.0 미만(리뷰 20건 이상 기준)은 뒤로 — 리뷰 수만으로 정렬하면 3.1점 클럽이
+    // "추천" 1~3위에 올라온다. 리뷰가 적어 평점이 불확실한 곳은 감점하지 않는다.
+    const solid = (c: ClubItem) =>
+      c.google_rating == null || (c.google_review_count ?? 0) < 20 || c.google_rating >= 4.0 ? 1 : 0;
+    const sorted = [...base].sort((x, y) => {
+      if (tier === "vip") {
+        const g = (y.area === "강남" ? 1 : 0) - (x.area === "강남" ? 1 : 0);
+        if (g !== 0) return g;
+      }
+      const q = solid(y) - solid(x);
+      if (q !== 0) return q;
+      return (y.google_review_count ?? 0) - (x.google_review_count ?? 0);
+    });
+    return (area ? pinFeatured(sorted) : sorted).slice(0, 3);
+  }, [clubs, area, eventDate, genre, tier]);
+  const bookableTotal = area ? clubs.filter((c) => c.area === area).length : whereOptions.seoulCount;
+
+  // 쇼트리스트 카드에 "세트 ₩500k~" — 가격 없이 클럽을 고르게 하면 그 자리에서 이탈한다(크리틱 1차).
+  // 세 클럽 메뉴를 한 번에 받아 클럽별 최저 세트가(지역 최소금액 이상)를 계산한다. 결과는 세션 캐시.
+  const [menuFloorByClub, setMenuFloorByClub] = useState<Record<string, { amount: number; kind: "set" | "item" } | null>>({});
+  const menuFloorCacheRef = useRef<Map<string, { amount: number; kind: "set" | "item" } | null>>(new Map());
+  const shortlistKey = shortlist.map((c) => c.id).join(",");
+  useEffect(() => {
+    const missing = shortlist.filter((c) => !menuFloorCacheRef.current.has(`${c.id}:${isWeekend ? "we" : "wd"}`));
+    if (missing.length === 0) {
+      setMenuFloorByClub(Object.fromEntries(shortlist.map((c) => [c.id, menuFloorCacheRef.current.get(`${c.id}:${isWeekend ? "we" : "wd"}`) ?? null])));
+      return;
+    }
+    let alive = true;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("club_menu_items")
+        .select("club_id, category, is_vvip, zone, variants:club_menu_variants(price, price_weekend), choices:club_menu_choices(id)")
+        .in("club_id", missing.map((c) => c.id))
+        .eq("is_active", true);
+      if (!alive) return;
+      type Row = { club_id: string; category: string; is_vvip: boolean; zone: string | null; variants: { price: number; price_weekend: number | null }[] | null; choices: { id: string }[] | null };
+      const rows = (data ?? []) as Row[];
+      for (const c of missing) {
+        const mine = rows.filter((r) => r.club_id === c.id);
+        const priceOf = (r: Row) => Math.min(...(r.variants ?? []).map((v) => (isWeekend ? (v.price_weekend ?? v.price) : v.price)));
+        const areaMin = AREA_MIN_BUDGET[c.area] ?? FALLBACK_MIN_BUDGET;
+        const sets = mine.filter((r) => r.category === "set" && !r.is_vvip && (r.variants?.length ?? 0) > 0).map(priceOf).filter(Number.isFinite).sort((a, b) => a - b);
+        const items = mine.filter((r) => (r.variants?.length ?? 0) > 0).map(priceOf).filter(Number.isFinite).sort((a, b) => a - b);
+        // 카드 숫자 = "이 클럽에서 실제로 시작하는 금액" = max(지역 하한, 그 클럽 최저 세트).
+        // "하한 이상인 세트"로 찾으면 게더링처럼 49.9만 세트가 있는 클럽이 69.9만으로 튄다(2026-09-09).
+        const val = sets[0] != null
+          ? { amount: Math.max(areaMin, sets[0]), kind: "set" as const }
+          : items[0] != null ? { amount: Math.max(areaMin, items[0]), kind: "item" as const } : null;
+        menuFloorCacheRef.current.set(`${c.id}:${isWeekend ? "we" : "wd"}`, val);
+      }
+      setMenuFloorByClub(Object.fromEntries(shortlist.map((c) => [c.id, menuFloorCacheRef.current.get(`${c.id}:${isWeekend ? "we" : "wd"}`) ?? null])));
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shortlistKey, isWeekend]);
+  const wonShort = (won: number) => (won >= 1000000 ? `₩${(won / 1000000).toFixed(won % 1000000 === 0 ? 0 : 1)}M` : `₩${Math.round(won / 1000)}k`);
+  // "₩500k (≈ US$371)" — 원화 감이 없는 손님에게 지역 카드·티어 칩에서도 바로 읽히게(사용자 지적).
+  const wonWithLocal = (won: number) => {
+    const local = menuCurrency ? krwTo(won, menuCurrency, fxRates) : null;
+    return local ? `${wonShort(won)} (≈ ${local})` : wonShort(won);
+  };
+
+  // 메뉴판 프리셋 — 티어에 맞는 가장 싼 "세트"를 미리 담아서 연다. 손님이 자유롭게 고친다.
+  // 존(층별 가격표)이 있는 클럽, 택1 슬롯이 있는 세트는 프리셋하지 않는다(존 선택이 먼저).
+  const presetSnapshot = useMemo<SelectedMenuSnapshot | null>(() => {
+    if (menuItems.length === 0 || menuItems.some((i) => i.zone)) return null;
+    const floor = tier === "vip" ? Math.max(minBudget, 1000000) : minBudget;
+    const base = menuItems
+      .filter((i) => i.category === "set" && !i.is_vvip && !(i.choices?.length) && (i.variants?.length ?? 0) > 0)
+      .map((i) => {
+        const v = [...(i.variants ?? [])].sort((a, b) => a.price - b.price)[0];
+        const price = isWeekend ? (v.price_weekend ?? v.price) : v.price;
+        return { item: i, variant: v, price };
+      })
+      .sort((a, b) => a.price - b.price);
+    // VIP 하한을 넘는 세트가 없는 클럽(이태원·홍대)이면 그 클럽 최소금액 이상 세트로 내려간다 — 빈 메뉴판을 열지 않는다.
+    const best = base.find((c) => c.price >= floor) ?? base.find((c) => c.price >= minBudget);
+    if (!best) return null;
+    return {
+      items: [{
+        item_id: best.item.id,
+        variant_id: best.variant.id,
+        name_en: best.item.name_en,
+        label_en: best.variant.label_en,
+        price: best.price,
+        qty: 1,
+      }],
+    };
+  }, [menuItems, tier, minBudget, isWeekend]);
+
+  // Step 1 "Continue" — 확정이면 다음 단계, 리마인더면 이메일만 저장.
+  const [savingReminder, setSavingReminder] = useState(false);
+  const reminderDate = (() => {
+    if (!eventDate) return null;
+    const d = new Date(eventDate + "T12:00:00");
+    d.setDate(d.getDate() - 3);
+    return d;
+  })();
+  const handleStep1Continue = async () => {
+    if (!eventDate) {
+      blocked("no_date");
+      openDatePicker();
+      return toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期", "請選擇日期"));
+    }
+    if (remindMe) {
+      const email = remindEmail.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        return toast.error(t("이메일 형식을 확인해주세요", "Check your email address", "メール形式を確認してください", "请检查邮箱格式", "請檢查信箱格式"));
+      }
+      setSavingReminder(true);
+      try {
+        const supabase = createClient();
+        const utm = getCurrentUtm();
+        const { error } = await supabase.from("foreign_trip_reminders").insert({
+          email, lang: preferredLang, area: area || null, tentative_date: eventDate, group_size: groupSize,
+          landing_path: utm.landing_path, utm_source: utm.utm_source, utm_medium: utm.utm_medium, utm_campaign: utm.utm_campaign,
+        });
+        if (error) throw error;
+        trackEvent("foreign_trip_gate_planning", { lang: preferredLang, saved_email: true });
+        setFormStep(5);
+      } catch (e) {
+        const msg = (e as { message?: string })?.message || "";
+        if (msg.includes("duplicate_trip_reminder_within_24h")) {
+          toast.success(t("이미 저장돼 있어요", "Already saved — we'll email you", "すでに保存済みです", "已保存，会发邮件提醒你", "已儲存，會寄信提醒你"));
+          setFormStep(5);
+        } else {
+          toast.error(t("저장 중 오류가 발생했어요", "Couldn't save — try again", "保存に失敗しました", "保存失败，请重试", "儲存失敗，請重試") + (msg ? ` (${msg})` : ""));
+        }
+      } finally {
+        setSavingReminder(false);
+      }
+      return;
+    }
+    trackEvent("foreign_trip_gate_qualified", { lang: preferredLang });
+    saveFormDraft(TRIP_GATE_KEY, true);
+    if (selectedClubId) {
+      const club = clubById[selectedClubId];
+      if (club) chooseClub(club);
+      return;
+    }
+    if (clubMode === "known") { setBrowseOpen(true); return; }
+    setFormStep(2);
+  };
+
   const label = (icon: React.ReactNode, text: string) => (
     <div className="flex items-center gap-2 text-foreground font-bold mb-2">
       {icon}
@@ -832,118 +1075,34 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     </div>
   );
 
-  // 게이트 노출 계측 (계획중 이탈 vs 폼 이탈 구분용) — puzzle_form_view/created 사이 최대 이탈 구간.
+  // 게이트 계측은 유지한다 — 대시보드(Migration 658 foreign_funnel_by_lang)가 "게이트" 단계로
+  // 집계하므로 이름을 바꾸지 않는다. view = Step 1 노출, qualified = Continue, planning = 리마인더 저장.
   useEffect(() => {
-    if (tripStatus === null) trackEvent("foreign_trip_gate_view", { lang: preferredLang });
-  }, [tripStatus, preferredLang]);
+    trackEvent("foreign_trip_gate_view", { lang: preferredLang });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // 제목 한 줄로 통일 — 부제(무엇을 하면 무슨 일이 일어나는지)는 이미 1장 폼의
-  // 클럽 카드·Choose drinks 버튼이 스스로 설명해서 중복이었다. 접수 완료(4단계)
-  // 에선 숨긴다 — 완료 화면이 이미 "Your request is in" 제목을 자체로 갖고
-  // 있어서 위에 남아있으면 제목이 중복돼 보인다(2026-09-06). 예전엔 이 타이틀이
-  // 부모 페이지(서버 컴포넌트)에 있어서 formStep을 몰라 못 숨겼다 — 그래서
-  // 게이트 화면 포함 모든 return에서 재사용하게 여기로 옮겼다.
-  const formTitle = formStep !== 4 && (
-    <h1 className="text-2xl font-black text-foreground tracking-tight">
-      {t("서울의 밤 예약하기", "Book your Seoul night", "ソウルの夜を予約", "预订你的首尔夜晚")}
-    </h1>
+  const progress = (
+    <div className="flex items-center gap-1.5" aria-hidden>
+      {[1, 2, 3].map((n) => (
+        <span key={n} className={`h-1 flex-1 rounded-full ${formStep >= n ? "bg-amber-500" : "bg-muted"}`} />
+      ))}
+    </div>
   );
-
-  // ── 여행 확정 게이트 ────────────────────────────────────────────────
-  // 계획중(막연)인 사람은 실제 방문 불확실 → MD 오퍼 낭비·마켓 오염. 확정된 유저만 폼 노출.
-  if (tripStatus === null) {
-    return (
-      <div className="space-y-6 pb-12">
-        {/* 게이트에서는 "Book your Seoul night" 대신 질문 자체를 제목으로 쓴다(2026-09-09).
-            제목과 카드 안 질문이 위아래로 붙어 두 줄을 먹는데, 이 화면에서 손님이
-            답해야 하는 건 질문 하나뿐이라 제목은 자리만 차지했다. */}
-        <h1 className="text-2xl font-black text-foreground tracking-tight leading-snug">
-          {t(
-            "한국 여행 일정이 확정됐나요?",
-            "Is your Korea trip confirmed?",
-            "韓国旅行の予定は確定していますか？",
-            "你的韩国行程确定了吗?",
-            "你的韓國行程確定了嗎?"
-          )}
-        </h1>
-        {/* 고른 클럽을 게이트에서도 보여줌 — 이게 없으면 "Book at BADASS"를 눌렀는데
-            클럽 얘기가 없는 질문 화면이 떠서, 선택이 날아간 줄 알고 목록으로 되돌아가 이탈했음.
-            메인 폼(3장 구조)의 클럽 카드와 같은 형태로 통일 — 이미지 + 이름만.
-            "선택했다"는 문장을 덧붙이면 오히려 뭘 확인해야 하는지 헷갈린다. */}
-        {intentClubName && (() => {
-          const intentClub = presetClubId ? clubById[presetClubId] : null;
-          return (
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border">
-              <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-muted">
-                {intentClub?.thumbnail_url && (
-                  <img
-                    src={intentClub.thumbnail_url}
-                    alt={intentClubName}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-              </div>
-              <p className="text-[15px] font-black text-foreground truncate">{intentClubName}</p>
-            </div>
-          );
-        })()}
-        <div className="bg-card rounded-3xl border border-border p-6">
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => { trackEvent("foreign_trip_gate_qualified", { lang: preferredLang }); saveFormDraft(TRIP_GATE_KEY, true); setTripStatus("qualified"); }}
-              className="w-full h-14 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all break-keep"
-            >
-              {t("✅ 네 — 예약했거나 이미 한국이에요", "✅ Yes — booked or already in Korea", "✅ はい — 予約済み、または既に韓国", "✅ 是 — 已订票或已在韩国")}
-            </button>
-            <button
-              type="button"
-              onClick={() => { trackEvent("foreign_trip_gate_planning", { lang: preferredLang }); setTripStatus("planning"); }}
-              className="w-full h-14 rounded-2xl bg-muted border border-border text-foreground/80 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-muted/60 active:scale-[0.99] transition-all break-keep"
-            >
-              {t("🗓️ 아직 계획 중이에요", "🗓️ Not yet, just planning", "🗓️ まだ計画中です", "🗓️ 还在计划中")}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (tripStatus === "planning") {
-    return (
-      <div className="space-y-6 pb-12">
-        {formTitle}
-        <div className="bg-card rounded-3xl border border-border p-7 space-y-5 text-center">
-          <div className="text-[40px]">🗓️</div>
-          <div className="space-y-2">
-            <h2 className="text-[20px] font-black text-foreground tracking-tight break-keep">
-              {t("일정이 아직 확정 안 됐나요?", "Trip not locked in yet?", "予定はまだ確定していませんか？", "行程还没定下来?")}
-            </h2>
-            <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">
-              {t(
-                "서두르지 마세요 — 서울 클럽은 당일에도 빠르게 오퍼를 보내요. 일정이 확정되면 그때 다시 오셔도 늦지 않아요. 🎉",
-                "No rush — Seoul clubs send offers fast, even same-day. Come back the moment your trip is confirmed and you'll still be right on time. 🎉",
-                "焦らないで — ソウルのクラブは当日でも素早くオファーを送ります。予定が確定したら戻ってきても十分間に合います。🎉",
-                "别急 — 首尔夜店发报价很快,当天也行。行程一确定再回来也完全来得及。🎉"
-              )}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => router.push(`/${lang === "ko" ? "en" : lang}`)}
-            className="w-full py-3.5 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px] hover:opacity-90 active:scale-[0.99] transition-all"
-          >
-            {t("홈으로", "Back to home", "ホームへ", "返回首页")}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const stepChip = (n: number) => (
+    <span className="text-[12px] font-bold text-muted-foreground">
+      {t(`${n} / 3 단계`, `Step ${n} of 3`, `ステップ ${n} / 3`, `第 ${n} 步 / 共 3 步`, `第 ${n} 步 / 共 3 步`)}
+    </span>
+  );
+  const chip = (on: boolean) =>
+    `shrink-0 whitespace-nowrap px-3.5 py-2 rounded-full text-[13px] font-extrabold transition-colors border ${
+      on ? "bg-inverse text-inverse-foreground border-transparent" : "bg-card text-muted-foreground border-border hover:text-foreground"
+    }`;
+  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");
+  const selectedClub = selectedClubId ? clubById[selectedClubId] : null;
 
   return (
     <div className="space-y-7">
-      {formTitle}
-
       {/* 강제종료 등으로 남아있던 이전 입력 — 폼 위에 별도 팝업으로 먼저 묻는다. */}
       <ConfirmDialog
         isOpen={!!resumePrompt}
@@ -969,13 +1128,24 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         confirmText={t("이어하기", "Continue", "続ける", "继续")}
       />
 
-      {/* 클럽을 이미 골랐으면 재선택 목록(캐러셀·검색·정렬탭) 전체를 걷어내고
-          이 카드 하나로 대체한다 — 어차피 한 곳만 고르는 흐름이라, 다시 고를 목록을
-          계속 띄워두는 건 "확정했다"는 느낌을 깨고 화면만 길어지게 한다.
-          지우는 버튼은 안 둔다 — 클럽 상세에서 "Book at ○○"로 이미 확정하고 넘어온
-          손님에게 "지금이라도 뺄 수 있다"는 걸 보여주는 게 오히려 모순이다.
-          클럽을 바꾸려면 뒤로 가서 다른 클럽에서 다시 눌러야 한다. */}
-      {formStep !== 4 && (() => {
+
+      {/* ── Step 1 · When & who ─────────────────────────────────────────── */}
+      {formStep === 1 && (
+      <>
+      {progress}
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-black text-foreground tracking-tight">
+            {t("언제, 몇 명?", "When & who?", "いつ、何人？", "什么时候，几个人？", "什麼時候，幾個人？")}
+          </h1>
+          <p className="text-[13px] text-muted-foreground">
+            {t("문의는 무료. 보증금도 카드도 없어요.", "Free to ask. No deposit, no card.", "相談無料。デポジットもカードも不要。", "免费咨询。无需订金，无需信用卡。", "免費諮詢。無需訂金，無需信用卡。")}
+          </p>
+        </div>
+        {stepChip(1)}
+      </div>
+
+      {(() => {
         const selectedClub = selectedClubIds[0] ? clubById[selectedClubIds[0]] : null;
         if (!selectedClub) return null;
         return (
@@ -997,19 +1167,25 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               <p className="text-[15px] font-black text-foreground truncate">
                 {displayClubName(selectedClub)}
               </p>
+              <p className="text-[12px] text-muted-foreground">{areaLabel(selectedClub.area, lang)}</p>
             </div>
+            {/* 클럽 바꾸기 — 예전엔 ?club= 으로 들어오면 바꿀 방법이 상세 시트 안 "선택 해제"뿐이었다. */}
+            {formStep === 1 && !picked && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); setSelectedClubIds([]); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setSelectedClubIds([]); } }}
+                className="shrink-0 text-[12px] font-bold text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                {t("바꾸기", "Change", "変更", "更换", "更換")}
+              </span>
+            )}
           </button>
         );
       })()}
 
-      {/* 날짜는 클럽을 고른 뒤에만 보여준다(2026-09-09).
-          클럽 전에 날짜를 받으면 막을 근거(open_dows)가 없어 휴무일도 그냥 골라지고,
-          나중에 클럽을 고른 순간 "그 날은 쉬는 날"이라며 되돌려보내게 된다 —
-          손님 입장에선 멀쩡히 고른 날짜를 무를 이유가 없는데 무르라는 화면이다.
-          클럽이 먼저 정해지면 달력이 처음부터 그 클럽 영업일만 열어준다.
-          4장(접수완료)에서는 원래대로 숨긴다. */}
-      {formStep !== 4 && selectedClubIds.length > 0 && (
-      <>
+
       <section ref={dateSectionRef}>
         {label(<Calendar className="w-4 h-4 text-money" />, t("날짜", "Date", "日付", "日期"))}
         {/* 네이티브 date input의 플레이스홀더·표시 텍스트는 lang 속성이 아니라 브라우저/OS 로케일을
@@ -1033,6 +1209,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         {dateOpen && (
           <div className="mt-2 rounded-xl bg-card border border-border p-2">
             <ClubDateCalendar
+              lang={lang}
               openDows={selectedClubOpenDows}
               value={eventDate}
               onSelect={(d) => {
@@ -1046,11 +1223,37 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
           <p className="text-[12px] text-muted-foreground mt-1.5">{closedNotice}</p>
         )}
       </section>
-      </>
-      )}
 
-      {formStep === 1 && (
-      <>
+      {/* 소프트 여행 게이트 — 켜면 요청 대신 이메일만 저장, D-3에 링크 메일(자동). */}
+      <section>
+        <div className={`rounded-xl border px-3.5 py-3 space-y-2.5 transition-colors ${remindMe ? "border-amber-500 bg-offer-well" : "border-border bg-offer-well"}`}>
+          <button type="button" onClick={() => setRemindMe((v) => !v)} className="w-full flex items-center gap-3 text-left">
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-extrabold">{t("일정이 아직 미정인가요?", "Trip not confirmed yet?", "予定はまだ未定ですか？", "行程还没定？", "行程還沒定？")}</p>
+              <p className="text-[12px] text-muted-foreground leading-snug">
+                {t("날짜 3일 전에 이메일로 링크를 보내드려요.", "We'll email you a link 3 days before your date.", "日付の3日前にリンクをメールします。", "我们会在日期前 3 天发邮件提醒你。", "我們會在日期前 3 天寄信提醒你。")}
+              </p>
+            </div>
+            <span role="switch" aria-checked={remindMe} className={`relative w-11 h-[26px] rounded-full shrink-0 transition-colors ${remindMe ? "bg-amber-500" : "bg-muted"}`}>
+              <span className={`absolute top-[3px] w-5 h-5 rounded-full transition-all ${remindMe ? "left-[23px] bg-background" : "left-[3px] bg-muted-foreground"}`} />
+            </span>
+          </button>
+          {remindMe && (
+            <>
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                value={remindEmail}
+                onChange={(e) => setRemindEmail(e.target.value)}
+                placeholder="you@email.com"
+                className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
+              />
+            </>
+          )}
+        </div>
+      </section>
+
       {/* 인원 */}
       <section>
         {label(<Users className="w-4 h-4 text-money" />, t("인원", "Group size", "人数", "人数"))}
@@ -1072,154 +1275,130 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         </p>
       </section>
 
-      {/* 술 메뉴 — 손님이 직접 담는다. 담은 합계가 곧 예약 금액이라 예산을 따로 묻지 않는다.
-          "Drinks" 라벨은 뺐다 — 바로 아래 "Choose drinks" 버튼이 스스로 설명해서 중복이었다. */}
-      {selectedClubId && (hasMenu || menuLoading) && (
-        <section>
-          {menuLoading ? (
-            <div className="h-12 rounded-xl bg-card border border-border flex items-center px-4 text-[13px] text-muted-foreground">
-              {t("메뉴 불러오는 중…", "Loading menu…", "メニューを読み込み中…", "正在加载酒单…")}
-            </div>
-          ) : picked ? (
-            // 이미 담았으면 카드형 요약으로 — 탭하면 재선택. 다 고른 뒤에도 화면
-            // 내내 큰 노란 버튼이 떠 있으면 "또 눌러야 하나" 싶어 오히려 방해된다.
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              className="w-full rounded-xl border border-amber-500/60 bg-card px-4 py-3 text-left transition-colors"
-            >
-              <span className="text-[13px] text-muted-foreground font-bold">
-                {t(
-                  `${picked.snapshot.items.length}개 선택됨`,
-                  `${picked.snapshot.items.length} item${picked.snapshot.items.length > 1 ? "s" : ""} selected`,
-                  `${picked.snapshot.items.length}点選択`,
-                  `已选 ${picked.snapshot.items.length} 项`
-                )}
-              </span>
-              {/* 이름만 " · "로 이어붙인 한 줄 요약은 뭘 몇 개씩 얼마에 담았는지
-                  안 보였다 — 카트 시트와 같은 줄 단위 리스트로 바꾼다(2026-09-06). */}
-              <div className="mt-3 space-y-2.5">
-                {picked.snapshot.items.map((it, i) => {
-                  const img = imageOf(it.item_id);
-                  return (
-                    <div key={i} className="flex items-center gap-2.5">
-                      {img && (
-                        <div className="w-9 h-9 shrink-0 rounded-md bg-black overflow-hidden flex items-center justify-center">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={img} alt="" loading="lazy" className="w-full h-full object-contain pointer-events-none select-none" />
-                        </div>
-                      )}
-                      <span className="min-w-0 flex-1 text-[12px] text-foreground/90 truncate">
-                        {it.name_en}
-                        {it.qty > 1 && <span className="text-muted-foreground"> x{it.qty}</span>}
-                      </span>
-                      <span className="text-money font-bold tabular-nums text-[12px] shrink-0">
-                        ₩{(it.price * it.qty).toLocaleString("en-US")}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-2 pt-2 border-t border-border flex items-center justify-between gap-3">
-                <span className="text-[13px] font-bold">
-                  {t("합계", "Total", "合計", "合计")}
-                </span>
-                <span className="text-[17px] font-black text-money tabular-nums shrink-0">
-                  ₩{picked.total.toLocaleString("en-US")}
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-2">
-                {t("변경하려면 다시 탭", "tap to change", "タップで変更", "点按可更改")}
-              </p>
-            </button>
-          ) : (
-            // 아직 안 골랐으면 화면 하단에 고정한다 — Date/인원 아래로 스크롤해도
-            // "다음에 뭘 눌러야 하는지"가 계속 보여야 한다. 앱 하단 네비
-            // (fixed bottom-0, h-60px, z-50)를 가려서 MenuPicker.tsx의 합계바와
-            // 같은 방식으로 그 위에 얹는다.
-            // 데스크탑 사이드바(lg:w-[248px])를 안 가리도록 그만큼 왼쪽에서 띄운다.
-            // left-0으로 두면 뷰포트 전체 폭을 덮어 "Recently viewed" 등 사이드바
-            // 콘텐츠와 겹쳤다.
-            <div className="fixed bottom-[60px] left-0 right-0 lg:left-[248px] z-40 px-4 pb-3 pt-2 bg-background/95 backdrop-blur-sm border-t border-border">
-              <button
-                type="button"
-                onClick={() => {
-                  // 날짜가 없으면 메뉴를 열 수 없다 — 평일/주말 가격표가 갈려서
-                  // 날짜를 모르면 애초에 값을 못 매긴다. 안내만 띄우고 끝내면
-                  // "그래서 어디를 누르라는 건데" 가 되니 달력까지 같이 연다.
-                  if (!eventDate) {
-                    toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期"));
-                    openDatePicker();
-                    return;
-                  }
-                  setMenuOpen(true);
-                }}
-                className="w-full max-w-lg mx-auto h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.99] transition-all flex items-center justify-center"
-              >
-                {t("술 고르기", "Choose drinks", "ドリンクを選ぶ", "选择酒水")}
-              </button>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* 예산 입력칸은 없앴다(2026-09-07). 폼에 오는 클럽은 전부 isBookable
-          (담당 MD + 주대)이라 손님이 메뉴를 담으면 총액이 확정된다 — 시세를
-          모르는 외국인에게 금액을 손으로 적게 하면 그 자체가 이탈 지점이었다.
-          클럽을 아직 안 골랐을 때만 "아래에서 고르라"고 안내한다 — 이 자리에
-          아무것도 없으면 Group size 다음에 뭘 해야 하는지가 안 보인다. */}
-      {!selectedClubId && (
-        <p className="text-[13px] text-muted-foreground break-keep">
-          {t(
-            "아래에서 클럽을 고르면 그 클럽의 주대에서 술을 직접 담을 수 있어요.",
-            "Pick a club below, then choose drinks from its menu to set your total.",
-            "下からクラブを選ぶと、そのお店のメニューからドリンクを選べます。",
-            "在下方选择夜店后，即可从该店酒单中选酒并确定总额。",
-            "在下方選擇夜店後，即可從該店酒單中選酒並確定總額。"
-          )}
-        </p>
-      )}
-
-      {/* 클럽을 이미 골랐으면 재선택 목록(캐러셀·검색·정렬탭)은 위 카드로 대체됐으니 숨긴다.
-          클럽을 지우면(위 카드 X) 다시 여기서 골라야 하니 그때만 보인다. */}
-      {selectedClubIds.length === 0 && (
+      {/* 클럽을 아직 안 골랐을 때만 — 어디 / 음악 / 고르는 방식 */}
+      {!selectedClub && (
+      <>
+      {/* Where? — "Anywhere"가 기본. 외국인은 지역 이름만으로는 못 고르니 한 줄 설명·예약 가능 수·가격 하한을 붙인다. */}
       <section>
         <div className="flex items-center justify-between mb-2">
-          {label(<Search className="w-4 h-4 text-money" />, t("가고싶은 클럽", "Clubs you want", "行きたいクラブ", "想去的夜店"))}
-          <span className="text-[12px] text-muted-foreground font-bold">
-            {t("한 곳만 선택", "pick one", "1つだけ", "只选一家", "只選一家")}
+          {label(<MapPin className="w-4 h-4 text-money" />, t("어디로?", "Where?", "どこで？", "去哪里？", "去哪裡？"))}
+          <span className="text-[12px] text-muted-foreground">
+            {t("모르겠으면 그대로", "Not sure? Leave it on Anywhere", "迷ったらそのまま", "不确定就保持默认", "不確定就保持預設")}
           </span>
         </div>
-        {selectedClubIds.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2">
-            {selectedClubIds.map((id) => {
-              const full = clubById[id];
-              const selectedList = selectedClubIds.map((x) => clubById[x]).filter(Boolean);
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setArea("")}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-colors ${
+              area === "" ? "bg-inverse text-inverse-foreground border-transparent" : "bg-card border-border"
+            }`}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-black">{t("서울 어디든", "Anywhere in Seoul", "ソウルのどこでも", "首尔任何地方", "首爾任何地方")}</p>
+              <p className={`text-[11px] ${area === "" ? "opacity-70" : "text-muted-foreground"}`}>
+                {t(
+                  `이태원·홍대·강남에서 골라드려요 · 예약 가능 ${whereOptions.seoulCount}곳`,
+                  `We pick across Itaewon, Hongdae & Gangnam · ${whereOptions.seoulCount} bookable`,
+                  `梨泰院・弘大・江南から選びます · 予約可能 ${whereOptions.seoulCount} 軒`,
+                  `我们从梨泰院、弘大、江南中挑选 · ${whereOptions.seoulCount} 家可订`,
+                  `我們從梨泰院、弘大、江南中挑選 · ${whereOptions.seoulCount} 家可訂`
+                )}
+              </p>
+            </div>
+            <span className={`w-5 h-5 rounded-full border-[6px] ${area === "" ? "border-inverse-foreground bg-inverse" : "border-border bg-transparent"}`} />
+          </button>
+          <div className="grid grid-cols-2 gap-2">
+            {whereOptions.areas.map((a) => {
+              const on = area === a.key;
+              const tl = AREA_TAGLINE[a.key];
               return (
-                <span key={id} className="flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 text-brand-amber text-[13px] font-bold">
-                  {/* 이름 탭 = 상세 열기 (담은 뒤에도 다시 확인할 수 있어야 함), X = 빼기 */}
-                  <button
-                    type="button"
-                    disabled={!full}
-                    onClick={() => full && openDetail(selectedList, full)}
-                    className="pl-3 pr-1.5 py-1.5 disabled:cursor-default"
-                  >
-                    {full ? displayClubName(full) : ""}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={t("빼기", "Remove", "外す", "移除")}
-                    onClick={() => toggleClub(id)}
-                    className="pl-0.5 pr-2.5 py-1.5"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </span>
+                <button
+                  key={a.key}
+                  type="button"
+                  onClick={() => setArea((prev) => (prev === a.key ? "" : a.key))}
+                  className={`flex flex-col gap-0.5 p-3 rounded-xl border text-left transition-colors ${
+                    on ? "bg-inverse text-inverse-foreground border-transparent" : "bg-card border-border"
+                  }`}
+                >
+                  <span className="text-[14px] font-black">{AREA_EMOJI[a.key] ? `${AREA_EMOJI[a.key]} ` : ""}{areaLabel(a.key, lang)}</span>
+                  {tl && <span className={`text-[11px] leading-snug ${on ? "opacity-70" : "text-muted-foreground"}`}>{t(...tl)}</span>}
+                  <span className={`text-[11px] font-bold ${on ? "opacity-85" : "text-money"}`}>
+                    {t(
+                      `${a.count}곳 · ${wonShort(a.min)}~`,
+                      `${a.count} bookable · from ${wonWithLocal(a.min)}`,
+                      `${a.count} 軒 · ${wonWithLocal(a.min)}〜`,
+                      `${a.count} 家可订 · ${wonWithLocal(a.min)} 起`,
+                      `${a.count} 家可訂 · ${wonWithLocal(a.min)} 起`
+                    )}
+                  </span>
+                </button>
               );
             })}
           </div>
-        )}
+        </div>
+      </section>
 
+      {/* Music (optional) — 예약 가능 클럽 태그에서 2곳 이상인 장르만. */}
+      {genreOptions.length > 0 && (
+        <section>
+          {label(<Music2 className="w-4 h-4 text-money" />, t("음악 (선택)", "Music (optional)", "音楽（任意）", "音乐（可选）", "音樂（可選）"))}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
+            {genreOptions.map((g) => (
+              <button key={g} type="button" onClick={() => setGenre((prev) => (prev === g ? null : g))} className={chip(genre === g)}>
+                {TAG_LABEL_I18N[g]?.[lang] ?? g}
+              </button>
+            ))}
+            <button type="button" onClick={() => setGenre(null)} className={chip(genre === null)}>
+              {t("상관없음", "Don't mind", "こだわらない", "都可以", "都可以")}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Club — 추천(기본) / 아는 클럽 */}
+      <section>
+        {label(<Search className="w-4 h-4 text-money" />, t("클럽", "Club", "クラブ", "夜店", "夜店"))}
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setClubMode("recommend")}
+            className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-colors ${
+              clubMode === "recommend" ? "bg-card border-amber-500" : "bg-card border-border"
+            }`}
+          >
+            <Sparkles className={`w-5 h-5 shrink-0 ${clubMode === "recommend" ? "text-brand-amber" : "text-muted-foreground"}`} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-black">{t("모르겠어요 — 추천해주세요", "Not sure — recommend me", "分からない — おすすめして", "不确定 — 帮我推荐", "不確定 — 幫我推薦")}</p>
+              <p className="text-[12px] text-muted-foreground leading-snug">
+                {t("지금 예약 가능한 클럽 중 2~3곳을 골라드려요.", "We match you with 2–3 clubs we can book right now.", "今すぐ予約できるクラブから2〜3軒選びます。", "从现在可订的夜店中为你挑 2–3 家。", "從現在可訂的夜店中為你挑 2–3 家。")}
+              </p>
+            </div>
+            <span className={`w-5 h-5 rounded-full border-[6px] ${clubMode === "recommend" ? "border-amber-500 bg-background" : "border-border"}`} />
+          </button>
+          <button
+            type="button"
+            onClick={() => { setClubMode("known"); setBrowseOpen(true); }}
+            className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-colors ${
+              clubMode === "known" ? "bg-card border-amber-500" : "bg-card border-border"
+            }`}
+          >
+            <Search className="w-5 h-5 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-black">{t("아는 클럽이 있어요", "I know the club", "行きたいクラブがある", "我知道要去哪家", "我知道要去哪家")}</p>
+              <p className="text-[12px] text-muted-foreground leading-snug">
+                {t(
+                  `예약 가능한 ${bookableTotal}곳에서 직접 고르기`,
+                  `Pick from ${bookableTotal} bookable clubs${area ? "" : " in Seoul"}`,
+                  `予約可能な ${bookableTotal} 軒から選ぶ`,
+                  `从 ${bookableTotal} 家可订夜店中选择`,
+                  `從 ${bookableTotal} 家可訂夜店中選擇`
+                )}
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
+        </div>
         {/* 찜해둔 클럽 원탭 추가 — 둘러보며 하트한 것을 이름 재검색 없이 바로 담게 함 */}
         {savedNotSelected.length > 0 && (
           <div className="mb-3 p-3 rounded-2xl bg-card border border-border">
@@ -1267,80 +1446,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             </div>
           </div>
         )}
-        {/* 지역 칩 — 되살림(2026-09-09). area state는 계속 살아 있었는데 칩 UI만 없어서
-            손님이 "이태원 갈 건데"처럼 지역이 확실해도 20곳을 전부 훑어야 했다.
-            장르 칩은 일부러 넣지 않는다: 예약 가능 20곳 중 EDM이 14곳이라 눌러도 거의
-            안 좁혀지고, 테크노·R&B·팝은 각 1곳이라 누르면 막다른 길이 된다.
-            게다가 장르 무태그 3곳(Dawn·HYPE SEOUL·Color Apgu)은 어떤 장르를 눌러도 사라진다.
-            지역은 6곳에 고르게 흩어져 있어(강남7·홍대4·이태원3·부산3·대구2·광주1) 실제로 좁혀진다.
-            scopeAreas = 실제 목록에 있는 지역만 — 고르면 0건이 되는 칩은 애초에 안 만든다. */}
-        {scopeAreas.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 mb-2">
-            <button
-              type="button"
-              onClick={() => setArea("")}
-              className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
-                area === "" ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t("전체", "All areas", "すべて", "全部", "全部")}
-            </button>
-            {scopeAreas.filter((a) => CHIP_AREAS.includes(a)).map((a) => (
-              <button
-                key={a}
-                type="button"
-                onClick={() => setArea((prev) => (prev === a ? "" : a))}
-                className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
-                  area === a ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {AREA_EMOJI[a] ? `${AREA_EMOJI[a]} ` : ""}{areaLabel(a, lang)}
-              </button>
-            ))}
-          </div>
-        )}
-        {/* 기본: 추천 클럽 가로 스크롤 카드 (검색 중이 아닐 때). 브라우징 우선 노출. */}
-        {!isSearching && (
-          defaultClubs.length === 0 ? (
-            <p className="mt-2 py-4 text-center text-[12px] text-muted-foreground">
-              {t("조건에 맞는 클럽이 없습니다", "No clubs match your filters.", "条件に合うクラブがありません。", "没有符合条件的夜店。")}
-            </p>
-          ) : (
-            // 카드 탭하면 상세, ✓ 버튼 탭하면 선택. 스크롤 끝(-200px)에 닿으면 다음 배치 자동 로드.
-            // key: 정렬/지역 바뀌면 DOM 리마운트 → scrollLeft 리셋.
-            <div
-              key={area}
-              className="mt-2 flex gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4"
-              onScroll={(e) => {
-                if (!hasMoreDefault) return;
-                const el = e.currentTarget;
-                if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 200) {
-                  setVisibleExtra((n) => n + LOAD_MORE_BATCH);
-                }
-              }}
-            >
-              {defaultClubs.map((c) => (
-                <ClubCard
-                  key={c.id}
-                  club={c}
-                  selected={selectedClubIds.includes(c.id)}
-                  onSelect={() => toggleClub(c.id)}
-                  onOpenDetail={() => openDetail(defaultClubs, c)}
-                  lang={lang}
-                />
-              ))}
-            </div>
-          )
-        )}
-        <button
-          type="button"
-          onClick={() => setBrowseOpen(true)}
-          className="inline-block mt-2 text-[12px] text-money underline underline-offset-2"
-        >
-          🗺️ {t("모르겠어요? 클럽 둘러보기", "Not sure? Browse clubs", "分からない？クラブを見る", "不确定？浏览夜店")}
-        </button>
-
-        {/* 검색 (하단 보조) — 직접 이름으로 찾을 때만. 검색 시 결과는 바로 아래 세로 리스트. */}
+        {/* 검색 — "아는 클럽" 모드에서만. 추천 모드에서 검색창까지 있으면 고를 게 셋이 된다. */}
+        {clubMode === "known" && (<>
         <input
           value={clubSearch}
           onChange={(e) => setClubSearch(e.target.value)}
@@ -1355,8 +1462,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => toggleClub(c.id)}
-                  className={`flex items-center gap-3 p-2 rounded-xl border transition-colors text-left ${on ? "bg-amber-500/10 border-amber-500/40" : "bg-card border-border hover:border-border"}`}
+                  onClick={() => (on ? toggleClub(c.id) : chooseClub(c))}
+                  className={`flex items-center gap-3 p-2 rounded-xl border transition-colors text-left ${on ? "bg-amber-500/10 border-amber-500/40" : "bg-card border-border hover:border-border"} ${closedOnDate(c) ? "opacity-60" : ""}`}
                 >
                   <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1364,7 +1471,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] font-bold text-foreground truncate">{displayClubName(c)}</p>
-                    <p className="text-[11px] text-muted-foreground">{areaLabel(c.area, lang)}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {areaLabel(c.area, lang)}
+                      {closedOnDate(c) && <span className="ml-1.5 text-red-400 font-bold">{closedLabel}</span>}
+                    </p>
                   </div>
                   {on && <Check className="w-4 h-4 text-brand-amber shrink-0" />}
                 </button>
@@ -1372,9 +1482,199 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             })}
           </div>
         )}
+
+        </>)}
       </section>
+      </>
       )}
 
+      <button
+        type="button"
+        onClick={handleStep1Continue}
+        disabled={savingReminder}
+        className="w-full h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.99] transition-all disabled:opacity-50"
+      >
+        {remindMe
+          ? (savingReminder
+              ? t("저장 중…", "Saving…", "保存中…", "保存中…", "儲存中…")
+              : reminderDate
+                ? t(`저장하고 ${formatEventDate(ymdLocal(reminderDate), lang)}에 알림받기`, `Save & remind me on ${formatEventDate(ymdLocal(reminderDate), lang)}`, `保存して ${formatEventDate(ymdLocal(reminderDate), lang)} に通知`, `保存并在 ${formatEventDate(ymdLocal(reminderDate), lang)} 提醒我`, `儲存並在 ${formatEventDate(ymdLocal(reminderDate), lang)} 提醒我`)
+                : t("저장하고 알림받기", "Save & remind me", "保存して通知を受け取る", "保存并提醒我", "儲存並提醒我"))
+          : selectedClub
+            ? t("술 고르기", "Choose drinks", "ドリンクを選ぶ", "选择酒水", "選擇酒水")
+            : t("계속", "Continue", "続ける", "继续", "繼續")}
+      </button>
+      </>
+      )}
+
+      {/* ── Step 2 · Pick your night (추천 쇼트리스트) ────────────────────── */}
+      {formStep === 2 && (
+      <>
+      {progress}
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <button type="button" onClick={() => setFormStep(1)} className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground hover:text-foreground">
+            <ChevronLeft className="w-4 h-4" />
+            {t("언제, 몇 명?", "When & who?", "いつ、何人？", "什么时候，几个人？", "什麼時候，幾個人？")}
+          </button>
+          <h1 className="text-2xl font-black text-foreground tracking-tight">
+            {t("어떤 밤을 원하세요?", "Pick your night", "どんな夜にする？", "选择你的夜晚", "選擇你的夜晚")}
+          </h1>
+          <p className="text-[13px] text-muted-foreground">
+            {[
+              area ? areaLabel(area, lang) : t("서울 어디든", "Anywhere in Seoul", "ソウルのどこでも", "首尔任何地方", "首爾任何地方"),
+              genre ? (TAG_LABEL_I18N[genre]?.[lang] ?? genre) : null,
+              eventDate ? formatEventDate(eventDate, lang) : null,
+              t(`${groupSize}명`, `${groupSize} ${groupSize > 1 ? "people" : "person"}`, `${groupSize}名`, `${groupSize}人`, `${groupSize}人`),
+            ].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+        {stepChip(2)}
+      </div>
+
+      {/* 티어 — 쇼트리스트 정렬 + 메뉴판 프리셋. 최소금액을 미리 보여줘 메뉴판에서 놀라지 않게 한다. */}
+      <section className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            { key: "table" as const, title: t("테이블", "Table", "テーブル", "卡座", "包廂"), sub: t("₩50만~ · 홍대·이태원", `from ${wonWithLocal(500000)} · Hongdae, Itaewon`, `${wonWithLocal(500000)}〜 · 弘大·梨泰院`, `${wonWithLocal(500000)} 起 · 弘大·梨泰院`, `${wonWithLocal(500000)} 起 · 弘大·梨泰院`) },
+            { key: "vip" as const, title: "VIP", sub: area && area !== "강남"
+                ? t("₩100만~", `from ${wonWithLocal(1000000)}`, `${wonWithLocal(1000000)}〜`, `${wonWithLocal(1000000)} 起`, `${wonWithLocal(1000000)} 起`)
+                : t("₩100만~ · 강남", `from ${wonWithLocal(1000000)} · Gangnam`, `${wonWithLocal(1000000)}〜 · 江南`, `${wonWithLocal(1000000)} 起 · 江南`, `${wonWithLocal(1000000)} 起 · 江南`) },
+          ]).map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => setTier(o.key)}
+              className={`flex flex-col items-center gap-0.5 py-2.5 px-2 rounded-xl border transition-colors ${
+                tier === o.key ? "bg-inverse text-inverse-foreground border-transparent" : "bg-card border-border"
+              }`}
+            >
+              <span className="text-[13px] font-black">{o.title}</span>
+              <span className={`text-[11px] ${tier === o.key ? "opacity-70" : "text-muted-foreground"}`}>{o.sub}</span>
+            </button>
+          ))}
+        </div>
+        <p className="text-[12px] text-muted-foreground leading-snug break-keep">
+          {tier === "vip"
+            ? t("프라임 테이블, 프리미엄 보틀, 호스트 서비스. 최소금액은 클럽이 정해요.", "Prime table, premium bottles, host service. The minimum is set by the club.", "プライムテーブル、プレミアムボトル、ホストサービス。最低金額はクラブが決めます。", "黄金桌位、高端酒水、专人服务。最低消费由夜店决定。", "黃金包廂、高端酒水、專人服務。最低消費由夜店決定。")
+            : t("보틀 + 믹서, 우리 자리, 줄 서지 않고 입장. 최소금액은 클럽이 정해요.", "A bottle + mixers, your own seats, skip the line. The minimum is set by the club.", "ボトル＋ミキサー、専用席、並ばず入場。最低金額はクラブが決めます。", "一瓶酒 + 调酒、专属座位、免排队。最低消费由夜店决定。", "一瓶酒 + 調酒、專屬座位、免排隊。最低消費由夜店決定。")}
+        </p>
+      </section>
+
+      {/* 추천 쇼트리스트 — 예약 가능한 클럽만(MD + 실제 메뉴). 카드 탭 = 상세, 버튼 = 메뉴판. */}
+      <section className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <p className="text-[14px] font-black">{t("추천 클럽", "Recommended for you", "おすすめ", "为你推荐", "為你推薦")}</p>
+          <span className="text-[12px] font-bold text-muted-foreground">
+            {t(`예약 가능 ${bookableTotal}곳 중 ${shortlist.length}곳`, `Top ${shortlist.length} of ${bookableTotal} bookable`, `予約可能 ${bookableTotal} 軒中 ${shortlist.length} 軒`, `${bookableTotal} 家可订中的前 ${shortlist.length} 家`, `${bookableTotal} 家可訂中的前 ${shortlist.length} 家`)}
+          </span>
+        </div>
+        <p className="text-[12px] text-muted-foreground -mt-1 break-keep">
+          {t("지금 바로 잡아드릴 수 있는 클럽만 — 실제 메뉴판 가격 그대로. 탭하면 사진·메뉴·영업시간·리뷰.", "Only clubs we can book right now, at the club's real menu prices. Tap a club for photos, menu, hours & reviews.", "今すぐ予約できるクラブだけ — 実際のメニュー価格のまま。タップで写真・メニュー・営業時間・レビュー。", "只列出现在能订的夜店，按夜店真实酒单价格。点按查看照片、酒单、营业时间和评价。", "只列出現在能訂的夜店，依夜店真實酒單價格。點按查看照片、酒單、營業時間和評價。")}
+        </p>
+        {shortlist.length === 0 ? (
+          <div className="py-4 text-center space-y-3">
+            <p className="text-[13px] text-muted-foreground">
+              {genre
+                ? t("이 조건에 맞는 클럽이 그 날엔 없어요. 음악 조건을 빼거나 지역을 넓혀보세요.", "No bookable club matches that music on that night — drop the music filter or widen the area.", "その条件に合うクラブがその日はありません。音楽の条件を外すかエリアを広げてみてください。", "当晚没有符合该音乐条件的夜店，去掉音乐条件或扩大区域试试。", "當晚沒有符合該音樂條件的夜店，去掉音樂條件或擴大區域試試。")
+                : t("그 날 영업하는 클럽이 없어요. 날짜나 지역을 바꿔보세요.", "No bookable club is open that night — try another date or area.", "その日に営業するクラブがありません。日付かエリアを変えてみてください。", "当晚没有可订的夜店，换个日期或区域试试。", "當晚沒有可訂的夜店，換個日期或區域試試。")}
+            </p>
+            <div className="flex gap-2 justify-center flex-wrap">
+              {genre && (
+                <button type="button" onClick={() => setGenre(null)} className={chip(false)}>
+                  {t("음악 조건 빼기", "Any music", "音楽の条件を外す", "不限音乐", "不限音樂")}
+                </button>
+              )}
+              <button type="button" onClick={() => { setFormStep(1); openDatePicker(); }} className={chip(false)}>
+                {t("날짜 바꾸기", "Change date", "日付を変更", "更改日期", "更改日期")}
+              </button>
+              {area && (
+                <button type="button" onClick={() => setArea("")} className={chip(false)}>
+                  {t("전 지역 보기", "Show all areas", "全エリアを見る", "查看所有区域", "查看所有區域")}
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {shortlist.map((c, i) => {
+              const tl = clubTagline(c, lang) || (AREA_TAGLINE[c.area] ? t(...AREA_TAGLINE[c.area]) : "");
+              return (
+                <div key={c.id} className={`relative rounded-2xl bg-card border p-3 space-y-2.5 ${i === 0 ? "border-amber-500/60" : "border-border"}`}>
+                  {i === 0 && (
+                    <span className="absolute -top-2.5 left-3 px-2 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black tracking-wide">
+                      {t("1순위 추천", "Top pick", "イチオシ", "首选推荐", "首選推薦")}
+                    </span>
+                  )}
+                  <button type="button" onClick={() => openDetail(shortlist, c)} className="w-full flex items-center gap-3 text-left">
+                    <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-muted">
+                      {c.thumbnail_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={c.thumbnail_url} alt={displayClubName(c)} className="w-full h-full object-cover" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="text-[15px] font-black truncate">{displayClubName(c)}</p>
+                      <p className="flex items-center gap-1 text-[12px] text-muted-foreground truncate">
+                        {c.google_rating != null && (c.google_review_count ?? 0) >= 5 && (
+                          <>
+                            <Star className="w-3 h-3 text-brand-amber fill-current shrink-0" />
+                            {c.google_rating.toFixed(1)} ({c.google_review_count})
+                            <span> · </span>
+                          </>
+                        )}
+                        {areaLabel(c.area, lang)}
+                        {tl ? ` · ${tl}` : ""}
+                      </p>
+                      {(() => {
+                        const f = menuFloorByClub[c.id];
+                        if (!f) return null;
+                        const won = wonShort(f.amount);
+                        const local = menuCurrency ? krwTo(f.amount, menuCurrency, fxRates) : null;
+                        const money = local ? `${won} (≈ ${local})` : won;
+                        return (
+                          <p className="text-[12px] font-bold text-money truncate">
+                            {f.kind === "set"
+                              ? t(`테이블 ${money}~`, `Tables from ${money}`, `テーブル ${money}〜`, `卡座 ${money} 起`, `包廂 ${money} 起`)
+                              : t(`메뉴 ${money}~`, `Menu from ${money}`, `メニュー ${money}〜`, `酒单 ${money} 起`, `酒單 ${money} 起`)}
+                          </p>
+                        );
+                      })()}
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => chooseClub(c)}
+                    className={`w-full h-11 rounded-full font-black text-[14px] flex items-center justify-center gap-1 transition-colors ${
+                      i === 0 ? "bg-amber-500 text-black hover:bg-amber-400" : "bg-inverse text-inverse-foreground hover:opacity-90"
+                    }`}
+                  >
+                    {t("술 고르기", "Choose drinks", "ドリンクを選ぶ", "选择酒水", "選擇酒水")}
+                    <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <button type="button" onClick={() => setBrowseOpen(true)} className="w-full h-11 text-[13px] font-bold text-muted-foreground hover:text-foreground">
+          {t(`예약 가능한 ${bookableTotal}곳 전부 보기 →`, `See all ${bookableTotal} bookable clubs →`, `予約可能な ${bookableTotal} 軒をすべて見る →`, `查看全部 ${bookableTotal} 家可订夜店 →`, `查看全部 ${bookableTotal} 家可訂夜店 →`)}
+        </button>
+      </section>
+
+      <div className="flex items-start gap-2.5 rounded-xl bg-green-500/10 border border-green-500/35 px-3.5 py-3">
+        <ShieldCheck className="w-4 h-4 text-money shrink-0 mt-0.5" />
+        <p className="text-[12px] text-muted-foreground leading-snug break-keep">
+          {t("다음 단계에서 클럽 실제 메뉴판에서 술을 고르면 그 총액을 클럽이 확인해요. 결제는 클럽에 직접. 바가지 쓰면 200% 환불.", "Next you pick the exact bottles from the club's real menu — that total is what the club confirms. You pay at the club. Overcharged? 200% back.", "次にクラブの実メニューからボトルを選びます。その合計をクラブが確認。支払いは現地で。ぼったくられたら200%返金。", "下一步从夜店真实酒单中选酒，该总额由夜店确认。到店付款。被多收？200% 退还。", "下一步從夜店真實酒單中選酒，該總額由夜店確認。到店付款。被多收？200% 退還。")}
+        </p>
+      </div>
+      </>
+      )}
+
+      {/* 시트들 — 둘러보기 / 클럽 상세 (Step 1·2·3 공통) */}
+      {(formStep === 1 || formStep === 2 || formStep === 3) && (
+      <>
       {/* 클럽 둘러보기 팝업 — /clubs 수준 정렬+필터, 카드 클릭은 선택(toggleClub)으로 */}
       <Sheet open={browseOpen} onOpenChange={setBrowseOpen}>
         {/* overscroll-contain: 목록 맨 위에서 당기면 pull-to-refresh로 새서 화면이 날아간다. */}
@@ -1482,15 +1782,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                         key={c.id}
                         club={c}
                         selected={selectedClubIds.includes(c.id)}
-                        onSelect={() => {
-                          const wasSelected = selectedClubIds.includes(c.id);
-                          toggleClub(c.id);
-                          // 상세의 "Select this club"과 같은 규칙 — 고르면 팝업을 접고
-                          // 폼으로 돌아간다. 해제는 계속 둘러보는 중이라 그대로 둔다.
-                          if (!wasSelected) setBrowseOpen(false);
-                        }}
+                        onSelect={() => (selectedClubIds.includes(c.id) ? toggleClub(c.id) : chooseClub(c))}
                         onOpenDetail={() => openDetail(g.items, c)}
                         lang={lang}
+                        note={closedOnDate(c) ? closedLabel : undefined}
                       />
                     ))}
                   </div>
@@ -1540,21 +1835,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                   <div className="flex gap-2 mt-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        const wasSelected = selectedClubIds.includes(detailClub.id);
-                        toggleClub(detailClub.id);
-                        // 선택했으면 상세를 닫는다(2026-09-09) — 고르고 나면 다음 할 일은
-                        // 폼으로 돌아가 날짜·인원을 채우는 것인데, 시트가 그대로 떠 있으면
-                        // 선택이 먹혔는지도 안 보이고 X를 따로 눌러야 했다.
-                        // 해제일 때는 닫지 않는다 — 마음이 바뀐 거라 옆 클럽을 계속 볼 차례다.
-                        if (!wasSelected) {
-                          closeDetail();
-                          // 상세는 Browse 팝업 위에 겹쳐 뜬다 — 상세만 닫으면 팝업이
-                          // 그대로 남아 폼이 안 보인다. 골랐으면 둘 다 접고 폼으로 돌려보낸다.
-                          setBrowseOpen(false);
-                        }
-                      }}
-                      className={`flex-[7] flex items-center justify-center gap-1.5 py-3.5 rounded-xl font-black text-[15px] transition-colors ${
+                      onClick={() => (selectedClubIds.includes(detailClub.id) ? toggleClub(detailClub.id) : chooseClub(detailClub))}
+                      disabled={!selectedClubIds.includes(detailClub.id) && closedOnDate(detailClub)}
+                      className={`flex-[7] flex items-center justify-center gap-1.5 py-3.5 rounded-xl font-black text-[15px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                         selectedClubIds.includes(detailClub.id)
                           ? "bg-muted text-foreground/80 hover:bg-muted"
                           : "bg-amber-500 text-black hover:bg-amber-400"
@@ -1562,7 +1845,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                     >
                       {selectedClubIds.includes(detailClub.id)
                         ? t("선택 해제", "Remove selection", "選択解除", "取消选择")
-                        : t("이 클럽 선택하기", "Select this club", "このクラブを選ぶ", "选择这家夜店")}
+                        : closedOnDate(detailClub)
+                          ? `${closedLabel} · ${eventDate ? formatEventDate(eventDate, lang) : ""}`
+                          : t("이 클럽으로 술 고르기", "Choose drinks here", "ここでドリンクを選ぶ", "在这家选酒", "在這家選酒")}
                     </button>
                     {hasNextDetail && (
                       <button
@@ -1586,6 +1871,26 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
 
       {formStep === 3 && (
       <>
+      {progress}
+      {/* 요약 한 줄 — 클럽·날짜·인원·정확한 총액. 제안서에 실리는 숫자와 같다. */}
+      <div className="flex items-start justify-between gap-3">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-black text-foreground tracking-tight">
+          {t("어디로 회신할까요?", "Where do we reply?", "どこに返信しますか？", "回复到哪里？", "回覆到哪裡？")}
+        </h1>
+        <p className="text-[13px] text-muted-foreground break-keep">
+          {[
+            selectedClubId ? displayClubName(clubById[selectedClubId]) : null,
+            eventDate ? formatEventDate(eventDate, lang) : null,
+            t(`${groupSize}명`, `${groupSize} ${groupSize > 1 ? "people" : "person"}`, `${groupSize}名`, `${groupSize}人`, `${groupSize}人`),
+            picked
+              ? `₩${picked.total.toLocaleString("en-US")}${menuCurrency && krwTo(picked.total, menuCurrency, fxRates) ? ` (≈ ${krwTo(picked.total, menuCurrency, fxRates)})` : ""}`
+              : null,
+          ].filter(Boolean).join(" · ")}
+        </p>
+      </div>
+      {stepChip(3)}
+      </div>
       {/* 담은 메뉴 요약 — 3장까지 넘어오면 총액을 확인할 곳이 확인 시트(제출 직전)
           뿐이었다. 그 전에 "내가 뭘 담았는지" 다시 볼 방법도, 잘못 담았을 때
           고칠 방법도 없었다. 1장의 요약 카드와 같은 형태로 여기 다시 둔다 —
@@ -1736,73 +2041,226 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         disabled={loading}
         className="w-full h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.99] transition-all disabled:opacity-50"
       >
-        {loading ? t("전송 중…", "Sending…", "送信中…", "提交中…") : t("요청 보내기", "Send request — we'll connect you", "リクエスト送信", "提交 — 我们帮你连接")}
+        {loading ? t("전송 중…", "Sending…", "送信中…", "提交中…", "提交中…") : t("요청 보내기 — 무료", "Send request — free", "リクエスト送信 — 無料", "提交请求 — 免费", "提交請求 — 免費")}
       </button>
       <p className="text-center text-[12px] text-muted-foreground -mt-3">
-        {t("한국어·인맥 없어도 OK. 우리가 클럽에 연결해드려요.", "No Korean, no connections needed. We connect you.", "韓国語・人脈不要。私たちがつなぎます。", "无需韩语·人脉。我们帮你搞定。")}
+        {t("대부분 몇 시간 안에 회신 · 보증금 없음 · 현장 결제", "Most requests get a reply within hours · No deposit · Pay at the club", "多くは数時間以内に返信 · デポジット不要 · 現地払い", "大多数几小时内回复 · 无需订金 · 到店付款", "大多數幾小時內回覆 · 無需訂金 · 到店付款")}
       </p>
       </>
       )}
 
-      {/* 접수 확인(4단계) — 예전엔 토스트 하나 뜨고 바로 홈으로 튕겼다. 몇 분간
-          술을 고르고 연락처까지 넣은 손님이 정말 접수됐는지, 언제 연락이 오는지
-          확인할 방법이 없었다. 무엇을 요청했는지 다시 보여주고 다음 단계를 알린다. */}
+
+      {/* ── Step 4 · 접수 확인 + 다음 단계 + 채널 핸드오프 ─────────────────── */}
       {formStep === 4 && (() => {
-        const club = selectedClubIds[0] ? clubById[selectedClubIds[0]] : null;
+        const club = selectedClub;
+        const home = `/${lang === "ko" ? "en" : lang}`;
+        const refText = requestRef ? `#${requestRef}` : "";
+        const waText = encodeURIComponent(
+          t(`안녕하세요, 요청 ${refText} 관련입니다`, `Hi, this is about request ${refText}`, `こんにちは、リクエスト ${refText} の件です`, `你好，关于请求 ${refText}`, `你好，關於請求 ${refText}`)
+        );
+        const icsUrl = (() => {
+          if (!eventDate) return null;
+          const d = eventDate.replace(/-/g, "");
+          const summary = `NightFlow · ${club ? displayClubName(club) : "Seoul club"}`;
+          const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//NightFlow//EN", "BEGIN:VEVENT",
+            `UID:${requestRef ?? d}@nightflow.kr`, `DTSTART;VALUE=DATE:${d}`, `SUMMARY:${summary}`,
+            `DESCRIPTION:Request ${refText} — bring your passport (19+)`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+          return `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}`;
+        })();
         return (
-          <div className="space-y-6 pb-12 text-center">
-            <div className="text-[48px] pt-4">✅</div>
-            <div className="space-y-2">
-              <h2 className="text-[20px] font-black text-foreground tracking-tight break-keep">
-                {t("요청이 접수됐어요", "Your request is in", "リクエストを受け付けました", "已收到你的请求")}
+          <div className="space-y-5 pb-12">
+            <div className="flex flex-col items-center text-center gap-2.5 pt-2">
+              <div className="w-14 h-14 rounded-full bg-green-500/10 border border-green-500/40 flex items-center justify-center">
+                <Check className="w-7 h-7 text-money" strokeWidth={2.5} />
+              </div>
+              <h2 className="text-[22px] font-black text-foreground tracking-tight break-keep">
+                {t("접수됐어요 — 클럽이 확인 중이에요", "Got it — the club is checking now", "受け付けました — クラブが確認中", "已收到 — 夜店正在确认", "已收到 — 夜店正在確認")}
               </h2>
-              <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">
+              <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
                 {t(
-                  "24시간 안에 연락드릴게요.",
-                  "We'll reach out within 24 hours.",
-                  "24時間以内にご連絡します。",
-                  "我们会在24小时内联系你。"
+                  `대부분 몇 시간 안에 회신해요. 확정되는 즉시 ${CONTACT_LABEL[contactType]}로 알려드릴게요.`,
+                  `Most requests get a reply within hours. We'll message you on ${CONTACT_LABEL[contactType]} the moment it's confirmed.`,
+                  `多くは数時間以内に返信します。確定次第 ${CONTACT_LABEL[contactType]} でお知らせします。`,
+                  `大多数几小时内回复。一确认就通过 ${CONTACT_LABEL[contactType]} 通知你。`,
+                  `大多數幾小時內回覆。一確認就透過 ${CONTACT_LABEL[contactType]} 通知你。`
                 )}
               </p>
+              {requestRef && <p className="text-[12px] font-bold text-muted-foreground tabular-nums">{t("접수 번호", "Request", "受付番号", "请求编号", "請求編號")} #{requestRef}</p>}
             </div>
 
-            <div className="bg-card rounded-2xl border border-border p-5 text-left space-y-3">
+            {/* 타임라인 */}
+            <div className="rounded-2xl bg-card border border-border p-4">
+              {[
+                { done: true, active: false, title: t("접수 완료", "Request received", "受付完了", "已收到请求", "已收到請求"), sub: contactType === "email" ? t(`${contactValue.trim()}로 사본을 보냈어요`, `Copy sent to ${contactValue.trim()}`, `${contactValue.trim()} に控えを送信`, `副本已发送至 ${contactValue.trim()}`, `副本已寄至 ${contactValue.trim()}`) : t("방금", "Just now", "たった今", "刚刚", "剛剛") },
+                { done: false, active: true, title: t("클럽이 테이블 확인 중", "Club confirming your table", "クラブがテーブルを確認中", "夜店正在确认桌位", "夜店正在確認包廂"), sub: t("보통 몇 시간 · 메뉴판 기준으로 가격 검수", "Usually within hours · Price checked against the menu", "通常数時間 · メニューで価格を照合", "通常几小时 · 按酒单核对价格", "通常幾小時 · 依酒單核對價格") },
+                { done: false, active: false, title: t(`${CONTACT_LABEL[contactType]}로 예약 패스 발송`, `Booking pass on ${CONTACT_LABEL[contactType]}`, `${CONTACT_LABEL[contactType]} で予約パス`, `通过 ${CONTACT_LABEL[contactType]} 发送入场凭证`, `透過 ${CONTACT_LABEL[contactType]} 傳送入場憑證`), sub: t("입구에서 여권과 함께 보여주세요", "Show it at the door with your passport", "入口でパスポートと一緒に提示", "入口出示凭证和护照", "入口出示憑證和護照") },
+              ].map((step, i, arr) => (
+                <div key={i} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <span className={`w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 ${
+                      step.done ? "bg-money" : step.active ? "bg-amber-400 animate-pulse" : "border-2 border-border"
+                    }`}>
+                      {step.done && <Check className="w-3 h-3 text-background" strokeWidth={3} />}
+                    </span>
+                    {i < arr.length - 1 && <span className={`w-0.5 flex-1 min-h-[22px] ${step.done ? "bg-money" : "bg-border"}`} />}
+                  </div>
+                  <div className={`space-y-0.5 ${i < arr.length - 1 ? "pb-3.5" : ""}`}>
+                    <p className={`text-[14px] font-extrabold ${step.active ? "text-brand-amber" : step.done ? "text-foreground" : "text-muted-foreground"}`}>{step.title}</p>
+                    <p className="text-[12px] text-muted-foreground break-all">{step.sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 요약 */}
+            <div className="bg-card rounded-2xl border border-border p-4 space-y-2.5">
               {club && (
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 shrink-0 rounded-xl overflow-hidden bg-muted">
                     {club.thumbnail_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={club.thumbnail_url} alt={displayClubName(club)} className="w-full h-full object-cover" />
                     )}
                   </div>
-                  <p className="text-[15px] font-black text-foreground truncate">{displayClubName(club)}</p>
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-black text-foreground truncate">{displayClubName(club)}</p>
+                    <p className="text-[12px] text-muted-foreground">
+                      {areaLabel(club.area, lang)}
+                      {club.google_rating != null && (club.google_review_count ?? 0) >= 5 ? ` · Google ${club.google_rating.toFixed(1)}` : ""}
+                    </p>
+                  </div>
                 </div>
               )}
               <div className="flex items-center justify-between text-[13px]">
-                <span className="text-muted-foreground">{t("날짜", "Date", "日付", "日期")}</span>
-                <span className="font-bold text-foreground">{eventDate || "-"}</span>
+                <span className="text-muted-foreground">{t("날짜", "Date", "日付", "日期", "日期")}</span>
+                <span className="font-bold text-foreground">{eventDate ? formatEventDate(eventDate, lang) : "-"}</span>
               </div>
               <div className="flex items-center justify-between text-[13px]">
-                <span className="text-muted-foreground">{t("인원", "Group size", "人数", "人数")}</span>
-                <span className="font-bold text-foreground">{groupSize}{t("명", "", "人", "人")}</span>
+                <span className="text-muted-foreground">{t("인원", "Group", "人数", "人数", "人數")}</span>
+                <span className="font-bold text-foreground">{t(`${groupSize}명`, `${groupSize} ${groupSize > 1 ? "people" : "person"}`, `${groupSize}名`, `${groupSize}人`, `${groupSize}人`)}</span>
               </div>
               {picked && (
                 <div className="flex items-center justify-between text-[13px]">
-                  <span className="text-muted-foreground">{t("금액", "Amount", "金額", "金额")}</span>
-                  <span className="font-black text-money">₩{picked.total.toLocaleString("en-US")}</span>
+                  <span className="text-muted-foreground">{t("총액", "Total", "合計", "总额", "總額")}</span>
+                  <span className="font-black text-money tabular-nums">₩{picked.total.toLocaleString("en-US")} · {t("내가 고른 술", "your drinks", "選んだドリンク", "你选的酒", "你選的酒")}</span>
                 </div>
               )}
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-muted-foreground">{t("회신", "Reply to", "返信先", "回复到", "回覆到")}</span>
+                <span className="font-bold text-foreground break-all text-right">{CONTACT_LABEL[contactType]} {contactValue.trim()}</span>
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => router.replace(`/${lang === "ko" ? "en" : lang}`)}
-              className="w-full h-14 rounded-full bg-inverse text-inverse-foreground font-black text-[15px] hover:opacity-90 active:scale-[0.99] transition-all"
-            >
-              {t("홈으로", "Back to home", "ホームへ", "返回首页")}
-            </button>
+            {/* 채널 핸드오프 — WhatsApp 번호가 있으면 wa.me, 없으면 인스타 DM. */}
+            <div className="space-y-2.5">
+              {whatsapp ? (
+                <a
+                  href={`https://wa.me/${whatsapp}?text=${waText}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-14 rounded-full bg-money text-background font-black text-[16px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all"
+                >
+                  <MessageCircle className="w-[18px] h-[18px]" strokeWidth={2.5} />
+                  {t("WhatsApp으로 이어가기", "Continue on WhatsApp", "WhatsApp で続ける", "在 WhatsApp 继续", "在 WhatsApp 繼續")}
+                </a>
+              ) : (
+                <a
+                  href="https://ig.me/m/nightflow.kr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-14 rounded-full bg-inverse text-inverse-foreground font-black text-[16px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all"
+                >
+                  <Instagram className="w-[18px] h-[18px]" />
+                  {t("인스타그램 DM 열기", "Open Instagram DM", "Instagram の DM を開く", "打开 Instagram 私信", "打開 Instagram 私訊")}
+                </a>
+              )}
+              {icsUrl && (
+                <a
+                  href={icsUrl}
+                  download="nightflow-booking.ics"
+                  className="w-full h-12 rounded-full bg-card border border-border text-foreground font-extrabold text-[14px] flex items-center justify-center gap-2 hover:bg-muted transition-colors"
+                >
+                  <CalendarPlus className="w-4 h-4" />
+                  {t("캘린더에 추가", "Add to calendar", "カレンダーに追加", "添加到日历", "加入行事曆")}
+                </a>
+              )}
+              {whatsapp ? (
+                <p className="text-center text-[12px] text-muted-foreground">
+                  {t(`"요청 ${refText}" 메시지가 미리 채워져 열려요`, `Opens a chat with "request ${refText}" pre-filled`, `「リクエスト ${refText}」入りのチャットが開きます`, `将打开预填“请求 ${refText}”的聊天`, `將打開預填「請求 ${refText}」的聊天`)}
+                </p>
+              ) : requestRef ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(`Request #${requestRef}`).then(
+                      () => toast.success(t("복사됐어요", "Copied", "コピーしました", "已复制", "已複製")),
+                      () => toast.error(t("복사 실패", "Couldn't copy", "コピー失敗", "复制失败", "複製失敗"))
+                    );
+                  }}
+                  className="w-full text-center text-[12px] text-muted-foreground underline underline-offset-2"
+                >
+                  {t(`DM 첫 줄에 "요청 #${requestRef}"을 붙여주세요 · 탭해서 복사`, `Start your DM with "Request #${requestRef}" · tap to copy`, `DM の最初に「Request #${requestRef}」を · タップでコピー`, `私信第一行写 "Request #${requestRef}" · 点按复制`, `私訊第一行寫 "Request #${requestRef}" · 點按複製`)}
+                </button>
+              ) : null}
+            </div>
+
+            {/* 준비물 */}
+            <div className="space-y-2">
+              <p className="text-[14px] font-black">{t("가기 전에", "Before you go", "行く前に", "出发前", "出發前")}</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2.5 rounded-xl bg-card border border-border px-3 py-2.5 text-[13px] font-bold">
+                  <ShieldCheck className="w-4 h-4 text-money shrink-0" />
+                  {t("입구에서 여권 확인 · 19세 이상", "Passport at the door · 19+", "入口でパスポート確認 · 19歳以上", "入口查验护照 · 19岁以上", "入口查驗護照 · 19歲以上")}
+                </div>
+                <Link href={`${home}/dress-code`} className="flex items-center gap-2.5 rounded-xl bg-card border border-border px-3 py-2.5 text-[13px] font-bold hover:bg-muted transition-colors">
+                  <Sparkles className="w-4 h-4 text-money shrink-0" />
+                  <span className="flex-1">{t("드레스코드 보기", "Dress code guide", "ドレスコードを見る", "查看着装要求", "查看服裝規定")}</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </Link>
+                <div className="flex items-center gap-2.5 rounded-xl bg-card border border-border px-3 py-2.5 text-[13px] font-bold">
+                  <Mail className="w-4 h-4 text-money shrink-0" />
+                  {t("결제는 클럽에 직접 · 나플에 내는 돈 없음", "Pay the club directly · nothing to NightFlow", "支払いはクラブへ直接 · NightFlow への支払いなし", "直接付给夜店 · 不经 NightFlow", "直接付給夜店 · 不經 NightFlow")}
+                </div>
+              </div>
+            </div>
+
+            <Link href={`${home}/clubs`} className="block w-full h-12 text-center leading-[48px] text-[13px] font-bold text-muted-foreground hover:text-foreground">
+              {t("다른 밤도 계획 중? 클럽 둘러보기 →", "Planning another night? Browse clubs →", "別の夜も？クラブを見る →", "还想安排别的夜晚？浏览夜店 →", "還想安排別的夜晚？瀏覽夜店 →")}
+            </Link>
           </div>
         );
       })()}
+
+      {/* ── Step 5 · 리마인더 저장 완료 ─────────────────────────────────── */}
+      {formStep === 5 && (
+        <div className="space-y-6 pb-12 text-center">
+          <div className="text-[44px] pt-4">📬</div>
+          <div className="space-y-2">
+            <h2 className="text-[20px] font-black text-foreground tracking-tight break-keep">
+              {reminderDate
+                ? t(`${formatEventDate(ymdLocal(reminderDate), lang)}에 이메일 드릴게요`, `We'll email you on ${formatEventDate(ymdLocal(reminderDate), lang)}`, `${formatEventDate(ymdLocal(reminderDate), lang)} にメールします`, `我们会在 ${formatEventDate(ymdLocal(reminderDate), lang)} 发邮件给你`, `我們會在 ${formatEventDate(ymdLocal(reminderDate), lang)} 寄信給你`)
+                : t("저장됐어요", "Saved", "保存しました", "已保存", "已儲存")}
+            </h2>
+            <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">
+              {t(
+                "요청을 마치기 전까지 클럽에는 아무것도 전달되지 않아요. 일정이 확정되면 링크로 돌아와 몇 분 안에 끝낼 수 있어요.",
+                "Nothing goes to the club until you finish the request. When your trip is set, come back through the link and finish in a couple of minutes.",
+                "リクエストを完了するまでクラブには何も送られません。予定が決まったらリンクから戻って数分で完了できます。",
+                "在你完成请求之前，不会向夜店发送任何内容。行程定了以后通过链接回来，几分钟就能完成。",
+                "在你完成請求之前，不會向夜店傳送任何內容。行程定了以後透過連結回來，幾分鐘就能完成。"
+              )}
+            </p>
+          </div>
+          <div className="space-y-2.5">
+            <Link href={`/${lang === "ko" ? "en" : lang}/clubs`} className="block w-full h-14 rounded-full bg-inverse text-inverse-foreground font-black text-[15px] leading-[56px] hover:opacity-90 transition-opacity">
+              {t("그동안 클럽 둘러보기", "Browse clubs meanwhile", "その間にクラブを見る", "先看看夜店", "先看看夜店")}
+            </Link>
+            <button type="button" onClick={() => router.replace(`/${lang === "ko" ? "en" : lang}`)} className="w-full h-12 rounded-full bg-card border border-border text-foreground font-bold text-[14px]">
+              {t("홈으로", "Back to home", "ホームへ", "返回首页", "返回首頁")}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 전송 전 최종 확인 — 연락처 오타 자가 검수(로그인 없앤 뒤 유일한 회신선) */}
       <Sheet open={showConfirm} onOpenChange={(o) => { if (!loading) setShowConfirm(o); }}>
@@ -1931,7 +2389,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             bottomOffset={0}
             minAmount={minBudget}
             /* 확정본이 있으면 그걸, 없으면 닫으면서 남긴 초안을 되돌린다. */
-            initialSnapshot={picked?.snapshot ?? menuDraft?.snapshot ?? null}
+            /* 티어 프리셋(세트 1개)은 아무것도 담긴 게 없을 때만. */
+            initialSnapshot={picked?.snapshot ?? menuDraft?.snapshot ?? presetSnapshot}
             onDraftChange={(snapshot, total) => setMenuDraft({ snapshot, total })}
             onDone={(snapshot, total) => {
               setPicked({ snapshot, total });
@@ -1956,12 +2415,15 @@ function ClubCard({
   onSelect,
   onOpenDetail,
   lang,
+  note,
 }: {
   club: ClubItem;
   selected: boolean;
   onSelect: () => void;
   onOpenDetail: () => void;
   lang: Lang;
+  /** "그날 휴무" 같은 경고. 있으면 카드를 흐리게 하고 선택 버튼을 막는다. */
+  note?: string;
 }) {
   const t = makeT(lang);
   const reviewsLabel = t("리뷰", "reviews", "件のレビュー", "条评价");
@@ -1974,7 +2436,7 @@ function ClubCard({
           overflow-hidden을 쓰면 브라우저가 그 요소를 잠재적 스크롤 컨테이너로 취급해
           위에서 시작한 스와이프가 부모 스트립으로 전파되지 않는다(2026-09-07 실측,
           EnHomeClient ClubThumb과 동일 패턴). */}
-      <div className={`relative w-[120px] h-[120px] rounded-2xl overflow-clip bg-muted border-2 ${selected ? "border-amber-500" : "border-border"}`}>
+      <div className={`relative w-[120px] h-[120px] rounded-2xl overflow-clip bg-muted border-2 ${selected ? "border-amber-500" : "border-border"} ${note ? "opacity-60" : ""}`}>
         <button
           type="button"
           onClick={onOpenDetail}
@@ -1989,9 +2451,10 @@ function ClubCard({
         <button
           type="button"
           onClick={onSelect}
+          disabled={!!note && !selected}
           aria-label={selected ? removeLabel : selectLabel}
           aria-pressed={selected}
-          className="absolute top-0 right-0 w-11 h-11 flex items-center justify-center"
+          className="absolute top-0 right-0 w-11 h-11 flex items-center justify-center disabled:cursor-not-allowed"
         >
           <span
             className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
@@ -2003,6 +2466,7 @@ function ClubCard({
         </button>
       </div>
       <p className="text-[13px] font-bold text-foreground mt-2 truncate">{displayClubName(club)}</p>
+      {note && <p className="text-[11px] text-red-400 font-bold">{note}</p>}
       {club.google_review_count != null && (
         <p className="text-[12px] text-muted-foreground">
           {club.google_review_count.toLocaleString()} {reviewsLabel}

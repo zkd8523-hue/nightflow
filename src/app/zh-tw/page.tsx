@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
 import { hideTestData } from "@/lib/utils/testData";
-import { EnHomeClient } from "../en/EnHomeClient";
+import { EnHomeClient, type RecentBooking } from "../en/EnHomeClient";
 import { orderForeignHome } from "@/lib/clubs/foreignSort";
 import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 
@@ -190,6 +190,10 @@ export default async function ZhTwHomePage() {
     .order("google_review_count", { ascending: false, nullsFirst: false })
     .limit(80);
   // 주대가 등록된 클럽 — MD와 함께 "즉시 예약 가능" 판정에 쓴다(배지·정렬).
+  // 히어로 신뢰 문구용 — /en과 동일(Migration 638·664). 예전엔 이 세 언어에만 빠져 있었다.
+  const { data: openRequestCount } = await supabase.rpc("count_open_foreign_requests");
+  const { data: recentBookingsRaw } = await supabase.rpc("recent_foreign_bookings", { p_limit: 3 });
+  const recentBookings = (recentBookingsRaw ?? []) as RecentBooking[];
   const menuIds = await fetchMenuClubIds(supabase);
   const seenClubNames = new Set<string>();
   // 목록 "Recommend"와 동일 로직으로 통일: 지역별 MD보유→리뷰순 + featured_rank 고정위치.
@@ -279,9 +283,9 @@ export default async function ZhTwHomePage() {
       />
       {/* SEO 用 SSR sr-only 內容 — 台灣·香港 Google 搜尋引擎可讀取 */}
       <div className="sr-only">
-        <h1>
+        <h2>
           韓國夜店預訂 — 江南·弘大·梨泰院 VIP 包廂 (NightFlow 首爾)
-        </h1>
+        </h2>
         <p>
           NightFlow 是專為台灣·香港旅客打造的韓國夜店預訂平台。無需韓語,即可輕鬆預訂首爾江南、弘大、梨泰院、狎鷗亭的頂級夜店 VIP 包廂。真實價格,無中介,無隱藏費用。選好想去的夜店(或者只告訴我們您的預算和喜好),NightFlow 會直接聯絡夜店為您鎖定桌位。輕鬆享受韓國夜生活,無論是 K-POP 夜店、酒吧、嘻哈夜店還是高端 VIP 包廂,NightFlow 全程中文對接。
         </p>
@@ -334,7 +338,7 @@ export default async function ZhTwHomePage() {
           <li><a href="/zh-tw/clubs/busan">釜山夜店 — 海雲台海灘 &amp; 西面市區</a></li>
         </ul>
       </div>
-      <EnHomeClient flags={flags} clubs={clubs} initialLang="zh-tw" />
+      <EnHomeClient flags={flags} clubs={clubs} initialLang="zh-tw" openRequestCount={openRequestCount ?? null} recentBookings={recentBookings} />
     </>
   );
 }

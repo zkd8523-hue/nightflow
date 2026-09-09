@@ -255,6 +255,7 @@ export function ForeignRequestsClient({ initial }: { initial: ForeignReq[] }) {
               {r.area && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-muted-foreground" />{r.area}</span>}
               {r.budget != null && <span className="flex items-center gap-1"><Coins className="w-3.5 h-3.5 text-muted-foreground" />{r.budget.toLocaleString()}원</span>}
               {r.guest_name && <span className="flex items-center gap-1"><UserRound className="w-3.5 h-3.5 text-muted-foreground" />{r.guest_name}</span>}
+              <span className="font-mono text-[11px] text-muted-foreground" title="손님이 WhatsApp·메일에서 말하는 접수 번호">{`NF-${r.id.slice(0, 6).toUpperCase()}`}</span>
             </div>
 
             {/* 손님이 메뉴 화면에서 직접 담은 술 — 확정서가 아직 없을 때만 보여준다.

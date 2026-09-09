@@ -6,7 +6,9 @@ import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { isBookable } from "@/lib/clubs/bookable";
 import { FaqTab } from "./FaqTab";
-import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map, Check, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Home, User, HelpCircle, Map, Check, X, ShieldCheck, MessageCircle, Star } from "lucide-react";
+import { krwTo, resolveCurrency } from "@/lib/utils/currency";
+import { useKrwRates } from "@/lib/utils/useKrwRates";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -32,6 +34,14 @@ type MyRequest = {
 };
 
 type ClubItem = ForeignClubDetail;
+
+/** recent_foreign_bookings() RPC(Migration 664) 한 행 — 익명화된 확정 예약. */
+export type RecentBooking = {
+  club_name: string;
+  area: string | null;
+  group_size: string | null;
+  confirmed_at: string;
+};
 
 // 로그인 후 깃발 폼으로 복귀하는 링크. 미로그인이면 폼 서버 컴포넌트가 자동으로 /login?redirect= 로 튕김.
 // clubId를 실으면 폼이 그 클럽을 미리 선택하고 여행확정 게이트도 건너뜀(page.tsx의 presetClubId).
@@ -389,6 +399,14 @@ function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
         )}
       </div>
       <p className="text-[12px] font-bold text-foreground mt-1.5 truncate lg:text-[13px] lg:mt-2">{name}</p>
+      {/* 구글 평점 — 이미 fetch되던 값인데 카드에 안 그려서 "Real price" 배지와 달리
+          홈 카드가 아무 근거도 안 보여줬다(2026-09-09). 리뷰 5건 미만은 숫자가 의미 없어 숨긴다. */}
+      {club.google_rating != null && (club.google_review_count ?? 0) >= 5 && (
+        <p className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+          <Star className="w-3 h-3 text-brand-amber fill-current" />
+          {club.google_rating.toFixed(1)} ({club.google_review_count})
+        </p>
+      )}
     </div>
   );
 }
@@ -1037,15 +1055,186 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
   );
 }
 
+// ── 히어로 (외국인 홈 첫 화면) ──────────────────────────────────────────────
+// 가격 앵커는 사이트가 이미 공개한 값(가이드·FAQ): 테이블 ₩500k(홍대·이태원),
+// VIP ₩1M(강남). 환산은 useKrwRates(주간 스냅샷) — 언어별 기본 통화(resolveCurrency).
+// Entry(입장만)는 뺐다(2026-09-09 사용자 결정) — 나플이 잡아주는 건 테이블이다.
+const PRICE_ANCHORS = [
+  { key: "table", won: 500000 },
+  { key: "vip", won: 1000000 },
+] as const;
+
+function timeAgo(iso: string, t: ReturnType<typeof makeT>): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const h = Math.floor(ms / 3600000);
+  if (h < 1) return t("방금", "just now", "たった今", "刚刚", "剛剛");
+  if (h < 24) return t(`${h}시간 전`, `${h}h ago`, `${h}時間前`, `${h}小时前`, `${h}小時前`);
+  const d = Math.floor(h / 24);
+  if (d < 7) return t(`${d}일 전`, `${d}d ago`, `${d}日前`, `${d}天前`, `${d}天前`);
+  return t("최근", "recently", "最近", "最近", "最近");
+}
+
+function HeroSection({
+  clubCount,
+  openRequestCount,
+  recentBookings,
+  bookCtaRef,
+}: {
+  clubCount: number;
+  openRequestCount: number | null;
+  recentBookings: RecentBooking[];
+  /** 하단 sticky CTA는 이 버튼이 화면 밖일 때만 뜬다(FlagsTab의 IntersectionObserver). */
+  bookCtaRef?: React.RefObject<HTMLAnchorElement | null>;
+}) {
+  const { lang, t, tr } = useTr();
+  const fx = useKrwRates();
+  const currency = resolveCurrency(null, lang);
+  const wonShort = (won: number) => (won >= 1000000 ? `₩${won / 1000000}M` : `₩${won / 1000}k`);
+  const localOf = (won: number) => (currency ? krwTo(won, currency, fx.rates) : null);
+  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");
+  const anchorLabel: Record<(typeof PRICE_ANCHORS)[number]["key"], { title: string; sub: string }> = {
+    table: { title: t("테이블", "Table", "テーブル", "卡座", "包廂"), sub: t("₩500k · 홍대·이태원", "₩500k · Hongdae, Itaewon", "₩500k · 弘大·梨泰院", "₩500k · 弘大·梨泰院", "₩500k · 弘大·梨泰院") },
+    vip: { title: "VIP", sub: t("₩1M · 강남", "₩1M · Gangnam", "₩1M · 江南", "₩1M · 江南", "₩1M · 江南") },
+  };
+
+  return (
+    <div className="lg:max-w-[640px]">
+      <div className="px-5 pt-6 pb-4 space-y-3">
+        <p className="text-[11px] font-extrabold tracking-[0.08em] text-muted-foreground uppercase">
+          {t("여행자를 위한 · 서울 & 부산", "For travelers · Seoul & Busan", "旅行者向け · ソウル & 釜山", "为旅行者 · 首尔 & 釜山", "為旅行者 · 首爾 & 釜山")}
+        </p>
+        <h1 className="text-[26px] font-black leading-[1.16] tracking-tight break-keep">
+          {t(
+            "한국 최고의 클럽 예약. 한국어 없이, 바가지 없이.",
+            "Book Korea's best clubs. No Korean, no rip-offs.",
+            "韓国の人気クラブを予約。韓国語不要、ぼったくりなし。",
+            "预订韩国最好的夜店。不用韩语，不被宰。",
+            "預訂韓國最好的夜店。不用韓語，不被坑。"
+          )}
+        </h1>
+        <p className="text-[14px] text-muted-foreground leading-relaxed">
+          {t("실제 클럽 가격. 현장 결제. 플랫폼 수수료 0.", "Real club prices. Pay at the door. Zero platform fee.", "実際の価格。支払いは現地で。手数料ゼロ。", "真实价格。到店付款。零平台费。", "真實價格。到店付款。零平台費。")}
+        </p>
+      </div>
+
+      {/* 가격 앵커 3단 — "Real price"가 배지였는데 랜딩에 가격이 하나도 없었다. */}
+      <div className="px-4">
+        <div className="grid grid-cols-2 gap-2">
+          {PRICE_ANCHORS.map((a) => {
+            const local = localOf(a.won);
+            return (
+              <div key={a.key} className="rounded-2xl bg-card border border-border p-3 space-y-1">
+                <p className={`text-[11px] font-bold ${a.key === "vip" ? "text-brand-amber" : "text-muted-foreground"}`}>{anchorLabel[a.key].title}</p>
+                <p className="text-[16px] font-black leading-tight tabular-nums">
+                  {(() => { const m = local ?? wonShort(a.won); return t(`${m}~`, `from ${m}`, `${m}〜`, `${m} 起`, `${m} 起`); })()}
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-tight">{anchorLabel[a.key].sub}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 200% 보장 — 접힌 아코디언 안에 있던 걸 꺼냈다. 경쟁군 통틀어 가장 강한 클레임. */}
+      <div className="px-4 pt-3">
+        <div className="flex items-center gap-3 rounded-2xl bg-green-500/10 border border-green-500/35 px-3.5 py-3">
+          <ShieldCheck className="w-5 h-5 text-money shrink-0" />
+          <div className="min-w-0">
+            <p className="text-[14px] font-black text-money leading-tight">
+              {t("바가지 쓰면 200% 환불.", "Overcharged? We refund 200%.", "ぼったくられたら200%返金。", "被多收？我们200%退还。", "被多收？我們200%退還。")}
+            </p>
+            <p className="text-[12px] text-muted-foreground leading-snug mt-0.5">
+              {t("모든 가격을 클럽 메뉴판과 대조합니다.", "Every price is checked against the club's printed menu.", "すべての価格をクラブのメニューと照合します。", "每个价格都与夜店的印刷酒单核对。", "每個價格都與夜店的印刷酒單核對。")}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA — 주(예약) + 보조(WhatsApp, 번호가 설정된 경우만). */}
+      <div className="px-4 pt-4 space-y-2.5">
+        <Link
+          ref={bookCtaRef}
+          href={buildFlagHref(lang)}
+          onClick={() => trackForeignEvent("foreign_book_at_club_click", { area: "hero", source: "hero" })}
+          className="flex items-center justify-center h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.98] transition-all"
+        >
+          {t("클럽 예약 — 문의 무료, 보증금 없음", "Book a club — free to ask, no deposit", "クラブを予約 — 相談無料・デポジットなし", "预订夜店 — 免费咨询，无需订金", "預訂夜店 — 免費諮詢，無需訂金")}
+        </Link>
+        {whatsapp && (
+          <a
+            href={`https://wa.me/${whatsapp}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 h-12 rounded-full border border-green-500/60 text-money font-extrabold text-[14px] hover:bg-green-500/10 active:scale-[0.98] transition-all"
+          >
+            <MessageCircle className="w-4 h-4" />
+            {t("WhatsApp으로 문의", "Chat on WhatsApp", "WhatsApp で相談", "WhatsApp 咨询", "WhatsApp 諮詢")}
+          </a>
+        )}
+        <p className="text-center text-[12px] text-muted-foreground">{tr("19+ only · Bring your passport to the venue.")}</p>
+      </div>
+
+      {/* 신뢰 배지 4개 — 상시 노출. */}
+      <div className="px-4 pt-4">
+        <div className="grid grid-cols-4 gap-1.5">
+          {[
+            t(`클럽 ${clubCount}곳`, `${clubCount} clubs`, `${clubCount} クラブ`, `${clubCount} 家夜店`, `${clubCount} 家夜店`),
+            t("실제 메뉴", "Real menus", "実メニュー", "真实酒单", "真實酒單"),
+            t("수수료 0", "Zero fee", "手数料ゼロ", "零手续费", "零手續費"),
+            t("현장 결제", "Pay at club", "現地払い", "到店付款", "到店付款"),
+          ].map((b) => (
+            <div key={b} className="flex flex-col items-center gap-1 rounded-xl bg-card border border-border px-1 py-2.5">
+              <Check className="w-4 h-4 text-money" strokeWidth={3} />
+              <span className="text-[11.5px] font-extrabold text-center leading-tight">{b}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 소셜프루프 — 실제 확정 예약(익명). 없으면 진행 중 요청 수, 그것도 0이면 아무것도 안 그린다.
+          예전 "0 requests on-going right now"가 SSR로 찍히던 문제의 해결. */}
+      {recentBookings.length > 0 ? (
+        <div className="px-4 pt-5 space-y-2">
+          <p className="text-[14px] font-black">{t("최근 예약", "Recent bookings", "最近の予約", "最近预订", "最近預訂")}</p>
+          <div className="space-y-1.5">
+            {recentBookings.slice(0, 3).map((b, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl bg-card border border-border px-3 py-2.5">
+                <span className="w-2 h-2 rounded-full bg-money shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-bold truncate">
+                    {b.group_size
+                      ? t(`${b.group_size}명 · ${b.club_name}`, `Group of ${b.group_size} · ${b.club_name}`, `${b.group_size}名 · ${b.club_name}`, `${b.group_size}人 · ${b.club_name}`, `${b.group_size}人 · ${b.club_name}`)
+                      : b.club_name}
+                    {b.area ? `, ${areaLabel(b.area, lang)}` : ""}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">{t("테이블 확정", "Table confirmed", "テーブル確定", "已确认桌位", "已確認包廂")}</p>
+                </div>
+                <span className="text-[11px] text-muted-foreground shrink-0" suppressHydrationWarning>{timeAgo(b.confirmed_at, t)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : !!openRequestCount ? (
+        <p className="px-4 pt-4 text-center text-[13px]">
+          <span className="font-bold text-amber-500 tabular-nums">{openRequestCount}</span>{" "}
+          {t("건의 요청이 진행 중", "requests on-going right now", "件のリクエストが進行中", "个请求正在进行中", "個請求正在進行中")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 // ── Flags 탭 ─────────────────────────────────────────────────────
 function FlagsTab({
   flags,
   clubs,
   openRequestCount = null,
+  recentBookings = [],
 }: {
   flags: FlagItem[];
   clubs: ClubItem[];
   openRequestCount?: number | null;
+  recentBookings?: RecentBooking[];
 }) {
   const { lang, tr } = useTr();
   // Sticky "Book Korean Clubs" CTA: 원본 CTA(RegionSection 하단)가 화면 밖일 때만 표시.
@@ -1073,75 +1262,13 @@ function FlagsTab({
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
       {/* 데스크톱 폭 제한 — 모바일에선 클래스가 비어 기존 레이아웃 그대로. */}
       <div className="lg:px-6 lg:pt-4">
-      {/* ① 타겟 후킹 + 설명 (헤더 아래) */}
-      <div className="px-5 pt-6 pb-5 text-center space-y-3">
-        <h1 className="text-[24px] font-black leading-[1.18] tracking-tight">
-          {tr("Looking for a VIP night in Korea's clubs?")}
-        </h1>
-        {/* -mt-2로 부모 space-y-3(12px) 위에 얹힌 pt-1(4px)까지 눌러 제목·부제를
-            한 덩어리로 붙인다 — 원래는 16px 가까이 떨어져 있었다. */}
-        <p className="text-[18px] font-black text-brand-amber -mt-2">{tr("You're in the right place.")}</p>
-        {/* 소셜프루프 — 원래 하단 sticky CTA에만 있었는데, 처음 진입한 화면에서
-            바로 보여야 신뢰가 생긴다. sticky는 이 문구가 사라지고 버튼만 남는다
-            (중복 방지, 아래 sticky 블록 참고). */}
-        {!!openRequestCount && (
-          <p className="text-center text-[13.5px] text-foreground">
-            <span className="font-bold text-amber-500 tabular-nums">{openRequestCount}</span>
-            {" "}
-            {tr("requests on-going right now")}
-          </p>
-        )}
-      </div>
-
-      {/* ② How it works (드롭다운) — 신뢰 배지 + 3단계 설명 + 바가지 보장 통합 */}
-      <div className="px-4 pb-6">
-        <details className="group rounded-2xl bg-card border border-border overflow-hidden">
-          <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer list-none select-none">
-            <span className="flex items-center gap-2 font-bold text-[14px]">
-              <Info className="w-4 h-4 text-muted-foreground" />
-              {tr("How it works?")}
-            </span>
-            <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
-          </summary>
-          <div className="px-4 pb-4 space-y-4">
-            {/* 신뢰 배지 — 被宰(바가지) 공포 해결. 프리미엄 유지 위해 초록 체크만(붉은색 X) */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 pb-3 border-b border-border">
-              {["No markup", "Real price", "Zero fee", "No deposit"].map((b) => (
-                <div key={b} className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-money shrink-0" strokeWidth={3} />
-                  <span className="text-[13px] font-bold text-foreground">{tr(b)}</span>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-3">
-              {[
-                { n: "1", title: "Pick your club", body: "Choose the clubs you want (or just tell us your vibe) — date, budget, group size." },
-                { n: "2", title: "Choose your drinks", body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup." },
-                { n: "3", title: "Walk in like a VIP", body: "Best table booked, no line. Show your passport at the door (19+)." },
-              ].map((s) => (
-                <div key={s.n} className="flex gap-3">
-                  <div className="shrink-0 w-7 h-7 rounded-full bg-inverse text-inverse-foreground font-black text-[12px] flex items-center justify-center">{s.n}</div>
-                  <div className="space-y-0.5">
-                    <p className="font-bold text-[14px]">{tr(s.title)}</p>
-                    <p className="text-[12px] text-muted-foreground leading-relaxed">{tr(s.body)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Zero 바가지 보장 — How it works 안에 포함 */}
-            <div className="pt-3 border-t border-border">
-              <p className="flex items-center gap-2 text-[13px] font-black text-money">{tr("🛡️ Zero rip-off, guaranteed")}</p>
-              <p className="text-[12px] text-muted-foreground leading-relaxed mt-1">
-                {tr("Pay more than the standard price?")}{" "}
-                <span className="font-bold text-foreground">{tr("We refund you 200%.")}</span>
-              </p>
-            </div>
-          </div>
-        </details>
-      </div>
+      {/* 히어로 — CTA·가격 앵커·200% 보장·신뢰 배지를 첫 화면에 둔다(2026-09-09).
+          예전엔 제목 두 줄 + 접힌 "How it works?"뿐이라 랜딩 세션 83%가 아무것도
+          안 누르고 나갔고, 첫 CTA는 클럽 브라우저를 다 지나야 나왔다. */}
+      <HeroSection clubCount={clubs.length} openRequestCount={openRequestCount} recentBookings={recentBookings} bookCtaRef={bookCtaRef} />
 
       {/* 지역 섹션 (강남/홍대 소개 + 클럽 리스트 + 지역 버튼 + 한국인 소셜프루프 캐러셀) */}
-      {clubs.length > 0 && <RegionSection clubs={clubs} flags={flags} bookCtaRef={bookCtaRef} />}
+      {clubs.length > 0 && <RegionSection clubs={clubs} flags={flags} />}
 
       {/* Safety tips */}
       <div className="px-4 pb-6 space-y-3">
@@ -1242,7 +1369,7 @@ function FlagsTab({
 
 // ── Map 탭 ───────────────────────────────────────────────────────
 function MapTab() {
-  const { lang, tr } = useTr();
+  const { lang, t, tr } = useTr();
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 px-6 text-center">
       <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
@@ -1251,7 +1378,7 @@ function MapTab() {
       <div className="space-y-2">
         <h3 className="text-[18px] font-black">{tr("Seoul Club Map")}</h3>
         <p className="text-[13px] text-muted-foreground leading-relaxed">
-          {tr("Browse clubs in Gangnam and Hongdae.")}<br />
+          {t("이태원·홍대·강남·부산 클럽 둘러보기.", "Browse clubs in Itaewon, Hongdae, Gangnam and Busan.", "梨泰院・弘大・江南・釜山のクラブを見る。", "浏览梨泰院、弘大、江南、釜山的夜店。", "瀏覽梨泰院、弘大、江南、釜山的夜店。")}<br />
           {tr("See menus, ratings, and opening hours.")}
         </p>
       </div>
@@ -1264,8 +1391,10 @@ function MapTab() {
         </Link>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { label: "Gangnam", emoji: "🍾" },
+            { label: "Itaewon", emoji: "🌏" },
             { label: "Hongdae", emoji: "🎧" },
+            { label: "Gangnam", emoji: "🍾" },
+            { label: "Busan", emoji: "🌊" },
           ].map((area) => (
             <div key={area.label} className="rounded-xl bg-card border border-border p-3 text-center">
               <p className="text-xl mb-1">{area.emoji}</p>
@@ -1284,6 +1413,7 @@ export function EnHomeClient({
   clubs = [],
   initialLang = "en",
   openRequestCount = null,
+  recentBookings = [],
 }: {
   flags: FlagItem[];
   clubs?: ClubItem[];
@@ -1291,10 +1421,12 @@ export function EnHomeClient({
   initialLang?: Lang;
   /** count_open_foreign_requests() 결과. null이면 신뢰 문구 자체를 숨긴다(0을 보여주지 않음). */
   openRequestCount?: number | null;
+  /** recent_foreign_bookings() 결과(Migration 664) — 히어로 소셜프루프. */
+  recentBookings?: RecentBooking[];
 }) {
   return (
     <LangContext.Provider value={initialLang}>
-      <EnHomeInner flags={flags} clubs={clubs} openRequestCount={openRequestCount} />
+      <EnHomeInner flags={flags} clubs={clubs} openRequestCount={openRequestCount} recentBookings={recentBookings} />
     </LangContext.Provider>
   );
 }
@@ -1303,10 +1435,12 @@ function EnHomeInner({
   flags,
   clubs = [],
   openRequestCount = null,
+  recentBookings = [],
 }: {
   flags: FlagItem[];
   clubs?: ClubItem[];
   openRequestCount?: number | null;
+  recentBookings?: RecentBooking[];
 }) {
   const [tab, setTab] = useState<Tab>("flags");
   const { lang, tr } = useTr();
@@ -1373,7 +1507,7 @@ function EnHomeInner({
           4개 탭(홈/내 요청/Q&A/지도)에 공통 적용된다. */}
       <div className="flex-1 overflow-hidden flex flex-col lg:w-full lg:max-w-[1100px] lg:mx-auto">
         {tab === "flags" && (
-          <FlagsTab flags={flags} clubs={clubs} openRequestCount={openRequestCount} />
+          <FlagsTab flags={flags} clubs={clubs} openRequestCount={openRequestCount} recentBookings={recentBookings} />
         )}
         {tab === "my" && <MyRequestsTab />}
         {tab === "qa" && <FaqTab />}

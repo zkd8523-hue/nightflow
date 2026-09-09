@@ -97,3 +97,11 @@ verify_jwt = false
 entrypoint = "./functions/sync-fx-rates/index.ts"
 # 크론: 월 03:00 KST (일 18:00 UTC) — Migration 661 pg_cron 등록
 # schedule = "0 18 * * 0"
+
+[functions.foreign-guest-emails]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/foreign-guest-emails/index.ts"
+# 호출 2종 — Migration 664: ① foreign_requests INSERT 트리거({mode:"received"})
+#                          ② pg_cron 매일 19:00 KST(10:00 UTC) ({mode:"reminders"})
+# schedule = "0 10 * * *"

@@ -16,6 +16,10 @@ import { cn } from "@/lib/utils";
 import { getClubEventDate } from "@/lib/utils/date";
 import { isClubOpenOn } from "@/lib/utils/clubOpenDays";
 import { isRedDay } from "@/lib/utils/holidays";
+import { ko, enUS, ja, zhCN, zhTW } from "react-day-picker/locale";
+
+// 달력 요일·월 표기 — 외국어 트랙에서 한국어 달력이 새지 않게 한다(2026-09-09).
+const DAY_LOCALE = { ko, en: enUS, ja, zh: zhCN, "zh-tw": zhTW } as const;
 
 const fmt = (d: Date) => dayjs(d).format("YYYY-MM-DD");
 
@@ -23,7 +27,10 @@ export function ClubDateCalendar({
   openDows,
   value,
   onSelect,
+  lang = "ko",
 }: {
+  /** 표기 언어. 미지정이면 한국어(기존 호출부 호환). */
+  lang?: keyof typeof DAY_LOCALE;
   /** clubs.open_dows — null이면 미설정이라 아무 날도 막지 않는다 */
   openDows: number[] | null;
   /** 선택된 날짜 YYYY-MM-DD ("" 이면 미선택) */
@@ -37,6 +44,7 @@ export function ClubDateCalendar({
 
   return (
     <Calendar
+      locale={DAY_LOCALE[lang] ?? ko}
       mode="single"
       selected={value ? new Date(value + "T12:00:00") : undefined}
       onSelect={(day) => {
@@ -63,7 +71,7 @@ export function ClubDateCalendar({
         selected:
           "[&>button]:bg-inverse [&>button]:text-inverse-foreground [&>button]:font-black [&>button]:hover:opacity-90",
         today:
-          "before:content-['오늘'] before:absolute before:top-0.5 before:left-1/2 before:-translate-x-1/2 before:text-[7px] before:text-muted-foreground before:font-bold before:whitespace-nowrap before:leading-none",
+          (lang === "ko" ? "before:content-['오늘']" : "before:content-['today']") + " before:absolute before:top-0.5 before:left-1/2 before:-translate-x-1/2 before:text-[7px] before:text-muted-foreground before:font-bold before:whitespace-nowrap before:leading-none",
       }}
       components={{
         Week: ({ week, children, ...props }) => {

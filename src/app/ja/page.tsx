@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
 import { hideTestData } from "@/lib/utils/testData";
-import { EnHomeClient } from "../en/EnHomeClient";
+import { EnHomeClient, type RecentBooking } from "../en/EnHomeClient";
 import { orderForeignHome } from "@/lib/clubs/foreignSort";
 import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 
@@ -193,6 +193,10 @@ export default async function JaHomePage() {
     .order("google_review_count", { ascending: false, nullsFirst: false })
     .limit(80);
   // 주대가 등록된 클럽 — MD와 함께 "즉시 예약 가능" 판정에 쓴다(배지·정렬).
+  // 히어로 신뢰 문구용 — /en과 동일(Migration 638·664). 예전엔 이 세 언어에만 빠져 있었다.
+  const { data: openRequestCount } = await supabase.rpc("count_open_foreign_requests");
+  const { data: recentBookingsRaw } = await supabase.rpc("recent_foreign_bookings", { p_limit: 3 });
+  const recentBookings = (recentBookingsRaw ?? []) as RecentBooking[];
   const menuIds = await fetchMenuClubIds(supabase);
   const seenClubNames = new Set<string>();
   // 목록 "Recommend"와 동일 로직으로 통일: 지역별 MD보유→리뷰순 + featured_rank 고정위치.
@@ -281,9 +285,9 @@ export default async function JaHomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="sr-only">
-        <h1>
+        <h2>
           韓国クラブ予約 — 江南・弘大・梨泰院のVIPルーム (NightFlow ソウル)
-        </h1>
+        </h2>
         <p>
           NightFlowは日本人旅行者のための韓国クラブ予約プラットフォームです。韓国語不要で、ソウルの江南・弘大・梨泰院・狎鴎亭のトップクラブVIPルームを簡単に予約できます。本物の価格、ブローカーなし、隠れた手数料なし。行きたいクラブを選ぶ（または予算と雰囲気だけ伝える）だけで、NightFlowが直接クラブに連絡し席を確保します。K-POPクラブ、バー、ヒップホップナイトクラブ、高級VIPラウンジまで、NightFlowが日本語対応で安心してご予約いただけます。
         </p>
@@ -390,7 +394,7 @@ export default async function JaHomePage() {
           </li>
         </ul>
       </div>
-      <EnHomeClient flags={flags} clubs={clubs} initialLang="ja" />
+      <EnHomeClient flags={flags} clubs={clubs} initialLang="ja" openRequestCount={openRequestCount ?? null} recentBookings={recentBookings} />
     </>
   );
 }
