@@ -123,6 +123,18 @@ interface Props {
     utm_source: string | null;
     landing_path: string | null;
   }[];
+  // Migration 663 — 게이트 통과 후 폼 내부 세부 단계. field는 date→club→menu→
+  // name→contact 순서로 온다(뷰에서 정렬). "게이트 다음이 너무 약하다"는
+  // 지적에 대한 답 — foreignFunnel의 gate_passed→submitted 사이를 채운다.
+  formFieldProgress: {
+    field: string;
+    sessions: number;
+  }[];
+  formSubmitBlocks: {
+    reason: string;
+    blocks: number;
+    sessions: number;
+  }[];
 }
 
 /** 방문자 한 줄 — 누르면 저니가 펼쳐진다. 저니는 클릭 시점에 그 사람 것만 조회. */
@@ -276,6 +288,7 @@ function Donut({
 
 export function InsightsClient({
   hotspots, funnel, acquisition, byLang, foreignFunnel, foreignExits, foreignVisitors,
+  formFieldProgress, formSubmitBlocks,
 }: Props) {
   // 방문자 목록 언어 필터. null = 전체.
   const [visitorLang, setVisitorLang] = useState<string | null>(null);
@@ -707,6 +720,102 @@ export function InsightsClient({
                 아니라, 폼 도달의 다수가 CTA를 안 거치기 때문입니다(사이드바·저장된 링크·직접 진입).
                 그래서 단계 간 비율이 아니라 랜딩 대비로 그립니다.
               </p>
+            </div>
+
+            {/* ── 게이트 다음: 폼 필드 진행 + 제출 차단 이유 (Migration 663) ──
+                위 "게이트" 막대 하나로 뭉쳐 있던 구간을 field 단위로 쪼갠다.
+                날짜→클럽→메뉴→이름→연락처 순서로, 어디서 숫자가 뚝 떨어지는지가
+                병목이다. 언어 구분 없이 전체 집계(표본이 작아 언어별로 쪼개면
+                0건투성이가 된다). */}
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-4">
+                게이트 다음{" "}
+                <span className="normal-case tracking-normal font-medium">
+                  — 폼 안 어디서 막히나 (전체 언어 합산, 최근 60일)
+                </span>
+              </p>
+              {formFieldProgress.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  데이터가 없습니다. Migration 663이 적용됐는지, 아직 필드 완료 이벤트가
+                  쌓이지 않았는지 확인하세요.
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {(() => {
+                    const FIELD_LABEL: Record<string, string> = {
+                      date: "날짜", club: "클럽", menu: "메뉴(술)",
+                      name: "이름", contact: "연락처",
+                    };
+                    const max = Math.max(...formFieldProgress.map((f) => f.sessions), 1);
+                    return formFieldProgress.map((f, i) => {
+                      const prev = i > 0 ? formFieldProgress[i - 1].sessions : f.sessions;
+                      const dropped = Math.max(prev - f.sessions, 0);
+                      return (
+                        <div
+                          key={f.field}
+                          className="grid grid-cols-[64px_1fr_110px] gap-3 items-center text-[11px]"
+                        >
+                          <span className="text-muted-foreground text-right font-bold">
+                            {FIELD_LABEL[f.field] ?? f.field}
+                          </span>
+                          <div className="h-[18px] bg-muted rounded-sm overflow-hidden">
+                            <div
+                              className="h-full rounded-sm flex items-center pl-2 text-[10px] font-black text-black"
+                              style={{
+                                width: `${(f.sessions / max) * 100}%`,
+                                background: "#f2a2c0",
+                              }}
+                            >
+                              {f.sessions}
+                            </div>
+                          </div>
+                          <span className="text-muted-foreground tabular-nums text-right">
+                            {i > 0 && dropped > 0 ? (
+                              <span className="text-red-400 font-bold">−{dropped}명 이탈</span>
+                            ) : (
+                              "—"
+                            )}
+                          </span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
+
+              {formSubmitBlocks.length > 0 && (
+                <div className="mt-5 pt-4 border-t border-border">
+                  <p className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground mb-2.5">
+                    제출 시도가 걸린 이유
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {(() => {
+                      const REASON_LABEL: Record<string, string> = {
+                        no_date: "날짜 미선택", no_area_or_club: "지역/클럽 미선택",
+                        club_closed_that_day: "그날 휴무", no_club: "클럽 미선택",
+                        menu_loading: "메뉴 로딩 중", no_menu_picked: "술 미선택",
+                        under_min_budget: "최소주문 미달", no_name: "이름 미입력",
+                        no_contact: "연락처 미입력", contact_format_invalid: "연락처 형식 오류",
+                      };
+                      return formSubmitBlocks.map((b) => (
+                        <span
+                          key={b.reason}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-[11px] font-bold"
+                        >
+                          {REASON_LABEL[b.reason] ?? b.reason}
+                          <span className="text-muted-foreground tabular-nums">
+                            {b.blocks}회 · {b.sessions}명
+                          </span>
+                        </span>
+                      ));
+                    })()}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2.5">
+                    같은 사람이 같은 이유로 여러 번 눌러도 회수는 누적되지만 명 수는 한 번만
+                    센다 — 회수≫명수면 그 자리에서 반복 실패 후 이탈했다는 뜻입니다.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* ── CTA 클릭률 비교 ── */}

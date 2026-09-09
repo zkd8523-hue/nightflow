@@ -88,6 +88,21 @@ interface ForeignVisitor {
   landing_path: string | null;
 }
 
+// Migration 663 — 게이트 통과 후 폼 내부 세부 단계. foreign_funnel_by_lang의
+// gate_passed → submitted 사이가 텅 비어 있어서 "게이트 다음이 너무 약하다"는
+// 지적이 나왔다. field는 date→club→menu→name→contact 순서로 온다(뷰에서 정렬).
+interface FormFieldProgress {
+  field: string;
+  sessions: number;
+}
+
+// 제출을 시도했다가 handleSubmit의 검증에 걸려 못 낸 이유별 집계.
+interface FormSubmitBlock {
+  reason: string;
+  blocks: number;
+  sessions: number;
+}
+
 export default async function InsightsPage() {
   const supabase = await createClient();
 
@@ -102,17 +117,21 @@ export default async function InsightsPage() {
     .single();
   if (ud?.role !== "admin") redirect("/");
 
-  // 7개 뷰 병렬 조회 (658: 외국인 퍼널 2개, 660: 방문자 목록)
-  const [hotspotsRes, funnelRes, acquisitionRes, langRes, fgFunnelRes, fgExitRes, fgVisitorRes] =
-    await Promise.all([
-      supabase.from("dropoff_hotspots").select("*").limit(10),
-      supabase.from("signup_funnel").select("*").single(),
-      supabase.from("acquisition_quality").select("*").limit(15),
-      supabase.from("dropoff_by_lang").select("*"),
-      supabase.from("foreign_funnel_by_lang").select("*"),
-      supabase.from("foreign_exit_points").select("*"),
-      supabase.from("foreign_visitor_list").select("*"),
-    ]);
+  // 9개 뷰 병렬 조회 (658: 외국인 퍼널 2개, 660: 방문자 목록, 663: 폼 세부 2개)
+  const [
+    hotspotsRes, funnelRes, acquisitionRes, langRes,
+    fgFunnelRes, fgExitRes, fgVisitorRes, fieldProgressRes, submitBlocksRes,
+  ] = await Promise.all([
+    supabase.from("dropoff_hotspots").select("*").limit(10),
+    supabase.from("signup_funnel").select("*").single(),
+    supabase.from("acquisition_quality").select("*").limit(15),
+    supabase.from("dropoff_by_lang").select("*"),
+    supabase.from("foreign_funnel_by_lang").select("*"),
+    supabase.from("foreign_exit_points").select("*"),
+    supabase.from("foreign_visitor_list").select("*"),
+    supabase.from("foreign_form_field_progress").select("*"),
+    supabase.from("foreign_form_submit_blocks").select("*"),
+  ]);
 
   const hotspots: DropoffHotspot[] = (hotspotsRes.data as DropoffHotspot[]) || [];
   const funnel: SignupFunnel | null = (funnelRes.data as SignupFunnel) || null;
@@ -122,6 +141,8 @@ export default async function InsightsPage() {
   const foreignFunnel: ForeignFunnel[] = (fgFunnelRes.data as ForeignFunnel[]) || [];
   const foreignExits: ForeignExitPoint[] = (fgExitRes.data as ForeignExitPoint[]) || [];
   const foreignVisitors: ForeignVisitor[] = (fgVisitorRes.data as ForeignVisitor[]) || [];
+  const formFieldProgress: FormFieldProgress[] = (fieldProgressRes.data as FormFieldProgress[]) || [];
+  const formSubmitBlocks: FormSubmitBlock[] = (submitBlocksRes.data as FormSubmitBlock[]) || [];
 
   return (
     <div className="min-h-screen bg-background text-foreground pt-12 pb-24">
@@ -186,6 +207,8 @@ export default async function InsightsPage() {
           foreignFunnel={foreignFunnel}
           foreignExits={foreignExits}
           foreignVisitors={foreignVisitors}
+          formFieldProgress={formFieldProgress}
+          formSubmitBlocks={formSubmitBlocks}
         />
       </div>
     </div>
