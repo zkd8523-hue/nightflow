@@ -172,7 +172,7 @@ export default function EnFaqPage() {
             data-nf-track="book_cta" href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
-            🍾 Book with NightFlow
+            🍾 Book Korean Clubs
           </Link>
           <p className="text-[12px] text-muted-foreground">
             19+ only · Bring your passport · No booking fee

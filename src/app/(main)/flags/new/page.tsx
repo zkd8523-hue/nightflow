@@ -44,9 +44,9 @@ export async function generateMetadata({
   const t = makeT(lang);
   const title = t(
     "깃발 꽂기",
-    "Book with NightFlow",
-    "NightFlowで予約する",
-    "通过 NightFlow 预订"
+    "Book Korean Clubs",
+    "韓国のクラブを予約",
+    "预订韩国夜店"
   );
   return { title: { absolute: `${title} | NightFlow` } };
 }

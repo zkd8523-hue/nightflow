@@ -42,6 +42,18 @@ type ClubItem = ForeignClubDetail;
 // (예전엔 꾹 누르기로 상세를 열었는데 발견성이 떨어져서, 탭 한 번으로 누구나 바로 상세를 보게 바꿈 —
 //  대신 선택은 카드 위에 얹은 별도 버튼으로 분리해 "빠른 선택"과 "상세 보기"가 서로 안 막히게 함.)
 const BROWSE_AREAS = ["이태원", "홍대", "강남"];
+// 지역 칩 이모지 — /en 홈(EnHomeClient의 REGIONS)과 같은 기호를 쓴다. 손님이 홈에서
+// 보던 칩과 폼의 칩이 달라 보이면 같은 지역인지 한 번 더 확인하게 된다.
+// 여기 없는 지역(대구·광주 등)은 이모지 없이 이름만 — 아무 기호나 붙이면 오히려 오해를 산다.
+// 칩으로 낼 지역 — 광주·대구는 예약 가능 클럽이 1~2곳뿐이라 칩을 눌러도 거의 안 좁혀진다.
+// 목록에서 빼는 건 아니다("전체"에는 그대로 나온다) — 칩 줄만 짧게 유지한다.
+const CHIP_AREAS = ["이태원", "홍대", "강남", "부산"];
+const AREA_EMOJI: Record<string, string> = {
+  이태원: "🌏",
+  강남: "🍾",
+  홍대: "🎧",
+  부산: "🌊",
+};
 // 이태원 Recommend 상위 3자리 수동 큐레이션 — 자동 알고리즘(리뷰수 기준)이 구글 장소 오매칭 등으로
 // 신뢰 못 할 값을 낼 때가 있어(예: BAT 리뷰수 급증), 검증된 클럽 3곳을 고정 후보로 두고 노출 순서만 섞음.
 const ITAEWON_RECOMMEND_CURATED = ["Dawn", "BADASS", "Day&night"];
@@ -180,6 +192,20 @@ export function ForeignRequestForm({
   // 막을 근거가 없으니 null(=제한 없음)이다.
   const selectedClubOpenDows =
     (selectedClubId ? clubs.find((c) => c.id === selectedClubId)?.open_dows : null) ?? null;
+
+  // 날짜 섹션은 클럽보다 위에 있어서, 클럽을 고른 순간 화면 밖(위쪽)에서 나타난다.
+  // 고르고 나면 다음 할 일이 날짜인데 그게 안 보이면 폼이 끝난 줄 안다 — 스크롤로 데려간다.
+  const dateSectionRef = useRef<HTMLElement | null>(null);
+  const prevHadClubRef = useRef(false);
+  useEffect(() => {
+    const hasClub = selectedClubIds.length > 0;
+    // 막 고른 순간에만(없음 → 있음) 움직인다. 이미 고른 상태에서 리렌더될 때마다
+    // 화면이 튀면 메뉴를 담다가도 위로 끌려간다.
+    if (hasClub && !prevHadClubRef.current && !eventDate) {
+      dateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    prevHadClubRef.current = hasClub;
+  }, [selectedClubIds, eventDate]);
 
   const closedNotice = selectedClubOpenDows?.length
     ? t(
@@ -419,9 +445,10 @@ export function ForeignRequestForm({
   // 정렬: 추천순(담당 MD 우선+리뷰순) / 리뷰 많은순 / 평점순.
   // 타입·장르 필터는 여기 넣지 않음 — 태그 커버리지가 낮아(83%) 리뷰 많은 주요 클럽 다수가
   // 태그 미입력 상태라 필터를 켜면 오히려 손해. 세밀한 필터링은 "Browse clubs" 팝업에서.
-  const [clubSortKey, setClubSortKey] = useState<"recommend" | "reviews" | "rating">("recommend");
+  // 정렬 탭(Recommend/Most reviewed/Top rated)은 뺐다(2026-09-09) — 예약 가능 클럽이
+  // 20곳이라 정렬을 바꿔도 같은 카드가 순서만 뒤집힐 뿐이었고, 고를 게 셋으로 늘어
+  // "뭘 눌러야 하지"를 먼저 시키는 화면이 됐다. 목록은 추천순 하나로 간다.
   const LOAD_MORE_BATCH = 8;
-  const INITIAL_BATCH = 8;
   // 목록에 실제로 들어온 지역만 쓴다(2026-09-07). 예전엔 BROWSE_AREAS(이태원·홍대·강남)를
   // 그대로 돌렸는데, 폼 목록이 isBookable 기준으로 바뀌면서 부산·대구·광주의 예약 가능한
   // 클럽이 clubs에는 들어와도 캐러셀 루프가 그 지역을 안 돌아 영영 안 보였다.
@@ -479,36 +506,20 @@ export function ForeignRequestForm({
     });
   }, [clubs, areaScope, shuffledCurated]);
 
-  // 리뷰 많은순/평점순 전용: 명시적으로 정렬된 단일 리스트.
-  const explicitSorted = useMemo(() => {
-    const arr = [...areaScopedClubs];
-    arr.sort((a, b) =>
-      clubSortKey === "rating"
-        ? (b.google_rating ?? 0) - (a.google_rating ?? 0)
-        : (b.google_review_count ?? 0) - (a.google_review_count ?? 0)
-    );
-    return arr;
-  }, [areaScopedClubs, clubSortKey]);
-
   const [visibleExtra, setVisibleExtra] = useState(0);
-  // 지역 탭·정렬이 바뀌면 이전 기준으로 쌓인 "더보기" 진행도를 초기화.
+  // 지역 탭이 바뀌면 이전 기준으로 쌓인 "더보기" 진행도를 초기화.
   useEffect(() => {
     setVisibleExtra(0);
-  }, [area, clubSortKey]);
+  }, [area]);
   const remainingPool = useMemo(() => {
     const shownIds = new Set(recommendPool.map((c) => c.id));
     return areaScopedClubs.filter((c) => !shownIds.has(c.id));
   }, [areaScopedClubs, recommendPool]);
-  const defaultClubs = useMemo(() => {
-    if (clubSortKey === "recommend") {
-      return [...recommendPool, ...remainingPool.slice(0, visibleExtra)];
-    }
-    return explicitSorted.slice(0, INITIAL_BATCH + visibleExtra);
-  }, [clubSortKey, recommendPool, remainingPool, visibleExtra, explicitSorted]);
-  const hasMoreDefault =
-    clubSortKey === "recommend"
-      ? visibleExtra < remainingPool.length
-      : INITIAL_BATCH + visibleExtra < explicitSorted.length;
+  const defaultClubs = useMemo(
+    () => [...recommendPool, ...remainingPool.slice(0, visibleExtra)],
+    [recommendPool, remainingPool, visibleExtra]
+  );
+  const hasMoreDefault = visibleExtra < remainingPool.length;
 
   const filteredClubs = useMemo(() => {
     const q = clubSearch.trim().toLowerCase();
@@ -749,7 +760,18 @@ export function ForeignRequestForm({
   if (tripStatus === null) {
     return (
       <div className="space-y-6 pb-12">
-        {formTitle}
+        {/* 게이트에서는 "Book your Seoul night" 대신 질문 자체를 제목으로 쓴다(2026-09-09).
+            제목과 카드 안 질문이 위아래로 붙어 두 줄을 먹는데, 이 화면에서 손님이
+            답해야 하는 건 질문 하나뿐이라 제목은 자리만 차지했다. */}
+        <h1 className="text-2xl font-black text-foreground tracking-tight leading-snug">
+          {t(
+            "한국 여행 일정이 확정됐나요?",
+            "Is your Korea trip confirmed?",
+            "韓国旅行の予定は確定していますか？",
+            "你的韩国行程确定了吗?",
+            "你的韓國行程確定了嗎?"
+          )}
+        </h1>
         {/* 고른 클럽을 게이트에서도 보여줌 — 이게 없으면 "Book at BADASS"를 눌렀는데
             클럽 얘기가 없는 질문 화면이 떠서, 선택이 날아간 줄 알고 목록으로 되돌아가 이탈했음.
             메인 폼(3장 구조)의 클럽 카드와 같은 형태로 통일 — 이미지 + 이름만.
@@ -771,18 +793,7 @@ export function ForeignRequestForm({
             </div>
           );
         })()}
-        <div className="bg-card rounded-3xl border border-border p-6 space-y-5">
-          <div className="space-y-1.5">
-            <h2 className="text-[20px] font-black text-foreground leading-snug tracking-tight">
-              {t(
-                "한국 여행 일정이 확정됐나요?",
-                "Is your Korea trip confirmed?",
-                "韓国旅行の予定は確定していますか？",
-                "你的韩国行程确定了吗?",
-                "你的韓國行程確定了嗎?"
-              )}
-            </h2>
-          </div>
+        <div className="bg-card rounded-3xl border border-border p-6">
           <div className="space-y-3">
             <button
               type="button"
@@ -892,18 +903,20 @@ export function ForeignRequestForm({
               <p className="text-[15px] font-black text-foreground truncate">
                 {displayClubName(selectedClub)}
               </p>
-              <p className="text-[12px] text-muted-foreground">
-                {t("이 클럽으로 요청해요", "We'll request this club", "このクラブでリクエスト", "我们会申请这家夜店")}
-              </p>
             </div>
           </button>
         );
       })()}
 
-      {formStep !== 4 && (
+      {/* 날짜는 클럽을 고른 뒤에만 보여준다(2026-09-09).
+          클럽 전에 날짜를 받으면 막을 근거(open_dows)가 없어 휴무일도 그냥 골라지고,
+          나중에 클럽을 고른 순간 "그 날은 쉬는 날"이라며 되돌려보내게 된다 —
+          손님 입장에선 멀쩡히 고른 날짜를 무를 이유가 없는데 무르라는 화면이다.
+          클럽이 먼저 정해지면 달력이 처음부터 그 클럽 영업일만 열어준다.
+          4장(접수완료)에서는 원래대로 숨긴다. */}
+      {formStep !== 4 && selectedClubIds.length > 0 && (
       <>
-      {/* 날짜 */}
-      <section>
+      <section ref={dateSectionRef}>
         {label(<Calendar className="w-4 h-4 text-money" />, t("날짜", "Date", "日付", "日期"))}
         {/* 네이티브 date input의 플레이스홀더·표시 텍스트는 lang 속성이 아니라 브라우저/OS 로케일을
             따르는 WebKit 버그가 있음(특히 iOS Safari) — html lang·input lang을 다 맞춰도 한글로 샘.
@@ -1160,25 +1173,38 @@ export function ForeignRequestForm({
             </div>
           </div>
         )}
-        {/* 정렬 탭 */}
-        <div className="flex items-center gap-2">
-          {(["recommend", "reviews", "rating"] as const).map((k) => (
+        {/* 지역 칩 — 되살림(2026-09-09). area state는 계속 살아 있었는데 칩 UI만 없어서
+            손님이 "이태원 갈 건데"처럼 지역이 확실해도 20곳을 전부 훑어야 했다.
+            장르 칩은 일부러 넣지 않는다: 예약 가능 20곳 중 EDM이 14곳이라 눌러도 거의
+            안 좁혀지고, 테크노·R&B·팝은 각 1곳이라 누르면 막다른 길이 된다.
+            게다가 장르 무태그 3곳(Dawn·HYPE SEOUL·Color Apgu)은 어떤 장르를 눌러도 사라진다.
+            지역은 6곳에 고르게 흩어져 있어(강남7·홍대4·이태원3·부산3·대구2·광주1) 실제로 좁혀진다.
+            scopeAreas = 실제 목록에 있는 지역만 — 고르면 0건이 되는 칩은 애초에 안 만든다. */}
+        {scopeAreas.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 mb-2">
             <button
-              key={k}
               type="button"
-              onClick={() => setClubSortKey(k)}
-              className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
-                clubSortKey === k ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground hover:bg-muted"
+              onClick={() => setArea("")}
+              className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
+                area === "" ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
-              {k === "recommend"
-                ? t("추천순", "Recommend", "おすすめ順", "推荐")
-                : k === "reviews"
-                ? t("리뷰 많은순", "Most reviewed", "レビュー数順", "评价最多")
-                : t("평점순", "Top rated", "評価順", "评分")}
+              {t("전체", "All areas", "すべて", "全部", "全部")}
             </button>
-          ))}
-        </div>
+            {scopeAreas.filter((a) => CHIP_AREAS.includes(a)).map((a) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => setArea((prev) => (prev === a ? "" : a))}
+                className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
+                  area === a ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {AREA_EMOJI[a] ? `${AREA_EMOJI[a]} ` : ""}{areaLabel(a, lang)}
+              </button>
+            ))}
+          </div>
+        )}
         {/* 기본: 추천 클럽 가로 스크롤 카드 (검색 중이 아닐 때). 브라우징 우선 노출. */}
         {!isSearching && (
           defaultClubs.length === 0 ? (
@@ -1189,7 +1215,7 @@ export function ForeignRequestForm({
             // 카드 탭하면 상세, ✓ 버튼 탭하면 선택. 스크롤 끝(-200px)에 닿으면 다음 배치 자동 로드.
             // key: 정렬/지역 바뀌면 DOM 리마운트 → scrollLeft 리셋.
             <div
-              key={`${clubSortKey}-${area}`}
+              key={area}
               className="mt-2 flex gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4"
               onScroll={(e) => {
                 if (!hasMoreDefault) return;
@@ -1362,7 +1388,13 @@ export function ForeignRequestForm({
                         key={c.id}
                         club={c}
                         selected={selectedClubIds.includes(c.id)}
-                        onSelect={() => toggleClub(c.id)}
+                        onSelect={() => {
+                          const wasSelected = selectedClubIds.includes(c.id);
+                          toggleClub(c.id);
+                          // 상세의 "Select this club"과 같은 규칙 — 고르면 팝업을 접고
+                          // 폼으로 돌아간다. 해제는 계속 둘러보는 중이라 그대로 둔다.
+                          if (!wasSelected) setBrowseOpen(false);
+                        }}
                         onOpenDetail={() => openDetail(g.items, c)}
                         lang={lang}
                       />
@@ -1414,7 +1446,20 @@ export function ForeignRequestForm({
                   <div className="flex gap-2 mt-2">
                     <button
                       type="button"
-                      onClick={() => toggleClub(detailClub.id)}
+                      onClick={() => {
+                        const wasSelected = selectedClubIds.includes(detailClub.id);
+                        toggleClub(detailClub.id);
+                        // 선택했으면 상세를 닫는다(2026-09-09) — 고르고 나면 다음 할 일은
+                        // 폼으로 돌아가 날짜·인원을 채우는 것인데, 시트가 그대로 떠 있으면
+                        // 선택이 먹혔는지도 안 보이고 X를 따로 눌러야 했다.
+                        // 해제일 때는 닫지 않는다 — 마음이 바뀐 거라 옆 클럽을 계속 볼 차례다.
+                        if (!wasSelected) {
+                          closeDetail();
+                          // 상세는 Browse 팝업 위에 겹쳐 뜬다 — 상세만 닫으면 팝업이
+                          // 그대로 남아 폼이 안 보인다. 골랐으면 둘 다 접고 폼으로 돌려보낸다.
+                          setBrowseOpen(false);
+                        }
+                      }}
                       className={`flex-[7] flex items-center justify-center gap-1.5 py-3.5 rounded-xl font-black text-[15px] transition-colors ${
                         selectedClubIds.includes(detailClub.id)
                           ? "bg-muted text-foreground/80 hover:bg-muted"

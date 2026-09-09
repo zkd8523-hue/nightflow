@@ -200,7 +200,7 @@ export function ForeignSidebar({
           }
           className="block text-center py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors"
         >
-          {tr("Book with NightFlow")}
+          {tr("Book Korean Clubs")}
         </Link>
       </div>
     </aside>

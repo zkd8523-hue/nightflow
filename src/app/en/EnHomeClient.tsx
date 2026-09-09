@@ -257,7 +257,7 @@ function MyRequestsTab() {
           <p className="text-[15px] font-bold text-foreground/80">{tr("No requests yet")}</p>
           <p className="text-[13px] text-muted-foreground">{tr("Pick a club & we'll help you book.")}</p>
           <Link href={`/flags/new?lang=${lang}`} className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
-            {tr("Book with NightFlow")}
+            {tr("Book Korean Clubs")}
           </Link>
         </div>
         <AccountSection />
@@ -851,7 +851,7 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
         );
       })}
 
-      {/* 하단 sticky "Book with NightFlow" 버튼(showStickyCta) 높이만큼 여백을 확보한다.
+      {/* 하단 sticky "Book Korean Clubs" 버튼(showStickyCta) 높이만큼 여백을 확보한다.
           이게 없으면 마지막 지역(주로 Busan) 클럽 스트립이 화면에 보이는 스크롤 위치에서
           원본 CTA(이 아래 914행)는 아직 화면 밖이라 sticky CTA가 뜨는데, 그 버튼이 z-20으로
           스트립 이미지와 같은 화면 좌표에 겹쳐 떠서 스와이프/탭을 가로챈다(2026-09-07 실측:
@@ -1030,7 +1030,7 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
           href={`/flags/new?lang=${lang}`}
           className="block w-full mt-1 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all"
         >
-          {tr("Book with NightFlow")}
+          {tr("Book Korean Clubs")}
         </Link>
       </div>
     </div>
@@ -1048,7 +1048,7 @@ function FlagsTab({
   openRequestCount?: number | null;
 }) {
   const { lang, tr } = useTr();
-  // Sticky "Book with NightFlow" CTA: 원본 CTA(RegionSection 하단)가 화면 밖일 때만 표시.
+  // Sticky "Book Korean Clubs" CTA: 원본 CTA(RegionSection 하단)가 화면 밖일 때만 표시.
   // 원본이 보이면 자동 숨김 (중복 UI 방지). 스크롤 컨테이너(overflow-y-auto div)를 root로 관찰.
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bookCtaRef = useRef<HTMLAnchorElement>(null);
@@ -1214,7 +1214,7 @@ function FlagsTab({
 
       </div>
 
-      {/* Sticky "Book with NightFlow" CTA — 원본 CTA(RegionSection 하단)가 화면 밖일 때만 표시.
+      {/* Sticky "Book Korean Clubs" CTA — 원본 CTA(RegionSection 하단)가 화면 밖일 때만 표시.
           스크롤 컨테이너 하단에 sticky 배치. IntersectionObserver로 원본 가시성 감지. */}
       <div
         aria-hidden={!showStickyCta}
@@ -1233,7 +1233,7 @@ function FlagsTab({
             showStickyCta ? "pointer-events-auto" : ""
           }`}
         >
-          {tr("Book with NightFlow")}
+          {tr("Book Korean Clubs")}
         </Link>
       </div>
     </div>

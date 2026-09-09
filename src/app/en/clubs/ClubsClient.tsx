@@ -218,7 +218,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   const notSureCopy = t("어디로 갈지 모르겠나요?", "Not sure where to go?", "どこに行くか迷っていますか？", "不知道去哪家?");
   const ctaLabel = t(
     "🍾 예약하기 — 클럽에 직접 연결해드려요",
-    "🍾 Book with NightFlow",
+    "🍾 Book Korean Clubs",
     "🍾 NightFlowで予約する",
     "🍾 通过 NightFlow 预订",
   );
@@ -262,7 +262,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   const genreGroup = FILTER_GROUPS.find((g) => g.group === "genre");
   const stickyCtaLabel = t(
     "🍾 예약하기",
-    "🍾 Book with NightFlow",
+    "🍾 Book Korean Clubs",
     "🍾 NightFlowで予約",
     "🍾 立即预订",
   );
