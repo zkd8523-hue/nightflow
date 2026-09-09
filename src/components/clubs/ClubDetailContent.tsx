@@ -27,7 +27,6 @@ import { toast } from "sonner";
 import { AuctionList } from "@/components/auctions/AuctionList";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { KoreanBookingForm } from "./KoreanBookingForm";
-import { isBookable } from "@/lib/clubs/bookable";
 import { ClubShareButton } from "./ClubShareButton";
 import { DrinkMenuViewer } from "./DrinkMenuViewer";
 import { ClubLocationModal } from "./ClubLocationModal";
@@ -293,7 +292,9 @@ export function ClubDetailContent({
   // 한국인 예약 스티키바 — 외국인 트랙(isBookable, lib/clubs/bookable.ts)과 동일 게이팅을
   // 한국 트랙에도 적용. MD+주대가 모두 있어야 실제로 예약을 중개할 수 있다.
   // 게스트 간판(무료입장 혜택)과는 목적이 달라 공존한다 — 간판이 있어도 테이블 예약은 별개로 노출.
-  const bookable = !isForeigner && isBookable({ has_md: hasMd, has_menu: hasMenu });
+  // 한국인 트랙은 예전 기준(담당 MD + 주대)을 그대로 둔다 — isBookable이 2026-09-10에 외국인
+  // 트랙용으로 "메뉴만"으로 완화됐지만, 한국인 예약은 MD 연결이 전제라 여기서 직접 판정한다.
+  const bookable = !isForeigner && hasMd && hasMenu;
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   return (

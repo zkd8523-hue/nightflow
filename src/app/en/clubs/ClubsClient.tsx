@@ -288,7 +288,8 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
               처음 온 사람이 여기가 뭐 하는 곳인지 모른 채 목록만 보고 이탈했음.
               클럽 개수는 아래 줄로 내려 맥락(몇 곳 중에 고르는지)만 유지. */}
           <div className="space-y-1.5">
-            <h1 className="text-[26px] font-black tracking-tight leading-tight break-keep">{introHeadline}</h1>
+            {/* h2 — 이 컴포넌트를 쓰는 /clubs·/clubs/[area] 페이지가 sr-only h1을 이미 갖고 있어 h1이 둘이었다(크리틱 2차) */}
+            <h2 className="text-[26px] font-black tracking-tight leading-tight break-keep">{introHeadline}</h2>
             <p className="text-[13.5px] text-muted-foreground leading-snug break-keep">{introSub}</p>
           </div>
 

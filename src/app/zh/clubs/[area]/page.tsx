@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fetchMenuClubIds } from "@/lib/clubs/bookable";
+import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
+import { fetchTablePricing, bookingFloor, wonCompact } from "@/lib/clubs/tablePricing";
+import { getKrwRates } from "@/lib/utils/currency";
+import { AreaTablePrices } from "@/components/foreign/AreaTablePrices";
 import { ClubsClient } from "../../../en/clubs/ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
 
@@ -25,9 +28,9 @@ const AREA_CONFIG: Record<
     koreanArea: "강남",
     zh: "江南",
     title:
-      "江南夜店预订 2026 — VIP 包间、狎鸥亭 &amp; 清潭包间 (首尔)",
+      "江南夜店预订 2026 — VIP 包间、狎鸥亭 & 清潭包间 (首尔)",
     description:
-      "首尔江南最佳夜店和 VIP 包间预订。EDM 夜店、嘻哈、狎鸥亭 &amp; 清潭高端包间。真实价格，VIP 包间，无中介，无需韩语。",
+      "首尔江南最佳夜店和 VIP 包间预订。EDM 夜店、嘻哈、狎鸥亭 & 清潭高端包间。真实价格，VIP 包间，无中介，无需韩语。",
     intro:
       "江南是首尔的高端夜生活区，云集大型 EDM 夜店、嘻哈场所以及狎鸥亭、清潭的韩国顶级 VIP 包间。NightFlow 让您无需韩语即可预订江南夜店包间 — 真实价格，无中介。",
     vibe:
@@ -60,7 +63,7 @@ const AREA_CONFIG: Record<
     koreanArea: "홍대",
     zh: "弘大",
     title:
-      "弘大夜店预订 2026 — 嘻哈、K-POP &amp; 外国人友好 (首尔)",
+      "弘大夜店预订 2026 — 嘻哈、K-POP & 外国人友好 (首尔)",
     description:
       "首尔弘大最佳嘻哈和 K-POP 夜店预订，靠近弘益大学。外国人友好，英文 OK，真实价格，无中介。提交请求后，NightFlow 直接联系夜店为您锁定座位。",
     intro:
@@ -97,9 +100,9 @@ const AREA_CONFIG: Record<
     description:
       "首尔梨泰院最佳国际化夜店预订。House、EDM、嘻哈、Disco。英语友好，外国人友好的人群。真实价格，VIP 包间，无中介。",
     intro:
-      "梨泰院是首尔的国际化夜生活区，外国旅客比例最高。音乐风格涵盖 House、EDM、Disco、R&amp;B 和嘻哈。大多数员工会说英语，对不会韩语的旅客最为友好。",
+      "梨泰院是首尔的国际化夜生活区，外国旅客比例最高。音乐风格涵盖 House、EDM、Disco、R&B 和嘻哈。大多数员工会说英语，对不会韩语的旅客最为友好。",
     vibe:
-      "梨泰院夜店国际化、规模较小，以音乐为重点 (House、Groove、R&amp;B)。入场费通常 ₩30,000–40,000。人群是首尔最多元化的 — 本地人、外籍人士、旅客都在这里相聚。夜晚气氛延续到清晨。",
+      "梨泰院夜店国际化、规模较小，以音乐为重点 (House、Groove、R&B)。入场费通常 ₩30,000–40,000。人群是首尔最多元化的 — 本地人、外籍人士、旅客都在这里相聚。夜晚气氛延续到清晨。",
     topClubsNote:
       "梨泰院顶级夜店包括 Soap Seoul (2026 年重开，House 和 Groove 音乐)、Cakeshop (传奇地下场所) 以及梨泰院路上的各种国际酒吧和夜店。",
     keywords: [
@@ -126,13 +129,13 @@ const AREA_CONFIG: Record<
     title:
       "狎鸥亭包间预订 2026 — 清潭高端 VIP 包间 (首尔)",
     description:
-      "预订首尔狎鸥亭 &amp; 清潭高端 VIP 包间。香槟服务、高端套餐、独家人群。真实价格，无中介，无需韩语。",
+      "预订首尔狎鸥亭 & 清潭高端 VIP 包间。香槟服务、高端套餐、独家人群。真实价格，无中介，无需韩语。",
     intro:
       "狎鸥亭和清潭云集首尔最独家的 VIP 包间。香槟文化、高端瓶装服务、时尚人群。NightFlow 让外国旅客无需韩国本地朋友即可预订狎鸥亭顶级包间 — 韩国本地人的价格，韩国本地人的服务。",
     vibe:
       "狎鸥亭包间高端、私密、精选。包间起价 ₩2,000,000+。人群是高端 20–30 多岁，常见时尚/演艺圈人士。音乐根据场所不同涵盖 EDM、嘻哈包间和 House。着装要求严格的 smart-casual 起步。",
     topClubsNote:
-      "狎鸥亭 &amp; 清潭顶级包间包括 Core Lounge (狎鸥亭 EDM，2026 年开业)、Club Arzu (清潭高端嘻哈)、DM Seoul (狎鸥亭嘻哈包间)、Lion (清潭超高端明星场所)。",
+      "狎鸥亭 & 清潭顶级包间包括 Core Lounge (狎鸥亭 EDM，2026 年开业)、Club Arzu (清潭高端嘻哈)、DM Seoul (狎鸥亭嘻哈包间)、Lion (清潭超高端明星场所)。",
     keywords: [
       "狎鸥亭包间",
       "狎鸥亭包间预订",
@@ -199,10 +202,14 @@ export async function generateMetadata({
   const { area } = await params;
   const config = AREA_CONFIG[area as AreaSlug];
   if (!config) return {};
+  // 지역 가격표(AreaTablePrices)에 맞춘 랭킹 신호 — 지역 하한은 정적이라 조회 없이 넣는다
+  const floor = bookingFloor(config.koreanArea);
+  // 가격 문장을 앞에 — SERP 표시 폭(전각 ~78자) 안에 들어오게(크리틱 3차)
+  const description = `卡座预订每桌最低消费${wonCompact(floor, "zh")}起，真实酒单价格，无中介费。${config.description}`;
 
   return {
     title: config.title,
-    description: config.description,
+    description,
     keywords: config.keywords,
     alternates: {
       canonical: `https://nightflow.kr/zh/clubs/${area}`,
@@ -219,7 +226,7 @@ export async function generateMetadata({
     },
     openGraph: {
       title: config.title,
-      description: config.description,
+      description,
       url: `https://nightflow.kr/zh/clubs/${area}`,
       locale: "zh_CN",
       type: "website",
@@ -258,6 +265,25 @@ export default async function ZhClubsAreaPage({
     has_menu: menuIds.has(c.id),
   }));
   const clubCount = clubList.length;
+
+  // 지역 가격 비교 표(2026-09-10) — 예약 가능한 클럽만, 한 쿼리. 지역당 최대 10곳이라 1,000행 안전.
+  const bookableClubs = clubList.filter((c) => isBookable({ name: c.name, has_menu: c.has_menu }));
+  const [areaPricing, fxSnapshot] = await Promise.all([
+    fetchTablePricing(supabase, bookableClubs.map((c) => c.id)),
+    getKrwRates(),
+  ]);
+  const priceRows = bookableClubs
+    .filter((c) => c.name_en?.trim())
+    .map((c) => ({
+      id: c.id,
+      name: c.name_en!.trim(),
+      href: `/zh/clubs/${area}/${clubSlug(c.name_en!)}`,
+      bookHref: `/flags/new?lang=zh&area=${encodeURIComponent(c.area)}&club=${c.id}`,
+      areaKo: c.area,
+      rating: c.google_rating,
+      reviewCount: c.google_review_count,
+      pricing: areaPricing.get(c.id),
+    }));
 
   // Schema.org — Place + ItemList (Google: 별점·리스트 노출). en 버전(clubs/[area]/page.tsx)엔
   // 있는데 ja/zh/zh-tw엔 통째로 빠져 있었다 — 콘텐츠는 동일하게 현지화됐는데 구조화 데이터만
@@ -361,6 +387,10 @@ export default async function ZhClubsAreaPage({
         </ul>
       </div>
       <ClubsClient clubs={clubList} lang="zh" />
+
+      {/* 지역 단위 가격 비교 — "itaewon bottle service price"류 클럽명 없는 가격 검색의 랜딩.
+          숫자는 클럽 상세·폼과 같은 tablePricing 규칙. */}
+      <AreaTablePrices lang="zh" areaLabel={config.zh} rows={priceRows} rates={fxSnapshot.rates} />
 
       <nav className="max-w-lg lg:max-w-[1000px] mx-auto px-4 lg:px-8 pb-10 pt-2 lg:pt-8">
         <h2 className="text-[15px] font-black text-foreground mb-2">

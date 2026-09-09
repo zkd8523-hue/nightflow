@@ -22,11 +22,29 @@ export type BookableInput = {
   has_md?: boolean;
   /** 주대(club_menu_items)가 등록돼 있는가. */
   has_menu?: boolean;
+  /** 제외 목록 대조용. 안 넘기면 제외 검사 없이 메뉴 유무만 본다. */
+  name?: string | null;
 };
 
-/** 이 클럽을 지금 즉시 예약 중개할 수 있는가. */
+// 메뉴판은 있지만 외국인 예약 중개에서 빼는 클럽(사용자 결정, 2026-09-10).
+// 컬럼을 새로 파는 대신 이름 목록 — 2곳뿐이고 바뀌면 여기 한 줄만 고친다.
+const FOREIGN_BOOKING_EXCLUDED = new Set(["Awesome Red", "Waikiki"]);
+export function isForeignBookingExcluded(name: string | null | undefined): boolean {
+  return !!name && FOREIGN_BOOKING_EXCLUDED.has(name.trim());
+}
+
+/**
+ * 이 클럽을 지금 즉시 예약 중개할 수 있는가.
+ *
+ * 기준 = 주대(메뉴판)만(2026-09-10). 예전엔 담당 MD까지 요구했는데, 메뉴판은 있는데 MD가 없다는
+ * 이유로 외국인 트랙에서 13곳(강남 Hilo·LOBBY 157·Lion, 이태원 Fountain·Paper·SOLE·SX·The Mansion,
+ * 홍대 ADD·Awesome Red·B1 등)이 통째로 빠졌다. 컨시어지 모델은 운영자가 클럽에 직접 연락하는
+ * 구조라(Migration 454) MD 연결은 접수 뒤에 붙이면 된다 — 손님 앞에서 막을 이유는 메뉴(=가격
+ * 확정) 하나뿐이다. has_md는 추천 정렬(recommendCompare)에서만 가산점으로 쓴다.
+ */
 export function isBookable(club: BookableInput): boolean {
-  return Boolean(club.has_md) && Boolean(club.has_menu);
+  if (isForeignBookingExcluded(club.name)) return false;
+  return Boolean(club.has_menu);
 }
 
 // 서버/브라우저 클라이언트를 모두 받는다. supabase-js의 제네릭이 호출부마다

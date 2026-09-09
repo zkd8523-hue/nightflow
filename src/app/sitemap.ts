@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { eventSlug } from "@/lib/events/slug";
 import { createServerClient } from "@supabase/ssr";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
+import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 
 const BASE_URL = "https://nightflow.kr";
 
@@ -190,11 +191,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // status='approved'만 — 클럽 상세페이지(generateMetadata)가 approved만 렌더하고
         // 나머지는 404를 내므로, 미승인/병합 클럽이 sitemap에 들어가면 soft 404 색인 오염.
         // name_en/area는 영어 클럽 페이지(/en/clubs/{area}/{slug}) URL 생성에 필요
-        .select("id, name_en, area, hidden_from_guide")
+        // name·drink_menu_updated_at: 외국어 클럽 페이지의 예약 가능 판정·lastmod용(2026-09-10)
+        .select("id, name, name_en, area, hidden_from_guide, drink_menu_updated_at")
         .eq("status", "approved")
         .is("deleted_at", null)
         .eq("is_test", false)
-        .limit(200),
+        // 106곳 → 200 넘으면 조용히 누락되던 하드캡(크리틱 2차)
+        .limit(500),
       supabase
         .from("puzzles")
         .select("id, updated_at, leader:public_user_profiles!puzzles_leader_id_fkey!inner(is_test)")
@@ -285,6 +288,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // 4개 언어 트랙 전부(en/ja/zh/zh-tw) — 지역 페이지가 있는 지역(강남/홍대/이태원/부산)만.
     // 나머지 지역은 부모(지역 페이지) 없는 고아 URL이 되므로 제외.
     const FOREIGN_LANGS = ["en", "ja", "zh", "zh-tw"] as const;
+    // 예약 가능(주대 등록) 클럽은 우선순위를 올리고 lastmod를 메뉴 갱신일로 — 이 페이지들이
+    // 외국인 예약 전환의 실제 랜딩이라 크롤 예산을 여기로 몬다(2026-09-10 해외 SEO).
+    const menuIds = await fetchMenuClubIds(supabase);
     const enClubRoutes: MetadataRoute.Sitemap = (clubsRes.data ?? [])
       .flatMap((c) => {
         const areaSlug = canonicalAreaSlug(c.area);
@@ -292,11 +298,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         if (!areaSlug || !nameEn || c.hidden_from_guide) return [];
         const slug = clubSlug(nameEn);
         if (!slug) return [];
+        const bookable = isBookable({ name: c.name, has_menu: menuIds.has(c.id) });
+        const menuUpdated = c.drink_menu_updated_at ? new Date(c.drink_menu_updated_at) : null;
         return FOREIGN_LANGS.map((lang) => ({
           url: `${BASE_URL}/${lang}/clubs/${areaSlug}/${slug}`,
-          lastModified: now,
+          lastModified: bookable && menuUpdated && !Number.isNaN(menuUpdated.getTime()) ? menuUpdated : now,
           changeFrequency: "weekly" as const,
-          priority: 0.75,
+          priority: bookable ? 0.9 : 0.7,
         }));
       });
 

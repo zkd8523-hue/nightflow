@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { fetchMenuClubIds } from "@/lib/clubs/bookable";
+import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
+import { fetchTablePricing, bookingFloor, wonCompact } from "@/lib/clubs/tablePricing";
+import { getKrwRates } from "@/lib/utils/currency";
+import { AreaTablePrices } from "@/components/foreign/AreaTablePrices";
 import { ClubsClient } from "../ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
 
@@ -213,10 +216,14 @@ export async function generateMetadata({
   const { area } = await params;
   const config = AREA_CONFIG[area as AreaSlug];
   if (!config) return {};
+  // 지역 가격표(AreaTablePrices)에 맞춘 랭킹 신호 — 지역 하한은 정적이라 조회 없이 넣는다
+  const floor = bookingFloor(config.koreanArea);
+  // 가격 문장을 앞에 — SERP 표시 폭(전각 ~78자) 안에 들어오게(크리틱 3차)
+  const description = `Table bookings from ${wonCompact(floor, "en")} minimum spend per table — real menu prices, no broker fee. ${config.description}`;
 
   return {
     title: config.title,
-    description: config.description,
+    description,
     keywords: config.keywords,
     alternates: {
       canonical: `https://nightflow.kr/en/clubs/${area}`,
@@ -230,7 +237,7 @@ export async function generateMetadata({
     },
     openGraph: {
       title: config.title,
-      description: config.description,
+      description,
       url: `https://nightflow.kr/en/clubs/${area}`,
       locale: "en_US",
       type: "website",
@@ -269,6 +276,25 @@ export default async function EnClubsAreaPage({
     has_menu: menuIds.has(c.id),
   }));
   const clubCount = clubList.length;
+
+  // 지역 가격 비교 표(2026-09-10) — 예약 가능한 클럽만, 한 쿼리. 지역당 최대 10곳이라 1,000행 안전.
+  const bookableClubs = clubList.filter((c) => isBookable({ name: c.name, has_menu: c.has_menu }));
+  const [areaPricing, fxSnapshot] = await Promise.all([
+    fetchTablePricing(supabase, bookableClubs.map((c) => c.id)),
+    getKrwRates(),
+  ]);
+  const priceRows = bookableClubs
+    .filter((c) => c.name_en?.trim())
+    .map((c) => ({
+      id: c.id,
+      name: c.name_en!.trim(),
+      href: `/en/clubs/${area}/${clubSlug(c.name_en!)}`,
+      bookHref: `/flags/new?lang=en&area=${encodeURIComponent(c.area)}&club=${c.id}`,
+      areaKo: c.area,
+      rating: c.google_rating,
+      reviewCount: c.google_review_count,
+      pricing: areaPricing.get(c.id),
+    }));
 
   // Schema.org — Place + ItemList (Google: 별점·리스트 노출)
   // 외국인이 "Hongdae clubs" 검색 시 클럽 목록 카드로 노출.
@@ -410,12 +436,16 @@ export default async function EnClubsAreaPage({
       </div>
       <ClubsClient clubs={clubList} lang="en" />
 
+      {/* 지역 단위 가격 비교 — "itaewon bottle service price"류 클럽명 없는 가격 검색의 랜딩.
+          숫자는 클럽 상세·폼과 같은 tablePricing 규칙. */}
+      <AreaTablePrices lang="en" areaLabel={config.en} rows={priceRows} rates={fxSnapshot.rates} />
+
       {/* 클럽별 상세 페이지 인덱스 — 눈에 보이는 내부 링크.
           숨은(sr-only) 링크만으로는 크롤러가 가중치를 낮게 보고, 유저에게도
           "각 클럽의 영업시간·입장료 페이지가 따로 있다"는 발견 경로가 된다. */}
       <nav className="max-w-lg lg:max-w-[1000px] mx-auto px-4 lg:px-8 pb-10 pt-2 lg:pt-8">
         <h2 className="text-[15px] font-black text-foreground mb-2">
-          {config.en} clubs — hours, entry fee &amp; reviews
+          {config.en} clubs — hours, entry fee & reviews
         </h2>
         <div className="flex flex-wrap gap-2">
           {clubList.map((c) => {

@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fetchMenuClubIds } from "@/lib/clubs/bookable";
+import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
+import { fetchTablePricing, bookingFloor, wonCompact } from "@/lib/clubs/tablePricing";
+import { getKrwRates } from "@/lib/utils/currency";
+import { AreaTablePrices } from "@/components/foreign/AreaTablePrices";
 import { ClubsClient } from "../../../en/clubs/ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
 
@@ -25,9 +28,9 @@ const AREA_CONFIG: Record<
     koreanArea: "강남",
     ja: "江南",
     title:
-      "江南クラブ予約 2026 — VIPルーム、狎鴎亭 &amp; 清潭ラウンジ (ソウル)",
+      "江南クラブ予約 2026 — VIPルーム、狎鴎亭 & 清潭ラウンジ (ソウル)",
     description:
-      "ソウル江南のベストクラブ&amp;VIPルーム予約。EDMクラブ、ヒップホップ、狎鴎亭&amp;清潭の高級ラウンジ。本物の価格、VIPルーム、ブローカーなし、韓国語不要。",
+      "ソウル江南のベストクラブ&VIPルーム予約。EDMクラブ、ヒップホップ、狎鴎亭&清潭の高級ラウンジ。本物の価格、VIPルーム、ブローカーなし、韓国語不要。",
     intro:
       "江南はソウルの高級ナイトライフエリアで、大型EDMクラブ、ヒップホップ会場、狎鴎亭・清潭の韓国トップVIPラウンジが集まる場所。NightFlowなら韓国語不要で江南クラブVIPルームを予約可能 — 本物の価格、ブローカーなし。",
     vibe:
@@ -56,9 +59,9 @@ const AREA_CONFIG: Record<
     koreanArea: "홍대",
     ja: "弘大",
     title:
-      "弘大クラブ予約 2026 — ヒップホップ、K-POP &amp; 外国人フレンドリー (ソウル)",
+      "弘大クラブ予約 2026 — ヒップホップ、K-POP & 外国人フレンドリー (ソウル)",
     description:
-      "ソウル弘大のベストヒップホップ&amp;K-POPナイトクラブ予約。弘益大学近く、外国人フレンドリー、英語OK、本物の価格、ブローカーなし。",
+      "ソウル弘大のベストヒップホップ&K-POPナイトクラブ予約。弘益大学近く、外国人フレンドリー、英語OK、本物の価格、ブローカーなし。",
     intro:
       "弘大はソウルのヒップホップ・K-POPナイトライフエリアで、弘益大学近くの外国人フレンドリーなナイトクラブが集まります。旅行者にとって最も入りやすいエリア — ほとんどのクラブがウォークイン可能ですが、NightFlowでVIPルーム・ゲストアクセス予約すれば良い席が確保でき、列をスキップできます。",
     vibe:
@@ -89,9 +92,9 @@ const AREA_CONFIG: Record<
     description:
       "ソウル梨泰院のベスト国際クラブ予約。ハウス、EDM、ヒップホップ、ディスコ。英語フレンドリー、外国人フレンドリーな客層。本物の価格、VIPルーム、ブローカーなし。",
     intro:
-      "梨泰院はソウルの国際的なナイトライフエリアで、外国人旅行者の比率が最も高い場所。音楽はハウス、EDM、ディスコ、R&amp;B、ヒップホップまで幅広い。ほとんどのスタッフが英語を話し、韓国語を話さない旅行者にとって最も入りやすいエリア。",
+      "梨泰院はソウルの国際的なナイトライフエリアで、外国人旅行者の比率が最も高い場所。音楽はハウス、EDM、ディスコ、R&B、ヒップホップまで幅広い。ほとんどのスタッフが英語を話し、韓国語を話さない旅行者にとって最も入りやすいエリア。",
     vibe:
-      "梨泰院クラブは国際的、小規模、音楽中心（ハウス、グルーヴ、R&amp;B）。入場料は通常₩30,000–40,000。客層はソウルで最も多様 — 地元民、外国人居住者、旅行者が一緒に集う。深夜から早朝まで続く雰囲気。",
+      "梨泰院クラブは国際的、小規模、音楽中心（ハウス、グルーヴ、R&B）。入場料は通常₩30,000–40,000。客層はソウルで最も多様 — 地元民、外国人居住者、旅行者が一緒に集う。深夜から早朝まで続く雰囲気。",
     topClubsNote:
       "梨泰院トップクラブにはSoap Seoul（2026年再オープン、ハウスとグルーヴ）、Cakeshop（伝説的なアンダーグラウンド）、梨泰院ロード沿いの様々な国際バー・クラブが含まれます。",
     keywords: [
@@ -116,13 +119,13 @@ const AREA_CONFIG: Record<
     title:
       "狎鴎亭ラウンジ予約 2026 — 清潭高級VIPラウンジ (ソウル)",
     description:
-      "ソウル狎鴎亭&amp;清潭の高級VIPラウンジ予約。シャンパンサービス、プレミアムボトル、独占的な客層。本物の価格、ブローカーなし、韓国語不要。",
+      "ソウル狎鴎亭&清潭の高級VIPラウンジ予約。シャンパンサービス、プレミアムボトル、独占的な客層。本物の価格、ブローカーなし、韓国語不要。",
     intro:
       "狎鴎亭と清潭にはソウルで最も独占的なVIPラウンジが集まる場所。シャンパン文化、プレミアムボトルサービス、ファッショナブルな客層。NightFlowなら日本人旅行者でも韓国の地元の友人なしで狎鴎亭ラウンジを予約可能 — 韓国人と同じ価格、同じ体験。",
     vibe:
       "狎鴎亭ラウンジは高級、親密、厳選。テーブルは₩2,000,000+から。客層は20–30代の高級層、ファッション・芸能関係者が多い。音楽は会場によりEDM、ヒップホップラウンジ、ハウスまで様々。ドレスコードはスマートカジュアル最低限が必須。",
     topClubsNote:
-      "狎鴎亭&amp;清潭トップラウンジにはCore Lounge（狎鴎亭、EDM、2026年オープン）、Club Arzu（清潭、高級ヒップホップ）、DM Seoul（狎鴎亭、ヒップホップラウンジ）、Lion（清潭、超高級セレブ会場）が含まれます。",
+      "狎鴎亭&清潭トップラウンジにはCore Lounge（狎鴎亭、EDM、2026年オープン）、Club Arzu（清潭、高級ヒップホップ）、DM Seoul（狎鴎亭、ヒップホップラウンジ）、Lion（清潭、超高級セレブ会場）が含まれます。",
     keywords: [
       "狎鴎亭ラウンジ",
       "アックジョンラウンジ",
@@ -183,10 +186,14 @@ export async function generateMetadata({
   const { area } = await params;
   const config = AREA_CONFIG[area as AreaSlug];
   if (!config) return {};
+  // 지역 가격표(AreaTablePrices)에 맞춘 랭킹 신호 — 지역 하한은 정적이라 조회 없이 넣는다
+  const floor = bookingFloor(config.koreanArea);
+  // 가격 문장을 앞에 — SERP 표시 폭(전각 ~78자) 안에 들어오게(크리틱 3차)
+  const description = `テーブル予約は1卓${wonCompact(floor, "ja")}〜（実際のメニュー価格、仲介手数料なし）。${config.description}`;
 
   return {
     title: config.title,
-    description: config.description,
+    description,
     keywords: config.keywords,
     alternates: {
       canonical: `https://nightflow.kr/ja/clubs/${area}`,
@@ -200,7 +207,7 @@ export async function generateMetadata({
     },
     openGraph: {
       title: config.title,
-      description: config.description,
+      description,
       url: `https://nightflow.kr/ja/clubs/${area}`,
       locale: "ja_JP",
       type: "website",
@@ -239,6 +246,25 @@ export default async function JaClubsAreaPage({
     has_menu: menuIds.has(c.id),
   }));
   const clubCount = clubList.length;
+
+  // 지역 가격 비교 표(2026-09-10) — 예약 가능한 클럽만, 한 쿼리. 지역당 최대 10곳이라 1,000행 안전.
+  const bookableClubs = clubList.filter((c) => isBookable({ name: c.name, has_menu: c.has_menu }));
+  const [areaPricing, fxSnapshot] = await Promise.all([
+    fetchTablePricing(supabase, bookableClubs.map((c) => c.id)),
+    getKrwRates(),
+  ]);
+  const priceRows = bookableClubs
+    .filter((c) => c.name_en?.trim())
+    .map((c) => ({
+      id: c.id,
+      name: c.name_en!.trim(),
+      href: `/ja/clubs/${area}/${clubSlug(c.name_en!)}`,
+      bookHref: `/flags/new?lang=ja&area=${encodeURIComponent(c.area)}&club=${c.id}`,
+      areaKo: c.area,
+      rating: c.google_rating,
+      reviewCount: c.google_review_count,
+      pricing: areaPricing.get(c.id),
+    }));
 
   // Schema.org — Place + ItemList (Google: 별점·리스트 노출). en 버전(clubs/[area]/page.tsx)엔
   // 있는데 ja/zh/zh-tw엔 통째로 빠져 있었다 — 콘텐츠는 동일하게 현지화됐는데 구조화 데이터만
@@ -342,6 +368,10 @@ export default async function JaClubsAreaPage({
         </ul>
       </div>
       <ClubsClient clubs={clubList} lang="ja" />
+
+      {/* 지역 단위 가격 비교 — "itaewon bottle service price"류 클럽명 없는 가격 검색의 랜딩.
+          숫자는 클럽 상세·폼과 같은 tablePricing 규칙. */}
+      <AreaTablePrices lang="ja" areaLabel={config.ja} rows={priceRows} rates={fxSnapshot.rates} />
 
       <nav className="max-w-lg lg:max-w-[1000px] mx-auto px-4 lg:px-8 pb-10 pt-2 lg:pt-8">
         <h2 className="text-[15px] font-black text-foreground mb-2">
