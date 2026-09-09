@@ -25,12 +25,12 @@ export function saveFormDraft<T>(key: string, data: T): void {
   }
 }
 
-export function loadFormDraft<T>(key: string): T | null {
+export function loadFormDraft<T>(key: string, ttlMs: number = TTL_MS): T | null {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Draft<T>;
-    if (Date.now() - parsed.savedAt > TTL_MS) {
+    if (Date.now() - parsed.savedAt > ttlMs) {
       localStorage.removeItem(key);
       return null;
     }

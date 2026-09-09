@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Search, X, Check, MapPin, Users, UserRound, Calendar, MessageCircle, Languages, ChevronRight, Heart, Plus } from "lucide-react";
@@ -81,6 +81,13 @@ const AREA_MIN_BUDGET: Record<string, number> = Object.fromEntries(
   Object.entries(AREA_BUDGET_TIERS).map(([area, tiers]) => [area, tiers[0]])
 );
 const FALLBACK_MIN_BUDGET = FALLBACK_BUDGET_TIERS[0];
+
+// 여행 확정 게이트("Is your Korea trip confirmed?")를 한번 "Yes"로 통과하면
+// 7일간 다시 안 묻는다 — 매번 같은 질문을 또 받는 게 재방문 손님에게는
+// 마찰이었다. 7일로 끊는 이유: 그보다 길면 "지난번 여행은 끝났고 이번엔
+// 아직 미정"인 손님까지 걸러야 할 게이트를 건너뛰게 된다(2026-09-09).
+const TRIP_GATE_KEY = "nf_trip_gate_qualified";
+const TRIP_GATE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const CONTACT_TYPES = ["whatsapp", "instagram", "email", "wechat", "line"] as const;
 type ContactType = (typeof CONTACT_TYPES)[number];
 const CONTACT_LABEL: Record<ContactType, string> = {
@@ -108,14 +115,14 @@ const LANGS: { code: Lang; label: string }[] = [
   { code: "ko", label: "한국어" },
 ];
 
-export function ForeignRequestForm({
-  userId,
-  lang,
-  countryCode = null,
-  clubs,
-  presetArea,
-  presetClubId,
-}: {
+/** ForeignBookingScreen이 상단 "返回"를 폼 안 화면 전환과 연결하는 데 쓰는 핸들. */
+export type ForeignRequestFormHandle = {
+  /** 지금 이 폼이 뒤로가기를 자체 처리할 수 있으면 처리하고 true, 아니면 false
+      (페이지 이동으로 넘어가야 함)를 반환한다. */
+  stepBack: () => boolean;
+};
+
+export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   userId: string | null; // 비로그인 익명 신청 허용 (Mig 489)
   lang: Lang;
   /** 로그인 유저의 country_code. 메뉴 가격의 표시 통화를 정하는 데 쓴다 —
@@ -124,7 +131,14 @@ export function ForeignRequestForm({
   clubs: ClubItem[];
   presetArea?: string;
   presetClubId?: string;
-}) {
+}>(function ForeignRequestForm({
+  userId,
+  lang,
+  countryCode = null,
+  clubs,
+  presetArea,
+  presetClubId,
+}, ref) {
   const router = useRouter();
   const t = makeT(lang);
   const fx = useKrwRates();
@@ -187,6 +201,9 @@ export function ForeignRequestForm({
   const [menuDraft, setMenuDraft] = useState<{ snapshot: SelectedMenuSnapshot; total: number } | null>(null);
 
   const selectedClubId = selectedClubIds[0] ?? null;
+  // applyDraft가 selectedClubIds와 picked를 함께 복원할 때, 아래 "클럽 전환 시
+  // picked 초기화" effect가 그 복원을 덮어쓰지 않도록 한 번만 건너뛰게 하는 플래그.
+  const skipPickedResetRef = useRef(false);
 
   // 고른 클럽의 영업요일 — 달력에서 휴무일을 막는 근거. 클럽을 안 골랐으면
   // 막을 근거가 없으니 null(=제한 없음)이다.
@@ -224,10 +241,22 @@ export function ForeignRequestForm({
   })();
 
   // 클럽이 바뀌면 이전 클럽 메뉴로 담은 건 무효다 — 반드시 비운다.
+  //
+  // 단, draft 복원(applyDraft)처럼 "이미 그 클럽에서 고른 picked"를 selectedClubIds와
+  // 함께 한번에 되돌리는 경우는 예외다 — 여기서 무조건 setPicked(null)을 하면
+  // applyDraft가 막 되살린 picked를 이 effect가 다음 커밋에서 바로 지워버려,
+  // "이어하기"로 돌아왔는데 담아둔 주류·클럽 카드가 사라진 것처럼 보였다
+  // (2026-09-09). skipPickedResetRef가 true인 동안은 이 클럽 전환 한 번만 건너뛴다.
   useEffect(() => {
-    setPicked(null);
-    setMenuDraft(null);
-    setMenuZone(null);
+    // 초기화만 건너뛴다 — 메뉴 로드는 어떤 경우든 돌아야 한다. 복원 직후에도
+    // menuItems가 비어 있으면 hasMenu가 false라 담아둔 주류 요약 카드가 안 뜬다.
+    if (skipPickedResetRef.current) {
+      skipPickedResetRef.current = false;
+    } else {
+      setPicked(null);
+      setMenuDraft(null);
+      setMenuZone(null);
+    }
     if (!selectedClubId) {
       setMenuItems([]);
       setMenuCombos([]);
@@ -333,7 +362,14 @@ export function ForeignRequestForm({
   // "Book at ○○" 버튼은 현재 관심을 표현하는 유일한 수단이라 사실상 찜 대용으로 눌린다 —
   // 확정된 방문 의사로 보기엔 신호가 약해서, 게이트를 스킵하면 미확정 리드가 그대로 들어온다.
   // 대신 게이트 화면에 고른 클럽명을 띄워 "내 선택이 살아있다"는 것만 보여준다.
+  //
+  // 서버 렌더링 시점엔 localStorage가 없어 항상 null로 시작해야 hydration이 어긋나지
+  // 않는다 — 7일 이내 "Yes"를 눌렀던 기록은 마운트 후 useEffect에서 반영한다.
   const [tripStatus, setTripStatus] = useState<null | "qualified" | "planning">(null);
+  useEffect(() => {
+    if (loadFormDraft<true>(TRIP_GATE_KEY, TRIP_GATE_TTL_MS)) setTripStatus("qualified");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // 폼을 세 장으로 나눈다 — 한 화면에 클럽+메뉴+연락처를 다 우겨넣으면 스크롤이
   // 너무 길어져 "지금 뭘 채우고 있는지"를 잃는다. 호텔 예약 사이트들이 이미
   // 검증한 패턴: 대상(1) → 상세 옵션(2) → 연락처(3).
@@ -341,6 +377,28 @@ export function ForeignRequestForm({
   //   2장: 메뉴 시트 (전체화면급) — 담기 완료하면 자동으로 3장
   //   3장: 이름·연락처·언어·메모 → 전송
   const [formStep, setFormStep] = useState<1 | 3 | 4>(1);
+
+  // 페이지 상단 "返回"(BackButton)에 노출하는 핸들 — ForeignBookingScreen이 ref로
+  // 연결한다. true를 반환하면 "이 뒤로가기는 폼이 처리했다"는 뜻이라 BackButton은
+  // router.back()/push를 하지 않는다. 클럽만 바꾸려던 손님이 페이지 자체(홈 등)로
+  // 튕겨나가던 문제를 여기서 해결한다(2026-09-09).
+  //
+  // 3장(연락처)에서는 곧장 클럽 목록으로 되돌린다 — "주류 수정"으로 한 단계씩만
+  // 물러나면 손님이 "돌아가기"를 여러 번 눌러야 클럽까지 바꿀 수 있는데, 상단
+  // "返回"는 화면에 계속 떠 있는 유일한 뒤로가기라 한 번에 가장 바깥(클럽 선택)
+  // 으로 보내는 편이 기대에 맞는다. 술 한 단계만 고치고 싶으면 화면 안의
+  // "주류 수정" 버튼을 쓰면 된다.
+  useImperativeHandle(ref, () => ({
+    stepBack: () => {
+      if (formStep === 3 || (formStep === 1 && selectedClubIds.length > 0)) {
+        setSelectedClubIds([]);
+        setFormStep(1);
+        return true;
+      }
+      return false;
+    },
+  }));
+
 
   // 강제종료·새로고침·오조작으로 입력하던 걸 통째로 잃는 사고 방지(2026-09-06,
   // 한국인 폼과 동일 정책). "술을 하나라도 담았을 때"부터 지킨다 — 클럽 탐색
@@ -400,6 +458,10 @@ export function ForeignRequestForm({
     setEventDate(d.eventDate);
     setGroupSize(d.groupSize);
     setArea(d.area);
+    // selectedClubIds가 바뀌면 "클럽 전환 시 picked 초기화" effect가 뒤따라 도는데,
+    // 이 한 번은 새 클럽으로 갈아탄 게 아니라 같은 클럽·같은 picked를 되살리는
+    // 것이므로 그 초기화를 건너뛴다.
+    skipPickedResetRef.current = true;
     setSelectedClubIds(d.selectedClubIds);
     setPicked(d.picked);
     setMenuZone(d.menuZone);
@@ -829,7 +891,7 @@ export function ForeignRequestForm({
           <div className="space-y-3">
             <button
               type="button"
-              onClick={() => { trackEvent("foreign_trip_gate_qualified", { lang: preferredLang }); setTripStatus("qualified"); }}
+              onClick={() => { trackEvent("foreign_trip_gate_qualified", { lang: preferredLang }); saveFormDraft(TRIP_GATE_KEY, true); setTripStatus("qualified"); }}
               className="w-full h-14 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all break-keep"
             >
               {t("✅ 네 — 예약했거나 이미 한국이에요", "✅ Yes — booked or already in Korea", "✅ はい — 予約済み、または既に韓国", "✅ 是 — 已订票或已在韩国")}
@@ -1583,8 +1645,9 @@ export function ForeignRequestForm({
       {/* 뒤로 — 메뉴 있는 클럽이면 "주류 수정"으로 메뉴 시트를 바로 다시 연다.
           1장으로 통째로 보내면 날짜·인원까지 다시 지나야 해서 한 번 더 돈다.
           메뉴 없는 클럽만 1장(날짜·인원·예산)으로 보낸다 — 고칠 게 그것뿐이다.
-          페이지 상단 "Back"은 router.back()이라 여기선 못 쓴다 — 그건 폼
-          바깥(이전 페이지)으로 나가버려 3장에서 누르면 폼 자체가 사라진다. */}
+          같은 동작을 페이지 상단 "返回"에서도 쓸 수 있다 — stepBack()(위쪽
+          useImperativeHandle)이 formStep===3일 때 이 버튼과 똑같이 처리한다. 이
+          버튼은 폼 안에서 스크롤 없이 바로 누를 수 있게 남겨둔 지름길이다. */}
       <button
         type="button"
         onClick={() => (hasMenu ? setMenuOpen(true) : setFormStep(1))}
@@ -1883,7 +1946,7 @@ export function ForeignRequestForm({
       </Sheet>
     </div>
   );
-}
+});
 
 // 캐러셀 카드 — 카드(썸네일) 탭하면 onOpenDetail(상세시트), 우상단 체크 버튼 탭하면 onSelect(선택).
 // 꾹 누르기는 발견성이 낮아서(사용자가 존재를 모름) 제거 — 탭 한 번으로 누구나 상세를 볼 수 있게.

@@ -24,16 +24,21 @@ export function BackButton({
   label,
   fallbackHref,
   guardDraftKey,
+  onBeforeLeave,
 }: {
   label: string;
   fallbackHref: string;
   /** 진행 중 입력이 있는지 확인할 formDraft 키. 없으면 확인 없이 바로 나간다. */
   guardDraftKey?: string;
+  /** 페이지 이동 전에 먼저 물어본다 — true를 반환하면 폼이 자체적으로 처리했다는
+      뜻이라(예: 클럽 재선택 화면 → 목록으로 되돌림) 라우터 이동을 하지 않는다. */
+  onBeforeLeave?: () => boolean;
 }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const leave = () => {
+    if (onBeforeLeave?.()) return;
     // history.length는 탭 안에서 쌓인 엔트리 수 — 1이면 이 탭의 첫 페이지라
     // 뒤로 갈 곳이 없다(직접 링크로 들어온 경우).
     if (window.history.length > 1) router.back();

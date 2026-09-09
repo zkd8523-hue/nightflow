@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { BackButton } from "@/components/foreign/BackButton";
-import { FOREIGN_BOOKING_DRAFT_KEY } from "@/lib/utils/formDraft";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
-import { ForeignRequestForm } from "@/components/foreign/ForeignRequestForm";
+import { ForeignBookingScreen } from "@/components/foreign/ForeignBookingScreen";
 import type { ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
 import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import { getLang, makeT } from "@/lib/i18n";
@@ -153,17 +151,14 @@ export default async function PuzzleNewPage({
     <ForeignShell lang={lang}>
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-lg lg:max-w-[900px] mx-auto px-4 lg:px-8 py-6 lg:py-10">
-        {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 외국인 홈(/en, /ja, /zh) 복귀 링크 제공 */}
-        {isForeigner && (
-          <BackButton
+        {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 외국인 홈(/en, /ja, /zh) 복귀 링크 제공.
+            BackButton과 ForeignRequestForm은 ForeignBookingScreen 안에서 ref로 묶여, 상단
+            "返回"가 먼저 폼 내부 화면 전환(클럽 재선택·주류 수정)을 처리할 수 있으면 처리하고,
+            아니면 페이지 이동으로 넘어간다. */}
+        {isForeigner ? (
+          <ForeignBookingScreen
             label={t("뒤로", "Back", "戻る", "返回")}
             fallbackHref={foreignHome}
-            guardDraftKey={FOREIGN_BOOKING_DRAFT_KEY}
-          />
-        )}
-
-        {isForeigner ? (
-          <ForeignRequestForm
             userId={user?.id ?? null}
             lang={lang}
             /* 표시 통화 추정용. /en에는 미국·홍콩·싱가포르가 섞여 있어
