@@ -235,7 +235,13 @@ export const trackForeignEvent = (
     | 'en_home_view'
     | 'ja_home_view'
     | 'zh_home_view'
-    | 'zh_tw_home_view',
+    | 'zh_tw_home_view'
+    // 게이트 통과 후 폼 필드 단위 진행 — 통과자의 73%(26명 중 19명, 2026-09
+    // 실측)가 그 자리에서 이탈하는데 어느 입력에서 막혔는지 못 봤다. field는
+    // 'date' | 'club' | 'menu' | 'name' | 'contact' 중 하나.
+    | 'foreign_form_field_completed'
+    // 제출 시도했지만 검증 실패로 막힌 지점. reason은 handleSubmit의 각 분기명.
+    | 'foreign_form_submit_blocked',
   params: {
     area?: string | null;
     club_id?: string;

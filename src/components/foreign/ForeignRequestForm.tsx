@@ -381,6 +381,21 @@ export function ForeignRequestForm({
     });
   }, [hasProgress, formStep, eventDate, groupSize, area, selectedClubIds, picked, menuZone, guestName, contactType, preferredLang, contactValue, notes]);
 
+  // 필드 단위 진행 추적 — 게이트 통과 후 이탈이 어느 입력에서 일어나는지
+  // "세션 마지막 이벤트" 역산으로는 안 보였다(2026-09-09). 값이 채워진 시점을
+  // 필드별로 한 번만 기록한다(재입력·수정은 중복 집계 안 되게 ref로 막음).
+  const trackedFieldsRef = useRef<Set<string>>(new Set());
+  const trackFieldOnce = (field: string) => {
+    if (trackedFieldsRef.current.has(field)) return;
+    trackedFieldsRef.current.add(field);
+    trackEvent("foreign_form_field_completed", { lang: preferredLang, field });
+  };
+  useEffect(() => { if (eventDate) trackFieldOnce("date"); }, [eventDate]);
+  useEffect(() => { if (selectedClubIds.length > 0) trackFieldOnce("club"); }, [selectedClubIds]);
+  useEffect(() => { if (picked) trackFieldOnce("menu"); }, [picked]);
+  useEffect(() => { if (guestName.trim()) trackFieldOnce("name"); }, [guestName]);
+  useEffect(() => { if (contactValue.trim()) trackFieldOnce("contact"); }, [contactValue]);
+
   const applyDraft = (d: ForeignDraft) => {
     setEventDate(d.eventDate);
     setGroupSize(d.groupSize);
@@ -619,15 +634,24 @@ export function ForeignRequestForm({
     return local && fixed ? `${local}@${fixed}` : null;
   })();
 
+  // 제출 시도가 어느 검증에서 막혔는지 기록 — 게이트 통과 후 이탈이 왜
+  // 일어나는지가 "세션 마지막 이벤트" 역산으로는 안 보였다(2026-09-09).
+  const blocked = (reason: string) => {
+    trackEvent("foreign_form_submit_blocked", { lang: preferredLang, reason });
+  };
+
   // 버튼 클릭 → 형식 검증만 하고 확인 시트를 연다. 실제 전송은 doSubmit.
   const handleSubmit = () => {
-    if (!eventDate) return toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期"));
-    if (!area && selectedClubIds.length === 0)
+    if (!eventDate) { blocked("no_date"); return toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期")); }
+    if (!area && selectedClubIds.length === 0) {
+      blocked("no_area_or_club");
       return toast.error(t("지역이나 클럽을 골라주세요", "Pick an area or a club", "エリアかクラブを選択", "请选择区域或夜店"));
+    }
     // 임시저장에서 복원된 날짜, 혹은 날짜를 고른 뒤 클럽을 바꾼 경우 — 달력에서
     // 막았다고 끝이 아니다.
     if (!isClubOpenOn(selectedClubOpenDows, eventDate)) {
       setDateOpen(true);
+      blocked("club_closed_that_day");
       return toast.error(
         t(
           "그 날은 클럽이 쉬는 날이에요. 날짜를 다시 골라주세요",
@@ -640,26 +664,34 @@ export function ForeignRequestForm({
     // 담은 총액이 곧 예약 금액이다 — 예산 입력을 없앤 뒤로 메뉴가 유일한 금액 출처라
     // 클럽 선택과 술 담기가 둘 다 필수다.
     if (!selectedClubId) {
+      blocked("no_club");
       return toast.error(t("클럽을 골라주세요", "Pick a club", "クラブを選択", "请选择夜店"));
     }
     if (menuLoading) {
+      blocked("menu_loading");
       return toast.error(t("메뉴를 불러오는 중이에요", "Loading the menu…", "メニューを読み込み中です", "正在加载酒单"));
     }
     if (!picked) {
+      blocked("no_menu_picked");
       return toast.error(t("술을 먼저 골라주세요", "Choose your drinks first", "先にドリンクを選んでください", "请先选择酒水"));
     }
     // 최소주문금액 강제. 이 금액 아래로는 MD가 자리를 못 잡아 왕복만 늘고 결국 무산된다.
     if (orderAmount < minBudget) {
+      blocked("under_min_budget");
       return toast.error(minBudgetNotice);
     }
-    if (!guestName.trim())
+    if (!guestName.trim()) {
+      blocked("no_name");
       return toast.error(t("예약자 이름을 입력해주세요", "Enter the name for the booking", "予約者名を入力", "请填写预订人姓名"));
-    if (!contactValue.trim())
+    }
+    if (!contactValue.trim()) {
+      blocked("no_contact");
       return toast.error(t("연락처를 입력해주세요", "Enter your contact", "連絡先を入力", "请填写联系方式"));
+    }
 
     // 형식 오타 차단 (소프트: 명백히 깨진 것만)
     const contactErr = validateContact(contactType, contactValue);
-    if (contactErr) return toast.error(contactErr);
+    if (contactErr) { blocked("contact_format_invalid"); return toast.error(contactErr); }
 
     // 연락처를 눈으로 다시 확인 — 로그인 없앤 뒤 오타 하나에 리드 전체가 증발하므로.
     setShowConfirm(true);
