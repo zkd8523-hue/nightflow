@@ -210,8 +210,13 @@ export function resetUserEventCache() {
  * fetch를 죽인다. 그래서 foreign_page_exit이 배포 후 0건이었다(2026-09-06 확인).
  *
  * sendBeacon은 페이지가 사라져도 OS가 전송을 보장한다. 대신 응답을 못 받고
- * 커스텀 헤더도 못 붙여서, PostgREST에 필요한 apikey를 쿼리스트링으로 넘긴다
- * (anon 키는 원래 공개값이라 노출 문제 없음 — RLS가 실제 방어선).
+ * 커스텀 헤더도 못 붙인다.
+ *
+ * ⚠️ Supabase REST로 직접 쏘면 안 된다 — 크롬은 다른 도메인으로 가는
+ * sendBeacon에 application/json Blob을 붙이면 SecurityError를 던진다
+ * (CORS 안전 목록 밖 Content-Type은 preflight가 필요한데 이 시점엔 못 기다림).
+ * 그래서 sendBeacon 전환 후에도 0건이었다(2026-09-09, 843건 중 0). 같은 도메인
+ * /api/track으로 보내면 CORS가 아예 없고, 서버가 service role로 저장한다.
  *
  * user_id는 싣지 않는다 — auth.getUser()가 비동기라 이 시점에 못 기다린다.
  * anon_id·session_id만으로 이탈 분석엔 충분하다.
@@ -222,10 +227,6 @@ export function trackUserEventBeacon(
 ): void {
   try {
     if (typeof window === "undefined" || !navigator.sendBeacon) return;
-
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !key) return;
 
     const anonId = getOrCreateAnonId();
     const session = getOrRotateSession(anonId);
@@ -246,11 +247,10 @@ export function trackUserEventBeacon(
       properties,
     });
 
-    // Blob으로 Content-Type을 지정한다 — sendBeacon은 헤더를 못 붙인다.
-    navigator.sendBeacon(
-      `${url}/rest/v1/user_events?apikey=${encodeURIComponent(key)}`,
-      new Blob([body], { type: "application/json" }),
-    );
+    // text/plain은 CORS 안전 목록 Content-Type이라 어떤 브라우저도 안 막는다.
+    // 같은 도메인이라 굳이 필요 없지만, 혹시 다른 오리진(미리보기 도메인 등)에서
+    // 열려도 동작하게 안전한 쪽을 쓴다. 서버(/api/track)가 문자열을 JSON 파싱한다.
+    navigator.sendBeacon("/api/track", new Blob([body], { type: "text/plain" }));
   } catch {
     // 이탈 계측이 실패해도 사용자 경험엔 영향 없어야 한다 — 조용히 무시
   }
