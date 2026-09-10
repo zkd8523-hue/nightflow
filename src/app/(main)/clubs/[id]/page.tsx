@@ -28,7 +28,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // (테스트 클럽이 대부분 pending이라 개발 중 상세를 못 보는 문제).
   const metaQuery = supabase
     .from("clubs")
-    .select("id, name, area, thumbnail_url, dresscode, aliases")
+    // instagram: "OO 인스타" 검색 축(2026-09-10) — 커버리지 96%
+    .select("id, name, area, thumbnail_url, dresscode, aliases, instagram")
     .eq("id", id)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) metaQuery.eq("status", "approved");
@@ -109,6 +110,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       // 드레스코드는 실제로 채워진 클럽에만. 현재 106곳 중 3곳뿐이라 전부에 걸면
       // 검색해서 들어온 사람이 답을 못 찾고 나간다.
       ...(club.dresscode ? [`${club.name} 드레스코드`] : []),
+      // 인스타 축(2026-09-10 추가). 클럽 예약이 인스타 DM으로 이뤄지다 보니
+      // "OO 인스타"는 계정을 찾는 검색 = 예약 의도가 붙은 검색이다. 위치·영업시간이
+      // 정보 검색인 것과 달리 전환에 더 가깝다. 커버리지 96%(106곳 중 102곳)로
+      // 위치·영업시간(100%) 다음으로 높아 전 클럽에 걸어도 빈손으로 안 보낸다.
+      ...(club.instagram
+        ? [
+            `${club.name} 인스타`,
+            `${club.name} 인스타그램`,
+            `${club.name} 인스타 아이디`,
+            `${club.name} 디엠`,
+            ...aliases.map((a) => `${a} 인스타`),
+          ]
+        : []),
       // 예약 축 — 실제로 예약되는 곳에만. 클럽명·별칭·지역 각각에 붙여서
       // "에이스 예약" / "강남 에이스 예약" / "강남 클럽 예약" 어느 조합으로 쳐도 걸리게.
       ...(isBookableClub

@@ -665,6 +665,34 @@ export function ClubDetailContent({
             </a>
           )}
 
+          {/* "OO 인스타" 검색은 계정을 찾는 게 목적이 아니라 DM으로 예약하려는 것이다
+              (2026-09-10). 계정만 주면 그대로 나가버리므로, 예약이 되는 클럽이면
+              "DM 대신 여기서"를 바로 옆에 붙인다. 예약 안 되는 곳엔 안 붙인다 —
+              못 잡아주면서 붙잡으면 거짓말이 된다. */}
+          {clubInstagram && bookable && (
+            <p className="text-[12px] text-muted-foreground mt-0.5">
+              인스타 DM 대신{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  // 하단 스티키 "예약하기"와 같은 동작 — 로그인 안 했으면 로그인 먼저.
+                  if (!user) {
+                    router.push(`/login?redirect=${encodeURIComponent(`/clubs/${club.id}`)}`);
+                    return;
+                  }
+                  trackEvent("club_detail_book_click", {
+                    club_id: club.id, club_name: club.name, area: club.area, source: "instagram_hint",
+                  });
+                  setIsBookingOpen(true);
+                }}
+                className="text-brand-amber font-bold underline underline-offset-2"
+              >
+                여기서 바로 예약
+              </button>
+              하세요. 주대를 보고 고르면 담당자가 자리를 잡아드립니다.
+            </p>
+          )}
+
           {club.website_url && (
             <a
               href={club.website_url}
