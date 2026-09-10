@@ -2153,6 +2153,18 @@ export function PuzzleDetailClient({
                           {isMe && !isLeaderMember && (
                             <span className="text-[10px] text-muted-foreground">나</span>
                           )}
+                          {/* 제한 여부와 무관하게 항상 노출 — 합류 시트가 이 공개를 사전 고지한다
+                              (PuzzleJoinSheet: "파티원은 나이·성별을 서로에게 공개해요"). */}
+                          {(member.user?.age != null || member.user?.gender) && (
+                            <span className="text-[11px] font-medium text-muted-foreground">
+                              {[
+                                member.user.age != null ? `${member.user.age}세` : null,
+                                member.user.gender === "male" ? "남" : member.user.gender === "female" ? "여" : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          )}
                         </p>
                         {member.guest_count > 0 && (
                           <p className="text-[11px] text-muted-foreground">+{member.guest_count}명 동행</p>

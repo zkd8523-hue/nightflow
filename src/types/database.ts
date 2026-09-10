@@ -1119,7 +1119,11 @@ export interface PuzzleMember {
   guest_count: number;
   /** Migration 184: 합류 시점 users.gender 스냅샷 (guest도 동성으로 카운트) */
   gender: 'male' | 'female' | null;
-  user?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'gender' | 'birthday'>;
+  user?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image'> & {
+    gender?: 'male' | 'female' | null;
+    /** public_user_profiles 뷰가 birthday로부터 계산해 내려준다 */
+    age?: number | null;
+  };
   joined_at: string;
   /** V2: MD가 방문 확인 시 개별 노쇼 체크 */
   noshow: boolean;
