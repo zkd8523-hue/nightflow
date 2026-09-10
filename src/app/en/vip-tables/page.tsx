@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
+
+// 메뉴 가격이 바뀌면 1시간 내 반영. ⚠️ 컴포넌트 파일이 아니라 여기(route segment)에 있어야 동작한다.
+export const revalidate = 3600;
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { RealTablePrices, fetchRealTablePrices, realTablePricesJsonLd, realTablePricesFaqs } from "@/components/foreign/RealTablePrices";
 
 export const metadata: Metadata = {
   title: {
     absolute:
-      "Seoul VIP Table Booking — Korea Club Bottle Service Guide (2026)",
+      "Seoul Club Table Prices 2026 — Real Menus from 23 Clubs (from ₩500,000)",
   },
   description:
-    "Book VIP tables at Seoul's top clubs in Gangnam, Hongdae, Itaewon, Apgujeong. Real prices, bottle service, no broker, no Korean needed. The actual way Koreans book VIP tables.",
+    "What a Seoul club table actually costs: minimum spend ₩500,000 in Itaewon and Hongdae, ₩1,000,000 in Gangnam, filled from each club's own menu. Real set prices and what's in them. No broker fee.",
   keywords: [
     // Seoul + VIP
     "Seoul VIP table",
@@ -43,15 +47,15 @@ export const metadata: Metadata = {
     languages: {
         "en-US": "https://nightflow.kr/en/vip-tables",
         "zh-CN": "https://nightflow.kr/zh/vip-tables",
-        "zh-TW": "https://nightflow.kr/zh/vip-tables",
+        "zh-TW": "https://nightflow.kr/zh-tw/vip-tables",
         "ja-JP": "https://nightflow.kr/ja/vip-tables",
         "x-default": "https://nightflow.kr/en/vip-tables",
     },
   },
   openGraph: {
-    title: "Seoul VIP Table Booking — Korea Club Bottle Service Guide",
+    title: "Seoul Club Table Prices 2026 — Real Menus from 23 Clubs (from ₩500,000)",
     description:
-      "Book VIP tables at Seoul's top clubs without speaking Korean. Real prices, no broker.",
+      "What a Seoul club table actually costs: minimum spend ₩500,000 in Itaewon and Hongdae, ₩1,000,000 in Gangnam, filled from each club's own menu. Real set prices and what's in them. No broker fee.",
     url: "https://nightflow.kr/en/vip-tables",
     locale: "en_US",
     type: "website",
@@ -59,28 +63,13 @@ export const metadata: Metadata = {
   },
 };
 
-const TIERS = [
-  {
-    name: "Hongdae walk-in friendly",
-    price: "₩400,000–600,000",
-    perPerson: "₩70,000–100,000 (6 ppl)",
-    desc: "Smaller clubs, hip-hop/K-pop focus, no strict door policy. Club Dokkaebi, Sabotage, Purple.",
-  },
-  {
-    name: "Gangnam main VIP",
-    price: "₩750,000–1,500,000",
-    perPerson: "₩150,000–300,000 (4–6 ppl)",
-    desc: "EDM mega-clubs, prime tables, full bottle service. Club ACE, Massive, Club Pop.",
-  },
-  {
-    name: "Apgujeong premium lounge",
-    price: "₩2,000,000+",
-    perPerson: "₩400,000+ (4–6 ppl)",
-    desc: "High-end lounges, champagne culture, exclusive crowds. Core Lounge, Club Arzu, DM Seoul.",
-  },
-];
 
-export default function EnVipTablesPage() {
+export default async function EnVipTablesPage() {
+  // 실가격 표(2026-09-10) — 정적 TIERS는 범위만 있어 AI·검색이 인용하지 않았다.
+  const priceRows = await fetchRealTablePrices("en");
+  const priceLd = realTablePricesJsonLd(priceRows, "en", "https://nightflow.kr/en/vip-tables");
+  const priceFaqs = realTablePricesFaqs(priceRows, "en");
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -96,14 +85,19 @@ export default function EnVipTablesPage() {
         areaServed: { "@type": "City", name: "Seoul" },
         description:
           "Book VIP tables and bottle service at top Seoul clubs in Gangnam, Hongdae, Itaewon, Apgujeong. English-friendly, no broker, real Korean prices.",
-        serviceType: "VIP Table Reservation",
-        offers: TIERS.map((t) => ({
-          "@type": "Offer",
-          name: t.name,
-          description: t.desc,
-          priceRange: t.price,
-        })),
+        serviceType: "VIP Table Reservation"
       },
+      ...(priceLd ? [priceLd] : []),
+      ...(priceFaqs.length
+        ? [{
+            "@type": "FAQPage",
+            mainEntity: priceFaqs.map((f) => ({
+              "@type": "Question",
+              name: f.q,
+              acceptedAnswer: { "@type": "Answer", text: f.a },
+            })),
+          }]
+        : []),
       {
         "@type": "BreadcrumbList",
         itemListElement: [
@@ -127,9 +121,7 @@ export default function EnVipTablesPage() {
           <Link href="/en" className="text-[12px] text-muted-foreground hover:text-foreground">
             ← NightFlow
           </Link>
-          <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">
-            Seoul VIP Table Booking
-          </h1>
+          <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">Seoul Club Table Prices</h1>
           <p className="text-[14px] text-muted-foreground leading-relaxed">
             The real way to book VIP tables and bottle service at Seoul&apos;s
             top clubs — Gangnam, Hongdae, Itaewon, Apgujeong. No broker, no
@@ -137,26 +129,20 @@ export default function EnVipTablesPage() {
           </p>
         </header>
 
-        <section className="space-y-4">
-          <h2 className="text-[20px] font-black">VIP Table Tiers in Seoul</h2>
-          <div className="space-y-3">
-            {TIERS.map((t) => (
-              <div
-                key={t.name}
-                className="p-5 rounded-2xl bg-card border border-border space-y-2"
-              >
-                <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                  <p className="font-bold text-[15px] text-foreground">{t.name}</p>
-                  <p className="font-black text-[14px] text-brand-amber whitespace-nowrap">
-                    {t.price}
-                  </p>
-                </div>
-                <p className="text-[12px] text-muted-foreground">{t.perPerson}</p>
-                <p className="text-[13px] text-muted-foreground leading-relaxed">{t.desc}</p>
+        {/* 실제 세트 가격 — 위 티어(범위)와 달리 클럽별 실데이터. AI·검색이 인용할 사실. */}
+        <RealTablePrices lang="en" rows={priceRows} />
+
+        {priceFaqs.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-[20px] font-black">Seoul club table price — common questions</h2>
+            {priceFaqs.map((f) => (
+              <div key={f.q}>
+                <h3 className="text-[14px] font-bold text-foreground">{f.q}</h3>
+                <p className="text-[13px] text-muted-foreground leading-relaxed break-keep mt-0.5">{f.a}</p>
               </div>
             ))}
-          </div>
-        </section>
+          </section>
+        )}
 
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">How VIP Booking Works</h2>

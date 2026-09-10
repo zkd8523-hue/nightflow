@@ -27,6 +27,8 @@ export function bookingFloor(area: string | null | undefined): number {
 export type MenuSetSummary = {
   /** 항목 이름(영문). 없으면 한글명 */
   name: string;
+  /** 구성물("1 bottle + 3 tonics + cheese platter") — 경쟁사가 인용되는 지점이라 노출한다 */
+  description: string | null;
   /** "3 bottle set" 같은 변형 라벨(영문) — 없을 수 있음 */
   label: string | null;
   /** 평일가 */
@@ -52,6 +54,7 @@ type MenuRow = {
   club_id: string;
   name_en: string | null;
   name_ko: string | null;
+  description: string | null;
   category: string | null;
   is_vvip: boolean | null;
   variants: { label_en: string | null; price: number | null; price_weekend: number | null }[] | null;
@@ -83,7 +86,7 @@ export async function fetchTablePricing(
 
   const { data } = await supabase
     .from("club_menu_items")
-    .select("club_id, name_en, name_ko, category, is_vvip, variants:club_menu_variants(label_en, price, price_weekend)")
+    .select("club_id, name_en, name_ko, description, category, is_vvip, variants:club_menu_variants(label_en, price, price_weekend)")
     .eq("is_active", true)
     .in("club_id", ids);
 
@@ -98,6 +101,7 @@ export async function fetchTablePricing(
     const cheapest = variants.reduce((a, b) => (b.price < a.price ? b : a));
     const entry: MenuSetSummary = {
       name: (r.name_en ?? r.name_ko ?? "Set").trim(),
+      description: latinDescription(r.description),
       label: cheapest.label_en?.trim() || null,
       price: cheapest.price,
     };
@@ -121,6 +125,24 @@ export async function fetchTablePricing(
     });
   }
   return out;
+}
+
+/**
+ * 메뉴 구성물 설명에서 외국어 트랙에 보여줄 부분만 남긴다.
+ *
+ * description은 운영자가 한국어·영어를 섞어 적는다("Jean Pierre 1B + Absolut 1B / 장 피에르 + 앱솔루트").
+ * 그대로 외국어 페이지·JSON-LD·FAQ에 실으면 읽을 수 없는 문자가 가격 근거 문장에 박힌다
+ * (크리틱 3차). "/" 로 나눠 한글 없는 조각만 쓰고, 남는 게 없으면 아예 안 쓴다.
+ */
+function latinDescription(raw: string | null | undefined): string | null {
+  const t = raw?.trim();
+  if (!t) return null;
+  const clean = t
+    .split("/")
+    .map((seg) => seg.trim())
+    .filter((seg) => seg && !/[가-힣]/.test(seg));
+  const joined = clean.join(" / ").trim();
+  return joined || null;
 }
 
 /** 폼 카드와 같은 숫자 — "이 클럽 예약이 실제로 시작하는 금액". 메뉴가 없으면 null. */
