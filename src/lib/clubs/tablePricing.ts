@@ -120,8 +120,10 @@ export async function fetchTablePricing(
       highest: b.prices.length ? Math.max(...b.prices) : null,
       setCount: sets.length,
       itemCount: b.prices.length,
-      topSets: sets.slice(0, 3),
-      topItems: items.slice(0, 3),
+      // 8개까지 — representativeItems()가 하한 미달 저가 항목을 걸러내므로, 3개만
+      // 남기면 저가 항목이 그 자리를 다 차지한 클럽에서 후보가 통째로 사라진다.
+      topSets: sets.slice(0, 8),
+      topItems: items.slice(0, 8),
     });
   }
   return out;
@@ -143,6 +145,31 @@ function latinDescription(raw: string | null | undefined): string | null {
     .filter((seg) => seg && !/[가-힣]/.test(seg));
   const joined = clean.join(" / ").trim();
   return joined || null;
+}
+
+/**
+ * 테이블 예약의 "대표 메뉴"로 보여줄 만한 최저 항목을 고른다.
+ *
+ * 왜 하한이 필요한가(2026-09-10, 사용자 지적): Dawn의 Corona Set은 ₩40,000인데 이태원
+ * 예약 하한은 ₩500,000이다. 이걸 그대로 "최저 세트"로 내걸면 12배 차이라 손님이
+ * "4만원에 예약되나?"로 오해하고, 폼에서 실제 금액을 보는 순간 이탈한다. 이런 항목은
+ * 테이블 예약 단위가 아니라 바에서 한 병 시키는 메뉴에 가깝다.
+ *
+ * 기준 = 지역 하한의 20%. 실측(26곳)에서 20% 미만은 8곳뿐이고 전부 단품 한 병·맥주
+ * 세트류였다. 25%로 올리면 Day&night(20%)·K-Bat(20%) 같은 정상 케이스까지 잘려 나간다.
+ */
+const REPRESENTATIVE_MIN_RATIO = 0.2;
+
+export function representativeItems(
+  area: string | null | undefined,
+  items: MenuSetSummary[] | undefined,
+): MenuSetSummary[] {
+  if (!items?.length) return [];
+  const min = bookingFloor(area) * REPRESENTATIVE_MIN_RATIO;
+  const kept = items.filter((i) => i.price >= min);
+  // 전부 걸러지면(그 클럽 메뉴가 통째로 저가) 원본을 준다 — 빈손보다는 낫고,
+  // 화면에서 "×N개 필요" 표기가 오해를 막는다.
+  return kept.length ? kept : items;
 }
 
 /** 폼 카드와 같은 숫자 — "이 클럽 예약이 실제로 시작하는 금액". 메뉴가 없으면 null. */

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 import type { ClubPriceSummary } from "@/lib/clubs/tablePricing";
-import { tableFrom, formatWon, bookingFloor, itemsToReachFloor } from "@/lib/clubs/tablePricing";
+import { tableFrom, formatWon, bookingFloor, itemsToReachFloor, representativeItems } from "@/lib/clubs/tablePricing";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 import { krwTo, langToCurrency, type KrwRates } from "@/lib/utils/currency";
 
@@ -205,8 +205,12 @@ export function ClubBookingSection({
     // 최저 항목이 하한보다 싸면 "최저소비"로, 아니면 그냥 "테이블 가격"으로 부른다.
     const anchoredByFloor = lowestBase != null && lowestBase < floor;
     const reach = itemsToReachFloor(areaKo, pricing);
-    const rows = (pricing?.topSets?.length ? pricing.topSets : pricing?.topItems) ?? [];
-    const rowsTitle = pricing?.topSets?.length ? t.setsTitle : t.itemsTitle;
+    // 하한의 20% 미만 저가 항목은 테이블 예약 대표가가 아니라 제외(2026-09-10).
+    // 3개까지만 — 이건 요약이고 전체 메뉴는 폼에서 본다.
+    const repSets = representativeItems(areaKo, pricing?.topSets).slice(0, 3);
+    const repItems = representativeItems(areaKo, pricing?.topItems).slice(0, 3);
+    const rows = repSets.length ? repSets : repItems;
+    const rowsTitle = repSets.length ? t.setsTitle : t.itemsTitle;
     const chargeText = [
       tableChargeWeekday ? `${t.chargeWd} ${formatWon(tableChargeWeekday)}` : null,
       tableChargeWeekend ? `${t.chargeWe} ${formatWon(tableChargeWeekend)}` : null,

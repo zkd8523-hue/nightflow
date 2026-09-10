@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import {
-  fetchTablePricing, tableFrom, bookingFloor, formatWon,
+  fetchTablePricing, tableFrom, bookingFloor, formatWon, representativeItems,
   type ClubPriceSummary, type MenuSetSummary,
 } from "@/lib/clubs/tablePricing";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
@@ -116,7 +116,7 @@ export async function fetchRealTablePrices(lang: SeoLang): Promise<PriceRow[]> {
   const [clubsRes, menuIds] = await Promise.all([
     supabase
       .from("clubs")
-      .select("id, name, name_en, area, google_rating, google_review_count, table_charge_weekday, table_charge_weekend")
+      .select("id, name, name_en, area, google_rating, google_review_count, table_charge_weekday, table_charge_weekend, partners:club_partners(md_id)")
       .is("deleted_at", null)
       .eq("status", "approved")
       .eq("is_test", false)
@@ -126,7 +126,9 @@ export async function fetchRealTablePrices(lang: SeoLang): Promise<PriceRow[]> {
   ]);
 
   const bookables = (clubsRes.data ?? []).filter(
-    (c) => c.name_en?.trim() && isBookable({ name: c.name, has_menu: menuIds.has(c.id) }),
+    (c) =>
+      c.name_en?.trim() &&
+      isBookable({ name: c.name, has_md: (c.partners?.length ?? 0) > 0, has_menu: menuIds.has(c.id) }),
   );
   if (bookables.length === 0) return [];
 
@@ -146,8 +148,10 @@ export async function fetchRealTablePrices(lang: SeoLang): Promise<PriceRow[]> {
     if (from == null) continue;
     const areaSlug = canonicalAreaSlug(c.area);
     const nameEn = c.name_en!.trim();
-    const set = p?.topSets?.[0] ?? null;
-    const item = p?.topItems?.[0] ?? null;
+    // 하한의 20% 미만인 저가 항목(Dawn ₩40,000 코로나 세트 등)은 테이블 예약의
+    // 대표 가격이 아니라 오해만 부르므로 후보에서 뺀다(2026-09-10).
+    const set = representativeItems(c.area, p?.topSets)[0] ?? null;
+    const item = representativeItems(c.area, p?.topItems)[0] ?? null;
     // 세트가 더 비싸도 세트를 우선 보여준다 — "얼마에 뭘 마시나"의 답은 세트 쪽이 낫다.
     const cheapest = set ?? item;
     rows.push({
