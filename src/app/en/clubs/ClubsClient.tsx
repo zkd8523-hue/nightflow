@@ -201,11 +201,11 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   // 검색으로 처음 들어온 외국인이 대부분인데(클럽 목록 도달 후 카드 클릭 14.5%),
   // 설명이 sr-only에만 있어 사람 눈엔 안 보였음 → 헤더 아래 짧은 안내 노출.
   const introHeadline = t(
-    "클럽을 고르면 예약을 도와드려요",
-    "Pick a club — we'll help you book it",
-    "クラブを選べば、予約をお手伝いします",
-    "选好夜店,我们协助你预订",
-    "選好夜店,我們協助你預訂"
+    "내게 맞는 클럽 찾기",
+    "Find your club",
+    "自分に合うクラブを見つける",
+    "找到适合你的夜店",
+    "找到適合你的夜店"
   );
   const introSub = t(
     "실제 가격 그대로, 중개 수수료 없음. 한국어 못해도 괜찮아요.",

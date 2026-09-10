@@ -5,6 +5,7 @@ import Link from "next/link";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { isBookable } from "@/lib/clubs/bookable";
+import { canonicalAreaSlug } from "@/lib/clubs/slug";
 import { FaqTab } from "./FaqTab";
 import { ChevronLeft, ChevronRight, ChevronDown, Home, User, HelpCircle, Map, Check, X, ShieldCheck, MessageCircle, Star } from "lucide-react";
 import { krwTo, resolveCurrency } from "@/lib/utils/currency";
@@ -367,6 +368,80 @@ const REGIONS = [
   },
 ] as const;
 
+// 지역별 클럽 가로 캐러셀. 모바일은 손가락, 데스크탑은 좌우 버튼(트랙패드 가로 스크롤을
+// 모르는 사람이 많다). 버튼은 스크롤 여지가 있을 때만 뜬다.
+function ClubCarousel({
+  clubs,
+  onOpen,
+  children,
+}: {
+  clubs: ClubItem[];
+  onOpen: (c: ClubItem) => void;
+  children?: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+
+  const sync = () => {
+    const el = ref.current;
+    if (!el) return;
+    setAtStart(el.scrollLeft <= 2);
+    // 소수점 반올림 때문에 정확히 같아지지 않는다 — 2px 여유를 준다.
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 2);
+  };
+  useEffect(() => {
+    sync();
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [clubs.length]);
+
+  const page = (dir: -1 | 1) => {
+    const el = ref.current;
+    if (!el) return;
+    // 한 번에 화면 폭의 80%씩 — 마지막 카드가 반쯤 남아 "더 있다"가 보인다.
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative group/carousel">
+      <div
+        ref={ref}
+        onScroll={sync}
+        className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x"
+        style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
+      >
+        {clubs.map((c) => <ClubThumb key={c.id} club={c} onOpen={() => onOpen(c)} />)}
+        {children}
+      </div>
+      {/* 좌우 버튼 — 데스크탑에서만. 끝에 닿으면 그쪽 버튼은 숨긴다. */}
+      {!atStart && (
+        <button
+          type="button"
+          aria-label="Previous"
+          onClick={() => page(-1)}
+          className="hidden lg:flex absolute left-1 top-[56px] -translate-y-1/2 w-9 h-9 rounded-full bg-background/90 border border-border items-center justify-center shadow-lg hover:bg-card transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+      )}
+      {!atEnd && (
+        <button
+          type="button"
+          aria-label="Next"
+          onClick={() => page(1)}
+          className="hidden lg:flex absolute right-1 top-[56px] -translate-y-1/2 w-9 h-9 rounded-full bg-background/90 border border-border items-center justify-center shadow-lg hover:bg-card transition-colors"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
   const { tr } = useTr();
   const name = displayClubName(club);
@@ -382,7 +457,7 @@ function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
       tabIndex={0}
       onClick={onOpen}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
-      className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity text-left cursor-pointer lg:w-full lg:shrink"
+      className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity text-left cursor-pointer lg:w-[168px]"
     >
       {/* overflow-hidden이 아닌 overflow-clip을 쓴다 — overflow:hidden인 요소는
           브라우저가 잠재적 스크롤 컨테이너로 취급해 그 위에서 시작된 터치
@@ -390,7 +465,7 @@ function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
           안에 있어도 부모로 제스처가 전파되지 않음). overflow:clip은 시각적
           클리핑만 하고 스크롤 컨테이너가 아니라 이 문제가 없다(2026-09-07
           실측: 같은 자리에서 hidden→clip 교체만으로 스와이프 delta 0→124). */}
-      <div className="w-[120px] h-[80px] rounded-xl overflow-clip bg-muted border border-border lg:w-full lg:h-[112px]">
+      <div className="w-[120px] h-[80px] rounded-xl overflow-clip bg-muted border border-border lg:w-[168px] lg:h-[112px]">
         {club.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={club.thumbnail_url} alt={name} loading="lazy" draggable={false} className="w-full h-full object-cover" />
@@ -841,28 +916,51 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
         // 데스크탑은 6열 그리드라 클럽이 많은 지역(이태원 22곳)이 4줄까지 늘어나
         // 그 아래 지역(강남·홍대)이 스크롤 한참 아래로 밀린다. 1줄(6곳)로 잘라
         // 지역 간 균형을 맞춘다 — 모바일은 가로 스크롤이라 원래 문제가 없어 그대로 둔다.
-        const desktopClubs = regionClubs.slice(0, 6);
+        // 데스크탑에 한 화면(약 6장)보다 많으면 제목 옆 "See all N"을 띄운다.
+        const hiddenCount = regionClubs.length - 6;
+        const areaSlug = canonicalAreaSlug(r.ko);
         return (
           <div key={r.ko} className="space-y-2.5">
-            <div className="px-4">
+            <div className="px-4 flex items-baseline justify-between gap-3">
               {/* 지역명을 눈에 띄게 키운다 — 태그라인과 크기가 비슷해서 어디서
-                  지역이 바뀌는지 스캔하기 어려웠다. */}
-              <p className="leading-snug">
-                <span className="font-black text-[19px]">{r.emoji} {areaLabel(r.ko, lang)}</span>{" "}
-                <span className="text-muted-foreground font-medium text-[13px]">— {tr(r.tagline)}</span>
-              </p>
+                  지역이 바뀌는지 스캔하기 어려웠다.
+                  제목 자체가 그 지역 목록 페이지로 가는 링크다 — 데스크탑은 6곳에서
+                  잘리는데(desktopClubs) 나머지를 볼 길이 캐러셀도 더보기도 없었다(2026-09-10). */}
+              {areaSlug ? (
+                <Link href={`/${lang}/clubs/${areaSlug}`} className="leading-snug group">
+                  <span className="font-black text-[19px] group-hover:text-brand-amber transition-colors">{r.emoji} {areaLabel(r.ko, lang)}</span>{" "}
+                  <span className="text-muted-foreground font-medium text-[13px]">— {tr(r.tagline)}</span>
+                </Link>
+              ) : (
+                <p className="leading-snug">
+                  <span className="font-black text-[19px]">{r.emoji} {areaLabel(r.ko, lang)}</span>{" "}
+                  <span className="text-muted-foreground font-medium text-[13px]">— {tr(r.tagline)}</span>
+                </p>
+              )}
+              {areaSlug && hiddenCount > 0 && (
+                <Link
+                  href={`/${lang}/clubs/${areaSlug}`}
+                  className="hidden lg:block shrink-0 text-[13px] font-bold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t(`${regionClubs.length}곳 모두 보기 →`, `See all ${regionClubs.length} →`, `${regionClubs.length}軒すべて見る →`, `查看全部 ${regionClubs.length} 家 →`, `查看全部 ${regionClubs.length} 家 →`)}
+                </Link>
+              )}
             </div>
             {regionClubs.length > 0 && (
               <>
-                <div
-                  className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x lg:hidden"
-                  style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
-                >
-                  {regionClubs.map((c) => <ClubThumb key={c.id} club={c} onOpen={() => openDetail(regionClubs, c)} />)}
-                </div>
-                <div className="hidden lg:grid lg:grid-cols-6 lg:gap-3">
-                  {desktopClubs.map((c) => <ClubThumb key={c.id} club={c} onOpen={() => openDetail(regionClubs, c)} />)}
-                </div>
+                {/* 모바일·데스크탑 같은 캐러셀을 쓴다. 예전엔 데스크탑만 6열 그리드였는데
+                    slice(0,6)으로 잘린 나머지를 볼 길이 없었다(2026-09-10). 데스크탑은
+                    트랙패드 가로 스크롤이 익숙지 않은 사람이 많아 좌우 버튼을 얹는다. */}
+                <ClubCarousel clubs={regionClubs} onOpen={(c) => openDetail(regionClubs, c)}>
+                  {areaSlug && (
+                    <Link
+                      href={`/${lang}/clubs/${areaSlug}`}
+                      className="shrink-0 w-[120px] h-[80px] lg:w-[168px] lg:h-[112px] rounded-xl bg-card border border-border flex items-center justify-center text-[12px] font-bold text-muted-foreground hover:border-amber-500/50 hover:text-foreground transition-colors snap-start"
+                    >
+                      {t("모두 보기 →", "See all →", "すべて見る →", "查看全部 →", "查看全部 →")}
+                    </Link>
+                  )}
+                </ClubCarousel>
               </>
             )}
           </div>

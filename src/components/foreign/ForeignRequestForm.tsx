@@ -243,9 +243,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   }, [selectedClubIds, eventDate]);
 
   // 요일 약어를 언어별로 — 일본어·중국어 화면에 "Fri·Sat"가 섞이지 않게.
-  const dowsIn = (lang2: "ja" | "zh") => {
+  // (2026-09-10 개편으로 Step 2 카드에서도 쓰므로 selectedClubOpenDows에 묶지 않고 인자로 받는다.)
+  const dowsIn = (lang2: "ja" | "zh", dows: number[] | null | undefined) => {
     const L = lang2 === "ja" ? ["日", "月", "火", "水", "木", "金", "土"] : ["日", "一", "二", "三", "四", "五", "六"];
-    const d = [...(selectedClubOpenDows ?? [])].sort((a, b) => a - b);
+    const d = [...(dows ?? [])].sort((a, b) => a - b);
     if (d.length === 7) return lang2 === "ja" ? "毎日" : "每天";
     return d.map((x) => (lang2 === "ja" ? L[x] : `周${L[x]}`)).join("·");
   };
@@ -253,11 +254,24 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     ? t(
         `${formatOpenDows(selectedClubOpenDows)} 영업 · 그 외 요일은 선택할 수 없어요 (공휴일·공휴일 전날은 가능)`,
         `Open ${formatOpenDowsEn(selectedClubOpenDows)} · other days can't be selected (holidays and their eves are open)`,
-        `${dowsIn("ja")} 営業 · 他の曜日は選択できません（祝日・祝日前日は可）`,
-        `${dowsIn("zh")} 营业 · 其他日期无法选择（节假日及前一天可选）`,
-        `${dowsIn("zh").replace("周", "週")} 營業 · 其他日期無法選擇（假日及前一天可選）`
+        `${dowsIn("ja", selectedClubOpenDows)} 営業 · 他の曜日は選択できません（祝日・祝日前日は可）`,
+        `${dowsIn("zh", selectedClubOpenDows)} 营业 · 其他日期无法选择（节假日及前一天可选）`,
+        `${dowsIn("zh", selectedClubOpenDows).replace("周", "週")} 營業 · 其他日期無法選擇（假日及前一天可選）`
       )
     : null;
+  // Step 2 추천 카드용 — 짧은 한 줄. 데이터 없으면 null(카드에서 생략).
+  const openDowsLine = (dows: number[] | null | undefined): string | null => {
+    if (!dows || dows.length === 0 || dows.length === 7) {
+      return dows && dows.length === 7 ? t("매일", "Daily", "毎日", "每天", "每天") : null;
+    }
+    return t(
+      `${formatOpenDows(dows)} 영업`,
+      `Open ${formatOpenDowsEn(dows)}`,
+      `${dowsIn("ja", dows)}営業`,
+      `${dowsIn("zh", dows)}营业`,
+      `${dowsIn("zh", dows).replace("周", "週")}營業`
+    );
+  };
 
   // 금·토는 주말 가격표를 쓴다. 클럽 영업이 새벽까지라 "금요일 밤"이 주말의 시작이다.
   const isWeekend = (() => {
@@ -407,7 +421,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   //   1장: 클럽(자동 확정) + 날짜 + 인원 → "주류 선택"
   //   2장: 메뉴 시트 (전체화면급) — 담기 완료하면 자동으로 3장
   //   3장: 이름·연락처·언어·메모 → 전송
-  const [formStep, setFormStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  // ?club= 프리셋으로 들어와도(클럽 상세의 "Book X") Step 1(Who&where)부터 보여준다 —
+  // 클럽은 이미 정해졌지만 인원수 등은 아직 안 받았으므로. 클럽 선택 UI만
+  // "이 클럽으로 예약 중" 요약으로 대체한다(아래 렌더 분기).
+  const [formStep, setFormStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
 
   // 페이지 상단 "返回"(BackButton)에 노출하는 핸들 — ForeignBookingScreen이 ref로
   // 연결한다. true를 반환하면 "이 뒤로가기는 폼이 처리했다"는 뜻이라 BackButton은
@@ -422,11 +439,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   useImperativeHandle(ref, () => ({
     stepBack: () => {
       if (formStep === 5) { setFormStep(1); return true; }
-      if (formStep === 3) { setFormStep(clubMode === "recommend" && !presetClubId ? 2 : 1); return true; }
-      if (formStep === 2) { setFormStep(1); return true; }
-      // 카트(picked)가 있으면 여기서 클럽을 지우지 않는다 — 지우면 담은 술이 통째로 사라진다.
+      if (formStep === 3) { setFormStep(6); return true; } // 3(연락처) → 2½(날짜) — 술은 그대로 두고 날짜만 다시 볼 수 있게
+      // 6(날짜)에서 카트(picked)가 있으면 클럽을 지우지 않는다 — 지우면 담은 술이 통째로 사라진다.
       // false를 돌려 BackButton의 초안 가드(guardDraftKey)가 "나가시겠어요?"를 묻게 한다.
-      if (formStep === 1 && selectedClubIds.length > 0 && !presetClubId && !picked) { setSelectedClubIds([]); return true; }
+      if (formStep === 6 && !presetClubId && !picked) { setSelectedClubIds([]); setFormStep(clubMode === "recommend" ? 2 : 1); return true; }
+      if (formStep === 2) { setFormStep(1); return true; }
       return false;
     },
   }));
@@ -862,13 +879,12 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     closeDetail();
     setBrowseOpen(false);
     if (!eventDate) {
-      setFormStep(1);
-      toast.error(t("날짜를 골라주세요", "Pick a date first", "先に日付を選択", "请先选择日期", "請先選擇日期"));
-      openDatePicker();
+      // 2026-09-10 개편: 클럽을 먼저 고르므로 날짜는 그 클럽 카드가 보이는 Step 2½에서 받는다.
+      setFormStep(6);
       return;
     }
     if (!isClubOpenOn(club.open_dows ?? null, eventDate)) {
-      setFormStep(1);
+      setFormStep(6);
       setDateOpen(true);
       toast.error(t("그 날은 클럽이 쉬는 날이에요", "The club is closed that day — pick another date", "その日はクラブが休みです", "该夜店当天休息，请另选日期", "該夜店當天休息，請另選日期"));
       return;
@@ -1014,7 +1030,17 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     };
   }, [menuItems, tier, minBudget, isWeekend]);
 
-  // Step 1 "Continue" — 확정이면 다음 단계, 리마인더면 이메일만 저장.
+  // Step 1 "Continue" — 2026-09-10 개편: 날짜는 여기서 안 받는다(클럽을 먼저 고른다).
+  // 프리셋 클럽(?club=)이 있으면 곧장 Step 2½(날짜), "아는 클럽"이면 둘러보기, 아니면 추천 목록(Step 2).
+  const handleStep1Continue = () => {
+    trackEvent("foreign_trip_gate_qualified", { lang: preferredLang });
+    saveFormDraft(TRIP_GATE_KEY, true);
+    if (selectedClubId) { setFormStep(6); return; }
+    if (clubMode === "known") { setBrowseOpen(true); return; }
+    setFormStep(2);
+  };
+
+  // Step 2½ "When?" Continue — 날짜 검증 + 소프트 리마인더 분기(예전 handleStep1Continue의 날짜 부분).
   const [savingReminder, setSavingReminder] = useState(false);
   const reminderDate = (() => {
     if (!eventDate) return null;
@@ -1022,7 +1048,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     d.setDate(d.getDate() - 3);
     return d;
   })();
-  const handleStep1Continue = async () => {
+  const handleDateContinue = async () => {
     if (!eventDate) {
       blocked("no_date");
       openDatePicker();
@@ -1057,15 +1083,13 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       }
       return;
     }
-    trackEvent("foreign_trip_gate_qualified", { lang: preferredLang });
-    saveFormDraft(TRIP_GATE_KEY, true);
-    if (selectedClubId) {
-      const club = clubById[selectedClubId];
-      if (club) chooseClub(club);
+    if (!selectedClub) return; // Step 2½는 항상 클럽이 정해진 상태에서만 온다
+    if (!isClubOpenOn(selectedClub.open_dows ?? null, eventDate)) {
+      setDateOpen(true);
+      toast.error(t("그 날은 클럽이 쉬는 날이에요", "The club is closed that day — pick another date", "その日はクラブが休みです", "该夜店当天休息，请另选日期", "該夜店當天休息，請另選日期"));
       return;
     }
-    if (clubMode === "known") { setBrowseOpen(true); return; }
-    setFormStep(2);
+    setPendingMenuOpen(true);
   };
 
   const label = (icon: React.ReactNode, text: string) => (
@@ -1082,10 +1106,12 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Step 2½(날짜)은 화면상 "2단계"의 뒷부분이라 진행바·칩에서는 2로 취급한다.
+  const displayStep = formStep === 6 ? 2 : formStep;
   const progress = (
     <div className="flex items-center gap-1.5" aria-hidden>
       {[1, 2, 3].map((n) => (
-        <span key={n} className={`h-1 flex-1 rounded-full ${formStep >= n ? "bg-amber-500" : "bg-muted"}`} />
+        <span key={n} className={`h-1 flex-1 rounded-full ${displayStep >= n ? "bg-amber-500" : "bg-muted"}`} />
       ))}
     </div>
   );
@@ -1136,7 +1162,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-foreground tracking-tight">
-            {t("언제, 몇 명?", "When & who?", "いつ、何人？", "什么时候，几个人？", "什麼時候，幾個人？")}
+            {t("몇 명이서 가시나요?", "Who's coming?", "何人で行きますか？", "几位一起去？", "幾位一起去？")}
           </h1>
           <p className="text-[13px] text-muted-foreground">
             {t("문의는 무료. 보증금도 카드도 없어요.", "Free to ask. No deposit, no card.", "相談無料。デポジットもカードも不要。", "免费咨询。无需订金，无需信用卡。", "免費諮詢。無需訂金，無需信用卡。")}
@@ -1144,115 +1170,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         </div>
         {stepChip(1)}
       </div>
-
-      {(() => {
-        const selectedClub = selectedClubIds[0] ? clubById[selectedClubIds[0]] : null;
-        if (!selectedClub) return null;
-        return (
-          <button
-            type="button"
-            onClick={() => openDetail([selectedClub], selectedClub)}
-            className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border w-full text-left"
-          >
-            <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-muted">
-              {selectedClub.thumbnail_url && (
-                <img
-                  src={selectedClub.thumbnail_url}
-                  alt={displayClubName(selectedClub)}
-                  className="w-full h-full object-cover"
-                />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-black text-foreground truncate">
-                {displayClubName(selectedClub)}
-              </p>
-              <p className="text-[12px] text-muted-foreground">{areaLabel(selectedClub.area, lang)}</p>
-            </div>
-            {/* 클럽 바꾸기 — 예전엔 ?club= 으로 들어오면 바꿀 방법이 상세 시트 안 "선택 해제"뿐이었다. */}
-            {formStep === 1 && !picked && (
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => { e.stopPropagation(); setSelectedClubIds([]); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setSelectedClubIds([]); } }}
-                className="shrink-0 text-[12px] font-bold text-muted-foreground underline underline-offset-2 hover:text-foreground"
-              >
-                {t("바꾸기", "Change", "変更", "更换", "更換")}
-              </span>
-            )}
-          </button>
-        );
-      })()}
-
-
-      <section ref={dateSectionRef}>
-        {label(<Calendar className="w-4 h-4 text-money" />, t("날짜", "Date", "日付", "日期"))}
-        {/* 네이티브 date input의 플레이스홀더·표시 텍스트는 lang 속성이 아니라 브라우저/OS 로케일을
-            따르는 WebKit 버그가 있음(특히 iOS Safari) — html lang·input lang을 다 맞춰도 한글로 샘.
-            그래서 네이티브 입력은 투명하게 깔아 달력 피커 기능만 쓰고, 보이는 텍스트는 우리가 직접
-            렌더링(placeholder/포맷 둘 다 우리 통제 하에 있어 로케일 새는 문제 자체가 없음).
-            네이티브 입력은 브라우저마다 "달력 아이콘 부분 클릭해야만 피커가 열리고 텍스트 영역
-            클릭은 그냥 포커스만 됨" — 그래서 showPicker()로 박스 어디를 눌러도 피커가 열리게 함. */}
-        <button
-          type="button"
-          onClick={() => setDateOpen((v) => !v)}
-          className={`w-full h-12 px-4 rounded-xl bg-card border flex items-center justify-between transition-colors ${
-            dateOpen ? "border-amber-500" : "border-border"
-          }`}
-        >
-          <span className={`text-[15px] ${eventDate ? "text-foreground" : "text-muted-foreground"}`}>
-            {eventDate ? formatEventDate(eventDate, lang) : t("연도. 월. 일.", "Select date", "日付を選択", "选择日期")}
-          </span>
-          <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
-        </button>
-        {dateOpen && (
-          <div className="mt-2 rounded-xl bg-card border border-border p-2">
-            <ClubDateCalendar
-              lang={lang}
-              openDows={selectedClubOpenDows}
-              value={eventDate}
-              onSelect={(d) => {
-                setEventDate(d);
-                setDateOpen(false);
-              }}
-            />
-          </div>
-        )}
-        {closedNotice && (
-          <p className="text-[12px] text-muted-foreground mt-1.5">{closedNotice}</p>
-        )}
-      </section>
-
-      {/* 소프트 여행 게이트 — 켜면 요청 대신 이메일만 저장, D-3에 링크 메일(자동). */}
-      <section>
-        <div className={`rounded-xl border px-3.5 py-3 space-y-2.5 transition-colors ${remindMe ? "border-amber-500 bg-offer-well" : "border-border bg-offer-well"}`}>
-          <button type="button" onClick={() => setRemindMe((v) => !v)} className="w-full flex items-center gap-3 text-left">
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-extrabold">{t("일정이 아직 미정인가요?", "Trip not confirmed yet?", "予定はまだ未定ですか？", "行程还没定？", "行程還沒定？")}</p>
-              <p className="text-[12px] text-muted-foreground leading-snug">
-                {t("날짜 3일 전에 이메일로 링크를 보내드려요.", "We'll email you a link 3 days before your date.", "日付の3日前にリンクをメールします。", "我们会在日期前 3 天发邮件提醒你。", "我們會在日期前 3 天寄信提醒你。")}
-              </p>
-            </div>
-            <span role="switch" aria-checked={remindMe} className={`relative w-11 h-[26px] rounded-full shrink-0 transition-colors ${remindMe ? "bg-amber-500" : "bg-muted"}`}>
-              <span className={`absolute top-[3px] w-5 h-5 rounded-full transition-all ${remindMe ? "left-[23px] bg-background" : "left-[3px] bg-muted-foreground"}`} />
-            </span>
-          </button>
-          {remindMe && (
-            <>
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                value={remindEmail}
-                onChange={(e) => setRemindEmail(e.target.value)}
-                placeholder="you@email.com"
-                className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
-              />
-            </>
-          )}
-        </div>
-      </section>
 
       {/* 인원 */}
       <section>
@@ -1275,8 +1192,25 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         </p>
       </section>
 
-      {/* 클럽을 아직 안 골랐을 때만 — 어디 / 음악 / 고르는 방식 */}
-      {!selectedClub && (
+      {/* 클럽 상세의 "Book X"로 프리셋 진입한 경우: Where/Music/Club 고르기 대신
+          이미 정해진 클럽을 요약 카드로 보여준다. 인원만 받고 바로 Step 2½(When)로 간다. */}
+      {presetClubId && selectedClub ? (
+      <section>
+        {label(<Search className="w-4 h-4 text-money" />, t("클럽", "Club", "クラブ", "夜店", "夜店"))}
+        <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border">
+          <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-muted">
+            {selectedClub.thumbnail_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={selectedClub.thumbnail_url} alt={displayClubName(selectedClub)} className="w-full h-full object-cover" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-black text-foreground truncate">{displayClubName(selectedClub)}</p>
+            <p className="text-[12px] text-muted-foreground">{areaLabel(selectedClub.area, lang)}</p>
+          </div>
+        </div>
+      </section>
+      ) : (
       <>
       {/* Where? — "Anywhere"가 기본. 외국인은 지역 이름만으로는 못 고르니 한 줄 설명·예약 가능 수·가격 하한을 붙인다. */}
       <section>
@@ -1491,6 +1425,131 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       <button
         type="button"
         onClick={handleStep1Continue}
+        className="w-full h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.99] transition-all"
+      >
+        {t("계속", "Continue", "続ける", "继续", "繼續")}
+      </button>
+      </>
+      )}
+
+      {/* ── Step 2½ · When? (클럽을 고른 뒤 날짜 확정) ─────────────────────── */}
+      {formStep === 6 && selectedClub && (
+      <>
+      {progress}
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => { if (!presetClubId) { setSelectedClubIds([]); setFormStep(clubMode === "recommend" ? 2 : 1); } }}
+            className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            {t("클럽 다시 고르기", "Change club", "クラブを選び直す", "重新选夜店", "重新選夜店")}
+          </button>
+          <h1 className="text-2xl font-black text-foreground tracking-tight">
+            {t("언제 가시나요?", "When?", "いつ行きますか？", "什么时候去？", "什麼時候去？")}
+          </h1>
+        </div>
+        {stepChip(2)}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => openDetail([selectedClub], selectedClub)}
+        className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border w-full text-left"
+      >
+        <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-muted">
+          {selectedClub.thumbnail_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={selectedClub.thumbnail_url} alt={displayClubName(selectedClub)} className="w-full h-full object-cover" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-black text-foreground truncate">{displayClubName(selectedClub)}</p>
+          <p className="text-[12px] text-muted-foreground">{areaLabel(selectedClub.area, lang)}</p>
+        </div>
+        {!picked && !presetClubId && (
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); setSelectedClubIds([]); setFormStep(clubMode === "recommend" ? 2 : 1); }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setSelectedClubIds([]); setFormStep(clubMode === "recommend" ? 2 : 1); } }}
+            className="shrink-0 text-[12px] font-bold text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            {t("바꾸기", "Change", "変更", "更换", "更換")}
+          </span>
+        )}
+      </button>
+
+      <section ref={dateSectionRef}>
+        {label(<Calendar className="w-4 h-4 text-money" />, t("날짜", "Date", "日付", "日期"))}
+        {/* 네이티브 date input의 플레이스홀더·표시 텍스트는 lang 속성이 아니라 브라우저/OS 로케일을
+            따르는 WebKit 버그가 있음(특히 iOS Safari) — html lang·input lang을 다 맞춰도 한글로 샘.
+            그래서 네이티브 입력은 투명하게 깔아 달력 피커 기능만 쓰고, 보이는 텍스트는 우리가 직접
+            렌더링(placeholder/포맷 둘 다 우리 통제 하에 있어 로케일 새는 문제 자체가 없음).
+            네이티브 입력은 브라우저마다 "달력 아이콘 부분 클릭해야만 피커가 열리고 텍스트 영역
+            클릭은 그냥 포커스만 됨" — 그래서 showPicker()로 박스 어디를 눌러도 피커가 열리게 함. */}
+        <button
+          type="button"
+          onClick={() => setDateOpen((v) => !v)}
+          className={`w-full h-12 px-4 rounded-xl bg-card border flex items-center justify-between transition-colors ${
+            dateOpen ? "border-amber-500" : "border-border"
+          }`}
+        >
+          <span className={`text-[15px] ${eventDate ? "text-foreground" : "text-muted-foreground"}`}>
+            {eventDate ? formatEventDate(eventDate, lang) : t("연도. 월. 일.", "Select date", "日付を選択", "选择日期")}
+          </span>
+          <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+        </button>
+        {dateOpen && (
+          <div className="mt-2 rounded-xl bg-card border border-border p-2">
+            <ClubDateCalendar
+              lang={lang}
+              openDows={selectedClubOpenDows}
+              value={eventDate}
+              onSelect={(d) => {
+                setEventDate(d);
+                setDateOpen(false);
+              }}
+            />
+          </div>
+        )}
+        {closedNotice && (
+          <p className="text-[12px] text-muted-foreground mt-1.5">{closedNotice}</p>
+        )}
+      </section>
+
+      {/* 소프트 여행 게이트 — 켜면 요청 대신 이메일만 저장, D-3에 링크 메일(자동). */}
+      <section>
+        <div className={`rounded-xl border px-3.5 py-3 space-y-2.5 transition-colors ${remindMe ? "border-amber-500 bg-offer-well" : "border-border bg-offer-well"}`}>
+          <button type="button" onClick={() => setRemindMe((v) => !v)} className="w-full flex items-center gap-3 text-left">
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-extrabold">{t("일정이 아직 미정인가요?", "Trip not confirmed yet?", "予定はまだ未定ですか？", "行程还没定？", "行程還沒定？")}</p>
+              <p className="text-[12px] text-muted-foreground leading-snug">
+                {t("날짜 3일 전에 이메일로 링크를 보내드려요.", "We'll email you a link 3 days before your date.", "日付の3日前にリンクをメールします。", "我们会在日期前 3 天发邮件提醒你。", "我們會在日期前 3 天寄信提醒你。")}
+              </p>
+            </div>
+            <span role="switch" aria-checked={remindMe} className={`relative w-11 h-[26px] rounded-full shrink-0 transition-colors ${remindMe ? "bg-amber-500" : "bg-muted"}`}>
+              <span className={`absolute top-[3px] w-5 h-5 rounded-full transition-all ${remindMe ? "left-[23px] bg-background" : "left-[3px] bg-muted-foreground"}`} />
+            </span>
+          </button>
+          {remindMe && (
+            <input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={remindEmail}
+              onChange={(e) => setRemindEmail(e.target.value)}
+              placeholder="you@email.com"
+              className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
+            />
+          )}
+        </div>
+      </section>
+
+      <button
+        type="button"
+        onClick={handleDateContinue}
         disabled={savingReminder}
         className="w-full h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.99] transition-all disabled:opacity-50"
       >
@@ -1500,9 +1559,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               : reminderDate
                 ? t(`저장하고 ${formatEventDate(ymdLocal(reminderDate), lang)}에 알림받기`, `Save & remind me on ${formatEventDate(ymdLocal(reminderDate), lang)}`, `保存して ${formatEventDate(ymdLocal(reminderDate), lang)} に通知`, `保存并在 ${formatEventDate(ymdLocal(reminderDate), lang)} 提醒我`, `儲存並在 ${formatEventDate(ymdLocal(reminderDate), lang)} 提醒我`)
                 : t("저장하고 알림받기", "Save & remind me", "保存して通知を受け取る", "保存并提醒我", "儲存並提醒我"))
-          : selectedClub
-            ? t("술 고르기", "Choose drinks", "ドリンクを選ぶ", "选择酒水", "選擇酒水")
-            : t("계속", "Continue", "続ける", "继续", "繼續")}
+          : t("술 고르기", "Choose drinks", "ドリンクを選ぶ", "选择酒水", "選擇酒水")}
       </button>
       </>
       )}
@@ -1515,7 +1572,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         <div className="space-y-1">
           <button type="button" onClick={() => setFormStep(1)} className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground hover:text-foreground">
             <ChevronLeft className="w-4 h-4" />
-            {t("언제, 몇 명?", "When & who?", "いつ、何人？", "什么时候，几个人？", "什麼時候，幾個人？")}
+            {t("몇 명이서 가시나요?", "Who's coming?", "何人で行きますか？", "几位一起去？", "幾位一起去？")}
           </button>
           <h1 className="text-2xl font-black text-foreground tracking-tight">
             {t("어떤 밤을 원하세요?", "Pick your night", "どんな夜にする？", "选择你的夜晚", "選擇你的夜晚")}
@@ -1524,7 +1581,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             {[
               area ? areaLabel(area, lang) : t("서울 어디든", "Anywhere in Seoul", "ソウルのどこでも", "首尔任何地方", "首爾任何地方"),
               genre ? (TAG_LABEL_I18N[genre]?.[lang] ?? genre) : null,
-              eventDate ? formatEventDate(eventDate, lang) : null,
               t(`${groupSize}명`, `${groupSize} ${groupSize > 1 ? "people" : "person"}`, `${groupSize}名`, `${groupSize}人`, `${groupSize}人`),
             ].filter(Boolean).join(" · ")}
           </p>
@@ -1626,6 +1682,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                         {areaLabel(c.area, lang)}
                         {tl ? ` · ${tl}` : ""}
                       </p>
+                      {openDowsLine(c.open_dows) && (
+                        <p className="text-[11px] text-muted-foreground">{openDowsLine(c.open_dows)}</p>
+                      )}
                       {(() => {
                         const f = menuFloorByClub[c.id];
                         if (!f) return null;
@@ -1673,7 +1732,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       )}
 
       {/* 시트들 — 둘러보기 / 클럽 상세 (Step 1·2·3 공통) */}
-      {(formStep === 1 || formStep === 2 || formStep === 3) && (
+      {(formStep === 1 || formStep === 2 || formStep === 3 || formStep === 6) && (
       <>
       {/* 클럽 둘러보기 팝업 — /clubs 수준 정렬+필터, 카드 클릭은 선택(toggleClub)으로 */}
       <Sheet open={browseOpen} onOpenChange={setBrowseOpen}>
@@ -1785,7 +1844,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                         onSelect={() => (selectedClubIds.includes(c.id) ? toggleClub(c.id) : chooseClub(c))}
                         onOpenDetail={() => openDetail(g.items, c)}
                         lang={lang}
-                        note={closedOnDate(c) ? closedLabel : undefined}
+                        note={closedOnDate(c) ? closedLabel : (openDowsLine(c.open_dows) ?? undefined)}
                       />
                     ))}
                   </div>
