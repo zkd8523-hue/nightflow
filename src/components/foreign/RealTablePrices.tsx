@@ -116,7 +116,7 @@ export async function fetchRealTablePrices(lang: SeoLang): Promise<PriceRow[]> {
   const [clubsRes, menuIds] = await Promise.all([
     supabase
       .from("clubs")
-      .select("id, name, name_en, area, google_rating, google_review_count, table_charge_weekday, table_charge_weekend, partners:club_partners(md_id)")
+      .select("id, name, name_en, area, google_rating, google_review_count, table_charge_weekday, table_charge_weekend, foreign_booking_agreed, partners:club_partners(md_id)")
       .is("deleted_at", null)
       .eq("status", "approved")
       .eq("is_test", false)
@@ -128,7 +128,7 @@ export async function fetchRealTablePrices(lang: SeoLang): Promise<PriceRow[]> {
   const bookables = (clubsRes.data ?? []).filter(
     (c) =>
       c.name_en?.trim() &&
-      isBookable({ name: c.name, has_md: (c.partners?.length ?? 0) > 0, has_menu: menuIds.has(c.id) }),
+      isBookable({ name: c.name, has_md: (c.partners?.length ?? 0) > 0, agreed: !!c.foreign_booking_agreed, has_menu: menuIds.has(c.id) }),
   );
   if (bookables.length === 0) return [];
 

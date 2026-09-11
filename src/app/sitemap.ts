@@ -192,7 +192,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // 나머지는 404를 내므로, 미승인/병합 클럽이 sitemap에 들어가면 soft 404 색인 오염.
         // name_en/area는 영어 클럽 페이지(/en/clubs/{area}/{slug}) URL 생성에 필요
         // name·drink_menu_updated_at: 외국어 클럽 페이지의 예약 가능 판정·lastmod용(2026-09-10)
-        .select("id, name, name_en, area, hidden_from_guide, drink_menu_updated_at")
+        // partners: isBookable이 has_md도 요구하므로(2026-09-10 원복) 조인 필요
+        .select("id, name, name_en, area, hidden_from_guide, drink_menu_updated_at, foreign_booking_agreed, partners:club_partners(md_id)")
         .eq("status", "approved")
         .is("deleted_at", null)
         .eq("is_test", false)
@@ -298,7 +299,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         if (!areaSlug || !nameEn || c.hidden_from_guide) return [];
         const slug = clubSlug(nameEn);
         if (!slug) return [];
-        const bookable = isBookable({ name: c.name, has_menu: menuIds.has(c.id) });
+        const bookable = isBookable({
+          name: c.name,
+          has_md: (c.partners?.length ?? 0) > 0,
+          agreed: !!c.foreign_booking_agreed,
+          has_menu: menuIds.has(c.id),
+        });
         const menuUpdated = c.drink_menu_updated_at ? new Date(c.drink_menu_updated_at) : null;
         return FOREIGN_LANGS.map((lang) => ({
           url: `${BASE_URL}/${lang}/clubs/${areaSlug}/${slug}`,

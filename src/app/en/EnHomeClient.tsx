@@ -764,7 +764,9 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
   // 기준이라 예약이 안 되는 클럽도 잔뜩 걸렸다. 이 토글의 쓸모는 "지금 우리가 잡아줄
   // 수 있는 곳만 보기"이므로 그대로 바꾼다 — 카드마다 배지를 달지 않아도
   // 목록 자체가 무엇인지 설명한다(배지 19개는 화면 소음이 됐다).
-  const isRecommended = (c: ClubItem) => Boolean(c.has_md && c.has_menu);
+  // bookable 규칙을 여기서 따로 계산하면 isBookable과 갈린다(제외 목록·승인 플래그를
+  // 정렬만 모르는 상태가 됐던 전례). 판정은 한 곳에만 둔다.
+  const isRecommended = (c: ClubItem) => isBookable(c);
 
   const matchesFilters = (c: ClubItem) =>
     (!activeGenre || (c.tags ?? []).includes(`genre:${activeGenre}`)) &&

@@ -40,8 +40,10 @@ export type ForeignClubDetail = {
   google_reviews: GoogleReview[] | null;
   /** club_partners에 담당 MD가 있는지 — "Recommend" 정렬용 (표시용 아님, 옵셔널) */
   has_md?: boolean;
-  /** 주대 등록 여부. has_md와 둘 다 true여야 실제로 예약을 잡아줄 수 있다. */
+  /** 주대 등록 여부. 예약 성립의 필수 조건. */
   has_menu?: boolean;
+  /** 콜드 DM 승인 플래그(clubs.foreign_booking_agreed). has_md의 대체 축 — isBookable 참고. */
+  agreed?: boolean;
   /** 한 줄 소개(Migration 650) — 언어별로 따로 쓴 문장. */
   tagline_ko?: string | null;
   tagline_en?: string | null;

@@ -2,9 +2,14 @@
 //
 // 배경: 승인 클럽 106곳 중 실제로 예약을 중개할 수 있는 건 일부뿐이다.
 // 중개하려면 두 가지가 모두 있어야 한다.
-//   1) 담당 MD(club_partners) — 실제로 테이블을 잡아줄 사람
-//   2) 주대 데이터(club_menu_items) — 손님이 메뉴를 골라 금액을 확정하는 구조라 필수
+//   1) 주대 데이터(club_menu_items) — 손님이 메뉴를 골라 금액을 확정하는 구조라 필수
+//   2) 그 클럽과 예약 중개를 상의·승인했다는 사실
 // 둘 중 하나라도 없으면 폼까지 가도 예약이 성립하지 않는다.
+//
+// 2번은 두 갈래로 성립한다(2026-09-10). 담당 MD가 club_partners에 연결됐거나
+// (파트너 가입까지 끝난 기존 클럽), clubs.foreign_booking_agreed가 켜졌거나
+// (콜드 DM으로 구두 승인만 받은 클럽 — 파트너 가입은 실제 주문이 들어온 뒤에
+// 요청하는 순서라 이 시점엔 MD가 없는 게 정상).
 //
 // 그런데 예약 안 되는 클럽 페이지도 지우지 않는다(2026-09-06 SEO 검토 결론).
 // 클럽 상세 직접 진입이 외국인 유입의 28.6%로 1위이고, 그 상위권 대부분이
@@ -22,6 +27,12 @@ export type BookableInput = {
   has_md?: boolean;
   /** 주대(club_menu_items)가 등록돼 있는가. */
   has_menu?: boolean;
+  /**
+   * 외국인 예약 중개를 클럽과 상의·승인했는가(clubs.foreign_booking_agreed, Migration 666).
+   * has_md와 별개 축 — 콜드 DM으로 구두 승인만 받고 아직 파트너 가입 전인 클럽
+   * (예: Lion Super Club — 주대 49개·MD 0)도 이걸로 예약 가능이 된다.
+   */
+  agreed?: boolean;
   /** 제외 목록 대조용. 안 넘기면 제외 검사 없이 메뉴 유무만 본다. */
   name?: string | null;
 };
@@ -36,15 +47,22 @@ export function isForeignBookingExcluded(name: string | null | undefined): boole
 /**
  * 이 클럽을 지금 즉시 예약 중개할 수 있는가.
  *
- * 기준 = 주대(메뉴판)만(2026-09-10). 예전엔 담당 MD까지 요구했는데, 메뉴판은 있는데 MD가 없다는
- * 이유로 외국인 트랙에서 13곳(강남 Hilo·LOBBY 157·Lion, 이태원 Fountain·Paper·SOLE·SX·The Mansion,
- * 홍대 ADD·Awesome Red·B1 등)이 통째로 빠졌다. 컨시어지 모델은 운영자가 클럽에 직접 연락하는
- * 구조라(Migration 454) MD 연결은 접수 뒤에 붙이면 된다 — 손님 앞에서 막을 이유는 메뉴(=가격
- * 확정) 하나뿐이다. has_md는 추천 정렬(recommendCompare)에서만 가산점으로 쓴다.
+ * 기준 = 주대(메뉴판) + "상의됐다"는 신호(has_md 또는 agreed).
+ *
+ * 메뉴판만으로는 부족하다 — 사진을 읽어 구조화한 가격 정보일 뿐, 그 클럽이
+ * "우리 이름으로 손님 예약을 받아도 된다"고 승낙했는지와는 별개다. 한때
+ * has_menu만 보게 완화했다가 상의한 적 없는 B1(메뉴 15개·MD 0)이 예약 가능으로
+ * 노출됐다(2026-09-10 발견).
+ *
+ * 반대로 has_md만 요구하면 콜드 DM 영업이 막힌다. 파트너 가입은 클럽 담당자가
+ * 직접 해야 하는 일이라, 승인 직후가 아니라 실제 주문이 들어온 뒤에 요청하는
+ * 순서로 간다 — 그때까지 bookable이 아니면 주문 자체가 들어올 수 없다.
+ * 그래서 승인 사실을 clubs.foreign_booking_agreed로 따로 기록하고(Migration 666),
+ * 둘 중 하나만 있어도 상의된 것으로 본다.
  */
 export function isBookable(club: BookableInput): boolean {
   if (isForeignBookingExcluded(club.name)) return false;
-  return Boolean(club.has_menu);
+  return Boolean(club.has_menu) && (Boolean(club.has_md) || Boolean(club.agreed));
 }
 
 // 서버/브라우저 클라이언트를 모두 받는다. supabase-js의 제네릭이 호출부마다

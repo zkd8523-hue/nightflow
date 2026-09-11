@@ -36,11 +36,13 @@ const SELECT =
   "google_rating, google_review_count, google_reviews, instagram, dresscode, tags, drink_menu_url, " +
   // 예약 SEO(2026-09-10): 좌표(geo)·테이블 차지·메뉴 갱신일 — ClubBookingSection/JSON-LD Offer용
   "latitude, longitude, table_charge_weekday, table_charge_weekend, drink_menu_updated_at, " +
-  "partners:club_partners(md_id)";
+  "foreign_booking_agreed, partners:club_partners(md_id)";
 
 type ClubRow = {
   id: string;
   partners?: { md_id: string }[] | null;
+  /** 콜드 DM 승인 플래그(Migration 666) — isBookable의 has_md 대체 축 */
+  foreign_booking_agreed?: boolean | null;
   name: string;
   name_en: string | null;
   area: string;
@@ -90,6 +92,7 @@ const findClub = cache(async (areaSlug: string, clubParam: string) => {
   const bookableRaw = isBookable({
     name: club.name,
     has_md: (club.partners?.length ?? 0) > 0,
+    agreed: !!club.foreign_booking_agreed,
     has_menu: menuIds.has(club.id),
   });
 
@@ -98,7 +101,7 @@ const findClub = cache(async (areaSlug: string, clubParam: string) => {
     .filter((c) => c.id !== club.id && c.area === club.area && c.name_en?.trim())
     .map((c) => ({
       ...c,
-      bookable: isBookable({ name: c.name, has_md: (c.partners?.length ?? 0) > 0, has_menu: menuIds.has(c.id) }),
+      bookable: isBookable({ name: c.name, has_md: (c.partners?.length ?? 0) > 0, agreed: !!c.foreign_booking_agreed, has_menu: menuIds.has(c.id) }),
     }))
     .sort(
       (a, b) =>

@@ -179,7 +179,7 @@ export default async function ZhTwHomePage() {
 
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, name_en, area, thumbnail_url, address, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, partners:club_partners(md_id)")
+    .select("id, name, name_en, area, thumbnail_url, address, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, foreign_booking_agreed, partners:club_partners(md_id)")
     .in("area", ["강남", "홍대", "이태원", "부산"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -232,6 +232,7 @@ export default async function ZhTwHomePage() {
         tagline_zh: c.tagline_zh,
         tagline_zh_tw: c.tagline_zh_tw,
         has_md: (((c as { partners?: unknown[] }).partners?.length) ?? 0) > 0,
+        agreed: !!(c as { foreign_booking_agreed?: boolean }).foreign_booking_agreed,
         has_menu: menuIds.has((c as { id: string }).id),
       }))
   );

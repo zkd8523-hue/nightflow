@@ -39,6 +39,8 @@ type Club = {
   /** club_partners에 담당 MD가 있는지 — "Recommend" 정렬용 */
   has_md?: boolean;
   has_menu?: boolean;
+  /** 콜드 DM 승인 플래그(clubs.foreign_booking_agreed). has_md의 대체 축. */
+  agreed?: boolean;
   tagline_ko?: string | null;
   tagline_en?: string | null;
   tagline_ja?: string | null;
@@ -148,13 +150,18 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
     return arr;
   }, [clubs, sortKey]);
   // 세부 필터(타입·장르) — 한국 가이드(ClubFilterChips)와 동일한 단일선택 토글 방식
+  //
+  // "Bookable"(sortKey==="recommend") 탭은 라벨이 필터처럼 보이는데 실제로는 정렬만
+  // 했었다(2026-09-10 발견) — MD 없는 클럽(Core Lounge·Times·Hilo 등)도 뒤에 그대로
+  // 나열돼 "Bookable을 눌렀는데 안 걸러진다"는 혼란을 줬다. 이 탭에서만 실제로도 거른다.
   const filtered = useMemo(() => {
     return sorted.filter((c) => {
+      if (sortKey === "recommend" && !isBookable(c)) return false;
       if (venueType && !c.tags?.includes(makeTag("venue_type", venueType))) return false;
       if (genre && !c.tags?.includes(makeTag("genre", genre))) return false;
       return true;
     });
-  }, [sorted, venueType, genre]);
+  }, [sorted, sortKey, venueType, genre]);
   const activeFilterCount = (venueType ? 1 : 0) + (genre ? 1 : 0);
 
   // 지역별 가로 스크롤 (한국 가이드처럼). 해당 지역 클럽 없으면 섹션 생략.

@@ -259,7 +259,7 @@ export default async function EnClubsAreaPage({
   const { data: clubs } = await supabase
     .from("clubs")
     .select(
-      "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, partners:club_partners(md_id)"
+      "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, foreign_booking_agreed, partners:club_partners(md_id)"
     )
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -272,13 +272,14 @@ export default async function EnClubsAreaPage({
   const clubList = (clubs ?? []).map((c) => ({
     ...c,
     has_md: (c.partners?.length ?? 0) > 0,
+    agreed: !!c.foreign_booking_agreed,
     // 주대까지 있어야 실제로 예약을 잡아줄 수 있다 — 배지·정렬의 기준.
     has_menu: menuIds.has(c.id),
   }));
   const clubCount = clubList.length;
 
   // 지역 가격 비교 표(2026-09-10) — 예약 가능한 클럽만, 한 쿼리. 지역당 최대 10곳이라 1,000행 안전.
-  const bookableClubs = clubList.filter((c) => isBookable({ name: c.name, has_menu: c.has_menu }));
+  const bookableClubs = clubList.filter((c) => isBookable({ name: c.name, has_md: c.has_md, agreed: c.agreed, has_menu: c.has_menu }));
   const [areaPricing, fxSnapshot] = await Promise.all([
     fetchTablePricing(supabase, bookableClubs.map((c) => c.id)),
     getKrwRates(),

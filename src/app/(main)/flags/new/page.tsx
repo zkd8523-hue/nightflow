@@ -126,7 +126,7 @@ export default async function PuzzleNewPage({
     const { data } = await supabase
       .from("clubs")
       .select(
-        "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, open_dows, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, partners:club_partners(md_id)"
+        "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, open_dows, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, foreign_booking_agreed, partners:club_partners(md_id)"
       )
       // 지역 화이트리스트(강남·홍대·이태원)는 뺐다(2026-09-07). 예약 가능 판정을
       // isBookable(MD + 주대)로 옮긴 뒤로 이 목록은 "예약 중개가 되는 곳" 그 자체라
@@ -142,6 +142,7 @@ export default async function PuzzleNewPage({
       .map((c) => ({
         ...c,
         has_md: (c.partners?.length ?? 0) > 0,
+    agreed: !!c.foreign_booking_agreed,
         has_menu: menuIds.has(c.id),
       }))
       .filter(isBookable);
