@@ -17,11 +17,13 @@ const TEXT: Record<SeoLang, string> = {
 };
 
 // lang은 홈(EnHomeClient)의 Lang("ko" 포함)도 받는다 — 외국어 트랙 밖이면 영어로.
-export function UrgencyLine({ lang, align = "center", className = "" }: { lang: string; align?: "center" | "left"; className?: string }) {
+// chip: 배경이 투명한 떠 있는 CTA(홈 sticky) 위에 놓을 때 — 아래로 지나가는 카드와 겹쳐
+// 안 읽히던 문제(배포 후 실측). 어두운 반투명 칩에 블러를 깔아 글자를 띄운다.
+export function UrgencyLine({ lang, align = "center", chip = false, className = "" }: { lang: string; align?: "center" | "left"; chip?: boolean; className?: string }) {
   const text = TEXT[lang as SeoLang] ?? TEXT.en;
   return (
     <p
-      className={`flex items-center gap-1.5 text-[12px] font-bold text-brand-amber break-keep [text-shadow:0_0_8px_rgba(245,158,11,0.28)] ${align === "center" ? "justify-center text-center" : "justify-start"} ${className}`}
+      className={`flex items-center gap-1.5 text-[12px] font-bold text-brand-amber break-keep [text-shadow:0_0_8px_rgba(245,158,11,0.28)] ${align === "center" ? "justify-center text-center" : "justify-start"} ${chip ? "w-fit mx-auto px-3 py-1 rounded-full bg-background/90 backdrop-blur-sm border border-border" : ""} ${className}`}
     >
       <span aria-hidden className="inline-block motion-safe:animate-[nf-breathe_3.2s_ease-in-out_infinite] [filter:drop-shadow(0_0_3px_rgba(245,158,11,0.45))]">⚡</span>
       {text}

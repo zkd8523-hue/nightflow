@@ -1224,21 +1224,21 @@ function HeroSection({
   return (
     <div className="lg:max-w-[640px]">
       <div className="px-5 pt-6 pb-4 space-y-3">
-        <p className="text-[11px] font-extrabold tracking-[0.08em] text-muted-foreground uppercase">
-          {t("여행자를 위한 · 서울 & 부산", "For travelers · Seoul & Busan", "旅行者向け · ソウル & 釜山", "为旅行者 · 首尔 & 釜山", "為旅行者 · 首爾 & 釜山")}
+        {/* 개편 전 히어로 문구 복구(2026-09-14, 운영자 요청). 번역은 i18n-dict에 그대로 남아 있다. */}
+        <p className="text-[13px] font-extrabold text-brand-amber">
+          {tr("Looking for a VIP night in Korea's clubs?")}
         </p>
+        {/* 헤드라인은 한 문장만, 부제 없음(2026-09-14). "바가지 없이·실가격·현장결제·수수료 0"은
+            바로 아래 가격 카드·200% 환불·배지 4개가 전부 다시 말한다. */}
         <h1 className="text-[26px] font-black leading-[1.16] tracking-tight break-keep">
           {t(
-            "한국 최고의 클럽 예약. 한국어 없이, 바가지 없이.",
-            "Book Korea's best clubs. No Korean, no rip-offs.",
-            "韓国の人気クラブを予約。韓国語不要、ぼったくりなし。",
-            "预订韩国最好的夜店。不用韩语，不被宰。",
-            "預訂韓國最好的夜店。不用韓語，不被坑。"
+            "한국 최고의 클럽 예약.",
+            "Book Korea's best clubs.",
+            "韓国の人気クラブを予約。",
+            "预订韩国最好的夜店。",
+            "預訂韓國最好的夜店。"
           )}
         </h1>
-        <p className="text-[14px] text-muted-foreground leading-relaxed">
-          {t("실제 클럽 가격. 현장 결제. 플랫폼 수수료 0.", "Real club prices. Pay at the door. Zero platform fee.", "実際の価格。支払いは現地で。手数料ゼロ。", "真实价格。到店付款。零平台费。", "真實價格。到店付款。零平台費。")}
-        </p>
       </div>
 
       {/* 가격 앵커 3단 — "Real price"가 배지였는데 랜딩에 가격이 하나도 없었다. */}
@@ -1274,19 +1274,11 @@ function HeroSection({
         </div>
       </div>
 
-      {/* CTA — 주(예약) + 보조(WhatsApp, 번호가 설정된 경우만). */}
-      <div className="px-4 pt-4 space-y-2.5">
-        {/* 조기 마감 한 줄 — 버튼 바로 위. sticky 쪽에도 같은 줄이 있지만 둘은 동시에 안 보인다(showStickyCta는 이 버튼을 관찰). */}
-        <UrgencyLine lang={lang} />
-        <Link
-          ref={bookCtaRef}
-          href={buildFlagHref(lang)}
-          onClick={() => trackForeignEvent("foreign_book_at_club_click", { area: "hero", source: "hero" })}
-          className="flex items-center justify-center h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.98] transition-all"
-        >
-          {t("클럽 예약 — 문의 무료, 보증금 없음", "Book a club — free to ask, no deposit", "クラブを予約 — 相談無料・デポジットなし", "预订夜店 — 免费咨询，无需订金", "預訂夜店 — 免費諮詢，無需訂金")}
-        </Link>
-        {whatsapp && (
+      {/* 예약 버튼은 2026-09-14부터 하단 sticky(상시 노출, "주말 조기 마감" 줄 포함) 하나로 통일.
+          19+ 안내는 페이지 맨 아래 것만 남긴다(여기 혼자 남으니 빈 줄만 차지했다).
+          보조 WhatsApp은 번호가 설정된 경우만. */}
+      {whatsapp && (
+        <div className="px-4 pt-4">
           <a
             href={`https://wa.me/${whatsapp}`}
             target="_blank"
@@ -1296,9 +1288,8 @@ function HeroSection({
             <MessageCircle className="w-4 h-4" />
             {t("WhatsApp으로 문의", "Chat on WhatsApp", "WhatsApp で相談", "WhatsApp 咨询", "WhatsApp 諮詢")}
           </a>
-        )}
-        <p className="text-center text-[12px] text-muted-foreground">{tr("19+ only · Bring your passport to the venue.")}</p>
-      </div>
+        </div>
+      )}
 
       {/* 신뢰 배지 4개 — 상시 노출. */}
       <div className="px-4 pt-4">
@@ -1364,25 +1355,12 @@ function FlagsTab({
 }) {
   const { lang, tr } = useTr();
   // Sticky "Book Korean Clubs" CTA: 원본 CTA(RegionSection 하단)가 화면 밖일 때만 표시.
-  // 원본이 보이면 자동 숨김 (중복 UI 방지). 스크롤 컨테이너(overflow-y-auto div)를 root로 관찰.
+  // 2026-09-14: 상시 노출로 전환(운영자 결정). 예전엔 히어로 CTA가 화면 밖일 때만
+  // IntersectionObserver로 띄웠는데, "주말 조기 마감" 줄을 히어로가 아니라 이 sticky 한 곳에만
+  // 두기로 해서 첫 화면부터 보여야 한다. 히어로 버튼과 잠깐 겹치는 건 감수.
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bookCtaRef = useRef<HTMLAnchorElement>(null);
-  const [showStickyCta, setShowStickyCta] = useState(false);
-
-  useEffect(() => {
-    const target = bookCtaRef.current;
-    const root = scrollContainerRef.current;
-    if (!target || !root) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // 원본 CTA가 조금이라도 보이면 sticky 숨김. 완전히 밖일 때만 표시.
-        setShowStickyCta(!entry.isIntersecting);
-      },
-      { root, threshold: 0 }
-    );
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [flags.length]);
+  const showStickyCta = true;
 
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
@@ -1479,9 +1457,10 @@ function FlagsTab({
       >
         {/* 소셜프루프는 위(헤드라인 아래)로 옮겼다 — 여기 또 두면 스크롤할 때마다
             같은 문구가 반복돼 신뢰 문구가 아니라 소음이 된다. */}
-        <UrgencyLine lang={lang} className="mb-1.5" />
+        <UrgencyLine lang={lang} chip className="mb-1.5" />
         <Link
           href={`/flags/new?lang=${lang}`}
+          onClick={() => trackForeignEvent("foreign_book_at_club_click", { area: "hero", source: "sticky" })}
           tabIndex={showStickyCta ? 0 : -1}
           className={`block w-full py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all shadow-2xl shadow-amber-500/30 ${
             showStickyCta ? "pointer-events-auto" : ""
