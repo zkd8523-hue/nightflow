@@ -520,6 +520,43 @@ function GuideIndex() {
         }]
       : []),
     {
+      // 유흥 인접 검색("booking club", "room salon")에서 온 사람에게 답하는 설명 페이지.
+      cat: t("문화", "CULTURE", "文化", "文化", "文化"),
+      title: t(
+        "강남 클럽의 '부킹'이 뭔가요?",
+        "What is 'booking' in a Gangnam club?",
+        "江南クラブの「ブッキング」って何？",
+        "江南夜店的「booking」是什么?",
+        "江南夜店的「booking」是什麼?"
+      ),
+      desc: t(
+        "예약이 아닙니다. 직원이 테이블 사이를 소개하는 문화이고, 테이블이 참여 티켓입니다. 가격과 매너까지.",
+        "Not a reservation. Staff introduce guests between tables, and the table is your ticket in. Prices and etiquette.",
+        "予約のことではありません。スタッフが席同士を紹介する文化で、テーブルが参加のチケット。料金とマナーも。",
+        "不是预订。店员在桌与桌之间介绍客人，卡座是参与的门票。价格和礼仪。",
+        "不是訂位。店員在桌與桌之間介紹客人，桌位是參與的門票。價格和禮儀。"
+      ),
+      href: `/${lang}/gangnam-booking-club`,
+    },
+    {
+      cat: t("가이드", "WHAT YOU CAN BOOK", "ガイド", "指南", "指南"),
+      title: t(
+        "룸살롱은 외국인이 갈 수 있나요?",
+        "Can foreigners go to a Korean room salon?",
+        "日本人はルームサロンに行ける？",
+        "外国人能去韩国的房间沙龙吗?",
+        "外國人能去韓國的酒店（room salon）嗎?"
+      ),
+      desc: t(
+        "대개 못 갑니다. 왜 그런지, 얼마인지, 대신 실제로 예약되는 합법적 선택은 뭔지 정리했습니다.",
+        "Usually not. Why, what it costs, and the legal alternative you can actually book instead.",
+        "多くは入れません。理由、料金の実態、代わりに実際に予約できる合法の選択肢。",
+        "通常不行。为什么、多少钱、以及你真正能订到的合法选择。",
+        "通常不行。為什麼、多少錢、以及你真正能訂到的合法選擇。"
+      ),
+      href: `/${lang}/room-salon-vs-club`,
+    },
+    {
       // 실데이터 기반이라 다른 카드보다 앞에 — "얼마 드나"가 가장 큰 불안이고
       // 경쟁 블로그의 뭉뚱그린 숫자와 달리 클럽별 실제 값을 보여준다.
       cat: t("가격", "PRICES", "料金", "价格", "價格"),
