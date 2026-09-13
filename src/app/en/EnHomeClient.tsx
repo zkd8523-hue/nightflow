@@ -1167,12 +1167,10 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
             <span className="text-[16px] font-black">{areaLabel("서울 어디든", lang)}</span>
           </Link>
         </div>
-        {/* 조기 마감 한 줄 — 버튼 바로 위. sticky 쪽에도 같은 줄이 있지만 둘은 동시에 안 보인다(showStickyCta). */}
-        <UrgencyLine lang={lang} className="mt-2" />
         <Link
           ref={bookCtaRef}
           href={`/flags/new?lang=${lang}`}
-          className="block w-full mt-1.5 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all"
+          className="block w-full mt-1 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all"
         >
           {tr("Book Korean Clubs")}
         </Link>
@@ -1278,6 +1276,8 @@ function HeroSection({
 
       {/* CTA — 주(예약) + 보조(WhatsApp, 번호가 설정된 경우만). */}
       <div className="px-4 pt-4 space-y-2.5">
+        {/* 조기 마감 한 줄 — 버튼 바로 위. sticky 쪽에도 같은 줄이 있지만 둘은 동시에 안 보인다(showStickyCta는 이 버튼을 관찰). */}
+        <UrgencyLine lang={lang} />
         <Link
           ref={bookCtaRef}
           href={buildFlagHref(lang)}
