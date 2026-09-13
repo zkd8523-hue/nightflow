@@ -22,6 +22,7 @@ import { recordRecentClub, useRecentClubs, removeRecentClub } from "@/lib/clubs/
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { trackForeignEvent } from "@/lib/analytics/events";
 import { ForeignSidebar, type ForeignNavKey } from "@/components/foreign/ForeignShell";
+import { HALLOWEEN_2026, isHalloweenWindow } from "@/lib/foreign/seasonal";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
@@ -495,6 +496,28 @@ function GuideIndex() {
   const { lang, t } = useTr();
 
   const cards = [
+    // 시즌 카드 — 9/15~10/31만. 10/31(토) 할로윈은 외국인이 실제로 검색하는 몇 안 되는
+    // 시즌 키워드라 예약 페이지로 잇는다. 창이 닫히면 자동으로 빠진다(seasonal.ts).
+    ...(isHalloweenWindow()
+      ? [{
+          cat: t("할로윈", "HALLOWEEN 🎃", "ハロウィン 🎃", "万圣节 🎃", "萬聖節 🎃"),
+          title: t(
+            "10월 31일 토요일, 서울 어디로 가야 하나요?",
+            "Where to go in Seoul on Halloween night?",
+            "10月31日(土)、ソウルのどこに行く？",
+            "10 月 31 日周六，首尔去哪玩?",
+            "10 月 31 日星期六，首爾去哪玩?"
+          ),
+          desc: t(
+            "이태원·홍대는 22시면 가득 찹니다. 테이블 예약 되는 클럽과 실제 가격을 정리했습니다.",
+            "Itaewon and Hongdae fill up by 22:00. Which clubs take table bookings and what it costs — updated for 2026.",
+            "梨泰院・弘大は22時には満員。テーブル予約できるクラブと実際の料金をまとめました。",
+            "梨泰院和弘大 22 点就满了。哪些夜店能订卡座、多少钱 — 2026 年更新。",
+            "梨泰院和弘大 22 點就滿了。哪些夜店能訂包廂、多少錢 — 2026 年更新。"
+          ),
+          href: `/${lang}/${HALLOWEEN_2026.slug}`,
+        }]
+      : []),
     {
       // 실데이터 기반이라 다른 카드보다 앞에 — "얼마 드나"가 가장 큰 불안이고
       // 경쟁 블로그의 뭉뚱그린 숫자와 달리 클럽별 실제 값을 보여준다.

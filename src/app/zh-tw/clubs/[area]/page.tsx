@@ -6,6 +6,7 @@ import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import { fetchTablePricing, bookingFloor, wonCompact } from "@/lib/clubs/tablePricing";
 import { getKrwRates } from "@/lib/utils/currency";
 import { AreaTablePrices } from "@/components/foreign/AreaTablePrices";
+import { SeasonalBanner } from "@/components/foreign/SeasonalBanner";
 import { ClubsClient } from "../../../en/clubs/ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
 
@@ -393,6 +394,8 @@ export default async function ZhTwClubsAreaPage({
           <li>提交請求免費,無需押金。計畫變更可隨時取消。</li>
         </ul>
       </div>
+      {/* 시즌 진입점(할로윈 등) — 노출 창 밖이면 null */}
+      <SeasonalBanner lang="zh-tw" areaSlug={area} />
       <ClubsClient clubs={clubList} lang="zh-tw" />
 
       {/* 지역 단위 가격 비교 — "itaewon bottle service price"류 클럽명 없는 가격 검색의 랜딩.

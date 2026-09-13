@@ -6,6 +6,7 @@ import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import { fetchTablePricing, bookingFloor, wonCompact } from "@/lib/clubs/tablePricing";
 import { getKrwRates } from "@/lib/utils/currency";
 import { AreaTablePrices } from "@/components/foreign/AreaTablePrices";
+import { SeasonalBanner } from "@/components/foreign/SeasonalBanner";
 import { ClubsClient } from "../ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
 
@@ -435,6 +436,8 @@ export default async function EnClubsAreaPage({
           </li>
         </ul>
       </div>
+      {/* 시즌 진입점(할로윈 등) — 노출 창 밖이면 null */}
+      <SeasonalBanner lang="en" areaSlug={area} />
       <ClubsClient clubs={clubList} lang="en" />
 
       {/* 지역 단위 가격 비교 — "itaewon bottle service price"류 클럽명 없는 가격 검색의 랜딩.
