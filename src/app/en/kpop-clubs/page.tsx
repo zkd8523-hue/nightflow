@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     languages: {
         "en-US": "https://nightflow.kr/en/kpop-clubs",
         "zh-CN": "https://nightflow.kr/zh/kpop-clubs",
-        "zh-TW": "https://nightflow.kr/zh/kpop-clubs",
+        "zh-TW": "https://nightflow.kr/zh-tw/kpop-clubs",
         "ja-JP": "https://nightflow.kr/ja/kpop-clubs",
         "x-default": "https://nightflow.kr/en/kpop-clubs",
     },

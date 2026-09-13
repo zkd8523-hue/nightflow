@@ -6,6 +6,7 @@ import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import { fetchTablePricing, bookingFloor, wonCompact } from "@/lib/clubs/tablePricing";
 import { getKrwRates } from "@/lib/utils/currency";
 import { AreaTablePrices } from "@/components/foreign/AreaTablePrices";
+import { MarketFaq, marketFaqJsonLd, type MarketArea } from "@/components/foreign/MarketFaq";
 import { SeasonalBanner } from "@/components/foreign/SeasonalBanner";
 import { ClubsClient } from "../ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
@@ -300,9 +301,12 @@ export default async function EnClubsAreaPage({
 
   // Schema.org — Place + ItemList (Google: 별점·리스트 노출)
   // 외국인이 "Hongdae clubs" 검색 시 클럽 목록 카드로 노출.
+  // 지역별 FAQ 조합 키. AREA_CONFIG 슬러그 중 MarketArea에 없는 것(예: 부산 외 지방)은 공통 세트로.
+  const marketArea = (["gangnam", "hongdae", "itaewon", "apgujeong", "busan"] as const).includes(area as MarketArea) ? (area as MarketArea) : null;
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      marketFaqJsonLd("en", marketArea, config.en, `https://nightflow.kr/en/clubs/${area}`),
       {
         "@type": "ItemList",
         "@id": `https://nightflow.kr/en/clubs/${area}/#itemlist`,
@@ -443,6 +447,11 @@ export default async function EnClubsAreaPage({
       {/* 지역 단위 가격 비교 — "itaewon bottle service price"류 클럽명 없는 가격 검색의 랜딩.
           숫자는 클럽 상세·폼과 같은 tablePricing 규칙. */}
       <AreaTablePrices lang="en" areaLabel={config.en} rows={priceRows} rates={fxSnapshot.rates} />
+
+      {/* 나라별 검색 특성 FAQ(顔審査·被擋·门票·face control) — 지역명 넣어 렌더. 스키마는 위 @graph. */}
+      <div className="px-4 py-6 max-w-2xl mx-auto">
+        <MarketFaq lang="en" area={marketArea} areaLabel={config.en} />
+      </div>
 
       {/* 클럽별 상세 페이지 인덱스 — 눈에 보이는 내부 링크.
           숨은(sr-only) 링크만으로는 크롤러가 가중치를 낮게 보고, 유저에게도

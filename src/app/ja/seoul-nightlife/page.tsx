@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     languages: {
         "en-US": "https://nightflow.kr/en/seoul-nightlife",
         "zh-CN": "https://nightflow.kr/zh/seoul-nightlife",
-        "zh-TW": "https://nightflow.kr/zh/seoul-nightlife",
+        "zh-TW": "https://nightflow.kr/zh-tw/seoul-nightlife",
         "ja-JP": "https://nightflow.kr/ja/seoul-nightlife",
         "x-default": "https://nightflow.kr/en/seoul-nightlife",
     },

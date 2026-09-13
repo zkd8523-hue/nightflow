@@ -5,6 +5,7 @@ export const revalidate = 3600;
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { RealTablePrices, fetchRealTablePrices, realTablePricesJsonLd, realTablePricesFaqs } from "@/components/foreign/RealTablePrices";
+import { MarketFaq, marketFaqs } from "@/components/foreign/MarketFaq";
 
 export const metadata: Metadata = {
   title: {
@@ -73,7 +74,7 @@ export default async function ZhVipTablesPage() {
       ...(priceFaqs.length
         ? [{
             "@type": "FAQPage",
-            mainEntity: priceFaqs.map((f) => ({
+            mainEntity: [...priceFaqs, ...marketFaqs("zh", null, null)].map((f) => ({
               "@type": "Question",
               name: f.q,
               acceptedAnswer: { "@type": "Answer", text: f.a },
@@ -106,6 +107,8 @@ export default async function ZhVipTablesPage() {
 
         {/* 실제 세트 가격 — 위 티어(범위)와 달리 클럽별 실데이터. AI·검색이 인용할 사실. */}
         <RealTablePrices lang="zh" rows={priceRows} />
+
+        <MarketFaq lang="zh" />
 
         {priceFaqs.length > 0 && (
           <section className="space-y-3">

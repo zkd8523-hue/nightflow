@@ -6,6 +6,7 @@ import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import { fetchTablePricing, bookingFloor, wonCompact } from "@/lib/clubs/tablePricing";
 import { getKrwRates } from "@/lib/utils/currency";
 import { AreaTablePrices } from "@/components/foreign/AreaTablePrices";
+import { MarketFaq, marketFaqJsonLd, type MarketArea } from "@/components/foreign/MarketFaq";
 import { SeasonalBanner } from "@/components/foreign/SeasonalBanner";
 import { ClubsClient } from "../../../en/clubs/ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
@@ -296,9 +297,12 @@ export default async function ZhTwClubsAreaPage({
   // Schema.org — Place + ItemList (Google: 별점·리스트 노출). en 버전(clubs/[area]/page.tsx)엔
   // 있는데 ja/zh/zh-tw엔 통째로 빠져 있었다 — 콘텐츠는 동일하게 현지화됐는데 구조화 데이터만
   // en 전용이라, 검색결과 리치 스니펫이 3개 언어에서 안 뜨는 격차였다.
+  // 지역별 FAQ 조합 키. AREA_CONFIG 슬러그 중 MarketArea에 없는 것(예: 부산 외 지방)은 공통 세트로.
+  const marketArea = (["gangnam", "hongdae", "itaewon", "apgujeong", "busan"] as const).includes(area as MarketArea) ? (area as MarketArea) : null;
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      marketFaqJsonLd("zh-tw", marketArea, config.zh, `https://nightflow.kr/zh-tw/clubs/${area}`),
       {
         "@type": "ItemList",
         "@id": `https://nightflow.kr/zh-tw/clubs/${area}/#itemlist`,
@@ -401,6 +405,11 @@ export default async function ZhTwClubsAreaPage({
       {/* 지역 단위 가격 비교 — "itaewon bottle service price"류 클럽명 없는 가격 검색의 랜딩.
           숫자는 클럽 상세·폼과 같은 tablePricing 규칙. */}
       <AreaTablePrices lang="zh-tw" areaLabel={config.zh} rows={priceRows} rates={fxSnapshot.rates} />
+
+      {/* 나라별 검색 특성 FAQ(顔審査·被擋·门票·face control) — 지역명 넣어 렌더. 스키마는 위 @graph. */}
+      <div className="px-4 py-6 max-w-2xl mx-auto">
+        <MarketFaq lang="zh-tw" area={marketArea} areaLabel={config.zh} />
+      </div>
 
       <nav className="max-w-lg lg:max-w-[1000px] mx-auto px-4 lg:px-8 pb-10 pt-2 lg:pt-8">
         <h2 className="text-[15px] font-black text-foreground mb-2">

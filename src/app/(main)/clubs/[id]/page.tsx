@@ -6,6 +6,7 @@ import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { normalizeDowSlots, summarizeSlots, pickUpcomingBenefit, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import { getBusinessDateISO } from "@/lib/lineups/time";
 import { fetchMenuClubIds } from "@/lib/clubs/bookable";
+import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
 import { fetchTablePricing } from "@/lib/clubs/tablePricing";
 import { buildClubAnswer } from "@/lib/clubs/clubAnswer";
 import type { TodayLineup } from "@/components/clubs/ClubLineupSection";
@@ -31,7 +32,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const metaQuery = supabase
     .from("clubs")
     // instagram: "OO 인스타" 검색 축(2026-09-10) — 커버리지 96%
-    .select("id, name, area, thumbnail_url, dresscode, aliases, instagram")
+    // name_en·hidden_from_guide·is_test: 외국어 상세(/en/clubs/{area}/{slug})가 존재하는 조건 — hreflang용(2026-09-14)
+    .select("id, name, name_en, area, thumbnail_url, dresscode, aliases, instagram, hidden_from_guide, is_test")
     .eq("id", id)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) metaQuery.eq("status", "approved");
@@ -56,6 +58,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       .eq("club_id", id),
   ]);
   const isBookableClub = (mdRows?.length ?? 0) > 0 && (menuCount ?? 0) > 0;
+  const foreignAreaSlug = canonicalAreaSlug(club.area);
+  const foreignSlugPath =
+    club.name_en?.trim() && foreignAreaSlug && !club.hidden_from_guide && !club.is_test
+      ? `${foreignAreaSlug}/${clubSlug(club.name_en)}`
+      : null;
 
   const area = club.area || "";
   // clubDisplayAlias: 정적 큐레이션(57곳) 우선 → DB clubs.aliases 첫 한글 표기
@@ -145,7 +152,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ...aliases.map((a) => `${a} 테이블`),
       ...aliases.map((a) => `${a} 입장료`),
     ],
-    alternates: { canonical: `https://nightflow.kr/clubs/${id}` },
+    // 외국어 상세가 있는 클럽은 hreflang으로 묶는다. 외국어 페이지는 이미 ko-KR로 이쪽을 가리키고
+    // 있었는데 역방향이 없어서 구글이 같은 클럽의 5개 언어 페이지를 한 묶음으로 못 보고 있었다.
+    // 존재 조건은 en/clubs/[area]/[club]/findClub과 동일(approved·name_en·정본 지역 슬러그·hidden/test 제외).
+    alternates: {
+      canonical: `https://nightflow.kr/clubs/${id}`,
+      ...(foreignSlugPath
+        ? {
+            languages: {
+              "ko-KR": `https://nightflow.kr/clubs/${id}`,
+              "en-US": `https://nightflow.kr/en/clubs/${foreignSlugPath}`,
+              "ja-JP": `https://nightflow.kr/ja/clubs/${foreignSlugPath}`,
+              "zh-CN": `https://nightflow.kr/zh/clubs/${foreignSlugPath}`,
+              "zh-TW": `https://nightflow.kr/zh-tw/clubs/${foreignSlugPath}`,
+              "x-default": `https://nightflow.kr/en/clubs/${foreignSlugPath}`,
+            },
+          }
+        : {}),
+    },
     openGraph: {
       title: isBookableClub
         ? `${headName} 예약 - 테이블·위치·영업시간·라인업`
