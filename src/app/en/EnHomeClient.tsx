@@ -23,6 +23,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { trackForeignEvent } from "@/lib/analytics/events";
 import { ForeignSidebar, type ForeignNavKey } from "@/components/foreign/ForeignShell";
 import { HALLOWEEN_2026, isHalloweenWindow } from "@/lib/foreign/seasonal";
+import { UrgencyLine } from "@/components/foreign/UrgencyLine";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
@@ -1166,10 +1167,12 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
             <span className="text-[16px] font-black">{areaLabel("서울 어디든", lang)}</span>
           </Link>
         </div>
+        {/* 조기 마감 한 줄 — 버튼 바로 위. sticky 쪽에도 같은 줄이 있지만 둘은 동시에 안 보인다(showStickyCta). */}
+        <UrgencyLine lang={lang} className="mt-2" />
         <Link
           ref={bookCtaRef}
           href={`/flags/new?lang=${lang}`}
-          className="block w-full mt-1 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all"
+          className="block w-full mt-1.5 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all"
         >
           {tr("Book Korean Clubs")}
         </Link>
@@ -1476,6 +1479,7 @@ function FlagsTab({
       >
         {/* 소셜프루프는 위(헤드라인 아래)로 옮겼다 — 여기 또 두면 스크롤할 때마다
             같은 문구가 반복돼 신뢰 문구가 아니라 소음이 된다. */}
+        <UrgencyLine lang={lang} className="mb-1.5" />
         <Link
           href={`/flags/new?lang=${lang}`}
           tabIndex={showStickyCta ? 0 : -1}

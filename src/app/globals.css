@@ -315,6 +315,12 @@
   /* 카드→장바구니 fly는 좌표 기반이라 키프레임이 아니라 인라인 transition으로
      처리한다(MenuPicker.tsx의 FlyItem 참고). */
 
+  /* CTA 위 "주말 조기 마감" 줄의 ⚡ 숨쉼 (UrgencyLine.tsx). 깜빡임이 아니라 75%까지만. */
+  @keyframes nf-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.75; }
+  }
+
   /* 숫자 flip 애니메이션 (10초 단위) */
   @keyframes flip {
     0% {

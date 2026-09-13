@@ -11,6 +11,7 @@ import { clubFeatureLabels } from "@/lib/clubs/tagLabelsI18n";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { UrgencyLine } from "@/components/foreign/UrgencyLine";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { isBookable, fetchMenuClubIds } from "@/lib/clubs/bookable";
 import { BookingComingSoon } from "@/components/foreign/BookingComingSoon";
@@ -482,6 +483,8 @@ export default async function JaClubDetailPage({
       </div>
 
       <div className="fixed bottom-0 inset-x-0 lg:left-[248px] z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
+        {/* 조기 마감 한 줄 — 예약 가능할 때만. 대안 CTA(다른 클럽)에는 안 붙인다. */}
+        {bookable && <UrgencyLine lang="ja" align="left" className="w-full max-w-lg lg:max-w-[900px] mx-auto mb-2 px-0.5" />}
         <div className="flex items-stretch gap-2 w-full max-w-lg lg:max-w-[900px] mx-auto">
           {bookable ? (
             <Link href={bookHref}
