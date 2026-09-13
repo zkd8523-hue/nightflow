@@ -210,6 +210,8 @@ export const trackForeignEvent = (
     | 'foreign_login_success'
     | 'foreign_request_form_view'
     | 'foreign_request_submitted'
+    // 한국인 예약 폼 제출(KoreanBookingForm). ai_referral_sources.booking_count가 이걸 센다.
+    | 'booking_request_submitted'
     | 'foreign_club_saved'
     | 'foreign_saved_club_added'
     // SEO 정적 페이지 (클럽 개별 328p / 실용정보 16p) — ForeignPageTracker가 발동

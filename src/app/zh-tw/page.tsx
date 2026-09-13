@@ -242,14 +242,14 @@ export default async function ZhTwHomePage() {
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://nightflow.kr/zh-tw/#organization",
+        "@id": "https://nightflow.kr/#organization",
         name: "NightFlow",
-        alternateName: ["NightFlow 韓國", "NightFlow 首爾"],
+        alternateName: ["나플"],
         url: "https://nightflow.kr/zh-tw",
-        logo: "https://nightflow.kr/og-image-v2.png",
+        logo: "https://nightflow.kr/og-flag-square.png",
         description:
           "韓國夜店預訂平台,專為外國旅客打造。輕鬆預訂首爾江南·弘大·梨泰院頂級夜店的 VIP 包廂,無需韓語。",
-        sameAs: ["https://www.instagram.com/nightflow.kr/"],
+        sameAs: ["https://www.instagram.com/nightflow.kr/", "https://www.threads.com/@nightflow.tw"],
         areaServed: { "@type": "Country", name: "South Korea" },
       },
       {
@@ -258,13 +258,13 @@ export default async function ZhTwHomePage() {
         url: "https://nightflow.kr/zh-tw",
         name: "NightFlow — 韓國夜店預訂",
         inLanguage: "zh-TW",
-        publisher: { "@id": "https://nightflow.kr/zh-tw/#organization" },
+        publisher: { "@id": "https://nightflow.kr/#organization" },
       },
       {
         "@type": "Service",
         "@id": "https://nightflow.kr/zh-tw/#service",
         name: "首爾夜店預訂服務",
-        provider: { "@id": "https://nightflow.kr/zh-tw/#organization" },
+        provider: { "@id": "https://nightflow.kr/#organization" },
         areaServed: [
           { "@type": "City", name: "首爾" },
           { "@type": "City", name: "釜山" },

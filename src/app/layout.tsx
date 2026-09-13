@@ -174,12 +174,14 @@ export default async function RootLayout({
         "@type": "Organization",
         "@id": "https://nightflow.kr/#organization",
         name: "나플",
-        alternateName: ["나이트플로우", "NightFlow", "NightFlow Korea"],
+        // 외국어 트랙 홈의 Organization도 같은 @id(#organization)를 가리킨다 — 한 실체(2026-09-14).
+        alternateName: ["나이트플로우", "NightFlow", "Nightflow", "nightflow.kr"],
         url: "https://nightflow.kr",
         logo: "https://nightflow.kr/og-flag-square.png",
         description:
           "나플은 강남·홍대 클럽 무료입장·파티·테이블 예약·영업시간·주대 정보를 한 곳에서 볼 수 있는 클럽 플랫폼입니다. 밤을 더 아름답게 만드는 무브먼트.",
         slogan: "밤을 더 아름답게",
+        // 실제로 운영하는 공식 계정만. 대만 Threads(@nightflow.tw)는 /zh-tw 트랙의 같은 @id 노드에 붙인다.
         sameAs: ["https://www.instagram.com/nightflow.kr/"],
       },
       {

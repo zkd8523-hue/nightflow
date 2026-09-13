@@ -264,11 +264,11 @@ export default async function EnHomePage() {
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://nightflow.kr/en/#organization",
+        "@id": "https://nightflow.kr/#organization",
         name: "NightFlow",
-        alternateName: ["NightFlow Korea", "NightFlow Seoul"],
+        alternateName: ["나플", "나이트플로우"],
         url: "https://nightflow.kr/en",
-        logo: "https://nightflow.kr/og-image-v2.png",
+        logo: "https://nightflow.kr/og-flag-square.png",
         description:
           "Korea club booking platform for foreign travelers. Book VIP tables at Seoul's best clubs in Gangnam, Hongdae, Itaewon without speaking Korean.",
         sameAs: ["https://www.instagram.com/nightflow.kr/"],
@@ -281,7 +281,7 @@ export default async function EnHomePage() {
         name: "NightFlow — Korea Club Booking",
         alternateName: ["NightFlow Seoul", "NightFlow Korea"],
         inLanguage: "en-US",
-        publisher: { "@id": "https://nightflow.kr/en/#organization" },
+        publisher: { "@id": "https://nightflow.kr/#organization" },
         potentialAction: {
           "@type": "SearchAction",
           target: {
@@ -295,7 +295,7 @@ export default async function EnHomePage() {
         "@type": "Service",
         "@id": "https://nightflow.kr/en/#service",
         name: "Seoul Club Booking Service",
-        provider: { "@id": "https://nightflow.kr/en/#organization" },
+        provider: { "@id": "https://nightflow.kr/#organization" },
         areaServed: [
           { "@type": "City", name: "Seoul" },
           { "@type": "City", name: "Busan" },

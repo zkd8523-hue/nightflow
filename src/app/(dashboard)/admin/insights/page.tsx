@@ -103,6 +103,28 @@ interface FormSubmitBlock {
   sessions: number;
 }
 
+// Migration 667 — AI 어시스턴트 리퍼러(ChatGPT·Bing·Perplexity…). utm이 없어 '(direct)'에 묻히던 채널.
+// ⚠️ 뷰 미적용 상태면 조회가 에러를 내는데, 페이지 전체가 죽지 않게 빈 배열로 흘린다.
+interface AiReferralSource {
+  month: string;
+  source: string;
+  session_count: number;
+  unique_users: number;
+  avg_duration_sec: number | null;
+  p50_duration_sec: number | null;
+  avg_events: number | null;
+  booking_count: number;
+  book_click_count: number;
+  bounce_rate: number | null;
+}
+interface AiReferralLanding {
+  month: string;
+  source: string;
+  landing_path: string;
+  club_name: string | null;
+  session_count: number;
+}
+
 export default async function InsightsPage() {
   const supabase = await createClient();
 
@@ -121,6 +143,7 @@ export default async function InsightsPage() {
   const [
     hotspotsRes, funnelRes, acquisitionRes, langRes,
     fgFunnelRes, fgExitRes, fgVisitorRes, fieldProgressRes, submitBlocksRes,
+    aiSourcesRes, aiLandingsRes,
   ] = await Promise.all([
     supabase.from("dropoff_hotspots").select("*").limit(10),
     supabase.from("signup_funnel").select("*").single(),
@@ -131,6 +154,8 @@ export default async function InsightsPage() {
     supabase.from("foreign_visitor_list").select("*"),
     supabase.from("foreign_form_field_progress").select("*"),
     supabase.from("foreign_form_submit_blocks").select("*"),
+    supabase.from("ai_referral_sources").select("*"),
+    supabase.from("ai_referral_landings").select("*"),
   ]);
 
   const hotspots: DropoffHotspot[] = (hotspotsRes.data as DropoffHotspot[]) || [];
@@ -142,6 +167,8 @@ export default async function InsightsPage() {
   const foreignExits: ForeignExitPoint[] = (fgExitRes.data as ForeignExitPoint[]) || [];
   const foreignVisitors: ForeignVisitor[] = (fgVisitorRes.data as ForeignVisitor[]) || [];
   const formFieldProgress: FormFieldProgress[] = (fieldProgressRes.data as FormFieldProgress[]) || [];
+  const aiSources: AiReferralSource[] = (aiSourcesRes.data as AiReferralSource[]) || [];
+  const aiLandings: AiReferralLanding[] = (aiLandingsRes.data as AiReferralLanding[]) || [];
   const formSubmitBlocks: FormSubmitBlock[] = (submitBlocksRes.data as FormSubmitBlock[]) || [];
 
   return (
@@ -209,6 +236,8 @@ export default async function InsightsPage() {
           foreignVisitors={foreignVisitors}
           formFieldProgress={formFieldProgress}
           formSubmitBlocks={formSubmitBlocks}
+          aiSources={aiSources}
+          aiLandings={aiLandings}
         />
       </div>
     </div>

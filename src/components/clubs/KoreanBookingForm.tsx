@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { trackEvent } from "@/lib/analytics/events";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ClubDateCalendar } from "./ClubDateCalendar";
@@ -252,6 +253,15 @@ export function KoreanBookingForm({
         notes: notes.trim() || null,
       });
       if (error) throw error;
+
+      // 전환 이벤트(2026-09-14). 그동안 한국인 폼은 아무 이벤트도 안 냈다 — ChatGPT 리퍼러 절반이
+      // 한국어 클럽 상세로 오는데, 그 트랙의 예약이 대시보드(ai_referral_sources.booking_count)에 0으로만 보였다.
+      trackEvent("booking_request_submitted", {
+        club_id: clubId,
+        group_size: groupSize,
+        item_count: picked?.snapshot?.items?.length ?? 0,
+        total_krw: picked?.total ?? null,
+      });
 
       clearFormDraft(draftKey);
       setShowConfirm(false);

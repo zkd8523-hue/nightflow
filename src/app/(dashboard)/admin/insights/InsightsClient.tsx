@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { TrendingDown, Target, BarChart3, Globe2, ArrowRight, ChevronDown, Users } from "lucide-react";
+import { TrendingDown, Target, BarChart3, Globe2, ArrowRight, ChevronDown, Users, Sparkles } from "lucide-react";
 import { fetchVisitorJourney, type JourneyEvent } from "./actions";
 
 // event_name → 한국어 라벨 매핑. 없으면 원본 반환.
@@ -135,6 +135,12 @@ interface Props {
     blocks: number;
     sessions: number;
   }[];
+  aiSources: {
+    month: string; source: string; session_count: number; unique_users: number;
+    avg_duration_sec: number | null; p50_duration_sec: number | null; avg_events: number | null;
+    booking_count: number; book_click_count: number; bounce_rate: number | null;
+  }[];
+  aiLandings: { month: string; source: string; landing_path: string; club_name: string | null; session_count: number }[];
 }
 
 /** 방문자 한 줄 — 누르면 저니가 펼쳐진다. 저니는 클릭 시점에 그 사람 것만 조회. */
@@ -288,7 +294,7 @@ function Donut({
 
 export function InsightsClient({
   hotspots, funnel, acquisition, byLang, foreignFunnel, foreignExits, foreignVisitors,
-  formFieldProgress, formSubmitBlocks,
+  formFieldProgress, formSubmitBlocks, aiSources, aiLandings,
 }: Props) {
   // 방문자 목록 언어 필터. null = 전체.
   const [visitorLang, setVisitorLang] = useState<string | null>(null);
@@ -464,6 +470,84 @@ export function InsightsClient({
               <span className="text-2xl font-black text-emerald-400">
                 {funnel.overall_rate ?? 0}%
               </span>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ============================================ */}
+      {/* Section 2.5: AI 어시스턴트 유입 (Migration 667) — utm이 없거나 utm_source=chatgpt.com이라
+          '(direct)'에 묻히던 채널. 620만 원 중 100만 원이 ChatGPT 경유였다. 월별로 보여 답변형 개편
+          (2026-09-14) 전후를 비교한다. 인용되는 페이지 = 개편 효과의 측정 기준. */}
+      {/* ============================================ */}
+      <section className="bg-card border border-border rounded-2xl p-6">
+        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-violet-400" />
+            <h2 className="text-xl font-black tracking-tight">AI 어시스턴트 유입</h2>
+            <span className="text-xs text-muted-foreground font-medium">(월별, 최근 180일)</span>
+          </div>
+          {aiSources.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              총 <b className="text-foreground">{aiSources.reduce((sum, a) => sum + a.session_count, 0)}</b>개 세션
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-5">
+          chatgpt = 리퍼러 또는 utm_source=chatgpt.com · bing_search = Bing 검색(Copilot-in-Bing 포함, 구분 불가) ·
+          Google AI Overviews/AI Mode는 리퍼러가 google.com이라 여기 잡히지 않음 · 한국인 폼 예약 이벤트는 2026-09-14부터 집계(그 전 세션은 예약클릭으로만 보임)
+        </p>
+        {aiSources.length === 0 ? (
+          <p className="text-muted-foreground text-sm py-8 text-center">최근 180일 AI 리퍼러 세션이 없습니다. (뷰 미적용이면 Migration 667 확인)</p>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-[11px] font-bold text-muted-foreground uppercase tracking-tight">
+                    <th className="p-3">월</th>
+                    <th className="p-3">Source</th>
+                    <th className="p-3 text-right">세션</th>
+                    <th className="p-3 text-right">유니크</th>
+                    <th className="p-3 text-right">중앙 시간</th>
+                    <th className="p-3 text-right">Bounce</th>
+                    <th className="p-3 text-right">예약클릭</th>
+                    <th className="p-3 text-right">예약</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {aiSources.map((a) => (
+                    <tr key={`${a.month}-${a.source}`} className="border-b border-border">
+                      <td className="p-3 text-muted-foreground tabular-nums">{String(a.month).slice(0, 7)}</td>
+                      <td className="p-3 font-bold text-foreground">{a.source}</td>
+                      <td className="p-3 text-right font-bold">{a.session_count}</td>
+                      <td className="p-3 text-right text-muted-foreground">{a.unique_users}</td>
+                      <td className="p-3 text-right text-muted-foreground">
+                        {Math.floor((a.p50_duration_sec ?? 0) / 60)}:{String((a.p50_duration_sec ?? 0) % 60).padStart(2, "0")}
+                      </td>
+                      <td className="p-3 text-right text-muted-foreground">{a.bounce_rate ?? 0}%</td>
+                      <td className="p-3 text-right text-muted-foreground">{a.book_click_count}</td>
+                      <td className={`p-3 text-right font-bold ${a.booking_count > 0 ? "text-emerald-400" : "text-muted-foreground"}`}>{a.booking_count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-tight px-3 pb-2">인용되는 페이지 (월·소스별 상위 8)</p>
+              <ul className="divide-y divide-border">
+                {aiLandings.map((l) => (
+                  <li key={`${l.month}-${l.source}-${l.landing_path}`} className="flex items-center gap-3 px-3 py-2 text-sm">
+                    <span className="text-[11px] text-muted-foreground w-14 shrink-0 tabular-nums">{String(l.month).slice(0, 7)}</span>
+                    <span className="text-[11px] font-bold text-violet-400 w-20 shrink-0">{l.source}</span>
+                    <span className="truncate flex-1 text-[12px]">
+                      {l.club_name ? <b className="text-foreground">{l.club_name}</b> : null}
+                      <span className={`font-mono text-foreground/70 ${l.club_name ? "ml-2" : ""}`}>{l.landing_path}</span>
+                    </span>
+                    <span className="font-bold tabular-nums">{l.session_count}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         )}

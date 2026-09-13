@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Fragment, useState, useEffect, useMemo } from "react";
+import type { ClubAnswer } from "@/lib/clubs/clubAnswer";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLang, makeT } from "@/lib/i18n";
 import Link from "next/link";
@@ -96,6 +97,8 @@ interface ClubDetailContentProps {
   hasMd?: boolean;
   /** 한국인 예약 스티키바 게이팅 — 주대 데이터(club_menu_items)가 있는가. */
   hasMenu?: boolean;
+  /** "답변형" 요약(lib/clubs/clubAnswer). 서버에서 만들어 넘기고 여기선 그리기만 — 스키마와 같은 소스. */
+  answer?: ClubAnswer | null;
 }
 
 export function ClubDetailContent({
@@ -109,6 +112,7 @@ export function ClubDetailContent({
   upcomingEvents = [],
   hasMd = false,
   hasMenu = false,
+  answer = null,
 }: ClubDetailContentProps) {
   const activeAuctions = useMemo(() => {
     return rawActiveAuctions.map(adjustMockAuctionDates);
@@ -614,7 +618,36 @@ export function ClubDetailContent({
 
           {/* 타입/음악/흡연 태그를 해시태그로 — 정보 리스트 맨 위. LED 전광판이 원래
               이 정보(FeatureIconRow)가 있던 자리를 대신하면서, 태그는 여기로 옮겨왔다. */}
+          {/* 답변형 요약 — ChatGPT가 가장 많이 보내는 페이지라 첫 화면, 해시태그보다 위(첫 텍스트 노드)에 숫자로 답을 둔다.
+              같은 사실이 page.tsx의 FAQPage·AggregateOffer 스키마로도 나간다. 데이터 없는 줄은 서버에서 이미 빠져 있다. */}
+          {answer && answer.rows.length > 0 && (
+            <section aria-label="한눈에 보기" className="rounded-xl border border-border bg-card px-3.5 py-3 space-y-2">
+              <p className="text-[13px] font-bold text-foreground break-keep">{answer.oneLiner}</p>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[12px]">
+                {answer.rows.map((r) => (
+                  <Fragment key={r.label}>
+                    <dt className="text-muted-foreground whitespace-nowrap">{r.label}</dt>
+                    <dd className="text-foreground/90 break-keep">{r.value}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+              {answer.faqs.length > 0 && (
+                <div className="pt-1 space-y-1">
+                  {answer.faqs.map((f) => (
+                    <details key={f.q} className="text-[12px] group">
+                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground list-none flex items-center gap-1">
+                        <span className="text-brand-amber">Q</span><span className="break-keep">{f.q}</span>
+                      </summary>
+                      <p className="pl-4 pt-0.5 text-foreground/90 break-keep leading-relaxed">{f.a}</p>
+                    </details>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
           <HashtagRow tags={clubTags} />
+
 
           {clubAddress && (
             <button

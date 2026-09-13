@@ -6,6 +6,8 @@ import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { normalizeDowSlots, summarizeSlots, pickUpcomingBenefit, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import { getBusinessDateISO } from "@/lib/lineups/time";
 import { fetchMenuClubIds } from "@/lib/clubs/bookable";
+import { fetchTablePricing } from "@/lib/clubs/tablePricing";
+import { buildClubAnswer } from "@/lib/clubs/clubAnswer";
 import type { TodayLineup } from "@/components/clubs/ClubLineupSection";
 import type { UpcomingLineup } from "@/components/clubs/UpcomingLineupSheet";
 import type { ClubUpcomingEvent, ClubEventPerformer } from "@/components/clubs/ClubUpcomingEvents";
@@ -270,6 +272,30 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
   const menuClubIds = await fetchMenuClubIds(supabase);
   const hasMenu = menuClubIds.has(id);
 
+  // "답변형" 요약(2026-09-14): ChatGPT 리퍼러 세션의 절반이 이 한국어 클럽 상세로 착지한다.
+  // LLM은 첫 화면에 숫자로 답이 있는 페이지를 인용하므로, 입장료·영업·주대·예약 가능 여부를
+  // 한 블록에 모으고 같은 사실을 FAQPage로도 낸다. 주대는 메뉴 최저 세트(평일가) 기준.
+  const pricingForAnswer = hasMenu ? (await fetchTablePricing(supabase, [id])).get(id) ?? null : null;
+  const asOf = (() => {
+    const d = club.updated_at ? new Date(String(club.updated_at)) : new Date();
+    return Number.isNaN(d.getTime()) ? new Date().toISOString().slice(0, 7) : d.toISOString().slice(0, 7);
+  })();
+  const clubAnswer = buildClubAnswer({
+    name: club.name,
+    area: club.area ?? null,
+    address: club.address ?? null,
+    entryFee: club.entry_fee_detail ?? null,
+    operatingHours: club.operating_hours ?? null,
+    openDows: (club.open_dows as string[] | null) ?? null,
+    dresscode: club.dresscode ?? null,
+    instagram: club.instagram ?? null,
+    rating: club.google_rating != null ? Number(club.google_rating) : null,
+    reviewCount: club.google_review_count != null ? Number(club.google_review_count) : null,
+    lowestSet: pricingForAnswer?.lowestSet ?? null,
+    bookable: hasMd && hasMenu,
+    asOf,
+  });
+
   // 오늘 라인업 정규화. 셋이 없으면(라인업 자체가 없거나 빈 경우) null로 통일 —
   // ClubLineupSection이 자기소거하도록.
   const todayLineup: TodayLineup | null = (() => {
@@ -515,6 +541,26 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         }
       : {}),
     ...(sameAsList.length > 0 ? { sameAs: sameAsList } : {}),
+    // 답변 블록과 같은 숫자를 스키마에도(크리틱 1차): 세트 최저가~메뉴 최고가. 세트 없으면 생략.
+    ...(pricingForAnswer?.lowestSet
+      ? {
+          priceRange: "₩₩₩",
+          makesOffer: {
+            "@type": "AggregateOffer",
+            name: "테이블 세트",
+            priceCurrency: "KRW",
+            // highPrice는 뺀다 — 메뉴 최고가(수천만 원 패키지)가 앵커로 인용되면 오해만 산다.
+            lowPrice: pricingForAnswer.lowestSet,
+            offerCount: pricingForAnswer.itemCount,
+            availability: "https://schema.org/InStock",
+          },
+        }
+      : {}),
+    // 예약 방법은 FAQ 보일러플레이트 대신 ReserveAction으로(100페이지 동일 문답 회피).
+    ...(hasMd && hasMenu
+      ? { potentialAction: { "@type": "ReserveAction", target: `https://nightflow.kr/clubs/${id}`, name: "테이블 예약" } }
+      : {}),
+    ...(club.updated_at ? { dateModified: String(club.updated_at).slice(0, 10) } : {}),
   };
 
   // BreadcrumbList — 검색 결과에 "홈 > 클럽 > {지역} {클럽명}" 경로 노출
@@ -542,9 +588,19 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     ],
   };
 
+  // FAQ 문답은 ClubDetailContent에 <details>로 그대로 보인다(구글 FAQ 정책: 보이는 텍스트와 1:1).
+  const faqLd = clubAnswer.faqs.length
+    ? {
+        "@type": "FAQPage",
+        "@id": `https://nightflow.kr/clubs/${id}#faq`,
+        about: { "@id": `https://nightflow.kr/clubs/${id}#nightclub` },
+        ...(club.updated_at ? { dateModified: String(club.updated_at).slice(0, 10) } : {}),
+        mainEntity: clubAnswer.faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+      }
+    : null;
   const jsonLd = {
     "@context": "https://schema.org",
-    "@graph": [nightClubLd, breadcrumbLd],
+    "@graph": [nightClubLd, breadcrumbLd, ...(faqLd ? [faqLd] : [])],
   };
 
   // 별칭을 본문에 자연 문장으로 노출 ("에이스", "강남 에이스", "버뮤다" 등)
@@ -702,6 +758,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         upcomingEvents={upcomingEvents}
         hasMd={hasMd}
         hasMenu={hasMenu}
+        answer={clubAnswer}
       />
     </>
   );

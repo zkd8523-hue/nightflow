@@ -245,11 +245,11 @@ export default async function JaHomePage() {
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://nightflow.kr/ja/#organization",
+        "@id": "https://nightflow.kr/#organization",
         name: "NightFlow",
-        alternateName: ["NightFlow 韓国", "NightFlow ソウル"],
+        alternateName: ["나플", "ナプル"],
         url: "https://nightflow.kr/ja",
-        logo: "https://nightflow.kr/og-image-v2.png",
+        logo: "https://nightflow.kr/og-flag-square.png",
         description:
           "日本人旅行者のための韓国クラブ予約プラットフォーム。ソウルの江南・弘大・梨泰院のVIPルームを韓国語不要で簡単予約。",
         sameAs: ["https://www.instagram.com/nightflow.kr/"],
@@ -261,13 +261,13 @@ export default async function JaHomePage() {
         url: "https://nightflow.kr/ja",
         name: "NightFlow — 韓国クラブ予約",
         inLanguage: "ja-JP",
-        publisher: { "@id": "https://nightflow.kr/ja/#organization" },
+        publisher: { "@id": "https://nightflow.kr/#organization" },
       },
       {
         "@type": "Service",
         "@id": "https://nightflow.kr/ja/#service",
         name: "ソウルクラブ予約サービス",
-        provider: { "@id": "https://nightflow.kr/ja/#organization" },
+        provider: { "@id": "https://nightflow.kr/#organization" },
         areaServed: [
           { "@type": "City", name: "ソウル" },
           { "@type": "City", name: "釜山" },
