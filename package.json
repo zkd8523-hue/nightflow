@@ -15,7 +15,8 @@
     "test:e2e:report": "playwright show-report",
     "mobile:sync": "npx cap sync",
     "mobile:android": "npx cap open android",
-    "mobile:ios": "npx cap open ios"
+    "mobile:ios": "npx cap open ios",
+    "indexnow": "node scripts/indexnow.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.3",
