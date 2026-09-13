@@ -25,6 +25,7 @@ import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { LineupTicker } from "@/components/home/LineupTicker";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 import { DjDiscoveryCard, type DiscoveryDj } from "@/components/lineups/DjDiscoveryCard";
+import { useDetectedArea } from "@/hooks/useDetectedArea";
 import type { ClubBenefitItem } from "@/lib/home/clubBenefitData";
 import { CouponHomeStrip } from "@/components/home/CouponHomeStrip";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
@@ -297,6 +298,10 @@ export function HomeContent({
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  /* 마지막으로 잡힌 동네(강남·홍대·이태원·부산·대구…) — DJ 카드가 그 동네부터
+     보여준다. 이미 위치를 허용한 사람에게만 조용히 잡히고 팝업은 띄우지 않는다.
+     동네를 몰라도 NOW/SOON/TONIGHT 시의성은 그대로 동작한다(useDetectedArea 참조). */
+  const detectedArea = useDetectedArea();
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   // 조각 섹션 전용 지역 필터 — 깃발(selectedArea)과 독립적으로 움직임
@@ -846,7 +851,10 @@ export function HomeContent({
                  남지 않게 래퍼는 카드가 있을 때만 그린다(LineupTicker와 같은 규약). */}
           {djDiscoveryItems.length > 0 && (
             <div className="pb-4">
-              <DjDiscoveryCard items={djDiscoveryItems} />
+              <DjDiscoveryCard
+                items={djDiscoveryItems}
+                preferArea={detectedArea}
+              />
             </div>
           )}
 

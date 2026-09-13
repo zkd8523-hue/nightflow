@@ -30,6 +30,7 @@ type DjRef = {
 
 export type DiscoverySetRow = {
   start_min: number | null;
+  end_min: number | null;
   djs: DjRef | DjRef[] | null;
   club_lineups:
     | { event_date: string; clubs: ClubRef | ClubRef[] }
@@ -68,6 +69,7 @@ export function buildDjDiscoveryItems(rows: DiscoverySetRow[] | null): Discovery
       club_area: club.area,
       event_date: lineup.event_date,
       start_min: r.start_min,
+      end_min: r.end_min,
     });
   }
 

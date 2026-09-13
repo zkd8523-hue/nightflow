@@ -145,7 +145,7 @@ export default async function HomePage() {
     supabase
       .from("lineup_sets")
       .select(
-        "start_min, djs!inner(id, slug, display_name, instagram, soundcloud_url, youtube_url), club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at))"
+        "start_min, end_min, djs!inner(id, slug, display_name, instagram, soundcloud_url, youtube_url), club_lineups!inner(event_date, clubs!inner(id, name, area, is_test, status, deleted_at))"
       )
       .gte("club_lineups.event_date", lineupFromDate)
       .or("soundcloud_url.not.is.null,youtube_url.not.is.null", { referencedTable: "djs" })

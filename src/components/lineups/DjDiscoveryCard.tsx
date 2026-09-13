@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronsRight, Heart, Play } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { formatBusinessMin } from "@/lib/lineups/time";
+import { formatBusinessMin, nowBusinessMinutes } from "@/lib/lineups/time";
 import { isLineupToday, formatLineupDate } from "@/lib/lineups/formatDate";
 import { useDjFavoritesContext } from "@/components/providers";
 import { DjPreviewButton, warmSoundcloud } from "@/components/djs/DjPreviewButton";
@@ -13,6 +13,7 @@ import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfile
 import { DjLedShowList, type DjShowRow } from "@/components/djs/DjLedShowList";
 import { createClient } from "@/lib/supabase/client";
 import { getBusinessDateISO } from "@/lib/lineups/time";
+import { withJosa } from "@/lib/utils/josa";
 
 /**
  * 라인업 최상단 "DJ 발견" 카드 — 이름만 봐선 누군지 모르는 DJ를 귀로 먼저 만나는 자리.
@@ -32,22 +33,101 @@ export interface DiscoveryDj {
   club_area: string | null;
   event_date: string;
   start_min: number | null;
+  /** 지금 돌고 있는지 판정용. 캡션 수집분은 null(Migration 573). */
+  end_min?: number | null;
 }
 
-/** 화면에 보이는 순서 = 날짜 → 시간. 목록도 카드도 "다음 DJ"도 전부 이 순서를 쓴다.
- *  DB에서 온 등록순을 그대로 쓰면 "다음"이 화면상 다음 줄이 아니어서
- *  두 칸 건너뛴 것처럼 보인다(실측 확인). */
-function sortForDisplay(list: DiscoveryDj[]): DiscoveryDj[] {
+/**
+ * 이 셋이 "지금"과 어떤 관계인가 — 카드의 시의성은 전부 이 하나에서 나온다.
+ *
+ *   now     지금 돌고 있다(오늘 영업일, 시작~끝 사이)
+ *   soon    오늘, 1시간 안에 시작
+ *   tonight 오늘, 그 뒤에 시작(시간 미상 포함)
+ *   ended   오늘인데 이미 끝났다
+ *   later   다른 날
+ *
+ * 오늘 영업일일 때만 now/soon 을 켠다 — 내일 라인업이 시각만 맞는다고 NOW 가
+ * 뜨면 거짓이다(LineupSetTable 과 같은 규칙). 캡션 수집분은 start/end 가 null
+ * 이라 가드 없이 비교하면 null<=n 이 true 가 된다.
+ */
+type Timing = "now" | "soon" | "tonight" | "ended" | "later";
+const SOON_WITHIN_MIN = 60;
+
+function timingOf(it: DiscoveryDj, nowMin: number | null, todayISO: string): Timing {
+  if (it.event_date !== todayISO) return "later";
+  if (nowMin === null || it.start_min === null) return "tonight";
+  const end = it.end_min ?? null;
+  if (end !== null && it.start_min <= nowMin && nowMin < end) return "now";
+  if (end !== null && nowMin >= end) return "ended";
+  if (it.start_min <= nowMin) return "now"; // 끝 시각을 모르면 시작한 뒤론 돌고 있다고 본다
+  return it.start_min - nowMin <= SOON_WITHIN_MIN ? "soon" : "tonight";
+}
+
+/** 시의성이 높은 순 — 정렬과 제목이 같은 기준을 쓴다 */
+const TIMING_RANK: Record<Timing, number> = { now: 0, soon: 1, tonight: 2, later: 3, ended: 4 };
+
+/**
+ * 화면에 보이는 순서. 목록도 카드도 "다음 DJ"도 전부 이 순서를 쓴다 —
+ * DB 등록순을 그대로 쓰면 "다음"이 화면상 다음 줄이 아니어서 두 칸 건너뛴
+ * 것처럼 보인다(실측 확인).
+ *
+ *   1) 내가 있는 동네(preferArea) 먼저 — 홍대에 서 있는 사람에게 강남 DJ부터
+ *      들려줄 이유가 없다
+ *   2) 그 안에서 시의성 순 — 지금 돌고 있는 셋 → 곧 시작 → 오늘 밤 → 다른 날
+ *      → 오늘인데 끝난 셋(들을 순 있으니 버리진 않되 맨 뒤로)
+ *   3) 나머지는 날짜 → 시간
+ */
+function sortForDisplay(
+  list: DiscoveryDj[],
+  preferArea: string | null,
+  timing: (it: DiscoveryDj) => Timing
+): DiscoveryDj[] {
+  const rank = (it: DiscoveryDj) =>
+    (preferArea && it.club_area === preferArea ? 0 : 10) + TIMING_RANK[timing(it)];
   return [...list].sort(
     (a, b) =>
+      rank(a) - rank(b) ||
       a.event_date.localeCompare(b.event_date) ||
       (a.start_min ?? Number.MAX_SAFE_INTEGER) - (b.start_min ?? Number.MAX_SAFE_INTEGER)
   );
 }
 
-export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
-  const items = useMemo(() => sortForDisplay(rawItems), [rawItems]);
+export function DjDiscoveryCard({
+  items: rawItems,
+  preferArea = null,
+}: {
+  items: DiscoveryDj[];
+  /** 사용자가 지금 있는 동네(clubs.area 라벨, 예: "홍대"). 그 지역 DJ가 앞으로 온다. */
+  preferArea?: string | null;
+}) {
+  /* 지금 몇 시인지는 클라이언트만 안다 — 서버 렌더 시각은 캐시에 박제된다.
+     오늘 영업일 항목이 하나라도 있을 때만 시계를 돌린다. */
+  const [nowMin, setNowMin] = useState<number | null>(null);
+  const todayISO = getBusinessDateISO();
+  const hasToday = rawItems.some((it) => it.event_date === todayISO);
+  useEffect(() => {
+    if (!hasToday) return;
+    const tick = () => setNowMin(nowBusinessMinutes());
+    tick();
+    const timer = setInterval(tick, 60_000);
+    return () => clearInterval(timer);
+  }, [hasToday]);
+
+  const timing = (it: DiscoveryDj) => timingOf(it, nowMin, todayISO);
+  /* 정렬은 누군가의 시의성 단계(now/soon/…)가 실제로 바뀔 때만 다시 한다 —
+     분마다 재정렬하면 보고 있던 카드가 이유 없이 자리를 옮긴다. */
+  const timingKey = rawItems.map((it) => TIMING_RANK[timing(it)]).join("");
+  const items = useMemo(
+    () => sortForDisplay(rawItems, preferArea, timing),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rawItems, preferArea, timingKey]
+  );
   const [idx, setIdx] = useState(0);
+  /* 동네가 뒤늦게 잡히면(GPS 는 비동기) 그 동네 DJ 가 0번으로 왔는데 카드는
+     이미 몇 장 돌아가 있다 — 처음으로 되돌려 그 사람부터 보여준다. */
+  useEffect(() => {
+    setIdx(0);
+  }, [preferArea]);
   const [listOpen, setListOpen] = useState(false);
   // 재생 시트는 카드가 하나만 소유한다 — 슬라이드마다 두면 "다음 DJ"가
   // 뒤 카드만 넘기고 시트는 그대로라 재생이 끊긴다.
@@ -208,11 +288,43 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
   // 않는다(LineupTicker 와 같은 규약). 훅은 이 위에서 전부 호출된 뒤다.
   if (!cur) return null;
 
+  /* 제목은 0번 카드가 말해준다 — 정렬이 시의성 순이라 0번이 가장 "지금"에 가깝다.
+       now     🔴 NOW PLAYING · 홍대
+       soon    🟠 SOON · 홍대 23:00
+       tonight 🟠 TONIGHT · 오늘 밤 홍대
+       그 외   이번 주말, 홍대를 뛰게 할 DJ는? (동네 모르면 원래 문구)
+     지역명은 감지된 동네가 아니라 그 카드의 club_area 를 쓴다(홍대 사람에게 홍대
+     NOW 가 없어 강남 NOW 가 앞에 왔다면 "강남"이 맞는 말이다). */
+  const first = items[0];
+  const firstTiming = timing(first);
+  const firstArea = first.club_area ?? preferArea ?? "";
+  const heading =
+    firstTiming === "now"
+      ? `NOW PLAYING${firstArea ? ` · ${firstArea}` : ""}`
+      : firstTiming === "soon"
+        ? `SOON${firstArea ? ` · ${firstArea}` : ""}${first.start_min !== null ? ` ${formatBusinessMin(first.start_min)}` : ""}`
+        : firstTiming === "tonight"
+          ? `TONIGHT · 오늘 밤${firstArea ? ` ${firstArea}` : ""}`
+          : preferArea
+            ? `이번 주말, ${withJosa(preferArea, "을/를")} 뛰게 할 DJ는?`
+            : "이번 주말, 당신을 뛰게 할 DJ는?";
+  const headingDot =
+    firstTiming === "now" ? "bg-red-500" : firstTiming === "soon" || firstTiming === "tonight" ? "bg-amber-400" : null;
+
   return (
     <section aria-label="DJ 미리듣기">
       <div className="flex items-center justify-between mb-2 px-0.5">
-        <h2 className="text-[13.5px] font-black text-foreground tracking-tight">
-          이번 주말, 당신을 뛰게 할 DJ는?
+        <h2 className="text-[13.5px] font-black text-foreground tracking-tight inline-flex items-center gap-1.5">
+          {headingDot && (
+            <span className="relative inline-flex w-2 h-2" aria-hidden="true">
+              {/* 돌고 있을 때만 파동 — 예정에까지 깜빡이면 NOW 의 무게가 죽는다 */}
+              {firstTiming === "now" && (
+                <span className={`absolute inset-0 rounded-full ${headingDot} animate-ping opacity-75`} />
+              )}
+              <span className={`relative inline-flex w-2 h-2 rounded-full ${headingDot}`} />
+            </span>
+          )}
+          {heading}
         </h2>
       </div>
 
@@ -246,6 +358,7 @@ export function DjDiscoveryCard({ items: rawItems }: { items: DiscoveryDj[] }) {
               <Slide
                 key={i}
                 item={at(k)}
+                timing={timing(at(k))}
                 swipedAt={swipedAt}
                 onPlay={() => setPlaying(at(k))}
               />
@@ -634,10 +747,14 @@ function PreviewFooter({ item, onMore }: { item: DiscoveryDj; onMore?: () => voi
 
 function Slide({
   item,
+  timing,
   swipedAt,
   onPlay,
 }: {
   item: DiscoveryDj;
+  /** 지금과의 관계. NOW/SOON/TONIGHT 는 제목이 이미 말하므로 슬라이드엔 배지를
+   *  겹치지 않는다 — 끝난 셋만 "오늘 · 종료"로 눌러 표시한다. */
+  timing: Timing;
   swipedAt: React.MutableRefObject<number>;
   onPlay: () => void;
 }) {
@@ -678,7 +795,11 @@ function Slide({
         </p>
         {/* 클럽명은 형광 초록(라인업 화면 공통), 날짜·시간은 흰색 계열로 눌러 구분한다 */}
         <p className="text-[11.5px] font-extrabold mt-1 truncate">
-          <span className="text-white/90">{when}</span>{" "}
+          {timing === "ended" ? (
+            <span className="text-white/50">오늘 · 종료</span>
+          ) : (
+            <span className="text-white/90">{when}</span>
+          )}{" "}
           <span
             className="text-[#39ff6a]"
             style={{ textShadow: "0 0 8px rgba(57,255,106,.55)" }}

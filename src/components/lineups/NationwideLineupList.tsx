@@ -353,6 +353,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
           club_area: r.club_area,
           event_date: r.event_date,
           start_min: s.start_min,
+          end_min: s.end_min,
         });
       }
     }
