@@ -211,7 +211,7 @@ export async function generateMetadata({
   // 지역 가격표(AreaTablePrices)에 맞춘 랭킹 신호 — 지역 하한은 정적이라 조회 없이 넣는다
   const floor = bookingFloor(config.koreanArea);
   // 가격 문장을 앞에 — SERP 표시 폭(전각 ~78자) 안에 들어오게(크리틱 3차)
-  const description = `訂桌每桌低消${wonCompact(floor, "zh-tw")}起,真實酒單價格,無中介費。${config.description}`;
+  const description = `包廂每桌低消${wonCompact(floor, "zh-tw")}起,真實酒單價格,無中介費。${config.description}`;
 
   return {
     title: config.title,

@@ -9,27 +9,30 @@ import { RealTablePrices, fetchRealTablePrices, realTablePricesJsonLd, realTable
 export const metadata: Metadata = {
   title: {
     absolute:
-      "首爾夜店桌位價格 2026 — 23家真實酒單（50萬韓元起）",
+      "首爾夜店包廂價格 2026 — 23家真實酒單（50萬韓元起）",
   },
   description:
-    "首爾夜店桌位實際要花多少：梨泰院、弘大低消50萬韓元，江南100萬韓元，由各夜店真實酒單選酒湊滿。含套餐實價與內容，無中介費。",
+    "首爾夜店包廂實際要花多少：梨泰院、弘大低消50萬韓元，江南100萬韓元，由各夜店真實酒單選酒湊滿。含套餐實價與內容，無中介費。",
+  // 包廂 우선(대만 실측 어휘), 桌位는 보조로 유지.
   keywords: [
-    "首爾VIP桌位",
+    "首爾夜店包廂",
+    "首爾夜店包廂價格",
+    "首爾VIP包廂",
     "首爾VIP預訂",
     "首爾瓶裝服務",
     "首爾VIP夜店",
-    "韓國VIP桌位",
+    "韓國夜店包廂",
+    "韓國VIP包廂",
     "韓國VIP預訂",
-    "韓國瓶裝服務",
-    "江南VIP桌位",
-    "江南VIP預訂",
-    "江南瓶裝服務",
+    "江南夜店包廂",
+    "江南VIP包廂",
+    "弘大夜店包廂",
+    "梨泰院夜店包廂",
     "狎鷗亭VIP",
-    "狎鷗亭桌位",
+    "狎鷗亭包廂",
     "清潭VIP",
-    "清潭桌位",
-    "韓國夜店桌位",
     "首爾夜店桌位",
+    "首爾夜店低消",
   ],
   alternates: {
     canonical: "https://nightflow.kr/zh-tw/vip-tables",
@@ -44,8 +47,8 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "首爾夜店桌位價格 2026 — 23家真實酒單（50萬韓元起）",
-    description: "首爾夜店桌位實際要花多少：梨泰院、弘大低消50萬韓元，江南100萬韓元，由各夜店真實酒單選酒湊滿。含套餐實價與內容，無中介費。",
+    title: "首爾夜店包廂價格 2026 — 23家真實酒單（50萬韓元起）",
+    description: "首爾夜店包廂實際要花多少：梨泰院、弘大低消50萬韓元，江南100萬韓元，由各夜店真實酒單選酒湊滿。含套餐實價與內容，無中介費。",
     url: "https://nightflow.kr/zh-tw/vip-tables",
     locale: "zh_TW",
     type: "website",
@@ -65,10 +68,10 @@ export default async function ZhTwVipTablesPage() {
     "@graph": [
       {
         "@type": "Service",
-        name: "首爾 VIP 桌位預訂",
+        name: "首爾 VIP 包廂預訂",
         provider: { "@type": "Organization", name: "NightFlow", url: "https://nightflow.kr/zh-tw" },
         areaServed: { "@type": "City", name: "首爾" },
-        description: "預訂首爾頂級夜店 VIP 桌位和瓶裝服務，江南、弘大、梨泰院、狎鷗亭。中文友善，無中介，韓國在地價。",
+        description: "預訂首爾頂級夜店 VIP 包廂和瓶裝服務，江南、弘大、梨泰院、狎鷗亭。中文友善，無中介，韓國在地價。",
         serviceType: "VIP Table Reservation",
       },
       ...(priceLd ? [priceLd] : []),
@@ -86,7 +89,7 @@ export default async function ZhTwVipTablesPage() {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "NightFlow", item: "https://nightflow.kr/zh-tw" },
-          { "@type": "ListItem", position: 2, name: "VIP 桌位", item: "https://nightflow.kr/zh-tw/vip-tables" },
+          { "@type": "ListItem", position: 2, name: "VIP 包廂", item: "https://nightflow.kr/zh-tw/vip-tables" },
         ],
       },
     ],
@@ -100,9 +103,9 @@ export default async function ZhTwVipTablesPage() {
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
           <Link href="/zh-tw" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
-          <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">首爾夜店桌位價格</h1>
+          <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">首爾夜店包廂價格</h1>
           <p className="text-[14px] text-muted-foreground leading-relaxed">
-            預訂首爾頂級夜店 VIP 桌位和瓶裝服務 — 江南、弘大、梨泰院、狎鷗亭。無中介，無需韓語，無旅客加價。
+            預訂首爾頂級夜店 VIP 包廂和瓶裝服務 — 江南、弘大、梨泰院、狎鷗亭。無中介，無需韓語，無旅客加價。
           </p>
         </header>
 
@@ -111,7 +114,7 @@ export default async function ZhTwVipTablesPage() {
 
         {priceFaqs.length > 0 && (
           <section className="space-y-3">
-            <h2 className="text-[20px] font-black">首爾夜店桌位價格 — 常見問題</h2>
+            <h2 className="text-[20px] font-black">首爾夜店包廂價格 — 常見問題</h2>
             {priceFaqs.map((f) => (
               <div key={f.q}>
                 <h3 className="text-[14px] font-bold text-foreground">{f.q}</h3>
@@ -123,7 +126,7 @@ export default async function ZhTwVipTablesPage() {
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">VIP 預訂流程</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed">
-            選好想去的夜店（或者只告訴我們喜好），填寫日期、人數和預算。NightFlow 直接聯絡夜店，為您鎖定預算內最好的桌位 — 真實價格，真實瓶裝套餐。到場後直接入場。
+            選好想去的夜店（或者只告訴我們喜好），填寫日期、人數和預算。NightFlow 直接聯絡夜店，為您鎖定預算內最好的包廂 — 真實價格，真實瓶裝套餐。到場後直接入場。
           </p>
           <Link data-nf-track="book_cta" href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 透過 NightFlow 預訂
@@ -132,9 +135,9 @@ export default async function ZhTwVipTablesPage() {
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">按地區瀏覽</h2>
           <ul className="space-y-2 text-[13px] text-muted-foreground">
-            <li><Link className="hover:text-foreground" href="/zh-tw/clubs/gangnam">江南 VIP 桌位 →</Link></li>
-            <li><Link className="hover:text-foreground" href="/zh-tw/clubs/apgujeong">狎鷗亭 &amp; 清潭 VIP 桌位 →</Link></li>
-            <li><Link className="hover:text-foreground" href="/zh-tw/clubs/hongdae">弘大 VIP &amp; walk-in 桌位 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh-tw/clubs/gangnam">江南 VIP 包廂 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh-tw/clubs/apgujeong">狎鷗亭 &amp; 清潭 VIP 包廂 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh-tw/clubs/hongdae">弘大 VIP &amp; walk-in 包廂 →</Link></li>
             <li><Link className="hover:text-foreground" href="/zh-tw/clubs/itaewon">梨泰院國際化夜店 →</Link></li>
           </ul>
         </section>

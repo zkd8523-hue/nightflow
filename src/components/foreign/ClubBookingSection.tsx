@@ -49,6 +49,7 @@ const T = {
   en: {
     h2: (n: string) => `Book a table at ${n}`,
     minSpend: (a: string) => `Minimum spend per table (${a})`,
+    define: "",
     tablesFrom: "Tables from",
     menuFrom: (s: string, reach: number | null) =>
       reach != null && reach <= 3
@@ -74,6 +75,7 @@ const T = {
   ja: {
     h2: (n: string) => `${n}のテーブル予約`,
     minSpend: (a: string) => `1卓あたり最低予約金額（${a}）`,
+    define: "",
     tablesFrom: "テーブル料金",
     menuFrom: (s: string, reach: number | null) =>
       reach != null && reach <= 3
@@ -99,6 +101,7 @@ const T = {
   zh: {
     h2: (n: string) => `预订${n}的卡座`,
     minSpend: (a: string) => `每桌最低消费（${a}）`,
+    define: "",
     tablesFrom: "卡座价格",
     menuFrom: (s: string, reach: number | null) =>
       reach != null && reach <= 3
@@ -122,29 +125,31 @@ const T = {
     seeAll: (a: string) => `比较${a}全部卡座价格`,
   },
   "zh-tw": {
-    h2: (n: string) => `在${n}訂桌`,
+    h2: (n: string) => `在${n}訂包廂`,
     minSpend: (a: string) => `每桌低消(${a})`,
-    tablesFrom: "桌位價格",
+    // 包廂=오픈 부스임을 첫 등장에서 한 번 정의(룸으로 오해 방지). 대만 어휘 근거는 clubBookingSeo.ts 상단.
+    define: "包廂是舞池旁的開放式桌位(有沙發和自己的桌子),不是密閉房間。",
+    tablesFrom: "包廂價格",
     menuFrom: (s: string, reach: number | null) =>
       reach != null && reach <= 3
         ? `酒單上的酒水和套餐從${s}起 — 多數人點2〜3項即可達到低消。`
         : `酒單上的酒水和套餐從${s}起 — 組合幾項即可達到低消。`,
     setsTitle: "酒單上最便宜的套餐",
     itemsTitle: "酒單上最便宜的酒水",
-    charge: "桌位費",
+    charge: "包廂費",
     chargeWd: "平日",
     chargeWe: "週末",
     steps: ["選擇日期、人數,從真實酒單選酒。", "我們用韓語向夜店確認 — 多數請求幾小時內回覆。", "書面告知最終價格。免訂金,當晚在夜店付款。"],
     trust: ["真實酒單價格 — 看到的總額就是支付額", "無中介費,免訂金", "被多收費？我們賠付200%"],
-    cta: (n: string) => `訂桌 ${n}`,
-    moreH3: (a: string) => `${a}其他可訂桌的夜店`,
-    notH2: (n: string) => `${n}暫時無法訂桌`,
-    notP: (n: string, a: string, k: number) => k > 0 ? `我們目前還不能代訂${n}的桌位。以下${a}夜店現在就能用中文訂桌,含真實價格:` : `我們目前還不能代訂${n}的桌位。看看現在可以訂桌的夜店。`,
+    cta: (n: string) => `訂包廂 ${n}`,
+    moreH3: (a: string) => `${a}其他可訂包廂的夜店`,
+    notH2: (n: string) => `${n}暫時無法訂包廂`,
+    notP: (n: string, a: string, k: number) => k > 0 ? `我們目前還不能代訂${n}的包廂。以下${a}夜店現在就能用中文訂包廂,含真實價格:` : `我們目前還不能代訂${n}的包廂。看看現在可以訂包廂的夜店。`,
     altFrom: "",
-    altBook: "訂桌",
+    altBook: "訂包廂",
     altDetails: "詳情",
     reviews: "則評論",
-    seeAll: (a: string) => `比較${a}全部桌位價格`,
+    seeAll: (a: string) => `比較${a}全部包廂價格`,
   },
 } as const;
 
@@ -228,6 +233,9 @@ export function ClubBookingSection({
           </p>
           {anchoredByFloor && lowestBase != null && (
             <p className="text-[13px] text-muted-foreground mt-1.5 break-keep">{t.menuFrom(formatWon(lowestBase), reach)}</p>
+          )}
+          {t.define && (
+            <p className="text-[12px] text-muted-foreground mt-1.5 break-keep">{t.define}</p>
           )}
         </div>
 

@@ -163,10 +163,10 @@ export async function generateMetadata({
     `${name} 評價`,
     `${name} 評論`,
     `${name} 服裝規定`,
-    ...(bookable ? [`${name} 桌位價格`] : []),
+    ...(bookable ? [`${name} 包廂`, `${name} 包廂價格`] : []),
     ...(bookable ? [`${name} 預約`] : []),
     `${areaZh} 夜店`,
-    `${areaZh} 夜店訂桌`,
+    `${areaZh} 夜店包廂`,
     "首爾夜店",
     "韓國夜店",
     club.name,
@@ -257,7 +257,7 @@ export default async function ZhTwClubDetailPage({
     // ⚠️ 예약 중개가 가능한 클럽에만 넣는다. 담당 MD나 주대가 없으면 실제로 잡아줄 수
     // 없는데 구조화 데이터로 "예, 잡아드립니다"를 선언하면 검색결과가 거짓말이 된다.
     bookable
-      ? { q: `可以用中文在${name}訂桌嗎？`, a: `可以。NightFlow 會直接聯絡${name}為您鎖定桌位,支援英文/中文溝通,無中介費。` }
+      ? { q: `可以用中文在${name}訂包廂嗎？`, a: `可以。NightFlow 會直接聯絡${name}為您鎖定包廂,支援英文/中文溝通,無中介費。` }
       : null,
   ].filter(Boolean) as { q: string; a: string }[];
   // 예약 가능 + 가격 있을 때만 "얼마부터/어떻게 예약" Q&A가 붙는다(거짓 선언 방지 원칙 동일).
