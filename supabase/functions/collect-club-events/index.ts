@@ -1345,9 +1345,19 @@ async function runCollection() {
         // (proc=0인데 lineups>0인 행이 실제로 나왔다). ctx.captionHandles도
         // 공유돼 있어 같은 경합이 있었다.
         // 게시물 하나 처리마다 자기만의 results/ctx 사본을 만들어 완전히
-        // 격리하고, 끝난 뒤에만 전역 results에 더한다 — 델타가 아니라 합산이라
-        // 순서와 무관하게 항상 맞다.
-        const localResults = { ...results, errors: [] as string[] };
+        // 격리하고, 끝난 뒤에만 전역 results에 더한다.
+        //
+        // ⚠️ 사본은 반드시 0 에서 시작해야 한다(2026-09-14 실측). 전에는
+        // { ...results } 로 전역 값을 복사해 시작했는데, 아래 합산이
+        // results[key] += localResults[key] 라 "전역 + 델타"를 전역에 또 더했다.
+        // 게시물 하나마다 전역이 2배가 되어 100건이면 2^100 — accounts 가
+        // 1.8e+22 로 찍혔고, 그 값을 collection_runs.sources_attempted(integer)에
+        // 넣다가 out of range 로 터져 8/27 부터 실행 기록이 한 건도 안 남았다.
+        // catch 가 삼켜서 20일 가까이 몰랐다.
+        const localResults = Object.fromEntries(
+          Object.entries(results).map(([k, v]) => [k, typeof v === "number" ? 0 : v])
+        ) as typeof results;
+        localResults.errors = [];
         const localCtx: SaveCtx = { ...ctx, captionHandles: extractPerformerHandles(post.caption ?? ""), results: localResults };
 
         try {
@@ -1468,7 +1478,7 @@ async function runCollection() {
     // 5) 실행 기록 — 이게 없으면 위 숫자는 로그에 찍히고 사라진다.
     //    저장 실패가 수집 자체를 실패시키면 안 되므로 통째로 감싼다.
     try {
-      const { data: run } = await supabase
+      const { data: run, error: runErr } = await supabase
         .from("collection_runs")
         .insert({
           trigger: "manual",
@@ -1493,6 +1503,10 @@ async function runCollection() {
         })
         .select("id")
         .single();
+      // 2026-09-14 실측: 8/27 부터 이 기록이 한 건도 안 남았는데 catch 가 삼켜서
+      // 20일 가까이 몰랐다. insert 의 error 를 안 보고 run 만 꺼내 쓰던 자리다.
+      // 실패하면 던져서 아래 catch 의 console.error 가 원문을 찍게 한다.
+      if (runErr) throw new Error(`collection_runs insert: ${runErr.message} ${runErr.details ?? ""} ${runErr.hint ?? ""}`);
 
       const rows = [...acct.values()].map((s) => {
         // outcome 판정 — 조치가 갈리는 지점이라 순서가 중요하다.
@@ -1538,10 +1552,17 @@ async function runCollection() {
           detail: s.errorMsg,
         };
       });
-      if (rows.length) await supabase.from("collection_account_results").insert(rows);
+      if (rows.length) {
+        const { error: rowsErr } = await supabase.from("collection_account_results").insert(rows);
+        if (rowsErr) throw new Error(`collection_account_results insert: ${rowsErr.message} ${rowsErr.details ?? ""} ${rowsErr.hint ?? ""}`);
+      }
       console.log(`📝 실행 기록 저장: 계정 ${rows.length}건`);
     } catch (e) {
-      console.error("⚠️ 실행 기록 저장 실패 (수집 결과는 정상):", e);
+      // 삼키되 흔적은 남긴다 — results.errors 는 위 collection_runs 에 못 들어가도
+      // 함수 로그와 HTTP 응답(동기 호출 시)에는 보인다.
+      const msg = String((e as Error)?.message ?? e).slice(0, 300);
+      results.errors.push(`run_record: ${msg}`);
+      console.error("⚠️ 실행 기록 저장 실패 (수집 결과는 정상):", msg);
     }
 
     return results;
@@ -1554,6 +1575,16 @@ async function runCollection() {
 
 Deno.serve((req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // 진단용 동기 모드 — ?sync=1 이면 끝까지 기다렸다 results 를 그대로 돌려준다.
+  // 백그라운드 실행은 로그 외엔 볼 길이 없어서, 8/27 부터 실행 기록이 안 남는
+  // 걸 20일 가까이 몰랐다(2026-09-14). 정상 수집은 24초 정도라 150초 안이다.
+  // cron 은 이 플래그를 안 쓰므로 기존 동작은 그대로다.
+  if (new URL(req.url).searchParams.get("sync") === "1") {
+    return runCollection().then((r) =>
+      new Response(JSON.stringify(r, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    );
+  }
 
   // 수집은 수 분이 걸리므로 응답을 기다리지 않는다. cron(pg_cron)은 202만 받고
   // 끊고, 실제 작업은 백그라운드에서 끝까지 돈다. 진행 상황은 함수 로그로 확인.
