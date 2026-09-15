@@ -874,6 +874,26 @@ export function HomeContent({
             </div>
           </div>
 
+          {/* ── 클럽 다이렉트 섹션 (파트너 클럽이 올린 조각) — 0건이면 헤더까지 통째 숨김 ── */}
+          {clubDirectCount > 0 && (
+            <div className="flex flex-col">
+              {renderSectionRow({ icon: "🍾", label: "클럽 다이렉트", detailTab: "clubdirect", dateLabel: clubDirectHeaderDate, count: clubDirectCount })}
+              <div className="mb-2">
+                <HomePuzzleCarousel
+                  puzzles={sharePuzzles}
+                  totalCount={clubDirectCount}
+                  offerCounts={puzzleOfferCounts}
+                  userRole={user?.role as "user" | "md" | "admin" | undefined}
+                  detailHref={detailHref("clubdirect")}
+                  newFlagHref={newShareHref}
+                  shareMode
+                  shareVariant="clubdirect"
+                  onActiveDateChange={setClubDirectHeaderDate}
+                />
+              </div>
+            </div>
+          )}
+
           {/* 🚩 깃발 섹션(헤더+인라인 가이드+캐러셀) 제거 — 깃발 신규 진입점 숨김 */}
 
           {/* ── 파티 섹션 (유저가 올린 파티만) ── */}
@@ -901,26 +921,6 @@ export function HomeContent({
             </>
           )}
           </div>
-
-          {/* ── 클럽 다이렉트 섹션 (파트너 클럽이 올린 조각) — 0건이면 헤더까지 통째 숨김 ── */}
-          {clubDirectCount > 0 && (
-            <div className="flex flex-col">
-              {renderSectionRow({ icon: "🍾", label: "클럽 다이렉트", detailTab: "clubdirect", dateLabel: clubDirectHeaderDate, count: clubDirectCount })}
-              <div className="mb-2">
-                <HomePuzzleCarousel
-                  puzzles={sharePuzzles}
-                  totalCount={clubDirectCount}
-                  offerCounts={puzzleOfferCounts}
-                  userRole={user?.role as "user" | "md" | "admin" | undefined}
-                  detailHref={detailHref("clubdirect")}
-                  newFlagHref={newShareHref}
-                  shareMode
-                  shareVariant="clubdirect"
-                  onActiveDateChange={setClubDirectHeaderDate}
-                />
-              </div>
-            </div>
-          )}
 
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
 
