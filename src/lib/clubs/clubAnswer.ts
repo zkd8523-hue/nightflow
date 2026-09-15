@@ -37,8 +37,6 @@ export type ClubAnswerInput = {
 export type ClubAnswer = {
   name: string;
   area: string | null;
-  /** 한 줄 요약 — 화면 맨 위 */
-  oneLiner: string;
   rows: { label: string; value: string }[];
   faqs: { q: string; a: string }[];
   /** 스키마용 */
@@ -88,6 +86,9 @@ export function buildClubAnswer(i: ClubAnswerInput): ClubAnswer {
   const priceLine = i.lowestSet ? `테이블 세트 ${wonKo(i.lowestSet)}부터` : null;
   const ig = i.instagram ? i.instagram.replace(/^@/, "").trim() : null;
 
+  // 주소·인스타도 이 표 하나로 모은다 — 화면에 따로 아이콘 줄을 또 두면 정보가
+  // 두 군데로 흩어져 보인다(2026-09-15). 클릭 동작(지도 열기·IG 링크)은
+  // ClubDetailContent가 label로 골라서 붙인다.
   const rows: { label: string; value: string }[] = [];
   if (entryFeeText) rows.push({ label: entryPlain ? "입장료" : "입장", value: entryFeeText });
   if (hoursRow) rows.push({ label: "영업", value: hoursRow });
@@ -97,15 +98,7 @@ export function buildClubAnswer(i: ClubAnswerInput): ClubAnswer {
   // 표본 10개 미만이거나 3.0 미만은 안 낸다 — 파트너 클럽 페이지가 "구글 평점 2.4"를 인용시키면 양쪽 다 손해.
   if (i.rating != null && i.rating >= 3.0 && (i.reviewCount ?? 0) >= 10) rows.push({ label: "구글 평점", value: `${i.rating.toFixed(1)} (리뷰 ${i.reviewCount})` });
   if (ig) rows.push({ label: "인스타", value: `@${ig}` });
-  rows.push({ label: "예약", value: i.bookable ? "나플에서 테이블 예약 가능 · 메뉴 실가격 · 예약금 없음" : "나플 테이블 예약 불가 · 게스트·핫딜 정보만" });
-
-  const bits: string[] = [];
-  if (entryFeeText && entryPlain) bits.push(`입장료 ${entryFeeText}`);
-  // 한 줄 요약엔 영업시간의 첫 구간만("금/토 22:00-05:00 월~목 …" → 앞부분). 전체는 표 행에 있다.
-  if (hoursRow) bits.push(hoursRow.split(/\s*[\/|,]\s*(?=[월화수목금토일]|평일|주말)/)[0].trim());
-  if (priceLine) bits.push(priceLine);
-  bits.push(i.bookable ? "나플에서 테이블 예약 가능" : "나플 테이블 예약 불가");
-  const oneLiner = `${n}: ${bits.join(" · ")} (${i.asOf} 기준).`;
+  rows.push({ label: "예약", value: i.bookable ? "나플 예약 가능 · 수수료 없음 · 예약금 없음" : "나플 테이블 예약 불가 · 게스트·핫딜 정보만" });
 
   // FAQ — 화면에도 그대로 보인다(ClubDetailContent). 예약 방법은 FAQ가 아니라 ReserveAction으로.
   const faqs: { q: string; a: string }[] = [];
@@ -114,5 +107,5 @@ export function buildClubAnswer(i: ClubAnswerInput): ClubAnswer {
   if (i.lowestSet) faqs.push({ q: `${n} 테이블(주대) 가격은 얼마인가요?`, a: `${n} 테이블은 세트 ${wonKo(i.lowestSet)}부터입니다 (평일 메뉴, ${i.asOf} 기준). 주말·이벤트에는 달라질 수 있고, 나플 예약 화면에서 메뉴 항목별 실가격을 볼 수 있습니다.` });
   if (i.dresscode) faqs.push({ q: `${n} 드레스코드가 있나요?`, a: `${n} 드레스코드: ${i.dresscode}.` });
 
-  return { name: i.name, area: i.area, oneLiner, rows, faqs, lowestSet: i.lowestSet, bookable: i.bookable, asOf: i.asOf };
+  return { name: i.name, area: i.area, rows, faqs, lowestSet: i.lowestSet, bookable: i.bookable, asOf: i.asOf };
 }

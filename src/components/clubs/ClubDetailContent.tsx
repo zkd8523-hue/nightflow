@@ -618,16 +618,41 @@ export function ClubDetailContent({
 
           {/* 타입/음악/흡연 태그를 해시태그로 — 정보 리스트 맨 위. LED 전광판이 원래
               이 정보(FeatureIconRow)가 있던 자리를 대신하면서, 태그는 여기로 옮겨왔다. */}
-          {/* 답변형 요약 — ChatGPT가 가장 많이 보내는 페이지라 첫 화면, 해시태그보다 위(첫 텍스트 노드)에 숫자로 답을 둔다.
+          <HashtagRow tags={clubTags} />
+
+          {/* 답변형 요약 — ChatGPT가 가장 많이 보내는 페이지라 첫 화면에 숫자로 답을 둔다.
               같은 사실이 page.tsx의 FAQPage·AggregateOffer 스키마로도 나간다. 데이터 없는 줄은 서버에서 이미 빠져 있다. */}
           {answer && answer.rows.length > 0 && (
             <section aria-label="한눈에 보기" className="rounded-xl border border-border bg-card px-3.5 py-3 space-y-2">
-              <p className="text-[13px] font-bold text-foreground break-keep">{answer.oneLiner}</p>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[12px]">
                 {answer.rows.map((r) => (
                   <Fragment key={r.label}>
                     <dt className="text-muted-foreground whitespace-nowrap">{r.label}</dt>
-                    <dd className="text-foreground/90 break-keep">{r.value}</dd>
+                    {r.label === "주소" ? (
+                      <dd className="break-keep">
+                        <button
+                          type="button"
+                          onClick={() => setIsMapOpen(true)}
+                          className="inline-flex items-center gap-1 text-foreground/90 hover:text-foreground text-left"
+                        >
+                          {r.value}
+                          <ExternalLink className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+                        </button>
+                      </dd>
+                    ) : r.label === "인스타" ? (
+                      <dd className="break-keep">
+                        <a
+                          href={`https://instagram.com/${r.value.replace(/^@/, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-foreground/90 hover:text-pink-400"
+                        >
+                          {r.value}
+                        </a>
+                      </dd>
+                    ) : (
+                      <dd className="text-foreground/90 break-keep">{r.value}</dd>
+                    )}
                   </Fragment>
                 ))}
               </dl>
@@ -646,10 +671,10 @@ export function ClubDetailContent({
             </section>
           )}
 
-          <HashtagRow tags={clubTags} />
-
-
-          {clubAddress && (
+          {/* 주소·영업시간·입장료·드레스코드·인스타는 위 "답변형 요약" 표에 이미 같은 텍스트로
+              나온다(주소·인스타는 표 안에서도 클릭 가능) — 그게 없을 때(answer 데이터 없는
+              예외 케이스)만 폴백으로 보여준다(2026-09-15). */}
+          {!answer && clubAddress && (
             <button
               onClick={() => setIsMapOpen(true)}
               className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors group w-full text-left"
@@ -661,7 +686,7 @@ export function ClubDetailContent({
             </button>
           )}
 
-          {clubOperatingHours && (
+          {!answer && clubOperatingHours && (
             <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <Clock className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
               <span className="sr-only">{club.name} 영업시간: </span>
@@ -669,7 +694,7 @@ export function ClubDetailContent({
             </div>
           )}
 
-          {clubEntryFeeDetail && (
+          {!answer && clubEntryFeeDetail && (
             <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <Ticket className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
               <span className="sr-only">{club.name} 입장료: </span>
@@ -677,7 +702,7 @@ export function ClubDetailContent({
             </div>
           )}
 
-          {clubDresscode && (
+          {!answer && clubDresscode && (
             <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <Shirt className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
               <span className="sr-only">{club.name} 드레스코드: </span>
@@ -685,7 +710,7 @@ export function ClubDetailContent({
             </div>
           )}
 
-          {clubInstagram && (
+          {!answer && clubInstagram && (
             <a
               href={`https://instagram.com/${clubInstagram}`}
               target="_blank"
@@ -696,34 +721,6 @@ export function ClubDetailContent({
               <span className="sr-only">{club.name} 인스타그램: </span>
               @{clubInstagram}
             </a>
-          )}
-
-          {/* "OO 인스타" 검색은 계정을 찾는 게 목적이 아니라 DM으로 예약하려는 것이다
-              (2026-09-10). 계정만 주면 그대로 나가버리므로, 예약이 되는 클럽이면
-              "DM 대신 여기서"를 바로 옆에 붙인다. 예약 안 되는 곳엔 안 붙인다 —
-              못 잡아주면서 붙잡으면 거짓말이 된다. */}
-          {clubInstagram && bookable && (
-            <p className="text-[12px] text-muted-foreground mt-0.5">
-              인스타 DM 대신{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  // 하단 스티키 "예약하기"와 같은 동작 — 로그인 안 했으면 로그인 먼저.
-                  if (!user) {
-                    router.push(`/login?redirect=${encodeURIComponent(`/clubs/${club.id}`)}`);
-                    return;
-                  }
-                  trackEvent("club_detail_book_click", {
-                    club_id: club.id, club_name: club.name, area: club.area, source: "instagram_hint",
-                  });
-                  setIsBookingOpen(true);
-                }}
-                className="text-brand-amber font-bold underline underline-offset-2"
-              >
-                여기서 바로 예약
-              </button>
-              하세요. 주대를 보고 고르면 담당자가 자리를 잡아드립니다.
-            </p>
           )}
 
           {club.website_url && (
