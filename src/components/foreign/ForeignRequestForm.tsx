@@ -21,7 +21,7 @@ import { formatOpenDows, formatOpenDowsEn, isClubOpenOn } from "@/lib/utils/club
 import { trackForeignEvent, trackEvent } from "@/lib/analytics/events";
 import { getCurrentUtm } from "@/lib/analytics/userEvents";
 import { useSavedClubs } from "@/lib/clubs/savedClubs";
-import { MenuPicker } from "@/components/foreign/MenuPicker";
+import { MenuPicker, useMenuFx } from "@/components/foreign/MenuPicker";
 import { saveFormDraft, loadFormDraft, clearFormDraft, FOREIGN_BOOKING_DRAFT_KEY } from "@/lib/utils/formDraft";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import type { ClubMenuItem, ClubMenuCombo, SelectedMenuSnapshot } from "@/types/database";
@@ -1121,7 +1121,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   }, [minBudget]);
 
   // 날짜 화면과 메뉴 시트 양쪽에 같은 박스를 둔다 — 시트로 먼저 들어간 손님도 출구를 본다.
-  const mdRecommendBox = (compact = false) => (
+  const MdRecommendBox = ({ compact = false }: { compact?: boolean }) => {
+    // 시트 안에서는 손님이 "Change"로 바꾼 통화를 따른다(시트 밖은 Provider가 없어 폼 기본값).
+    const fx = useMenuFx();
+    const cur = fx.currency ?? menuCurrency;
+    return (
     <section className={`rounded-xl border border-border ${compact ? "bg-background" : "bg-card"} px-3.5 py-3 space-y-2.5`}>
       <div>
         <p className="text-[13px] font-extrabold">{t("술 고르기 어려우세요?", "Not sure what to order?", "何を頼めばいいか分からない？", "不知道点什么？", "不知道要點什麼？")}</p>
@@ -1137,7 +1141,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       </div>
       <div className="grid grid-cols-3 gap-2">
         {mdBudgetOptions.map((b, i) => {
-          const local = menuCurrency ? krwTo(b, menuCurrency, fxRates) : null;
+          const local = cur ? krwTo(b, cur, fx.rates ?? fxRates) : null;
           return (
             <button
               key={b}
@@ -1145,7 +1149,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               onClick={() => { setMenuOpen(false); handleMdRecommend(b); }}
               className={`rounded-xl border border-border ${compact ? "bg-card" : "bg-background"} px-2 py-2.5 text-center hover:border-amber-500/60 active:scale-[0.98] transition-all`}
             >
-              <span className="block text-[13px] font-black tabular-nums">₩{(b / 10_000).toLocaleString("en-US")}만</span>
+              <span className="block text-[13px] font-black tabular-nums">₩{b.toLocaleString("en-US")}</span>
               {local && <span className="block text-[10px] text-muted-foreground tabular-nums">≈ {local}</span>}
               {i === 0 && <span className="block text-[10px] text-brand-amber font-bold">{t("최소", "minimum", "最低", "最低", "最低")}</span>}
             </button>
@@ -1153,7 +1157,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         })}
       </div>
     </section>
-  );
+    );
+  };
 
   const label = (icon: React.ReactNode, text: string) => (
     <div className="flex items-center gap-2 text-foreground font-bold mb-2">
@@ -1628,7 +1633,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       </button>
 
       {/* 메뉴 담기 우회 — 술을 직접 고르기 부담스러운 손님용. 알림 모드(remindMe)에선 숨긴다. */}
-      {!remindMe && mdRecommendBox()}
+      {!remindMe && <MdRecommendBox />}
       </>
       )}
 
@@ -1912,7 +1917,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                         onSelect={() => (selectedClubIds.includes(c.id) ? toggleClub(c.id) : chooseClub(c))}
                         onOpenDetail={() => openDetail(g.items, c)}
                         lang={lang}
-                        note={closedOnDate(c) ? closedLabel : (openDowsLine(c.open_dows) ?? undefined)}
+                        // 요일 제한 정보(openDowsLine)는 경고가 아니다 — 이전엔 note에 얹어서
+                        // 매일 열지 않는 클럽(대부분) 전부가 붉게 흐려지고 선택 버튼이 막혔다
+                        // (실제로는 그날 열려 있어도 그랬다). 진짜 휴무일 때만 note를 준다.
+                        note={closedOnDate(c) ? closedLabel : undefined}
+                        hoursHint={openDowsLine(c.open_dows) ?? undefined}
                       />
                     ))}
                   </div>
@@ -2539,7 +2548,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             /* 티어 프리셋(세트 1개)은 아무것도 담긴 게 없을 때만. */
             initialSnapshot={picked?.snapshot ?? menuDraft?.snapshot ?? presetSnapshot}
             /* 시트로 먼저 들어온 손님용 출구. 이미 담은 게 있으면(수정하러 연 경우) 방해라 뺀다. */
-            topSlot={!picked || picked.snapshot.md_recommend ? mdRecommendBox(true) : undefined}
+            topSlot={!picked || picked.snapshot.md_recommend ? <MdRecommendBox compact /> : undefined}
             onDraftChange={(snapshot, total) => setMenuDraft({ snapshot, total })}
             onDone={(snapshot, total) => {
               setPicked({ snapshot, total });
@@ -2565,6 +2574,7 @@ function ClubCard({
   onOpenDetail,
   lang,
   note,
+  hoursHint,
 }: {
   club: ClubItem;
   selected: boolean;
@@ -2573,6 +2583,10 @@ function ClubCard({
   lang: Lang;
   /** "그날 휴무" 같은 경고. 있으면 카드를 흐리게 하고 선택 버튼을 막는다. */
   note?: string;
+  /** "Open Fri·Sat" 같은 순수 정보. note와 달리 경고가 아니라 선택을 막지 않고
+   *  회색으로만 보여준다(2026-09-15 — 이전엔 note에 얹혀서 매일 안 여는 클럽
+   *  전부가 붉게 흐려지고 선택 버튼이 막히는 버그가 있었다). */
+  hoursHint?: string;
 }) {
   const t = makeT(lang);
   const reviewsLabel = t("리뷰", "reviews", "件のレビュー", "条评价");
@@ -2616,6 +2630,7 @@ function ClubCard({
       </div>
       <p className="text-[13px] font-bold text-foreground mt-2 truncate">{displayClubName(club)}</p>
       {note && <p className="text-[11px] text-red-400 font-bold">{note}</p>}
+      {!note && hoursHint && <p className="text-[11px] text-muted-foreground truncate">{hoursHint}</p>}
       {club.google_review_count != null && (
         <p className="text-[12px] text-muted-foreground">
           {club.google_review_count.toLocaleString()} {reviewsLabel}

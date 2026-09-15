@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { loadFormDraft, clearFormDraft } from "@/lib/utils/formDraft";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { makeT, type Lang } from "@/lib/i18n";
 
 // 브라우저 히스토리로 진짜 "이전 화면"을 돌아간다.
 //
@@ -25,6 +26,7 @@ export function BackButton({
   fallbackHref,
   guardDraftKey,
   onBeforeLeave,
+  lang = "en",
 }: {
   label: string;
   fallbackHref: string;
@@ -33,8 +35,12 @@ export function BackButton({
   /** 페이지 이동 전에 먼저 물어본다 — true를 반환하면 폼이 자체적으로 처리했다는
       뜻이라(예: 클럽 재선택 화면 → 목록으로 되돌림) 라우터 이동을 하지 않는다. */
   onBeforeLeave?: () => boolean;
+  /** 확인 시트("작성 중인 내용이 사라져요")를 그릴 언어. 이 버튼은 외국인 트랙
+   *  전용이라(한국어 트랙은 KoreanBookingForm이 자체 처리) 기본값 en. */
+  lang?: Lang;
 }) {
   const router = useRouter();
+  const t = makeT(lang);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const leave = () => {
@@ -72,10 +78,10 @@ export function BackButton({
             clearFormDraft(guardDraftKey);
             leave();
           }}
-          title="작성 중인 내용이 사라져요"
-          description="정말 나가시겠어요?"
-          cancelText="이어하기"
-          confirmText="닫기"
+          title={t("작성 중인 내용이 사라져요", "You'll lose what you've entered", "入力内容が消えます", "已填写的内容会消失", "已填寫的內容會消失")}
+          description={t("정말 나가시겠어요?", "Are you sure you want to leave?", "本当に離れますか？", "确定要离开吗？", "確定要離開嗎？")}
+          cancelText={t("이어하기", "Continue", "続ける", "继续", "繼續")}
+          confirmText={t("닫기", "Leave", "閉じる", "关闭", "關閉")}
           variant="danger"
         />
       )}

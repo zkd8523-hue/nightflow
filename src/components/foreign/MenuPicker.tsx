@@ -71,9 +71,14 @@ function fmtFx(won: number, currency: CurrencyCode | null, rates: KrwRates | und
  * 환산 표시 설정. MenuRow·ComboPicker·Summary가 다 같은 값을 쓰는데,
  * 가격이 나오는 자리마다 prop 두 개를 뚫으면 중간 컴포넌트가 지저분해진다.
  */
-const FxContext = createContext<{ currency: CurrencyCode | null; rates?: KrwRates }>({
+export const FxContext = createContext<{ currency: CurrencyCode | null; rates?: KrwRates }>({
   currency: null,
 });
+/** 시트 안에서 손님이 바꾼 통화. 시트 밖(Provider 없음)에서는 null — 호출부가 폴백을 댄다. */
+export function useMenuFx() {
+  return useContext(FxContext);
+}
+
 
 /** 원화 밑에 붙는 작은 회색 환산가. 통화가 없으면 아무것도 그리지 않는다. */
 function FxSub({ won, className = "" }: { won: number; className?: string }) {

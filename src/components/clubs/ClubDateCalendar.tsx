@@ -21,6 +21,15 @@ import { ko, enUS, ja, zhCN, zhTW } from "react-day-picker/locale";
 // 달력 요일·월 표기 — 외국어 트랙에서 한국어 달력이 새지 않게 한다(2026-09-09).
 const DAY_LOCALE = { ko, en: enUS, ja, zh: zhCN, "zh-tw": zhTW } as const;
 
+// "오늘" 마커 — 한국어 아니면 무조건 영어 "today"였다. ja/zh/zh-tw도 각자 말로(2026-09-15).
+const TODAY_LABEL: Record<keyof typeof DAY_LOCALE, string> = {
+  ko: "오늘",
+  en: "today",
+  ja: "今日",
+  zh: "今天",
+  "zh-tw": "今天",
+};
+
 const fmt = (d: Date) => dayjs(d).format("YYYY-MM-DD");
 
 export function ClubDateCalendar({
@@ -71,7 +80,7 @@ export function ClubDateCalendar({
         selected:
           "[&>button]:bg-inverse [&>button]:text-inverse-foreground [&>button]:font-black [&>button]:hover:opacity-90",
         today:
-          (lang === "ko" ? "before:content-['오늘']" : "before:content-['today']") + " before:absolute before:top-0.5 before:left-1/2 before:-translate-x-1/2 before:text-[7px] before:text-muted-foreground before:font-bold before:whitespace-nowrap before:leading-none",
+          `before:content-['${TODAY_LABEL[lang] ?? TODAY_LABEL.ko}']` + " before:absolute before:top-0.5 before:left-1/2 before:-translate-x-1/2 before:text-[7px] before:text-muted-foreground before:font-bold before:whitespace-nowrap before:leading-none",
       }}
       components={{
         Week: ({ week, children, ...props }) => {

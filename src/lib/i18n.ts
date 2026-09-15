@@ -68,6 +68,10 @@ const AREA_I18N: Record<string, { en: string; ja: string; zh: string; zhTw: stri
   "강남": { en: "Gangnam", ja: "江南(カンナム)", zh: "江南", zhTw: "江南" },
   "홍대": { en: "Hongdae", ja: "弘大(ホンデ)", zh: "弘大", zhTw: "弘大" },
   "이태원": { en: "Itaewon", ja: "梨泰院(イテウォン)", zh: "梨泰院", zhTw: "梨泰院" },
+  // 수원 클럽(피치라운지·클럽엔터)이 아직 예약 가능 목록엔 없어 지금은 안 보이지만,
+  // AREA_OPTIONS(tags.ts)엔 이미 있어서 클럽이 예약 가능해지는 순간 이 항목이 없으면
+  // areaLabel()이 그대로 "수원"을 반환해 외국어 화면에 한글이 샌다(2026-09-15 점검).
+  "수원": { en: "Suwon", ja: "水原(スウォン)", zh: "水原", zhTw: "水原" },
   "건대": { en: "Konkuk", ja: "建大(コンデ)", zh: "建大", zhTw: "建大" },
   "서울 어디든": { en: "Anywhere in Seoul", ja: "ソウルどこでも", zh: "首尔任意地区", zhTw: "首爾任何地區" },
   "부산": { en: "Busan", ja: "釜山(プサン)", zh: "釜山", zhTw: "釜山" },

@@ -41,6 +41,7 @@ export function ForeignBookingScreen({
         fallbackHref={fallbackHref}
         guardDraftKey={FOREIGN_BOOKING_DRAFT_KEY}
         onBeforeLeave={() => formRef.current?.stepBack() ?? false}
+        lang={lang}
       />
       <ForeignRequestForm
         ref={formRef}

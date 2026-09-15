@@ -9,6 +9,7 @@ export const TAG_LABEL_I18N: Record<string, Record<Lang, string>> = {
   club:        { ko: "클럽", en: "Club", ja: "クラブ", zh: "夜店", "zh-tw": "夜店" },
   lounge:      { ko: "라운지", en: "Lounge", ja: "ラウンジ", zh: "酒廊", "zh-tw": "酒廊" },
   pub:         { ko: "펍", en: "Pub", ja: "パブ", zh: "酒吧", "zh-tw": "酒吧" },
+  pool_party:  { ko: "풀파티", en: "Pool party", ja: "プールパーティー", zh: "泳池派对", "zh-tw": "泳池派對" },
   // genre
   edm:         { ko: "EDM", en: "EDM", ja: "EDM", zh: "EDM", "zh-tw": "EDM" },
   hiphop:      { ko: "힙합", en: "Hip-hop", ja: "ヒップホップ", zh: "嘻哈", "zh-tw": "嘻哈" },
