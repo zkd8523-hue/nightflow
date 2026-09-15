@@ -958,13 +958,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     if (area) return pinFeatured(sorted).slice(0, 3);
     // 지역 미선택 상태(전체 서울)면 강남·홍대·이태원 각 1곳씩 — 안 그러면 리뷰순 정렬에
     // 리뷰 많은 지역(주로 이태원)이 3곳을 다 차지해서 나머지 지역이 안 보였다(2026-09-15).
-    if (tier === "vip") return sorted.slice(0, 3); // VIP는 위에서 이미 강남만으로 좁혀 들어옴
-    const perArea = new Map<string, ClubItem>();
-    for (const c of sorted) {
-      if (!perArea.has(c.area) && SEOUL_AREAS.includes(c.area)) perArea.set(c.area, c);
-      if (perArea.size === SEOUL_AREAS.length) break;
-    }
-    return SEOUL_AREAS.map((a) => perArea.get(a)).filter((c): c is ClubItem => !!c);
+    if (tier === "vip") return pinFeatured(sorted).slice(0, 3); // VIP는 위에서 이미 강남만으로 좁혀 들어옴
+    // 지역 대표 1곳도 지역 선택 시와 같은 순서(featured_rank 고정 포함)에서 뽑는다 —
+    // 안 그러면 강남을 고르면 Ace, "어디든"이면 Core Seoul로 대표가 갈린다.
+    return SEOUL_AREAS.map((a) => pinFeatured(sorted.filter((c) => c.area === a))[0]).filter((c): c is ClubItem => !!c);
   }, [clubs, area, eventDate, genre, tier]);
   const bookableTotal = area ? clubs.filter((c) => c.area === area).length : whereOptions.seoulCount;
 

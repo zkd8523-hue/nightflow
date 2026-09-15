@@ -468,7 +468,6 @@ export function MenuPicker({
 
       {/* 항목 목록 — 모바일 1열, 데스크탑 2열 */}
       <div className="flex-1 min-w-0 w-full pt-1 lg:w-auto lg:pt-0 lg:pl-6">
-        {topSlot && <div className="mb-3">{topSlot}</div>}
         {/* 통화 줄 — 지금 무슨 통화로 보고 있는지 밝히고 바꿀 길을 준다.
             한국어 트랙은 defaultCurrency가 null이라 여기까지 오지 않는다. */}
         {canPickCurrency && (
@@ -523,6 +522,9 @@ export function MenuPicker({
             ))}
           </ul>
         )}
+        {/* 다 보고도 못 고른 사람의 출구 — 탭·리스트보다 먼저 보이면 실제 메뉴 가격(차별점)을
+            가린다. 끝까지 본 다음에야 뜨게 목록 맨 아래로 옮김(2026-09-15). */}
+        {topSlot && <div className="mt-4">{topSlot}</div>}
         {/* 하단 고정바(카트 목록 최대 38vh + 합계 69px + 앱 네비 60px)에 마지막
             항목이 가리지 않도록 확보. 담은 게 있으면 더 크게 비운다. */}
         <div className={`lg:hidden ${sel.count > 0 ? "h-[52vh]" : "h-32"}`} aria-hidden />
