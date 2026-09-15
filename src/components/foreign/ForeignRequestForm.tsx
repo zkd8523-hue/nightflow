@@ -250,7 +250,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     if (d.length === 7) return lang2 === "ja" ? "毎日" : "每天";
     return d.map((x) => (lang2 === "ja" ? L[x] : `周${L[x]}`)).join("·");
   };
-  const closedNotice = selectedClubOpenDows?.length
+  // 매일 여는 클럽(7일)엔 "그 외 요일은 선택 불가"가 말이 안 되므로 줄 자체를 뺀다.
+  const closedNotice = selectedClubOpenDows?.length && selectedClubOpenDows.length < 7
     ? t(
         `${formatOpenDows(selectedClubOpenDows)} 영업 · 그 외 요일은 선택할 수 없어요 (공휴일·공휴일 전날은 가능)`,
         `Open ${formatOpenDowsEn(selectedClubOpenDows)} · other days can't be selected (holidays and their eves are open)`,
