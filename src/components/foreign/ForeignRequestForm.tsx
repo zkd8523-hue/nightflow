@@ -2038,7 +2038,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             )}
           </span>
           <span className="block text-[12px] text-muted-foreground mt-1">
-            {t("가격은 확정 전에 알려드려요 · 직접 고르려면 탭", "Price confirmed before you commit · tap to choose drinks yourself", "価格は確定前にお知らせします · 自分で選ぶならタップ", "价格会在确认前告知 · 想自己选请点这里", "價格會在確認前告知 · 想自己選請點這裡")}
+            {t("직접 고르려면 탭", "Tap to choose drinks yourself", "自分で選ぶならタップ", "想自己选请点这里", "想自己選請點這裡")}
           </span>
         </button>
       )}
