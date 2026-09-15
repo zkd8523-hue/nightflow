@@ -2030,11 +2030,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         >
           <span className="text-[13px] font-bold text-foreground">
             {t(
-              `클럽이 ₩${picked.total.toLocaleString("en-US")} 예산 안에서 가장 맞는 세트를 제안해요`,
-              `The club suggests the best set within ₩${picked.total.toLocaleString("en-US")}`,
-              `クラブが₩${picked.total.toLocaleString("en-US")}以内で一番合うセットを提案します`,
-              `夜店会在 ₩${picked.total.toLocaleString("en-US")} 预算内推荐最合适的套餐`,
-              `夜店會在 ₩${picked.total.toLocaleString("en-US")} 預算內推薦最合適的套餐`
+              `클럽 추천 세트 · ₩${picked.total.toLocaleString("en-US")}`,
+              `Club-suggested set · ₩${picked.total.toLocaleString("en-US")}`,
+              `クラブおすすめセット · ₩${picked.total.toLocaleString("en-US")}`,
+              `夜店推荐套餐 · ₩${picked.total.toLocaleString("en-US")}`,
+              `夜店推薦套餐 · ₩${picked.total.toLocaleString("en-US")}`
             )}
           </span>
           <span className="block text-[12px] text-muted-foreground mt-1">
