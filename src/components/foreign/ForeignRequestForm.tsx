@@ -1126,11 +1126,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         <p className="text-[13px] font-extrabold">{t("술 고르기 어려우세요?", "Not sure what to order?", "何を頼めばいいか分からない？", "不知道点什么？", "不知道要點什麼？")}</p>
         <p className="text-[12px] text-muted-foreground leading-snug break-keep">
           {t(
-            "예산만 고르면 담당 MD가 세트를 제안해요. 확정 전에 가격을 서면으로 보여드립니다.",
-            "Pick a budget and your MD suggests a set. You see the price in writing before you confirm.",
-            "予算だけ選べば担当MDがセットを提案します。確定前に価格を書面でお見せします。",
-            "选个预算，MD 会推荐套餐。确认前你会看到书面价格。",
-            "選個預算，MD 會推薦套餐。確認前你會看到書面價格。"
+            "예산만 고르면 클럽이 가장 맞는 세트를 제안해요.",
+            "Pick a budget and the club suggests the best set for you.",
+            "予算だけ選べば、クラブが一番合うセットを提案します。",
+            "选个预算，夜店会为你推荐最合适的套餐。",
+            "選個預算，夜店會為你推薦最合適的套餐。"
           )}
         </p>
       </div>
@@ -1151,7 +1151,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
           );
         })}
       </div>
-      <p className="text-[11px] text-muted-foreground">{t("→ 고르면 바로 연락처 단계로 넘어가요", "→ Picking one takes you straight to the contact step", "→ 選ぶとすぐ連絡先の入力へ進みます", "→ 选完直接进入联系方式", "→ 選完直接進入聯絡方式")}</p>
     </section>
   );
 
@@ -1208,7 +1207,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         onConfirm={() => resumePrompt && applyDraft(resumePrompt)}
         title={t("이전에 작성하던 예약이 있어요", "You have an unfinished booking", "以前作成中の予約があります", "您有未完成的预订")}
         description={resumePrompt?.picked?.snapshot.md_recommend
-          ? t(`MD 추천 · 예산 ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 이어서 작성하시겠어요?`, `MD suggests · budget ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · Continue where you left off?`, `MDおまかせ · 予算 ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 続きから再開しますか？`, `MD 推荐 · 预算 ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 是否继续之前的预订？`)
+          ? t(`클럽 추천 · 예산 ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 이어서 작성하시겠어요?`, `Club suggests · budget ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · Continue where you left off?`, `クラブおまかせ · 予算 ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 続きから再開しますか？`, `夜店推荐 · 预算 ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 是否继续之前的预订？`)
           : t(
           `${resumePrompt?.picked?.snapshot.items.length ?? 0}개 주류 · ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 이어서 작성하시겠어요?`,
           `${resumePrompt?.picked?.snapshot.items.length ?? 0} drink${(resumePrompt?.picked?.snapshot.items.length ?? 0) > 1 ? "s" : ""} · ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · Continue where you left off?`,
@@ -2030,15 +2029,15 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         >
           <span className="text-[13px] font-bold text-foreground">
             {t(
-              `MD가 ₩${picked.total.toLocaleString("en-US")} 예산 안에서 세트를 제안해요`,
-              `Your MD will suggest a set within ₩${picked.total.toLocaleString("en-US")}`,
-              `担当MDが₩${picked.total.toLocaleString("en-US")}以内でセットを提案します`,
-              `MD 会在 ₩${picked.total.toLocaleString("en-US")} 预算内推荐套餐`,
-              `MD 會在 ₩${picked.total.toLocaleString("en-US")} 預算內推薦套餐`
+              `클럽이 ₩${picked.total.toLocaleString("en-US")} 예산 안에서 가장 맞는 세트를 제안해요`,
+              `The club suggests the best set within ₩${picked.total.toLocaleString("en-US")}`,
+              `クラブが₩${picked.total.toLocaleString("en-US")}以内で一番合うセットを提案します`,
+              `夜店会在 ₩${picked.total.toLocaleString("en-US")} 预算内推荐最合适的套餐`,
+              `夜店會在 ₩${picked.total.toLocaleString("en-US")} 預算內推薦最合適的套餐`
             )}
           </span>
           <span className="block text-[12px] text-muted-foreground mt-1">
-            {t("확정 전에 가격을 서면으로 보내드려요 · 직접 고르려면 탭", "You get the price in writing before confirming · tap to choose drinks yourself", "確定前に価格を書面で送ります · 自分で選ぶならタップ", "确认前会书面发价格 · 想自己选请点这里", "確認前會書面傳價格 · 想自己選請點這裡")}
+            {t("가격은 확정 전에 알려드려요 · 직접 고르려면 탭", "Price confirmed before you commit · tap to choose drinks yourself", "価格は確定前にお知らせします · 自分で選ぶならタップ", "价格会在确认前告知 · 想自己选请点这里", "價格會在確認前告知 · 想自己選請點這裡")}
           </span>
         </button>
       )}
@@ -2470,7 +2469,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             )}
             {picked && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{picked.snapshot.md_recommend ? t("예산 (MD 추천)", "Budget (MD suggests)", "予算（MDおまかせ）", "预算（MD 推荐）", "預算（MD 推薦）") : t("총액", "Total", "合計", "总额")}</span>
+                <span className="text-muted-foreground">{picked.snapshot.md_recommend ? t("예산 (클럽 추천)", "Budget (club suggests)", "予算（クラブおまかせ）", "预算（夜店推荐）", "預算（夜店推薦）") : t("총액", "Total", "合計", "总额")}</span>
                 <span className="text-money font-black tabular-nums">
                   ₩{picked.total.toLocaleString("en-US")}
                 </span>
