@@ -839,7 +839,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         area: area || "club_only",
         club_count: selectedClubIds.length,
         has_budget: orderAmount > 0,
-        has_menu: !!picked,
+        has_menu: !!picked && !picked.snapshot.md_recommend,
+        md_recommend: !!picked?.snapshot.md_recommend,
         anonymous: !userId,
       });
 
@@ -1092,6 +1093,32 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     setPendingMenuOpen(true);
   };
 
+  // "MD 추천 받기" 우회(2026-09-15). 검색 유입 7일 실측: 폼 도달 12 → 날짜 10 → 메뉴 담기 3 → 제출 0.
+  // 외국인이 50만~100만 원어치 술을 병 단위로 직접 고르는 단계가 벽이었다. 예산만 고르면 items 없는
+  // 스냅샷(md_recommend)로 3장(연락처)으로 넘긴다. 검증(orderAmount ≥ minBudget)·저장(budget=total)은
+  // 그대로 통과하고, 운영자 화면은 md_recommend를 보고 "MD 추천 요청 · 예산"으로 표시한다.
+  const handleMdRecommend = (budget: number) => {
+    if (!eventDate) {
+      blocked("no_date");
+      openDatePicker();
+      return toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期", "請選擇日期"));
+    }
+    if (!selectedClub) return;
+    if (!isClubOpenOn(selectedClub.open_dows ?? null, eventDate)) {
+      setDateOpen(true);
+      return toast.error(t("그 날은 클럽이 쉬는 날이에요", "The club is closed that day — pick another date", "その日はクラブが休みです", "该夜店当天休息，请另选日期", "該夜店當天休息，請另選日期"));
+    }
+    const snapshot: SelectedMenuSnapshot = { items: [], md_recommend: { budget } };
+    setPicked({ snapshot, total: budget });
+    setMenuDraft(null);
+    trackForeignEvent("foreign_form_md_recommend", { lang: preferredLang, budget, min_budget: minBudget });
+    setFormStep(3);
+  };
+  const mdBudgetOptions = useMemo(() => {
+    const base = minBudget > 0 ? minBudget : 500_000;
+    return [base, Math.round((base * 1.5) / 50_000) * 50_000, base * 2];
+  }, [minBudget]);
+
   const label = (icon: React.ReactNode, text: string) => (
     <div className="flex items-center gap-2 text-foreground font-bold mb-2">
       {icon}
@@ -1144,7 +1171,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         }}
         onConfirm={() => resumePrompt && applyDraft(resumePrompt)}
         title={t("이전에 작성하던 예약이 있어요", "You have an unfinished booking", "以前作成中の予約があります", "您有未完成的预订")}
-        description={t(
+        description={resumePrompt?.picked?.snapshot.md_recommend
+          ? t(`MD 추천 · 예산 ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 이어서 작성하시겠어요?`, `MD suggests · budget ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · Continue where you left off?`, `MDおまかせ · 予算 ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 続きから再開しますか？`, `MD 推荐 · 预算 ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 是否继续之前的预订？`)
+          : t(
           `${resumePrompt?.picked?.snapshot.items.length ?? 0}개 주류 · ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 이어서 작성하시겠어요?`,
           `${resumePrompt?.picked?.snapshot.items.length ?? 0} drink${(resumePrompt?.picked?.snapshot.items.length ?? 0) > 1 ? "s" : ""} · ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · Continue where you left off?`,
           `ドリンク${resumePrompt?.picked?.snapshot.items.length ?? 0}点 · ₩${(resumePrompt?.picked?.total ?? 0).toLocaleString("en-US")} · 続きから再開しますか？`,
@@ -1561,6 +1590,42 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                 : t("저장하고 알림받기", "Save & remind me", "保存して通知を受け取る", "保存并提醒我", "儲存並提醒我"))
           : t("술 고르기", "Choose drinks", "ドリンクを選ぶ", "选择酒水", "選擇酒水")}
       </button>
+
+      {/* 메뉴 담기 우회 — 술을 직접 고르기 부담스러운 손님용. 알림 모드(remindMe)에선 숨긴다. */}
+      {!remindMe && (
+        <section className="rounded-xl border border-border bg-card px-3.5 py-3 space-y-2.5">
+          <div>
+            <p className="text-[13px] font-extrabold">{t("술 고르기 어려우세요?", "Not sure what to order?", "何を頼めばいいか分からない？", "不知道点什么？", "不知道要點什麼？")}</p>
+            <p className="text-[12px] text-muted-foreground leading-snug break-keep">
+              {t(
+                "예산만 고르면 담당 MD가 세트를 제안해요. 확정 전에 가격을 서면으로 보여드립니다.",
+                "Pick a budget and your MD suggests a set. You see the price in writing before you confirm.",
+                "予算だけ選べば担当MDがセットを提案します。確定前に価格を書面でお見せします。",
+                "选个预算，MD 会推荐套餐。确认前你会看到书面价格。",
+                "選個預算，MD 會推薦套餐。確認前你會看到書面價格。"
+              )}
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {mdBudgetOptions.map((b, i) => {
+              const local = menuCurrency ? krwTo(b, menuCurrency, fxRates) : null;
+              return (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => handleMdRecommend(b)}
+                  className="rounded-xl border border-border bg-background px-2 py-2.5 text-center hover:border-amber-500/60 active:scale-[0.98] transition-all"
+                >
+                  <span className="block text-[13px] font-black tabular-nums">₩{(b / 10_000).toLocaleString("en-US")}만</span>
+                  {local && <span className="block text-[10px] text-muted-foreground tabular-nums">≈ {local}</span>}
+                  {i === 0 && <span className="block text-[10px] text-brand-amber font-bold">{t("최소", "minimum", "最低", "最低", "最低")}</span>}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-muted-foreground">{t("→ 고르면 바로 연락처 단계로 넘어가요", "→ Picking one takes you straight to the contact step", "→ 選ぶとすぐ連絡先の入力へ進みます", "→ 选完直接进入联系方式", "→ 選完直接進入聯絡方式")}</p>
+        </section>
+      )}
       </>
       )}
 
@@ -1954,7 +2019,27 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
           뿐이었다. 그 전에 "내가 뭘 담았는지" 다시 볼 방법도, 잘못 담았을 때
           고칠 방법도 없었다. 1장의 요약 카드와 같은 형태로 여기 다시 둔다 —
           탭하면 메뉴 시트가 그대로 열려 수정할 수 있다. */}
-      {hasMenu && picked && (
+      {picked?.snapshot.md_recommend && (
+        <button
+          type="button"
+          onClick={() => { if (hasMenu) setMenuOpen(true); }}
+          className="w-full rounded-xl border border-amber-500/60 bg-card px-4 py-3 text-left transition-colors"
+        >
+          <span className="text-[13px] font-bold text-foreground">
+            {t(
+              `MD가 ₩${picked.total.toLocaleString("en-US")} 예산 안에서 세트를 제안해요`,
+              `Your MD will suggest a set within ₩${picked.total.toLocaleString("en-US")}`,
+              `担当MDが₩${picked.total.toLocaleString("en-US")}以内でセットを提案します`,
+              `MD 会在 ₩${picked.total.toLocaleString("en-US")} 预算内推荐套餐`,
+              `MD 會在 ₩${picked.total.toLocaleString("en-US")} 預算內推薦套餐`
+            )}
+          </span>
+          <span className="block text-[12px] text-muted-foreground mt-1">
+            {t("확정 전에 가격을 서면으로 보내드려요 · 직접 고르려면 탭", "You get the price in writing before confirming · tap to choose drinks yourself", "確定前に価格を書面で送ります · 自分で選ぶならタップ", "确认前会书面发价格 · 想自己选请点这里", "確認前會書面傳價格 · 想自己選請點這裡")}
+          </span>
+        </button>
+      )}
+      {hasMenu && picked && !picked.snapshot.md_recommend && (
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
@@ -2382,7 +2467,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             )}
             {picked && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{t("총액", "Total", "合計", "总额")}</span>
+                <span className="text-muted-foreground">{picked.snapshot.md_recommend ? t("예산 (MD 추천)", "Budget (MD suggests)", "予算（MDおまかせ）", "预算（MD 推荐）", "預算（MD 推薦）") : t("총액", "Total", "合計", "总额")}</span>
                 <span className="text-money font-black tabular-nums">
                   ₩{picked.total.toLocaleString("en-US")}
                 </span>

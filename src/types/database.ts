@@ -1917,6 +1917,8 @@ export interface SelectedMenuSnapshot {
   combo?: { cham_count: number; hard_count: number; price: number };
   table_charge?: { amount: number; basis: "weekday" | "weekend" };
   zone?: string;
+  /** 손님이 직접 담지 않고 "MD 추천" 우회를 고른 경우(2026-09-15). items는 비고 budget이 total. */
+  md_recommend?: { budget: number };
 }
 
 /** 한국 유저 클럽 예약 요청 (korean_booking_requests, Migration 652). foreign_requests와 같은 컨시어지 모델. */

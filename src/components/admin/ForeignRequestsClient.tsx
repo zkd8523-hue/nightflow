@@ -261,6 +261,16 @@ export function ForeignRequestsClient({ initial }: { initial: ForeignReq[] }) {
             {/* 손님이 메뉴 화면에서 직접 담은 술 — 확정서가 아직 없을 때만 보여준다.
                 확정서가 이미 있으면 그 안의 "포함 내역"이 최종본이라 여기 또 보이면
                 운영자가 어느 쪽을 믿어야 할지 헷갈린다. */}
+            {/* 손님이 술을 직접 담지 않고 "MD 추천"을 고른 경우 — 예산만 있다. 세트 제안을 운영자/MD가 한다. */}
+            {!r.conf && r.selected_menu?.md_recommend && (
+              <div className="rounded-lg border border-violet-500/30 bg-violet-500/[0.05] px-3 py-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[11px] font-bold text-violet-400">🎯 MD 추천 요청 (손님이 직접 안 담음)</span>
+                  <span className="text-[13px] font-black text-money tabular-nums">예산 {r.selected_menu.md_recommend.budget.toLocaleString()}원</span>
+                </div>
+                <p className="text-[12px] text-foreground/80 mt-1">이 예산 안에서 세트를 제안해 주세요. 확정서에 가격을 적어 보내면 손님이 봅니다.</p>
+              </div>
+            )}
             {!r.conf && r.selected_menu && r.selected_menu.items.length > 0 && (
               <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.04] px-3 py-2">
                 <div className="flex items-baseline justify-between gap-2">

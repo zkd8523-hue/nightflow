@@ -210,6 +210,8 @@ export const trackForeignEvent = (
     | 'foreign_login_success'
     | 'foreign_request_form_view'
     | 'foreign_request_submitted'
+    // 메뉴 담기 대신 'MD 추천 받기' 우회를 고름(2026-09-15). params: budget, min_budget
+    | 'foreign_form_md_recommend'
     // 한국인 예약 폼 제출(KoreanBookingForm). ai_referral_sources.booking_count가 이걸 센다.
     | 'booking_request_submitted'
     | 'foreign_club_saved'
