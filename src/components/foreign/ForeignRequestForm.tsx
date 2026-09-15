@@ -1119,6 +1119,42 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     return [base, Math.round((base * 1.5) / 50_000) * 50_000, base * 2];
   }, [minBudget]);
 
+  // 날짜 화면과 메뉴 시트 양쪽에 같은 박스를 둔다 — 시트로 먼저 들어간 손님도 출구를 본다.
+  const mdRecommendBox = (compact = false) => (
+    <section className={`rounded-xl border border-border ${compact ? "bg-background" : "bg-card"} px-3.5 py-3 space-y-2.5`}>
+      <div>
+        <p className="text-[13px] font-extrabold">{t("술 고르기 어려우세요?", "Not sure what to order?", "何を頼めばいいか分からない？", "不知道点什么？", "不知道要點什麼？")}</p>
+        <p className="text-[12px] text-muted-foreground leading-snug break-keep">
+          {t(
+            "예산만 고르면 담당 MD가 세트를 제안해요. 확정 전에 가격을 서면으로 보여드립니다.",
+            "Pick a budget and your MD suggests a set. You see the price in writing before you confirm.",
+            "予算だけ選べば担当MDがセットを提案します。確定前に価格を書面でお見せします。",
+            "选个预算，MD 会推荐套餐。确认前你会看到书面价格。",
+            "選個預算，MD 會推薦套餐。確認前你會看到書面價格。"
+          )}
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {mdBudgetOptions.map((b, i) => {
+          const local = menuCurrency ? krwTo(b, menuCurrency, fxRates) : null;
+          return (
+            <button
+              key={b}
+              type="button"
+              onClick={() => { setMenuOpen(false); handleMdRecommend(b); }}
+              className={`rounded-xl border border-border ${compact ? "bg-card" : "bg-background"} px-2 py-2.5 text-center hover:border-amber-500/60 active:scale-[0.98] transition-all`}
+            >
+              <span className="block text-[13px] font-black tabular-nums">₩{(b / 10_000).toLocaleString("en-US")}만</span>
+              {local && <span className="block text-[10px] text-muted-foreground tabular-nums">≈ {local}</span>}
+              {i === 0 && <span className="block text-[10px] text-brand-amber font-bold">{t("최소", "minimum", "最低", "最低", "最低")}</span>}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[11px] text-muted-foreground">{t("→ 고르면 바로 연락처 단계로 넘어가요", "→ Picking one takes you straight to the contact step", "→ 選ぶとすぐ連絡先の入力へ進みます", "→ 选完直接进入联系方式", "→ 選完直接進入聯絡方式")}</p>
+    </section>
+  );
+
   const label = (icon: React.ReactNode, text: string) => (
     <div className="flex items-center gap-2 text-foreground font-bold mb-2">
       {icon}
@@ -1592,40 +1628,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       </button>
 
       {/* 메뉴 담기 우회 — 술을 직접 고르기 부담스러운 손님용. 알림 모드(remindMe)에선 숨긴다. */}
-      {!remindMe && (
-        <section className="rounded-xl border border-border bg-card px-3.5 py-3 space-y-2.5">
-          <div>
-            <p className="text-[13px] font-extrabold">{t("술 고르기 어려우세요?", "Not sure what to order?", "何を頼めばいいか分からない？", "不知道点什么？", "不知道要點什麼？")}</p>
-            <p className="text-[12px] text-muted-foreground leading-snug break-keep">
-              {t(
-                "예산만 고르면 담당 MD가 세트를 제안해요. 확정 전에 가격을 서면으로 보여드립니다.",
-                "Pick a budget and your MD suggests a set. You see the price in writing before you confirm.",
-                "予算だけ選べば担当MDがセットを提案します。確定前に価格を書面でお見せします。",
-                "选个预算，MD 会推荐套餐。确认前你会看到书面价格。",
-                "選個預算，MD 會推薦套餐。確認前你會看到書面價格。"
-              )}
-            </p>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {mdBudgetOptions.map((b, i) => {
-              const local = menuCurrency ? krwTo(b, menuCurrency, fxRates) : null;
-              return (
-                <button
-                  key={b}
-                  type="button"
-                  onClick={() => handleMdRecommend(b)}
-                  className="rounded-xl border border-border bg-background px-2 py-2.5 text-center hover:border-amber-500/60 active:scale-[0.98] transition-all"
-                >
-                  <span className="block text-[13px] font-black tabular-nums">₩{(b / 10_000).toLocaleString("en-US")}만</span>
-                  {local && <span className="block text-[10px] text-muted-foreground tabular-nums">≈ {local}</span>}
-                  {i === 0 && <span className="block text-[10px] text-brand-amber font-bold">{t("최소", "minimum", "最低", "最低", "最低")}</span>}
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-[11px] text-muted-foreground">{t("→ 고르면 바로 연락처 단계로 넘어가요", "→ Picking one takes you straight to the contact step", "→ 選ぶとすぐ連絡先の入力へ進みます", "→ 选完直接进入联系方式", "→ 選完直接進入聯絡方式")}</p>
-        </section>
-      )}
+      {!remindMe && mdRecommendBox()}
       </>
       )}
 
@@ -2535,6 +2538,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             /* 확정본이 있으면 그걸, 없으면 닫으면서 남긴 초안을 되돌린다. */
             /* 티어 프리셋(세트 1개)은 아무것도 담긴 게 없을 때만. */
             initialSnapshot={picked?.snapshot ?? menuDraft?.snapshot ?? presetSnapshot}
+            /* 시트로 먼저 들어온 손님용 출구. 이미 담은 게 있으면(수정하러 연 경우) 방해라 뺀다. */
+            topSlot={!picked || picked.snapshot.md_recommend ? mdRecommendBox(true) : undefined}
             onDraftChange={(snapshot, total) => setMenuDraft({ snapshot, total })}
             onDone={(snapshot, total) => {
               setPicked({ snapshot, total });

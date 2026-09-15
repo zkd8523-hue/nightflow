@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { useState, useMemo, useEffect, useRef, createContext, useContext } from "react";
 import { Check, Plus, Minus, Info, ChevronDown } from "lucide-react";
 import { type Lang } from "@/lib/i18n";
@@ -157,6 +159,9 @@ export type MenuPickerProps = {
   /** 기본 표시 통화. country_code → lang 순으로 부모가 정해 내린다(resolveCurrency).
    *  null이면 환산을 아예 그리지 않는다. */
   defaultCurrency?: CurrencyCode | null;
+  /** 목록 맨 위에 끼울 블록(2026-09-15) — "MD 추천 받기" 우회. 날짜 화면의 같은 박스는 "술 고르기"를
+   *  먼저 눌러 시트로 들어온 손님에겐 안 보여서, 시트 안에도 같은 출구를 둔다. */
+  topSlot?: React.ReactNode;
 };
 
 export function MenuPicker({
@@ -176,6 +181,7 @@ export function MenuPicker({
   rates,
   fxAsOf,
   defaultCurrency = null,
+  topSlot,
 }: MenuPickerProps) {
   // 손님이 시트에서 바꾼 통화. 안 바꾸면 부모가 추정한 값(defaultCurrency)을 쓴다.
   // "KRW"는 환산을 끄는 선택지다 — 원화만 보고 싶은 손님이 있다.
@@ -457,6 +463,7 @@ export function MenuPicker({
 
       {/* 항목 목록 — 모바일 1열, 데스크탑 2열 */}
       <div className="flex-1 min-w-0 w-full pt-1 lg:w-auto lg:pt-0 lg:pl-6">
+        {topSlot && <div className="mb-3">{topSlot}</div>}
         {/* 통화 줄 — 지금 무슨 통화로 보고 있는지 밝히고 바꿀 길을 준다.
             한국어 트랙은 defaultCurrency가 null이라 여기까지 오지 않는다. */}
         {canPickCurrency && (
