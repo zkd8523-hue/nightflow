@@ -411,7 +411,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // 음악 취향(선택). 추천 쇼트리스트를 "부드럽게" 거른다 — 결과가 2곳 미만이면 무시.
   const [genre, setGenre] = useState<string | null>(null);
   // 예산 티어 — DB에 저장하지 않는다. 쇼트리스트 정렬 + 메뉴판 프리셋(세트 1개 미리 담기)용.
-  const [tier, setTier] = useState<"table" | "vip">("table");
+  // 선택 버튼은 뺐다(2026-09-15) — 이제 지역에서 자동 파생: 강남만 "vip", 나머지는 "table".
+  // 지역 미선택("서울 어디든")일 때는 기존처럼 넓게 보는 "table" 기본값 유지.
+  const tier: "table" | "vip" = area === "강남" ? "vip" : "table";
   // 클럽을 고른 직후 메뉴판을 자동으로 열기 위한 플래그(메뉴 로드가 끝나면 effect가 연다).
   const [pendingMenuOpen, setPendingMenuOpen] = useState(false);
   // 접수 번호 — id 앞 6자(대문자) = foreign_requests.ref_code(생성 컬럼, Migration 664). 이메일·관리자와 동일.
@@ -953,7 +955,16 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       if (q !== 0) return q;
       return (y.google_review_count ?? 0) - (x.google_review_count ?? 0);
     });
-    return (area ? pinFeatured(sorted) : sorted).slice(0, 3);
+    if (area) return pinFeatured(sorted).slice(0, 3);
+    // 지역 미선택 상태(전체 서울)면 강남·홍대·이태원 각 1곳씩 — 안 그러면 리뷰순 정렬에
+    // 리뷰 많은 지역(주로 이태원)이 3곳을 다 차지해서 나머지 지역이 안 보였다(2026-09-15).
+    if (tier === "vip") return sorted.slice(0, 3); // VIP는 위에서 이미 강남만으로 좁혀 들어옴
+    const perArea = new Map<string, ClubItem>();
+    for (const c of sorted) {
+      if (!perArea.has(c.area) && SEOUL_AREAS.includes(c.area)) perArea.set(c.area, c);
+      if (perArea.size === SEOUL_AREAS.length) break;
+    }
+    return SEOUL_AREAS.map((a) => perArea.get(a)).filter((c): c is ClubItem => !!c);
   }, [clubs, area, eventDate, genre, tier]);
   const bookableTotal = area ? clubs.filter((c) => c.area === area).length : whereOptions.seoulCount;
 
@@ -998,11 +1009,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shortlistKey, isWeekend]);
   const wonShort = (won: number) => (won >= 1000000 ? `₩${(won / 1000000).toFixed(won % 1000000 === 0 ? 0 : 1)}M` : `₩${Math.round(won / 1000)}k`);
-  // "₩500k (≈ US$371)" — 원화 감이 없는 손님에게 지역 카드·티어 칩에서도 바로 읽히게(사용자 지적).
-  const wonWithLocal = (won: number) => {
-    const local = menuCurrency ? krwTo(won, menuCurrency, fxRates) : null;
-    return local ? `${wonShort(won)} (≈ ${local})` : wonShort(won);
-  };
+  // wonWithLocal("₩500k (≈ US$371)")은 지역 카드·티어 버튼 가격 줄에서 쓰였는데 둘 다
+  // 뺐다(2026-09-15, "가격 안내는 노이즈" 사용자 판단) — 함께 제거.
 
   // 메뉴판 프리셋 — 티어에 맞는 가장 싼 "세트"를 미리 담아서 연다. 손님이 자유롭게 고친다.
   // 존(층별 가격표)이 있는 클럽, 택1 슬롯이 있는 세트는 프리셋하지 않는다(존 선택이 먼저).
@@ -1327,13 +1335,14 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                 >
                   <span className="text-[14px] font-black">{AREA_EMOJI[a.key] ? `${AREA_EMOJI[a.key]} ` : ""}{areaLabel(a.key, lang)}</span>
                   {tl && <span className={`text-[11px] leading-snug ${on ? "opacity-70" : "text-muted-foreground"}`}>{t(...tl)}</span>}
+                  {/* 지역 카드에서 가격 줄을 뺐다(2026-09-15) — 클럽 개수만 남기고 노이즈 제거. */}
                   <span className={`text-[11px] font-bold ${on ? "opacity-85" : "text-money"}`}>
                     {t(
-                      `${a.count}곳 · ${wonShort(a.min)}~`,
-                      `${a.count} bookable · from ${wonWithLocal(a.min)}`,
-                      `${a.count} 軒 · ${wonWithLocal(a.min)}〜`,
-                      `${a.count} 家可订 · ${wonWithLocal(a.min)} 起`,
-                      `${a.count} 家可訂 · ${wonWithLocal(a.min)} 起`
+                      `${a.count}곳`,
+                      `${a.count} bookable`,
+                      `${a.count} 軒`,
+                      `${a.count} 家可订`,
+                      `${a.count} 家可訂`
                     )}
                   </span>
                 </button>
@@ -1661,34 +1670,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         {stepChip(2)}
       </div>
 
-      {/* 티어 — 쇼트리스트 정렬 + 메뉴판 프리셋. 최소금액을 미리 보여줘 메뉴판에서 놀라지 않게 한다. */}
-      <section className="space-y-2">
-        <div className="grid grid-cols-2 gap-2">
-          {([
-            { key: "table" as const, title: t("테이블", "Table", "テーブル", "卡座", "包廂"), sub: t("₩50만~ · 홍대·이태원", `from ${wonWithLocal(500000)} · Hongdae, Itaewon`, `${wonWithLocal(500000)}〜 · 弘大·梨泰院`, `${wonWithLocal(500000)} 起 · 弘大·梨泰院`, `${wonWithLocal(500000)} 起 · 弘大·梨泰院`) },
-            { key: "vip" as const, title: "VIP", sub: area && area !== "강남"
-                ? t("₩100만~", `from ${wonWithLocal(1000000)}`, `${wonWithLocal(1000000)}〜`, `${wonWithLocal(1000000)} 起`, `${wonWithLocal(1000000)} 起`)
-                : t("₩100만~ · 강남", `from ${wonWithLocal(1000000)} · Gangnam`, `${wonWithLocal(1000000)}〜 · 江南`, `${wonWithLocal(1000000)} 起 · 江南`, `${wonWithLocal(1000000)} 起 · 江南`) },
-          ]).map((o) => (
-            <button
-              key={o.key}
-              type="button"
-              onClick={() => setTier(o.key)}
-              className={`flex flex-col items-center gap-0.5 py-2.5 px-2 rounded-xl border transition-colors ${
-                tier === o.key ? "bg-inverse text-inverse-foreground border-transparent" : "bg-card border-border"
-              }`}
-            >
-              <span className="text-[13px] font-black">{o.title}</span>
-              <span className={`text-[11px] ${tier === o.key ? "opacity-70" : "text-muted-foreground"}`}>{o.sub}</span>
-            </button>
-          ))}
-        </div>
-        <p className="text-[12px] text-muted-foreground leading-snug break-keep">
-          {tier === "vip"
-            ? t("프라임 테이블, 프리미엄 보틀, 호스트 서비스. 최소금액은 클럽이 정해요.", "Prime table, premium bottles, host service. The minimum is set by the club.", "プライムテーブル、プレミアムボトル、ホストサービス。最低金額はクラブが決めます。", "黄金桌位、高端酒水、专人服务。最低消费由夜店决定。", "黃金包廂、高端酒水、專人服務。最低消費由夜店決定。")
-            : t("보틀 + 믹서, 우리 자리, 줄 서지 않고 입장. 최소금액은 클럽이 정해요.", "A bottle + mixers, your own seats, skip the line. The minimum is set by the club.", "ボトル＋ミキサー、専用席、並ばず入場。最低金額はクラブが決めます。", "一瓶酒 + 调酒、专属座位、免排队。最低消费由夜店决定。", "一瓶酒 + 調酒、專屬座位、免排隊。最低消費由夜店決定。")}
-        </p>
-      </section>
+      {/* 티어(Table/VIP) 선택 버튼은 뺐다(2026-09-15, 사용자 지적) — 강남/홍대·이태원 가격 차만
+          있고 등급 개념 자체가 오해를 만들었다. tier state는 남겨서 shortlist 정렬(VIP면 강남
+          우선)과 지역 카드 안내문 로직은 그대로 유지 — 기본값(area 미선택 시 "table")으로 동작. */}
 
       {/* 추천 쇼트리스트 — 예약 가능한 클럽만(MD + 실제 메뉴). 카드 탭 = 상세, 버튼 = 메뉴판. */}
       <section className="space-y-2.5">
@@ -1698,9 +1682,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             {t(`예약 가능 ${bookableTotal}곳 중 ${shortlist.length}곳`, `Top ${shortlist.length} of ${bookableTotal} bookable`, `予約可能 ${bookableTotal} 軒中 ${shortlist.length} 軒`, `${bookableTotal} 家可订中的前 ${shortlist.length} 家`, `${bookableTotal} 家可訂中的前 ${shortlist.length} 家`)}
           </span>
         </div>
-        <p className="text-[12px] text-muted-foreground -mt-1 break-keep">
-          {t("지금 바로 잡아드릴 수 있는 클럽만 — 실제 메뉴판 가격 그대로. 탭하면 사진·메뉴·영업시간·리뷰.", "Only clubs we can book right now, at the club's real menu prices. Tap a club for photos, menu, hours & reviews.", "今すぐ予約できるクラブだけ — 実際のメニュー価格のまま。タップで写真・メニュー・営業時間・レビュー。", "只列出现在能订的夜店，按夜店真实酒单价格。点按查看照片、酒单、营业时间和评价。", "只列出現在能訂的夜店，依夜店真實酒單價格。點按查看照片、酒單、營業時間和評價。")}
-        </p>
         {shortlist.length === 0 ? (
           <div className="py-4 text-center space-y-3">
             <p className="text-[13px] text-muted-foreground">
@@ -1798,7 +1779,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       <div className="flex items-start gap-2.5 rounded-xl bg-green-500/10 border border-green-500/35 px-3.5 py-3">
         <ShieldCheck className="w-4 h-4 text-money shrink-0 mt-0.5" />
         <p className="text-[12px] text-muted-foreground leading-snug break-keep">
-          {t("다음 단계에서 클럽 실제 메뉴판에서 술을 고르면 그 총액을 클럽이 확인해요. 결제는 클럽에 직접. 바가지 쓰면 200% 환불.", "Next you pick the exact bottles from the club's real menu — that total is what the club confirms. You pay at the club. Overcharged? 200% back.", "次にクラブの実メニューからボトルを選びます。その合計をクラブが確認。支払いは現地で。ぼったくられたら200%返金。", "下一步从夜店真实酒单中选酒，该总额由夜店确认。到店付款。被多收？200% 退还。", "下一步從夜店真實酒單中選酒，該總額由夜店確認。到店付款。被多收？200% 退還。")}
+          {/* 긴 설명 문장을 뺴고 "카드등록 x · 현장결제"로 압축(2026-09-15, 사용자 지시) — 결제
+              불안(선결제·카드 정보 요구)이 핵심이라 그 사실만 짧게. 200% 보장 문구는 위에서
+              이미 한 번 노출되므로 중복 제거. */}
+          {t("카드 등록 없음 · 현장 결제", "No card required · pay at the club", "カード登録不要 · 現地払い", "无需绑卡 · 到店付款", "無需綁卡 · 到店付款")}
         </p>
       </div>
       </>

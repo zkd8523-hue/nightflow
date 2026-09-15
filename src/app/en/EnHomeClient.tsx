@@ -1217,12 +1217,17 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
 }
 
 // ── 히어로 (외국인 홈 첫 화면) ──────────────────────────────────────────────
-// 가격 앵커는 사이트가 이미 공개한 값(가이드·FAQ): 테이블 ₩500k(홍대·이태원),
-// VIP ₩1M(강남). 환산은 useKrwRates(주간 스냅샷) — 언어별 기본 통화(resolveCurrency).
+// 가격 앵커는 사이트가 이미 공개한 값(가이드·FAQ): 홍대·이태원 ₩500k, 강남 ₩1M.
+// 환산은 useKrwRates(주간 스냅샷) — 언어별 기본 통화(resolveCurrency).
 // Entry(입장만)는 뺐다(2026-09-09 사용자 결정) — 나플이 잡아주는 건 테이블이다.
+//
+// 두 카드는 등급 차이가 아니라 지역 차이다(2026-09-15). 예전엔 "Table / VIP"로 나눠
+// 놓아서 외국인이 "일반석이 $373?"로 읽고 비싸다고 느꼈다 — 실제로는 둘 다 보틀 포함
+// VIP 테이블이고 강남이 2배일 뿐. 라벨을 둘 다 VIP로, 구분은 지역으로 바꿨다.
+// 인당 환산은 시도했다가 뺐다(2026-09-15) — 인원수 가정 근거를 화면에 못 적어 노이즈였다.
 const PRICE_ANCHORS = [
-  { key: "table", won: 500000 },
-  { key: "vip", won: 1000000 },
+  { key: "hongdae", won: 500000 },
+  { key: "gangnam", won: 1000000 },
 ] as const;
 
 function timeAgo(iso: string, t: ReturnType<typeof makeT>): string {
@@ -1253,9 +1258,10 @@ function HeroSection({
   const wonShort = (won: number) => (won >= 1000000 ? `₩${won / 1000000}M` : `₩${won / 1000}k`);
   const localOf = (won: number) => (currency ? krwTo(won, currency, fx.rates) : null);
   const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");
+  // 제목 = 지역, 부제 = 원화 + 보틀 포함. 둘 다 VIP 테이블이라 공통 라벨은 카드 밖 상단에 한 번만.
   const anchorLabel: Record<(typeof PRICE_ANCHORS)[number]["key"], { title: string; sub: string }> = {
-    table: { title: t("테이블", "Table", "テーブル", "卡座", "包廂"), sub: t("₩500k · 홍대·이태원", "₩500k · Hongdae, Itaewon", "₩500k · 弘大·梨泰院", "₩500k · 弘大·梨泰院", "₩500k · 弘大·梨泰院") },
-    vip: { title: "VIP", sub: t("₩1M · 강남", "₩1M · Gangnam", "₩1M · 江南", "₩1M · 江南", "₩1M · 江南") },
+    hongdae: { title: t("홍대 · 이태원", "Hongdae · Itaewon", "弘大・梨泰院", "弘大·梨泰院", "弘大·梨泰院"), sub: t("₩500k · 보틀 포함", "₩500k · bottle included", "₩500k · ボトル込み", "₩500k · 含酒", "₩500k · 含酒") },
+    gangnam: { title: t("강남", "Gangnam", "江南", "江南", "江南"), sub: t("₩1M · 보틀 포함", "₩1M · bottle included", "₩1M · ボトル込み", "₩1M · 含酒", "₩1M · 含酒") },
   };
 
   return (
@@ -1278,14 +1284,19 @@ function HeroSection({
         </h1>
       </div>
 
-      {/* 가격 앵커 3단 — "Real price"가 배지였는데 랜딩에 가격이 하나도 없었다. */}
-      <div className="px-4">
+      {/* 가격 앵커 — "Real price"가 배지였는데 랜딩에 가격이 하나도 없었다.
+          공통 라벨(VIP 테이블)은 카드 위에 한 번, 카드 제목은 지역.
+          인당 환산은 뺐다(2026-09-15) — 인원수 가정 근거를 화면에 못 적어서 노이즈였다. */}
+      <div className="px-4 space-y-1.5">
+        <p className="text-[11px] font-bold text-brand-amber px-1">
+          {t("VIP 테이블", "VIP table", "VIPテーブル", "VIP卡座", "VIP包廂")}
+        </p>
         <div className="grid grid-cols-2 gap-2">
           {PRICE_ANCHORS.map((a) => {
             const local = localOf(a.won);
             return (
               <div key={a.key} className="rounded-2xl bg-card border border-border p-3 space-y-1">
-                <p className={`text-[11px] font-bold ${a.key === "vip" ? "text-brand-amber" : "text-muted-foreground"}`}>{anchorLabel[a.key].title}</p>
+                <p className="text-[11px] font-bold text-muted-foreground">{anchorLabel[a.key].title}</p>
                 <p className="text-[16px] font-black leading-tight tabular-nums">
                   {(() => { const m = local ?? wonShort(a.won); return t(`${m}~`, `from ${m}`, `${m}〜`, `${m} 起`, `${m} 起`); })()}
                 </p>
@@ -1296,19 +1307,13 @@ function HeroSection({
         </div>
       </div>
 
-      {/* 200% 보장 — 접힌 아코디언 안에 있던 걸 꺼냈다. 경쟁군 통틀어 가장 강한 클레임. */}
-      <div className="px-4 pt-3">
-        <div className="flex items-center gap-3 rounded-2xl bg-green-500/10 border border-green-500/35 px-3.5 py-3">
-          <ShieldCheck className="w-5 h-5 text-money shrink-0" />
-          <div className="min-w-0">
-            <p className="text-[14px] font-black text-money leading-tight">
-              {t("바가지 쓰면 200% 환불.", "Overcharged? We refund 200%.", "ぼったくられたら200%返金。", "被多收？我们200%退还。", "被多收？我們200%退還。")}
-            </p>
-            <p className="text-[12px] text-muted-foreground leading-snug mt-0.5">
-              {t("모든 가격을 클럽 메뉴판과 대조합니다.", "Every price is checked against the club's printed menu.", "すべての価格をクラブのメニューと照合します。", "每个价格都与夜店的印刷酒单核对。", "每個價格都與夜店的印刷酒單核對。")}
-            </p>
-          </div>
-        </div>
+      {/* 200% 보장 — 접힌 아코디언 안에 있던 걸 꺼냈다. 경쟁군 통틀어 가장 강한 클레임.
+          박스·테두리·부제는 뺐다(2026-09-15) — 굵은 문장 한 줄 + 아이콘만 남기고 노이즈 제거. */}
+      <div className="px-4 pt-3 flex items-center gap-1.5">
+        <ShieldCheck className="w-4 h-4 text-money shrink-0" />
+        <p className="text-[14px] font-black text-money leading-tight">
+          {t("바가지 쓰면 200% 환불.", "Overcharged? We refund 200%.", "ぼったくられたら200%返金。", "被多收？我们200%退还。", "被多收？我們200%退還。")}
+        </p>
       </div>
 
       {/* 예약 버튼은 2026-09-14부터 하단 sticky(상시 노출, "주말 조기 마감" 줄 포함) 하나로 통일.
