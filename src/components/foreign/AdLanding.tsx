@@ -23,6 +23,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { BusinessInfo } from "@/components/layout/BusinessInfo";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 
 const BASE = "https://nightflow.kr";
@@ -51,6 +52,10 @@ type Copy = {
   priceRows: { label: string; value: string }[];
   priceNote: string;
   rating: string;
+  navHome: string;
+  navFaq: string;
+  navTerms: string;
+  navPrivacy: string;
 };
 
 const COPY: Record<SeoLang, Copy> = {
@@ -112,6 +117,10 @@ const COPY: Record<SeoLang, Copy> = {
     priceNote:
       "Per table, not per person — 4 people ≈ US$95–190 each. Entry fee ₩10–30,000, higher on Gangnam weekends.",
     rating: "Banyan Tree Pool Party 4.7 · 3,376 Google reviews",
+    navHome: "Home",
+    navFaq: "FAQ",
+    navTerms: "Terms",
+    navPrivacy: "Privacy",
   },
 
   ja: {
@@ -172,6 +181,10 @@ const COPY: Record<SeoLang, Copy> = {
     priceNote:
       "1卓あたり（1人あたりではありません） — 4人なら1人約12〜25万ウォン。入場料は1万〜3万ウォン、江南の週末は高くなります。",
     rating: "Banyan Tree Pool Party 4.7 · Googleクチコミ3,376件",
+    navHome: "ホーム",
+    navFaq: "よくある質問",
+    navTerms: "利用規約",
+    navPrivacy: "プライバシー",
   },
 
   zh: {
@@ -232,6 +245,10 @@ const COPY: Record<SeoLang, Copy> = {
     priceNote:
       "按桌算不按人算 — 4个人一人约 12–25 万韩元。门票 1–3 万韩元，江南周末更高。",
     rating: "Banyan Tree Pool Party 4.7 · 3,376 条谷歌评价",
+    navHome: "首页",
+    navFaq: "常见问题",
+    navTerms: "服务条款",
+    navPrivacy: "隐私政策",
   },
 
   "zh-tw": {
@@ -292,6 +309,10 @@ const COPY: Record<SeoLang, Copy> = {
     priceNote:
       "按桌計不按人計 — 4個人一人約 12–25 萬韓元。入場費 1–3 萬韓元，江南週末更高。",
     rating: "Banyan Tree Pool Party 4.7 · 3,376 則 Google 評論",
+    navHome: "首頁",
+    navFaq: "常見問題",
+    navTerms: "服務條款",
+    navPrivacy: "隱私政策",
   },
 };
 
@@ -333,6 +354,15 @@ export function AdLanding({ lang }: { lang: SeoLang }) {
   return (
     <div className="min-h-screen bg-background text-foreground pb-28">
       <ForeignPageTracker kind="info" lang={lang} meta={{ page: "ad-book" }} />
+
+      {/* 상호 + 홈 링크 — 광고 랜딩에 운영 주체가 없으면 구글애즈 심사에서 신뢰성으로 걸린다.
+          로고는 홈으로 가는 유일한 탈출구이기도 하다(본문엔 이탈 링크를 두지 않으므로). */}
+      <header className="max-w-lg mx-auto px-5 py-3 flex items-center justify-between">
+        <Link href={`/${lang}`} className="text-[17px] font-black tracking-tight">
+          Night<span className="text-brand-amber">Flow</span>
+        </Link>
+        <span className="text-[11px] text-muted-foreground uppercase tracking-wider">{lang}</span>
+      </header>
 
       {/* 히어로 — 클럽 플로어. 헤드라인을 이미지 위에 얹어 첫 화면에서 공포 줄까지 보이게 한다.
           LCP라서 priority + webp(56KB). 하단 그라데이션은 글자 가독성용. */}
@@ -409,6 +439,18 @@ export function AdLanding({ lang }: { lang: SeoLang }) {
         </section>
 
         <p className="mt-6 px-5 text-[11px] text-muted-foreground tabular-nums">{c.rating}</p>
+
+        {/* 사업자 정보 — 전자상거래법 표시 의무 + 구글애즈 랜딩 심사 요건.
+            값은 법적 데이터라 번역하지 않고, 라벨만 BusinessInfo가 언어별로 낸다. */}
+        <footer className="mt-8 px-5 pt-5 border-t border-border space-y-3">
+          <nav className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
+            <Link href={`/${lang}`} className="hover:text-foreground">{c.navHome}</Link>
+            <Link href={`/${lang}/faq`} className="hover:text-foreground">{c.navFaq}</Link>
+            <Link href={`/${lang}/terms`} className="hover:text-foreground">{c.navTerms}</Link>
+            <Link href={`/${lang}/privacy`} className="hover:text-foreground">{c.navPrivacy}</Link>
+          </nav>
+          <BusinessInfo lang={lang} className="!text-left" />
+        </footer>
       </div>
 
       {/* 유일한 CTA. 기존 예약 플로우로 넘긴다 — 여기서 데이터를 받지 않는다. */}
