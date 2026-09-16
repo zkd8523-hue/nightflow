@@ -125,7 +125,42 @@ interface AiReferralLanding {
   session_count: number;
 }
 
-export default async function InsightsPage() {
+// 기간 필터(Migration 668). 개선 전후를 나눠 보려면 시작일을 넘길 수 있어야 한다 —
+// 오늘 고친 것들(광고 랜딩·날짜 UI·클럽 그리드)의 효과가 두 달치 과거에 묻혀서.
+// ?since=YYYY-MM-DD 없으면 기존 동작(뷰의 기본 기간) 그대로.
+const RANGES = [
+  { key: "all", label: "전체 기간" },
+  { key: "today", label: "오늘부터" },
+  { key: "7d", label: "최근 7일" },
+  { key: "30d", label: "최근 30일" },
+] as const;
+
+/** 표시용 KST 날짜(YYYY-MM-DD). UTC ISO를 그대로 자르면 KST 자정이 전날로 보인다. */
+function kstDate(iso: string): string {
+  return new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 10);
+}
+
+function resolveSince(raw: string | undefined): { key: string; iso: string | null } {
+  const key = RANGES.some((r) => r.key === raw) ? raw! : "all";
+  if (key === "all") return { key, iso: null };
+  const now = new Date();
+  if (key === "today") {
+    // KST 자정 기준 — 운영자가 보는 "오늘"과 맞춘다(서버는 UTC).
+    const kst = new Date(now.getTime() + 9 * 3600_000);
+    const midnightKst = Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 3600_000;
+    return { key, iso: new Date(midnightKst).toISOString() };
+  }
+  const days = key === "7d" ? 7 : 30;
+  return { key, iso: new Date(now.getTime() - days * 86400_000).toISOString() };
+}
+
+export default async function InsightsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ since?: string }>;
+}) {
+  const { since: sinceRaw } = await searchParams;
+  const { key: rangeKey, iso: sinceIso } = resolveSince(sinceRaw);
   const supabase = await createClient();
 
   // Auth + admin 체크 — 항상 서버에서 직접 검증 (헤더 스푸핑 방지).
@@ -148,12 +183,22 @@ export default async function InsightsPage() {
     supabase.from("dropoff_hotspots").select("*").limit(10),
     supabase.from("signup_funnel").select("*").single(),
     supabase.from("acquisition_quality").select("*").limit(15),
-    supabase.from("dropoff_by_lang").select("*"),
-    supabase.from("foreign_funnel_by_lang").select("*"),
-    supabase.from("foreign_exit_points").select("*"),
+    sinceIso
+      ? supabase.rpc("dropoff_by_lang_since", { p_since: sinceIso })
+      : supabase.from("dropoff_by_lang").select("*"),
+    sinceIso
+      ? supabase.rpc("foreign_funnel_by_lang_since", { p_since: sinceIso })
+      : supabase.from("foreign_funnel_by_lang").select("*"),
+    sinceIso
+      ? supabase.rpc("foreign_exit_points_since", { p_since: sinceIso })
+      : supabase.from("foreign_exit_points").select("*"),
     supabase.from("foreign_visitor_list").select("*"),
-    supabase.from("foreign_form_field_progress").select("*"),
-    supabase.from("foreign_form_submit_blocks").select("*"),
+    sinceIso
+      ? supabase.rpc("foreign_form_field_progress_since", { p_since: sinceIso })
+      : supabase.from("foreign_form_field_progress").select("*"),
+    sinceIso
+      ? supabase.rpc("foreign_form_submit_blocks_since", { p_since: sinceIso })
+      : supabase.from("foreign_form_submit_blocks").select("*"),
     supabase.from("ai_referral_sources").select("*"),
     supabase.from("ai_referral_landings").select("*"),
   ]);
@@ -226,7 +271,30 @@ export default async function InsightsPage() {
           </div>
         </div>
 
+        {/* 기간 선택 — 개선 전후를 나눠 본다. 과거 데이터는 지우지 않고 기준선으로 남긴다. */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {RANGES.map((r) => (
+            <Link
+              key={r.key}
+              href={r.key === "all" ? "/admin/insights" : `/admin/insights?since=${r.key}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+                rangeKey === r.key
+                  ? "bg-inverse text-inverse-foreground border-transparent"
+                  : "bg-card text-muted-foreground border-border hover:text-foreground"
+              }`}
+            >
+              {r.label}
+            </Link>
+          ))}
+          {sinceIso && (
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {kstDate(sinceIso)} 이후 (KST) · 외국인 예약 전환·이탈 지점·언어별 이탈에 적용
+            </span>
+          )}
+        </div>
+
         <InsightsClient
+          rangeLabel={RANGES.find((r) => r.key === rangeKey)?.label ?? "최근 60일"}
           hotspots={hotspots}
           funnel={funnel}
           acquisition={acquisition}

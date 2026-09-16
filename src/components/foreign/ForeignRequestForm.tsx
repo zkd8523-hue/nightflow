@@ -172,8 +172,17 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // 네이티브 date input을 버리고 달력을 직접 띄운다 — 브라우저 기본 달력으로는
   // 그 클럽이 안 여는 요일을 못 고르게 막을 방법이 없다(2026-09-06).
   // 덤으로 iOS Safari의 로케일 누수(한글 표기가 새는 문제)도 같이 사라진다.
-  const [dateOpen, setDateOpen] = useState(false);
-  const openDatePicker = useCallback(() => setDateOpen(true), []);
+  // 날짜는 기본 펼침 — 제출 차단 사유 100%가 "날짜 미선택"이었다(7회·6명, 2026-09-16).
+  // 접힌 버튼은 이미 고른 것처럼 보여서 그냥 지나친다. 아직 안 골랐으면 달력을 보여준다.
+  const [dateOpen, setDateOpen] = useState(true);
+  // 달력을 펼치는 것만으론 부족하다 — 3단계에서 막히면 날짜 섹션이 화면 밖에 있어서
+  // 토스트만 보고 뭘 해야 하는지 모른다. 펼치고 그 자리로 데려간다(2026-09-16).
+  const openDatePicker = useCallback(() => {
+    setDateOpen(true);
+    requestAnimationFrame(() => {
+      dateSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, []);
   const detailTouchStartXRef = useRef<number | null>(null);
   // 기본값 없이 시작한다(2026-09-07). 예전엔 "이태원"으로 시작했는데, 폼에 오는
   // 클럽을 isBookable로 좁힌 뒤로 이태원 예약 가능 클럽이 3곳뿐이라 캐러셀에
@@ -428,6 +437,13 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // 클럽은 이미 정해졌지만 인원수 등은 아직 안 받았으므로. 클럽 선택 UI만
   // "이 클럽으로 예약 중" 요약으로 대체한다(아래 렌더 분기).
   const [formStep, setFormStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
+
+  // 날짜 단계(2½)에 들어올 때 아직 안 골랐으면 달력을 펼쳐둔다.
+  // 폼은 단계 전환에도 언마운트되지 않아 dateOpen 초기값만으론 부족하다 —
+  // 제출 차단 사유 100%가 no_date였고(7회·6명), 접힌 버튼은 이미 고른 것처럼 보인다.
+  useEffect(() => {
+    if (formStep === 6 && !eventDate) setDateOpen(true);
+  }, [formStep, eventDate]);
 
   // 페이지 상단 "返回"(BackButton)에 노출하는 핸들 — ForeignBookingScreen이 ref로
   // 연결한다. true를 반환하면 "이 뒤로가기는 폼이 처리했다"는 뜻이라 BackButton은
@@ -744,7 +760,12 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
 
   // 버튼 클릭 → 형식 검증만 하고 확인 시트를 연다. 실제 전송은 doSubmit.
   const handleSubmit = () => {
-    if (!eventDate) { blocked("no_date"); return toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期")); }
+    // 여기서 막힌 7건(6명, 100%가 no_date)이 토스트만 보고 떠났다 — 달력을 펼쳐 그 자리로 보낸다.
+    if (!eventDate) {
+      blocked("no_date");
+      openDatePicker();
+      return toast.error(t("날짜를 골라주세요", "Pick a date", "日付を選択", "请选择日期", "請選擇日期"));
+    }
     if (!area && selectedClubIds.length === 0) {
       blocked("no_area_or_club");
       return toast.error(t("지역이나 클럽을 골라주세요", "Pick an area or a club", "エリアかクラブを選択", "请选择区域或夜店"));
@@ -1565,17 +1586,18 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             렌더링(placeholder/포맷 둘 다 우리 통제 하에 있어 로케일 새는 문제 자체가 없음).
             네이티브 입력은 브라우저마다 "달력 아이콘 부분 클릭해야만 피커가 열리고 텍스트 영역
             클릭은 그냥 포커스만 됨" — 그래서 showPicker()로 박스 어디를 눌러도 피커가 열리게 함. */}
+        {/* 아직 안 고른 상태는 테두리·글자를 앰버로 — 비어 있다는 걸 지나치지 못하게 한다. */}
         <button
           type="button"
           onClick={() => setDateOpen((v) => !v)}
           className={`w-full h-12 px-4 rounded-xl bg-card border flex items-center justify-between transition-colors ${
-            dateOpen ? "border-amber-500" : "border-border"
+            eventDate ? (dateOpen ? "border-amber-500" : "border-border") : "border-amber-500"
           }`}
         >
-          <span className={`text-[15px] ${eventDate ? "text-foreground" : "text-muted-foreground"}`}>
-            {eventDate ? formatEventDate(eventDate, lang) : t("연도. 월. 일.", "Select date", "日付を選択", "选择日期")}
+          <span className={`text-[15px] ${eventDate ? "text-foreground" : "text-brand-amber font-bold"}`}>
+            {eventDate ? formatEventDate(eventDate, lang) : t("날짜를 골라주세요", "Pick your date", "日付を選んでください", "请选择日期", "請選擇日期")}
           </span>
-          <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+          <Calendar className={`w-4 h-4 shrink-0 ${eventDate ? "text-muted-foreground" : "text-brand-amber"}`} />
         </button>
         {dateOpen && (
           <div className="mt-2 rounded-xl bg-card border border-border p-2">
@@ -1649,10 +1671,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       {progress}
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <button type="button" onClick={() => setFormStep(1)} className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground hover:text-foreground">
-            <ChevronLeft className="w-4 h-4" />
-            {t("어떻게 놀고 싶으세요?", "Tell us your night", "どんな夜にしたい？", "想怎么玩？", "想怎麼玩？")}
-          </button>
+          {/* 단계 되돌리기는 상단 BackButton이 stepBack()으로 이미 한다 —
+              여기 또 두면 뒤로가기가 두 개로 보인다(2026-09-16). */}
           <h1 className="text-2xl font-black text-foreground tracking-tight">
             {t("어떤 밤을 원하세요?", "Pick your night", "どんな夜にする？", "选择你的夜晚", "選擇你的夜晚")}
           </h1>

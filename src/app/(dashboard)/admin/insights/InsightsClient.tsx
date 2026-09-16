@@ -141,6 +141,8 @@ interface Props {
     booking_count: number; book_click_count: number; bounce_rate: number | null;
   }[];
   aiLandings: { month: string; source: string; landing_path: string; club_name: string | null; session_count: number }[];
+  /** 적용된 기간 라벨 — 하드코딩하면 필터를 걸어도 '최근 60일'이라 거짓말이 된다. */
+  rangeLabel?: string;
 }
 
 /** 방문자 한 줄 — 누르면 저니가 펼쳐진다. 저니는 클릭 시점에 그 사람 것만 조회. */
@@ -295,6 +297,7 @@ function Donut({
 export function InsightsClient({
   hotspots, funnel, acquisition, byLang, foreignFunnel, foreignExits, foreignVisitors,
   formFieldProgress, formSubmitBlocks, aiSources, aiLandings,
+  rangeLabel = "최근 60일",
 }: Props) {
   // 방문자 목록 언어 필터. null = 전체.
   const [visitorLang, setVisitorLang] = useState<string | null>(null);
@@ -708,7 +711,7 @@ export function InsightsClient({
           <Globe2 className="w-5 h-5 text-brand-amber" />
           <h2 className="text-xl font-black tracking-tight">외국인 예약 전환</h2>
           <span className="text-xs text-muted-foreground font-medium">
-            최근 60일 · 랜딩 대비 비율
+            {rangeLabel} · 랜딩 대비 비율
           </span>
         </div>
 
@@ -815,7 +818,7 @@ export function InsightsClient({
               <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-4">
                 게이트 다음{" "}
                 <span className="normal-case tracking-normal font-medium">
-                  — 폼 안 어디서 막히나 (전체 언어 합산, 최근 60일)
+                  — 폼 안 어디서 막히나 (전체 언어 합산, {rangeLabel})
                 </span>
               </p>
               {formFieldProgress.length === 0 ? (
