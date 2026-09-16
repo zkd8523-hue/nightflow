@@ -78,7 +78,7 @@ const COPY: Record<SeoLang, Copy> = {
     ],
     terms: "No deposit, no booking fee · pay the venue.",
     clubs: "Only the 22 best clubs in Korea.",
-    cta: "Book a table",
+    cta: "Book your Table",
     buysH2: "What the money buys",
     buys: [
       {
