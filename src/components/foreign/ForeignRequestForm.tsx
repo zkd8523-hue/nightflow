@@ -1237,7 +1237,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-foreground tracking-tight">
-            {t("몇 명이서 가시나요?", "Who's coming?", "何人で行きますか？", "几位一起去？", "幾位一起去？")}
+            {t("어떻게 놀고 싶으세요?", "Tell us your night", "どんな夜にしたい？", "想怎么玩？", "想怎麼玩？")}
           </h1>
           <p className="text-[13px] text-muted-foreground">
             {t("문의는 무료. 보증금도 카드도 없어요.", "Free to ask. No deposit, no card.", "相談無料。デポジットもカードも不要。", "免费咨询。无需订金，无需信用卡。", "免費諮詢。無需訂金，無需信用卡。")}
@@ -1651,7 +1651,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         <div className="space-y-1">
           <button type="button" onClick={() => setFormStep(1)} className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground hover:text-foreground">
             <ChevronLeft className="w-4 h-4" />
-            {t("몇 명이서 가시나요?", "Who's coming?", "何人で行きますか？", "几位一起去？", "幾位一起去？")}
+            {t("어떻게 놀고 싶으세요?", "Tell us your night", "どんな夜にしたい？", "想怎么玩？", "想怎麼玩？")}
           </button>
           <h1 className="text-2xl font-black text-foreground tracking-tight">
             {t("어떤 밤을 원하세요?", "Pick your night", "どんな夜にする？", "选择你的夜晚", "選擇你的夜晚")}
