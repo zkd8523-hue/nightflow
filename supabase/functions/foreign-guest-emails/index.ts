@@ -1,7 +1,7 @@
 // Deno Edge Function: 외국인 손님 이메일 2종 (Resend)
 //
 //   { mode: "received", request_id }  — foreign_requests INSERT 트리거(Migration 664)가 호출.
-//                                        contact_type='email'인 손님에게 접수 확인 메일.
+//                                        이메일 또는 backup_email이 있는 손님에게 접수 확인 메일.
 //   { mode: "reminders" }              — pg_cron 매일 19:00 KST(Migration 664).
 //                                        foreign_trip_reminders에서 tentative_date = 오늘+3 이고
 //                                        아직 안 보낸 행에 "이제 예약할 때" 메일 + 폼 링크.
@@ -106,11 +106,14 @@ const RECEIVED: Record<Lang, { subject: (ref: string) => string; heading: string
 async function sendReceived(sb: ReturnType<typeof createClient>, requestId: string) {
   const { data: fr, error } = await sb
     .from("foreign_requests")
-    .select("id, ref_code, lang, event_date, group_size, club_ids, contact_type, contact_value, selected_menu_total")
+    .select("id, ref_code, lang, event_date, group_size, club_ids, contact_type, contact_value, backup_email, selected_menu_total")
     .eq("id", requestId)
     .maybeSingle();
   if (error || !fr) throw new Error(`request not found: ${error?.message ?? requestId}`);
-  if (fr.contact_type !== "email" || !fr.contact_value) return { skipped: "not_email" };
+  // 메신저로 접수한 손님도 backup_email(Mig 669)로 접수 확인을 받는다.
+  // 예전엔 contact_type='email'만 보내서, LINE·인스타로 온 손님은 아무 확인도 못 받았다.
+  const to = fr.contact_type === "email" ? fr.contact_value : fr.backup_email;
+  if (!to) return { skipped: "no_email" };
   const lang = normLang(fr.lang);
   const c = RECEIVED[lang];
   let clubName = "";
@@ -136,7 +139,7 @@ ${total ? row(c.total, total, GREEN) : ""}
     preheader: c.intro, heading: c.heading, body, cta: c.cta,
     url: `${SITE}/${lang}/clubs`, ctaColor: AMBER,
   });
-  await resendSend({ to: fr.contact_value, subject: c.subject(ref), html });
+  await resendSend({ to, subject: c.subject(ref), html });
   return { sent: 1 };
 }
 

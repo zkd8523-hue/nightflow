@@ -45,6 +45,7 @@ export type ForeignReq = {
   mdCandidates: { id: string; name: string; phone: string | null }[];
   contact_type: string;
   contact_value: string;
+  backup_email: string | null;
   notes: string | null;
   status: string;
   created_at: string;
@@ -310,6 +311,15 @@ export function ForeignRequestsClient({ initial }: { initial: ForeignReq[] }) {
               )}
               <button onClick={() => copy(r.contact_value)} className="shrink-0 text-muted-foreground hover:text-foreground p-2 -m-1"><Copy className="w-4 h-4" /></button>
             </div>
+            {/* 예비 이메일(Migration 669) — 메신저 ID 검색이 막히면 이 경로로 연락한다.
+                2026-09-19 LINE ID 검색 실패로 ₩100만 예약을 놓친 뒤 추가. */}
+            {r.backup_email && (
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="text-[12px] text-muted-foreground uppercase shrink-0">email</span>
+                <a href={`mailto:${r.backup_email}`} className="text-[14px] font-bold text-money underline truncate flex-1">{r.backup_email}</a>
+                <button onClick={() => copy(r.backup_email!)} className="shrink-0 text-muted-foreground hover:text-foreground p-2 -m-1"><Copy className="w-4 h-4" /></button>
+              </div>
+            )}
 
             {/* 제안서·MD응답·확정서 — 외국인/한국 요청 공용(ProposalSection.tsx, 2026-09-06). */}
             <ProposalCard req={toProposalReq(r)} onAssignMd={(mdId) => assignMd(r.id, mdId)} />

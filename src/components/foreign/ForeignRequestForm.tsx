@@ -403,6 +403,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
 
   const [guestName, setGuestName] = useState("");
   const [contactType, setContactType] = useState<ContactType>("whatsapp");
+  // 예비 이메일 — 메신저 ID 검색이 막히면 연락이 끊긴다. 2026-09-19에 LINE ID가
+  // 검색되지 않아 ₩100만 예약을 통째로 놓쳤다(야후재팬 유입, 48분 체류 후 제출).
+  // contactType이 email이면 중복이라 받지 않는다.
+  const [backupEmail, setBackupEmail] = useState("");
   // 검색 허용 경고(LINE/WeChat/Instagram)를 읽고 체크했는지. 채널을 바꾸면 반드시 풀린다 —
   // LINE에서 체크한 채로 WeChat으로 옮기면 다른 설정 경로를 안 보고 통과해버린다.
   const [contactWarnAck, setContactWarnAck] = useState(false);
@@ -485,6 +489,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     contactType: ContactType;
     preferredLang: Lang;
     contactValue: string;
+    backupEmail?: string;
     notes: string;
   };
   const draftKey = FOREIGN_BOOKING_DRAFT_KEY;
@@ -506,9 +511,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     if (!hasProgress || formStep === 4 || formStep === 5) return;
     saveFormDraft<ForeignDraft>(draftKey, {
       eventDate, groupSize, area, selectedClubIds, picked, menuZone,
-      guestName, contactType, preferredLang, contactValue, notes,
+      guestName, contactType, preferredLang, contactValue, backupEmail, notes,
     });
-  }, [hasProgress, formStep, eventDate, groupSize, area, selectedClubIds, picked, menuZone, guestName, contactType, preferredLang, contactValue, notes]);
+  }, [hasProgress, formStep, eventDate, groupSize, area, selectedClubIds, picked, menuZone, guestName, contactType, preferredLang, contactValue, backupEmail, notes]);
 
   // 필드 단위 진행 추적 — 게이트 통과 후 이탈이 어느 입력에서 일어나는지
   // "세션 마지막 이벤트" 역산으로는 안 보였다(2026-09-09). 값이 채워진 시점을
@@ -540,6 +545,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     setContactType(d.contactType);
     setPreferredLang(d.preferredLang);
     setContactValue(d.contactValue);
+    setBackupEmail(d.backupEmail ?? "");
     setNotes(d.notes);
     // 술까지 담았으면 연락처 단계(3장)로 바로 복귀한다.
     setFormStep(d.picked ? 3 : 1);
@@ -722,7 +728,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     line: "LINE ID",
   };
   const contactHint: Record<ContactType, string> = {
-    whatsapp: t("국가번호 포함 (예: +1…)", "Include country code (e.g. +1…)", "国番号を含めて（例: +81…）", "含国家代码（如 +86…）"),
+    whatsapp: "",
     instagram: "",
     email: "",
     wechat: "",
@@ -851,6 +857,20 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     const contactErr = validateContact(contactType, contactValue);
     if (contactErr) { blocked("contact_format_invalid"); return toast.error(contactErr); }
 
+    // 예비 이메일 — 메신저 ID는 상대 설정에 막혀 검색이 안 될 수 있다(실제로
+    // 2026-09-19 LINE ID 검색 실패로 ₩100만 예약을 놓쳤다). 이메일은 그 실패가 없다.
+    if (contactType !== "email") {
+      const be = backupEmail.trim();
+      if (!be) {
+        blocked("no_backup_email");
+        return toast.error(t("이메일도 함께 입력해주세요", "Add your email too", "メールアドレスも入力してください", "请一并填写邮箱", "請一併填寫信箱"));
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(be)) {
+        blocked("backup_email_invalid");
+        return toast.error(t("이메일 형식을 확인해주세요 (예: you@example.com)", "Check your email (e.g. you@example.com)", "メール形式を確認してください（例: you@example.com）", "请检查邮箱格式（如 you@example.com）", "請檢查信箱格式（如 you@example.com）"));
+      }
+    }
+
     // 검색 허용 설정을 본인이 확인했는지. 값이 멀쩡해도 상대 설정이 막혀 있으면
     // 우리가 못 찾고 리드가 통째로 증발하는데, 오타 검증으로는 못 걸러진다.
     if (contactWarning[contactType] && !contactWarnAck) {
@@ -889,6 +909,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         guest_name: guestName.trim() || null,
         contact_type: contactType,
         contact_value: contactValue.trim(),
+        // contactType이 email이면 같은 값이라 별도로 넣지 않는다.
+        backup_email: contactType === "email" ? null : backupEmail.trim() || null,
         notes: notes.trim() || null,
         utm_source: utm.utm_source,
         utm_medium: utm.utm_medium,
@@ -2201,6 +2223,34 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         {contactHint[contactType] && (
           <p className="text-[12px] text-muted-foreground mt-1.5">{contactHint[contactType]}</p>
         )}
+
+        {/* 예비 이메일 — 메신저 ID가 검색 안 되면 연락이 끊긴다(2026-09-19 LINE 실패로
+            ₩100만 예약 유실). 이메일을 고른 경우엔 같은 값이라 묻지 않는다. */}
+        {contactType !== "email" && (
+          <div className="mt-3">
+            <p className="text-[12px] font-bold text-foreground mb-1.5">
+              {t("이메일*", "Email*", "メール*", "邮箱*", "信箱*")}
+            </p>
+            <input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={backupEmail}
+              onChange={(e) => setBackupEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
+            />
+            <p className="text-[12px] text-muted-foreground mt-1.5">
+              {t(
+                `${CONTACT_LABEL[contactType]} 검색이 막혀 있으면 연락을 못 드려요. 이메일로도 보내드릴게요.`,
+                `If your ${CONTACT_LABEL[contactType]} ID can't be found, we can't reach you. We'll email you as well.`,
+                `${CONTACT_LABEL[contactType]} のID検索がオフだとご連絡できません。メールでもお送りします。`,
+                `如果无法搜索到你的 ${CONTACT_LABEL[contactType]}，我们就联系不上。我们也会发邮件给你。`,
+                `如果搜尋不到你的 ${CONTACT_LABEL[contactType]}，我們就聯絡不上。我們也會寄信給你。`
+              )}
+            </p>
+          </div>
+        )}
         {contactWarning[contactType] && (
           <div className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.04] p-3">
             <p className="flex items-start gap-1.5 text-[12px] font-bold text-amber-500/90">
@@ -2371,6 +2421,13 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                 <span className="text-muted-foreground">{t("회신", "Reply to", "返信先", "回复到", "回覆到")}</span>
                 <span className="font-bold text-foreground break-all text-right">{CONTACT_LABEL[contactType]} {contactValue.trim()}</span>
               </div>
+              {/* 예비 이메일도 눈으로 확인시킨다 — 오타 하나면 예비 경로가 의미 없어진다. */}
+              {contactType !== "email" && backupEmail.trim() && (
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="text-muted-foreground">{t("이메일", "Email", "メール", "邮箱", "信箱")}</span>
+                  <span className="font-bold text-foreground break-all text-right">{backupEmail.trim()}</span>
+                </div>
+              )}
             </div>
 
             {/* 채널 핸드오프 — WhatsApp 번호가 있으면 wa.me, 없으면 인스타 DM. */}
