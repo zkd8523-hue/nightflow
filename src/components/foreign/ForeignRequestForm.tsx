@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef, useCallback, forwardRef, useImper
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Search, Check, MapPin, Users, UserRound, Calendar, MessageCircle, Languages, ChevronRight, ChevronLeft, Heart, Plus, Sparkles, Music2, ShieldCheck, Mail, Star, CalendarPlus, Instagram } from "lucide-react";
+import { Search, Check, MapPin, Users, UserRound, Calendar, MessageCircle, Languages, ChevronRight, ChevronLeft, Heart, Plus, Sparkles, Music2, ShieldCheck, Mail, Star, CalendarPlus, Instagram, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -403,6 +403,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
 
   const [guestName, setGuestName] = useState("");
   const [contactType, setContactType] = useState<ContactType>("whatsapp");
+  // 검색 허용 경고(LINE/WeChat/Instagram)를 읽고 체크했는지. 채널을 바꾸면 반드시 풀린다 —
+  // LINE에서 체크한 채로 WeChat으로 옮기면 다른 설정 경로를 안 보고 통과해버린다.
+  const [contactWarnAck, setContactWarnAck] = useState(false);
   const [preferredLang, setPreferredLang] = useState<Lang>(lang);
   const [contactValue, setContactValue] = useState("");
   const [notes, setNotes] = useState("");
@@ -722,8 +725,40 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     whatsapp: t("국가번호 포함 (예: +1…)", "Include country code (e.g. +1…)", "国番号を含めて（例: +81…）", "含国家代码（如 +86…）"),
     instagram: "",
     email: "",
-    wechat: t("앱에서 직접 추가해드려요", "We'll add you in the app", "アプリで追加します", "我们会在微信加你"),
-    line: t("공개 LINE ID 필요", "Needs a public LINE ID", "公開LINE IDが必要", "需公开的 LINE ID"),
+    wechat: "",
+    line: "",
+  };
+
+  // 상대 프라이버시 설정 때문에 "ID는 맞는데 우리가 못 찾는" 채널들.
+  // LINE ID nobuito0719 건(2026-09-19): 값은 멀쩡한데 검색이 안 돼 리드가 그대로 증발했다.
+  // 오타 검증으로는 원리적으로 못 잡는 실패라, 제출 전에 본인이 설정을 켜게 하는 게 유일한 방어.
+  //  - LINE   : ID 검색 허용 off + (일본 번호는) 연령확인 미완료면 검색 결과에 아예 안 뜸
+  //  - WeChat : 设置 > 隐私 > 添加我的方式 > 微信号 를 끄면 동일하게 검색 불가 (기본은 켜짐)
+  //  - Instagram: 검색 자체는 되지만 DM이 요청함/숨김요청함으로 빠지면 알림도 읽음표시도 없음
+  const contactWarning: Record<ContactType, string> = {
+    whatsapp: "",
+    email: "",
+    instagram: t(
+      "DM이 '메시지 요청'함으로 갈 수 있어요. 요청함도 확인해주세요",
+      "Our DM may land in your Message Requests — please check that folder",
+      "DMが「メッセージリクエスト」に入ることがあります。リクエスト欄もご確認ください",
+      "私信可能会进入「消息请求」，请一并查看",
+      "私訊可能會進入「訊息請求」，請一併查看"
+    ),
+    wechat: t(
+      "설정 > 개인정보 보호 > 나를 추가하는 방법 > 'WeChat ID'가 켜져 있어야 찾을 수 있어요",
+      "We can only find you if Settings > Privacy > Methods for Friending Me > 'WeChat ID' is ON",
+      "設定 > プライバシー > 友達への追加方法 >「WeChat ID」がオンになっている必要があります",
+      "需开启 设置 > 隐私 > 添加我的方式 > 「微信号」，否则搜不到你",
+      "需開啟 設定 > 隱私 > 加我的方式 >「微信號」，否則搜尋不到你"
+    ),
+    line: t(
+      "설정 > 친구 > 'ID로 친구 추가 허용'이 켜져 있어야 찾을 수 있어요",
+      "We can only find you if Settings > Friends > 'Allow others to add me by ID' is ON",
+      "設定 > 友だち >「IDで友だち追加を許可」をオンにしてください（年齢確認も必要です）",
+      "需开启 设置 > 好友 > 「允许他人通过 ID 添加我」，否则搜不到你",
+      "需開啟 設定 > 好友 >「允許他人以 ID 加我」，否則搜尋不到你"
+    ),
   };
 
   // 연락처 소프트 검증 — 명백히 깨진 값만 차단, 규칙이 제각각인 건(위챗/라인) 통과.
@@ -815,6 +850,13 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     // 형식 오타 차단 (소프트: 명백히 깨진 것만)
     const contactErr = validateContact(contactType, contactValue);
     if (contactErr) { blocked("contact_format_invalid"); return toast.error(contactErr); }
+
+    // 검색 허용 설정을 본인이 확인했는지. 값이 멀쩡해도 상대 설정이 막혀 있으면
+    // 우리가 못 찾고 리드가 통째로 증발하는데, 오타 검증으로는 못 걸러진다.
+    if (contactWarning[contactType] && !contactWarnAck) {
+      blocked("contact_warning_unacked");
+      return toast.error(t("연락처 설정 안내를 확인하고 체크해주세요", "Please read the note and tick the box", "ご案内を確認してチェックしてください", "请阅读提示并勾选确认", "請閱讀提示並勾選確認"));
+    }
 
     // 연락처를 눈으로 다시 확인 — 로그인 없앤 뒤 오타 하나에 리드 전체가 증발하므로.
     setShowConfirm(true);
@@ -2143,7 +2185,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             <button
               key={ct}
               type="button"
-              onClick={() => setContactType(ct)}
+              onClick={() => { setContactType(ct); setContactWarnAck(false); }}
               className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border ${contactType === ct ? "bg-inverse text-inverse-foreground border-transparent" : "bg-card text-muted-foreground border-border hover:text-foreground"}`}
             >
               {CONTACT_LABEL[ct]}
@@ -2158,6 +2200,29 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         />
         {contactHint[contactType] && (
           <p className="text-[12px] text-muted-foreground mt-1.5">{contactHint[contactType]}</p>
+        )}
+        {contactWarning[contactType] && (
+          <div className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.04] p-3">
+            <p className="flex items-start gap-1.5 text-[12px] font-bold text-amber-500/90">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-[1px]" />
+              <span>{contactWarning[contactType]}</span>
+            </p>
+            <button
+              type="button"
+              onClick={() => setContactWarnAck((v) => !v)}
+              aria-pressed={contactWarnAck}
+              className="flex items-center gap-2 mt-2.5 text-[12px] font-bold text-left"
+            >
+              <span
+                className={`w-4 h-4 shrink-0 rounded-[5px] border flex items-center justify-center transition-colors ${contactWarnAck ? "bg-amber-500 border-amber-500" : "border-amber-500/50"}`}
+              >
+                {contactWarnAck && <Check className="w-3 h-3 text-black" strokeWidth={3} />}
+              </span>
+              <span className={contactWarnAck ? "text-muted-foreground" : "text-amber-500/90"}>
+                {t("확인했습니다", "I've checked this", "確認しました", "我已确认", "我已確認")}
+              </span>
+            </button>
+          </div>
         )}
       </section>
 
