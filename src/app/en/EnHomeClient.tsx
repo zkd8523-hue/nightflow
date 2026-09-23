@@ -1391,30 +1391,9 @@ function HeroSection({
         );
       })()}
 
-      {/* 소셜프루프 — 실제 확정 예약(익명). 없으면 진행 중 요청 수, 그것도 0이면 아무것도 안 그린다.
-          예전 "0 requests on-going right now"가 SSR로 찍히던 문제의 해결. */}
-      {recentBookings.length > 0 ? (
-        <div className="px-4 pt-5 space-y-2">
-          <p className="text-[14px] font-black">{t("최근 예약", "Recent bookings", "最近の予約", "最近预订", "最近預訂")}</p>
-          <div className="space-y-1.5">
-            {recentBookings.slice(0, 3).map((b, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-xl bg-card border border-border px-3 py-2.5">
-                <span className="w-2 h-2 rounded-full bg-money shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-bold truncate">
-                    {b.group_size
-                      ? t(`${b.group_size}명 · ${b.club_name}`, `Group of ${b.group_size} · ${b.club_name}`, `${b.group_size}名 · ${b.club_name}`, `${b.group_size}人 · ${b.club_name}`, `${b.group_size}人 · ${b.club_name}`)
-                      : b.club_name}
-                    {b.area ? `, ${areaLabel(b.area, lang)}` : ""}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">{t("테이블 확정", "Table confirmed", "テーブル確定", "已确认桌位", "已確認包廂")}</p>
-                </div>
-                <span className="text-[11px] text-muted-foreground shrink-0" suppressHydrationWarning>{timeAgo(b.confirmed_at, t)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : !!openRequestCount ? (
+      {/* "Recent bookings" 카드 노출 제거(2026-09-23) — recentBookings prop·fetch는 그대로 두고
+          렌더만 뺐다. 진행 중 요청 수(openRequestCount) 소셜프루프는 유지. */}
+      {!recentBookings.length && !!openRequestCount ? (
         <p className="px-4 pt-4 text-center text-[13px]">
           <span className="font-bold text-amber-500 tabular-nums">{openRequestCount}</span>{" "}
           {t("건의 요청이 진행 중", "requests on-going right now", "件のリクエストが進行中", "个请求正在进行中", "個請求正在進行中")}
