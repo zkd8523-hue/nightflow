@@ -52,6 +52,14 @@ export type ForeignClubDetail = {
   tagline_zh_tw?: string | null;
   /** 상위노출 랭크 — 지역 내 "고정 노출 위치"(1-based). Recommend 정렬에서만 적용. (Promoted Listings) */
   featured_rank?: number | null;
+  /** 지역별 추천 1곳(clubs.area_pick, Mig 670) — 카드에 "Our pick" 강조. featured_rank(정렬)와 별개. */
+  area_pick?: boolean | null;
+  /** "왜 여기를 추천하나" 문단(Mig 671). area_pick일 때만 렌더, 언어별 손글, 비면 블록 숨김. */
+  pick_reason_ko?: string | null;
+  pick_reason_en?: string | null;
+  pick_reason_ja?: string | null;
+  pick_reason_zh?: string | null;
+  pick_reason_zh_tw?: string | null;
 };
 
 // 레거시 스톱갭 — DB clubs.name_en(Migration 460)이 진짜 소스. 아직 값 안 채운 클럽만 여기로 fallback.
@@ -132,6 +140,28 @@ export function ForeignClubDetailPanel({
             )}
           </a>
         )}
+
+        {/* 추천 사유 — 지역별 추천(area_pick) 클럽에만, 구글 리뷰보다 위에(2026-09-23).
+            Day&night는 4.3점인데 노출 리뷰 5개 중 4개가 "인종차별·문지기". 우리가 추천해 놓고
+            손님이 "왜?"를 먼저 묻게 되면 안 되니, 그 답을 리뷰 앞에 둔다. 리뷰의 우려를
+            피하지 않고 정면으로 받아서 예약이 그 문제를 푸는 이유로 잇는 문단이다. */}
+        {club.area_pick && (() => {
+          const reason =
+            lang === "ja" ? club.pick_reason_ja
+            : lang === "zh" ? club.pick_reason_zh
+            : lang === "zh-tw" ? club.pick_reason_zh_tw ?? club.pick_reason_zh
+            : lang === "ko" ? club.pick_reason_ko
+            : club.pick_reason_en;
+          if (!reason) return null;
+          return (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/[0.06] p-3.5 space-y-1.5">
+              <p className="text-[11px] font-extrabold tracking-wide text-brand-amber">
+                ★ {t("왜 여기를 추천하나요?", "Why we recommend it", "なぜここをおすすめするのか", "我们为什么推荐这里", "我們為什麼推薦這裡")}
+              </p>
+              <p className="text-[13px] text-foreground/90 leading-relaxed break-keep">{reason}</p>
+            </div>
+          );
+        })()}
 
         {/* 구글 리뷰 미리보기 — 최대 5개, ingest-google-ratings.mjs가 월 1회 갱신(영어 자동번역).
             평점 높은 순으로 보여준다 — 구글이 주는 순서는 뒤죽박죽이라 첫 카드가 1점짜리면

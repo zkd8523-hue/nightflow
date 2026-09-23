@@ -584,6 +584,36 @@
       background-size: 100% 100%;
     }
   }
+
+  /* 지역별 추천 클럽 리본 — 썸네일 우상단 사선 띠(Mig 670 area_pick).
+     회전된 pseudo-element라 Tailwind 임의값으로는 안 돼서 여기 둔다. 상품 라벨 관습이라
+     글자를 안 읽어도 "골라진 것"으로 읽힘. 텍스트는 data-label로 받아 4개 언어 대응. */
+  .nf-pick-ribbon {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+    width: 64px;
+    height: 64px;
+    overflow: clip;
+    pointer-events: none;
+  }
+  .nf-pick-ribbon::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 11px;
+    right: -22px;
+    width: 96px;
+    transform: rotate(45deg);
+    background: #f59e0b;
+    color: #000;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-align: center;
+    line-height: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  }
 }
 
 /* ── 쿠폰 사용 화면 워터마크 (Migration 539) ── */

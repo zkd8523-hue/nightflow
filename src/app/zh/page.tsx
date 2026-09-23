@@ -169,7 +169,7 @@ export default async function ZhHomePage() {
   // 강남·홍대 클럽 (지역 섹션 "Spots competing for you"용) — /en 홈과 동일 로직
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, name_en, area, thumbnail_url, address, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, foreign_booking_agreed, partners:club_partners(md_id)")
+    .select("id, name, name_en, area, thumbnail_url, address, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, foreign_booking_agreed, area_pick, pick_reason_ko, pick_reason_en, pick_reason_ja, pick_reason_zh, pick_reason_zh_tw, partners:club_partners(md_id)")
     .in("area", ["강남", "홍대", "이태원", "부산"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -215,6 +215,12 @@ export default async function ZhHomePage() {
         tags: c.tags,
         google_reviews: c.google_reviews,
         featured_rank: c.featured_rank,
+        area_pick: (c as { area_pick?: boolean | null }).area_pick ?? false,
+        pick_reason_ko: (c as { pick_reason_ko?: string | null }).pick_reason_ko ?? null,
+        pick_reason_en: (c as { pick_reason_en?: string | null }).pick_reason_en ?? null,
+        pick_reason_ja: (c as { pick_reason_ja?: string | null }).pick_reason_ja ?? null,
+        pick_reason_zh: (c as { pick_reason_zh?: string | null }).pick_reason_zh ?? null,
+        pick_reason_zh_tw: (c as { pick_reason_zh_tw?: string | null }).pick_reason_zh_tw ?? null,
         google_review_count: c.google_review_count,
         tagline_ko: c.tagline_ko,
         tagline_en: c.tagline_en,

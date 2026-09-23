@@ -339,6 +339,12 @@ function FlagCarouselCard({ flag }: { flag: FlagItem }) {
   );
 }
 
+// 손님이 클럽에서 실제로 결제한 누적 금액(원). ⚠️ 손으로 갱신하는 값.
+// 사장님이 MD 정산으로 확인한 숫자(2026-09-23 기준 ₩3,000만+). foreign_requests.budget은
+// "요청" 금액이고 booking_confirmations.total_price는 아직 안 채워져서 DB 자동 합계가 불가.
+// 그 운영이 자리잡으면 이 상수를 DB 집계로 바꾼다. "지금까지" 누적이라 안 올려도 거짓은 안 된다.
+const GUEST_SPEND_AT_CLUBS_KRW = 30_000_000;
+
 // ── 지역 섹션 (강남=프리미엄 / 홍대=자유) + 클럽 리스트 + 지역 버튼 ──
 const REGIONS = [
   {
@@ -445,7 +451,7 @@ function ClubCarousel({
 }
 
 function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
-  const { tr } = useTr();
+  const { tr, t } = useTr();
   const name = displayClubName(club);
   // 홈에서 이탈시키지 않고 제자리에서 상세 모달을 띄움 — "How it works" 교육 기회를 잃지 않도록.
   // (예전엔 /clubs 페이지로 바로 이동했음. RegionSection이 오픈 상태를 관리.)
@@ -467,12 +473,22 @@ function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
           안에 있어도 부모로 제스처가 전파되지 않음). overflow:clip은 시각적
           클리핑만 하고 스크롤 컨테이너가 아니라 이 문제가 없다(2026-09-07
           실측: 같은 자리에서 hidden→clip 교체만으로 스와이프 delta 0→124). */}
-      <div className="w-[120px] h-[80px] rounded-xl overflow-clip bg-muted border border-border lg:w-[168px] lg:h-[112px]">
+      {/* 지역별 추천 1곳(area_pick)은 amber 링 + 이름 아래 라벨 한 줄. /clubs 목록(ClubsClient)과 같은 표식.
+          tagline은 위 이유로 여기 없지만 이 라벨은 추천 4곳에만 붙어 높이 편차가 아니라 강조다. */}
+      <div
+        className={`relative w-[120px] h-[80px] rounded-xl overflow-clip bg-muted lg:w-[168px] lg:h-[112px] ${
+          club.area_pick ? "border-2 border-amber-500 ring-[3px] ring-amber-500/20" : "border border-border"
+        }`}
+      >
         {club.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={club.thumbnail_url} alt={name} loading="lazy" draggable={false} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[11px] font-bold">{tr("No image")}</div>
+        )}
+        {/* 추천 리본 — 우상단 사선 띠. 명시 5-arg t()로 고정(tr()은 사전에 없으면 영어로 샘). */}
+        {club.area_pick && (
+          <span className="nf-pick-ribbon" aria-label={t("우리의 추천", "Our pick", "イチオシ", "我们的推荐", "我們的推薦")} data-label={t("추천", "PICK", "推し", "推荐", "推薦")} />
         )}
       </div>
       <p className="text-[12px] font-bold text-foreground mt-1.5 truncate lg:text-[13px] lg:mt-2">{name}</p>
@@ -1333,13 +1349,16 @@ function HeroSection({
         </div>
       )}
 
-      {/* 신뢰 배지 4개 — 상시 노출. */}
+      {/* 신뢰 배지 4개 — 상시 노출.
+          "N clubs"·"Real menus"는 재고 자랑이라 뺐다(2026-09-23). 낯선 나라에서 ₩100만을 거는
+          사람이 듣고 싶은 건 "뭘 안 해도 되나"다 — 카드 등록 없음(Model B, 결제 중개 없음)과
+          회원가입 없음(외국인 트랙 OTP 우회)은 둘 다 사실이고 마찰 제거라 종류가 다르다. */}
       <div className="px-4 pt-4">
         <div className="grid grid-cols-4 gap-1.5">
           {[
-            t(`클럽 ${clubCount}곳`, `${clubCount} clubs`, `${clubCount} クラブ`, `${clubCount} 家夜店`, `${clubCount} 家夜店`),
-            t("실제 메뉴", "Real menus", "実メニュー", "真实酒单", "真實酒單"),
             t("수수료 0", "Zero fee", "手数料ゼロ", "零手续费", "零手續費"),
+            t("카드 등록 없음", "No card needed", "カード登録なし", "无需绑卡", "無需綁卡"),
+            t("회원가입 없음", "No signup", "会員登録なし", "无需注册", "無需註冊"),
             t("현장 결제", "Pay at club", "現地払い", "到店付款", "到店付款"),
           ].map((b) => (
             <div key={b} className="flex flex-col items-center gap-1 rounded-xl bg-card border border-border px-1 py-2.5">
@@ -1349,6 +1368,28 @@ function HeroSection({
           ))}
         </div>
       </div>
+
+      {/* 누적 결제액 — 위 4칸(80 clubs·Real menus·Zero fee·Pay at club)은 전부 "우리 주장"이고
+          이건 손님이 실제로 한 행동. 낯선 나라에서 ₩100만을 거는 사람에게 "나 말고 다른 사람도
+          했나"의 답. "클럽에서" 결제했다는 게 핵심 — 예약금 없음·클럽 현장 결제 약속과 맞물린다.
+          통화는 가격 앵커와 같은 규칙: 뷰어 통화 우선, 없으면 ₩. 히어로에 안 올리고 여기 두는 건
+          첫 화면이 숫자 자랑이 되면 안 돼서(광고 랜딩 때 정한 톤). */}
+      {(() => {
+        const won = GUEST_SPEND_AT_CLUBS_KRW;
+        const m = localOf(won) ?? wonShort(won);
+        const showWon = localOf(won) != null;
+        return (
+          <div className="px-4 pt-5">
+            <div className="rounded-xl bg-card border border-border px-3 py-3 flex items-baseline gap-2 flex-wrap">
+              <span className="text-[18px] font-black tabular-nums leading-none">{m}+</span>
+              <span className="text-[13px] text-muted-foreground leading-snug">
+                {t("지금까지 나플 손님이 클럽에서 결제한 금액", "spent at clubs by NightFlow guests so far", "NightFlowのゲストがこれまでクラブで支払った金額", "NightFlow 客人至今在夜店的实际消费", "NightFlow 客人至今在夜店的實際消費")}
+                {showWon && <span className="ml-1 tabular-nums">({wonShort(won)}+)</span>}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 소셜프루프 — 실제 확정 예약(익명). 없으면 진행 중 요청 수, 그것도 0이면 아무것도 안 그린다.
           예전 "0 requests on-going right now"가 SSR로 찍히던 문제의 해결. */}

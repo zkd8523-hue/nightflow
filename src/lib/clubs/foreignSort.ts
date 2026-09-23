@@ -20,6 +20,8 @@ export type SortableClub = {
   name?: string | null;
   google_review_count?: number | null;
   featured_rank?: number | null;
+  /** 지역별 추천 1곳(clubs.area_pick, Mig 670). 모든 키보다 앞 — featured_rank도 못 밀어낸다. */
+  area_pick?: boolean | null;
 };
 
 /**
@@ -31,6 +33,10 @@ export type SortableClub = {
  * 2순위 has_md 가산점은 남긴다: 담당자가 실제로 붙은 곳을 같은 조건에서 위로 올린다.
  */
 export function recommendCompare(a: SortableClub, b: SortableClub): number {
+  // 지역별 추천(area_pick)이 최우선(2026-09-23). 카드에 "Our pick"을 달아 놓고 2번째에
+  // 두면 강조가 아니라 혼선이다. 지역당 1곳이라 동률은 없다.
+  const pick = Number(!!b.area_pick) - Number(!!a.area_pick);
+  if (pick !== 0) return pick;
   const bookable = Number(isBookable(b)) - Number(isBookable(a));
   if (bookable !== 0) return bookable;
   const md = (b.has_md ? 1 : 0) - (a.has_md ? 1 : 0);
@@ -55,10 +61,13 @@ export function pinFeatured<T extends SortableClub>(sortedAreaItems: T[]): T[] {
   // 실제로 잡아줄 수 있는 Dawn을 뒤로 밀어냈다. 고정 노출은 "같은 조건일 때의
   // 자리"지, 예약되는 곳을 밀어낼 권한은 아니다.
   const bookableCount = out.filter(isBookable).length;
+  // 추천 클럽은 0번을 차지한다. featured_rank=1인 다른 클럽이 와도 그 앞엔 못 선다 —
+  // recommendCompare가 이미 0번에 올려 둔 걸 여기서 다시 밀어내면 정렬이 두 벌이 된다.
+  const pickFloor = out.length > 0 && !!out[0].area_pick ? 1 : 0;
 
   for (const p of pinned) {
     const wanted = Math.max((p.featured_rank ?? 1) - 1, 0);
-    const floor = isBookable(p) ? 0 : bookableCount;
+    const floor = Math.max(pickFloor, isBookable(p) ? 0 : bookableCount);
     const idx = Math.min(Math.max(wanted, floor), out.length);
     out.splice(idx, 0, p);
   }

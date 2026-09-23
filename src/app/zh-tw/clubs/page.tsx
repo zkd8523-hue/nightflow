@@ -68,7 +68,7 @@ export default async function ZhTwClubsPage() {
   const { data: clubs } = await supabase
     .from("clubs")
     .select(
-      "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, foreign_booking_agreed, partners:club_partners(md_id)"
+      "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, featured_rank, tagline_ko, tagline_en, tagline_ja, tagline_zh, tagline_zh_tw, foreign_booking_agreed, area_pick, pick_reason_ko, pick_reason_en, pick_reason_ja, pick_reason_zh, pick_reason_zh_tw, partners:club_partners(md_id)"
     )
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")

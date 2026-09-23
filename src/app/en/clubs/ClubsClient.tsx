@@ -48,6 +48,8 @@ type Club = {
   tagline_zh_tw?: string | null;
   /** 상위노출 랭크 — 높을수록 모든 정렬에서 최상단 (Promoted Listings) */
   featured_rank?: number | null;
+  /** 지역별 추천 1곳(clubs.area_pick, Mig 670) — 카드에 "Our pick" 강조. featured_rank(정렬)와 별개. */
+  area_pick?: boolean | null;
 };
 
 type GoogleReview = {
@@ -72,7 +74,21 @@ function buildFlagHref(lang: Lang, area?: string, clubId?: string) {
 // recommend: 담당 MD 있는 클럽 우선 + 그 안에서 리뷰 많은 순 (컨시어지 폼 Browse 팝업과 동일 기준)
 type SortKey = "recommend" | "reviews" | "rating";
 
-export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang }) {
+export function ClubsClient({
+  clubs,
+  lang = "en",
+  /** 지역 프로필(인용·✓·✗). 지역 페이지에서만 넘어온다 — "Find your club" 제목 바로 아래에
+      렌더한다. 페이지 최상단에 두면 사이드바·제목보다 위로 올라가 목업과 어긋났다(2026-09-23). */
+  areaProfile,
+  /** 지역 페이지(/clubs/[area])에서만 넘어오는 지역 표시명(예: "Itaewon"). 있으면 제목을
+      "Find your club" 대신 지역명으로 — 이미 그 지역에 들어왔는데 "찾아보라"는 문구가 어색했다. */
+  areaName,
+}: {
+  clubs: Club[];
+  lang?: Lang;
+  areaProfile?: React.ReactNode;
+  areaName?: string;
+}) {
   // 클럽 상세 시트 — 어느 지역 캐러셀에서 열었는지(detailList)를 같이 기억해서
   // 상세 안에서 ←/→ 로 같은 캐러셀의 옆 클럽으로 바로 넘어갈 수 있게 함.
   const [detailList, setDetailList] = useState<Club[]>([]);
@@ -207,13 +223,15 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   const bottomCtaHref = buildFlagHref(lang);
   // 검색으로 처음 들어온 외국인이 대부분인데(클럽 목록 도달 후 카드 클릭 14.5%),
   // 설명이 sr-only에만 있어 사람 눈엔 안 보였음 → 헤더 아래 짧은 안내 노출.
-  const introHeadline = t(
-    "내게 맞는 클럽 찾기",
-    "Find your club",
-    "自分に合うクラブを見つける",
-    "找到适合你的夜店",
-    "找到適合你的夜店"
-  );
+  const introHeadline = areaName
+    ? areaName
+    : t(
+        "내게 맞는 클럽 찾기",
+        "Find your club",
+        "自分に合うクラブを見つける",
+        "找到适合你的夜店",
+        "找到適合你的夜店"
+      );
   const introSub = t(
     "실제 가격 그대로, 중개 수수료 없음. 한국어 못해도 괜찮아요.",
     "Real prices, no broker fee. No Korean needed.",
@@ -297,8 +315,14 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
           <div className="space-y-1.5">
             {/* h2 — 이 컴포넌트를 쓰는 /clubs·/clubs/[area] 페이지가 sr-only h1을 이미 갖고 있어 h1이 둘이었다(크리틱 2차) */}
             <h2 className="text-[26px] font-black tracking-tight leading-tight break-keep">{introHeadline}</h2>
-            <p className="text-[13.5px] text-muted-foreground leading-snug break-keep">{introSub}</p>
+            {/* 지역 페이지(areaName 있음)는 제목이 지역명이라 "Real prices, no broker fee..."가
+                맥락 없이 붙었다 — 그 문구는 인용·✓/✗ 프로필이 이미 대신한다(2026-09-23). */}
+            {!areaName && (
+              <p className="text-[13.5px] text-muted-foreground leading-snug break-keep">{introSub}</p>
+            )}
           </div>
+
+          {areaProfile}
 
           {/* How it works — /en 홈과 동일한 3단계 안내. 검색으로 처음 들어온 사람이
               목록만 보고 이탈하지 않도록, 접힌 상태로 두되 원하면 펼쳐볼 수 있게. */}
@@ -505,11 +529,21 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   {/* relative 필수 — 안쪽 Image가 fill(=position:absolute)이라
                       positioned 조상이 없으면 이 칸을 건너뛰고 바깥까지 올라가
                       썸네일이 통째로 어긋난다. */}
-                  <div className="relative w-[140px] h-[140px] rounded-2xl overflow-clip bg-muted border border-border lg:w-full lg:h-[168px]">
+                  {/* 지역별 추천 1곳(area_pick)은 썸네일에 amber 링 + 이름 아래 라벨 한 줄.
+                      라벨을 이름 옆에 붙이면 긴 이름(CLUB BERMUDA)이 잘려서 별도 줄로 뺐다. */}
+                  <div
+                    className={`relative w-[140px] h-[140px] rounded-2xl overflow-clip bg-muted lg:w-full lg:h-[168px] ${
+                      club.area_pick ? "border-2 border-amber-500 ring-[3px] ring-amber-500/20" : "border border-border"
+                    }`}
+                  >
                     {club.thumbnail_url ? (
                       <Image src={club.thumbnail_url} alt={displayClubName(club)} fill className="object-cover" sizes="140px" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[11px] font-bold">{noImage}</div>
+                    )}
+                    {/* 추천 리본 — 우상단 사선 띠. 4자 이내 라벨이라 120~168px 카드에 다 들어감. */}
+                    {club.area_pick && (
+                      <span className="nf-pick-ribbon" aria-label={t("우리의 추천", "Our pick", "イチオシ", "我们的推荐", "我們的推薦")} data-label={t("추천", "PICK", "推し", "推荐", "推薦")} />
                     )}
                   </div>
                   <p className="text-[13px] font-bold text-foreground mt-2 truncate">{displayClubName(club)}</p>
