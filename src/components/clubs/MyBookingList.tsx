@@ -246,6 +246,9 @@ function BookingRow({
               <Row label="예약자" value={booking.guest_name} />
               <Row label={CONTACT_LABEL[booking.contact_type]} value={booking.contact_value} />
               {booking.notes && <Row label="요청사항" value={booking.notes} />}
+              {booking.selected_menu?.md_recommend && (
+                <Row label="주류" value={`클럽 추천 세트 (예산 ₩${booking.selected_menu.md_recommend.budget.toLocaleString("en-US")})`} />
+              )}
               {booking.selected_menu && booking.selected_menu.items.length > 0 && (
                 <Row
                   label="주류"

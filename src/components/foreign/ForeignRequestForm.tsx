@@ -1221,7 +1221,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     return [base, Math.round((base * 1.5) / 50_000) * 50_000, base * 2];
   }, [minBudget]);
 
-  // 날짜 화면과 메뉴 시트 양쪽에 같은 박스를 둔다 — 시트로 먼저 들어간 손님도 출구를 본다.
+  // 메뉴 시트 맨 위(topSlot)에 끼우는 박스. 예전엔 날짜 화면에도 뒀다가 뺐다(2026-09-26, 아래 Step 1 주석).
+  // compact 분기는 시트 배경색용으로 남겨 둔다.
   const MdRecommendBox = ({ compact = false }: { compact?: boolean }) => {
     // 시트 안에서는 손님이 "Change"로 바꾼 통화를 따른다(시트 밖은 Provider가 없어 폼 기본값).
     const fx = useMenuFx();
@@ -1735,8 +1736,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
           : t("술 고르기", "Choose drinks", "ドリンクを選ぶ", "选择酒水", "選擇酒水")}
       </button>
 
-      {/* 메뉴 담기 우회 — 술을 직접 고르기 부담스러운 손님용. 알림 모드(remindMe)에선 숨긴다. */}
-      {!remindMe && <MdRecommendBox />}
+      {/* 메뉴 담기 우회(MdRecommendBox)는 메뉴 시트 맨 위에만 둔다(2026-09-26 사용자 결정) — 날짜 화면에선
+          "술 고르기" 버튼 바로 아래라 출구가 두 개로 겹쳐 보였다. 술을 보다가 막힌 순간에 보이면 충분하다. */}
       </>
       )}
 

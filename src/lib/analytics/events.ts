@@ -214,6 +214,10 @@ export const trackForeignEvent = (
     | 'foreign_form_md_recommend'
     // 한국인 예약 폼 제출(KoreanBookingForm). ai_referral_sources.booking_count가 이걸 센다.
     | 'booking_request_submitted'
+    // 한국인 폼에서 술 담기 대신 '클럽 추천 세트'(예산만)를 고름(2026-09-26). params: club_id, budget
+    | 'booking_md_recommend'
+    // 한국 클럽 상세 예약 불가 → "예약 가능한 클럽 보기" 클릭(2026-09-26). params: club_id, club_name, area
+    | 'club_detail_see_bookable_click'
     | 'foreign_club_saved'
     | 'foreign_saved_club_added'
     // SEO 정적 페이지 (클럽 개별 328p / 실용정보 16p) — ForeignPageTracker가 발동

@@ -14,6 +14,7 @@ import { MenuPicker } from "@/components/foreign/MenuPicker";
 import { formatBookingContact } from "@/lib/utils/format";
 import { saveFormDraft, loadFormDraft, clearFormDraft } from "@/lib/utils/formDraft";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
+import { bookingFloor } from "@/lib/clubs/tablePricing";
 import type { ClubMenuItem, ClubMenuCombo, SelectedMenuSnapshot, KoreanBookingContactType } from "@/types/database";
 
 // 한국 유저 클럽 예약 요청 폼 (컨시어지 모델, foreign_requests와 동일 구조).
@@ -70,7 +71,7 @@ export function KoreanBookingForm({
 
   const [groupSize, setGroupSize] = useState(2);
 
-  // 술 메뉴 — 이 폼은 isBookable(has_md && has_menu) 클럽에서만 열리므로 항상 메뉴가 있다.
+  // 술 메뉴 — 이 폼은 isBookable(주대 + (담당 MD 또는 승인)) 클럽에서만 열리므로 항상 메뉴가 있다.
   const [menuItems, setMenuItems] = useState<ClubMenuItem[]>([]);
   const [menuCombos, setMenuCombos] = useState<ClubMenuCombo[]>([]);
   const [menuCharge, setMenuCharge] = useState<{ weekday: number | null; weekend: number | null }>(
@@ -81,6 +82,8 @@ export function KoreanBookingForm({
   const [menuZone, setMenuZone] = useState<string | null>(null);
   const [picked, setPicked] = useState<{ snapshot: SelectedMenuSnapshot; total: number } | null>(null);
   const [menuDraft, setMenuDraft] = useState<{ snapshot: SelectedMenuSnapshot; total: number } | null>(null);
+  // 추천 세트 예산 버튼의 기준 지역(외국인 폼과 같은 하한표 — tablePricing.bookingFloor).
+  const [clubArea, setClubArea] = useState<string | null>(null);
 
   const isWeekend = (() => {
     if (!eventDate) return false;
@@ -105,7 +108,7 @@ export function KoreanBookingForm({
         supabase.from("club_menu_combos").select("*").eq("club_id", clubId),
         supabase
           .from("clubs")
-          .select("table_charge_weekday, table_charge_weekend, open_dows")
+          .select("table_charge_weekday, table_charge_weekend, open_dows, area")
           .eq("id", clubId)
           .maybeSingle(),
       ]);
@@ -117,6 +120,7 @@ export function KoreanBookingForm({
         weekend: clubRes.data?.table_charge_weekend ?? null,
       });
       setOpenDows(clubRes.data?.open_dows ?? null);
+      setClubArea(clubRes.data?.area ?? null);
       setMenuLoading(false);
     })();
     return () => {
@@ -226,7 +230,7 @@ export function KoreanBookingForm({
       return;
     }
     if (menuLoading) return toast.error("메뉴를 불러오는 중이에요");
-    if (!picked) return toast.error("술을 먼저 골라주세요");
+    if (!picked) return toast.error("술을 고르거나 추천 예산을 골라주세요");
     if (!guestName.trim()) return toast.error("예약자 이름을 입력해주세요");
     if (!contactValue.trim()) return toast.error("연락처를 입력해주세요");
 
@@ -261,6 +265,7 @@ export function KoreanBookingForm({
         group_size: groupSize,
         item_count: picked?.snapshot?.items?.length ?? 0,
         total_krw: picked?.total ?? null,
+        md_recommend: !!picked?.snapshot?.md_recommend,
       });
 
       clearFormDraft(draftKey);
@@ -287,6 +292,70 @@ export function KoreanBookingForm({
   // "담은 항목" 시트와 같은 수준(이미지 포함)으로 보여주려면 로드해둔
   // menuItems에서 같은 id를 찾아 이미지를 붙여야 한다(2026-09-06).
   const imageOf = (itemId: string) => menuItems.find((m) => m.id === itemId)?.image_url ?? null;
+
+  // "클럽 추천 세트" 우회 — 외국인 폼(ForeignRequestForm handleMdRecommend)을 그대로 옮겼다(2026-09-26).
+  // 술을 병 단위로 직접 고르는 단계에서 막히는 손님용. 예산만 고르면 items 없는 스냅샷(md_recommend)으로
+  // 2단계(연락처)로 넘긴다. 저장은 selected_menu_total = 예산, 운영자 화면(KoreanBookingsClient)은
+  // md_recommend를 보고 "MD 추천 요청 · 예산"으로 표시한다.
+  const handleMdRecommend = (budget: number) => {
+    if (!eventDate) {
+      setMenuOpen(false);
+      toast.error("날짜를 골라주세요");
+      openDatePicker();
+      return;
+    }
+    if (!isClubOpenOn(openDows, eventDate)) {
+      setMenuOpen(false);
+      toast.error("그 날은 클럽이 쉬는 날이에요. 날짜를 다시 골라주세요");
+      setDateOpen(true);
+      return;
+    }
+    const snapshot: SelectedMenuSnapshot = { items: [], md_recommend: { budget } };
+    setPicked({ snapshot, total: budget });
+    setMenuDraft(null);
+    setMenuOpen(false);
+    trackEvent("booking_md_recommend", { club_id: clubId, budget });
+    setStep(2);
+  };
+  // 버튼 3단 — 외국인 폼과 같은 규칙(지역 하한 · 1.5배 · 2배). 강남 100/150/200만, 그 외 50/75/100만.
+  // 외국인 폼은 하한을 강제해 첫 버튼에 "최소"를 달지만, 한국 폼은 하한이 없어(35만 원짜리 한 병도 담긴다) 뺀다.
+  const base = bookingFloor(clubArea);
+  const mdBudgetOptions = [base, Math.round((base * 1.5) / 50_000) * 50_000, base * 2];
+
+  // 메뉴 시트 맨 위에만 둔다 — 외국인 폼은 날짜 화면에도 두지만, 한국 폼 1단계는 "주류 선택" 버튼
+  // 바로 아래라 두 출구가 겹쳐 보인다(사용자 결정 2026-09-26). 술을 보다가 막힌 순간에 보이면 충분하다.
+  const mdRecommendBox = () => (
+    <section className="rounded-xl border border-border bg-background px-3.5 py-3 space-y-2.5">
+      <div>
+        <p className="text-[13px] font-extrabold">술 고르기 어려우세요?</p>
+        <p className="text-[12px] text-muted-foreground leading-snug break-keep">예산만 고르면 클럽이 가장 맞는 세트를 제안해요.</p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {mdBudgetOptions.map((b) => (
+          <button
+            key={b}
+            type="button"
+            onClick={() => handleMdRecommend(b)}
+            className="rounded-xl border border-border bg-card px-2 py-2.5 text-center hover:border-amber-500/60 active:scale-[0.98] transition-all"
+          >
+            <span className="block text-[13px] font-black tabular-nums">₩{b.toLocaleString("en-US")}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+
+  // 추천 세트를 고른 뒤의 요약 카드 — 탭하면 메뉴 시트가 열려 직접 고르는 쪽으로 바꿀 수 있다.
+  const recommendCard = picked?.snapshot.md_recommend ? (
+    <button
+      type="button"
+      onClick={() => setMenuOpen(true)}
+      className="w-full rounded-xl border border-amber-500/60 bg-card px-4 py-3 text-left transition-colors"
+    >
+      <span className="text-[13px] font-bold text-foreground">클럽 추천 세트 · ₩{picked.total.toLocaleString("en-US")}</span>
+      <span className="block text-[12px] text-muted-foreground mt-1">직접 고르려면 탭</span>
+    </button>
+  ) : null;
 
   return (
     <>
@@ -373,6 +442,8 @@ export function KoreanBookingForm({
                   <div className="h-12 rounded-xl bg-card border border-border flex items-center px-4 text-[13px] text-muted-foreground">
                     메뉴 불러오는 중…
                   </div>
+                ) : recommendCard ? (
+                  recommendCard
                 ) : picked ? (
                   <button
                     type="button"
@@ -448,7 +519,7 @@ export function KoreanBookingForm({
 
           {step === 2 && (
             <div className="space-y-6 pb-8">
-              {picked && (
+              {recommendCard ?? (picked && (
                 <button
                   type="button"
                   onClick={() => setMenuOpen(true)}
@@ -491,7 +562,7 @@ export function KoreanBookingForm({
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-2">변경하려면 다시 탭</p>
                 </button>
-              )}
+              ))}
 
               {/* 예약자 이름 */}
               <section>
@@ -586,7 +657,7 @@ export function KoreanBookingForm({
                 </div>
                 {picked && (
                   <div className="flex items-center justify-between text-[13px]">
-                    <span className="text-muted-foreground">금액</span>
+                    <span className="text-muted-foreground">{picked.snapshot.md_recommend ? "예산 (클럽 추천)" : "금액"}</span>
                     <span className="font-black text-money">₩{picked.total.toLocaleString("en-US")}</span>
                   </div>
                 )}
@@ -636,6 +707,7 @@ export function KoreanBookingForm({
             onZoneChange={setMenuZone}
             bottomOffset={0}
             initialSnapshot={picked?.snapshot ?? menuDraft?.snapshot ?? null}
+            topSlot={!picked || picked.snapshot.md_recommend ? mdRecommendBox() : undefined}
             onDraftChange={(snapshot, total) => setMenuDraft({ snapshot, total })}
             onDone={(snapshot, total) => {
               setPicked({ snapshot, total });
@@ -698,7 +770,7 @@ export function KoreanBookingForm({
         title="이전에 작성하던 예약이 있어요"
         description={
           resumePrompt
-            ? `${resumePrompt.picked.snapshot.items.length}개 주류 · ₩${resumePrompt.picked.total.toLocaleString("en-US")} · 이어서 작성하시겠어요?`
+            ? `${resumePrompt.picked.snapshot.md_recommend ? "클럽 추천 세트" : `${resumePrompt.picked.snapshot.items.length}개 주류`} · ₩${resumePrompt.picked.total.toLocaleString("en-US")} · 이어서 작성하시겠어요?`
             : undefined
         }
         cancelText="아니요"
