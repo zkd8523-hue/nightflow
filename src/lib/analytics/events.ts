@@ -235,6 +235,10 @@ export const trackForeignEvent = (
     // 큰데 클릭 추적이 아예 없었다.
     | 'foreign_sidebar_cta_click'
     | 'foreign_sidebar_saved_club_click'
+    // 예약 불가 클럽 시트의 "예약 가능한 클럽 보기"(2026-09-26). source: home | list
+    | 'foreign_see_bookable_click'
+    // 시트의 "Open full page ↗"(2026-09-26). 카드→시트 퍼널(foreign_club_card_click)과 섞이지 않게 별도.
+    | 'foreign_open_full_page_click'
     // 외국어 홈 진입 (Admin 인사이트가 이 이름들로 집계)
     | 'en_home_view'
     | 'ja_home_view'
@@ -242,7 +246,8 @@ export const trackForeignEvent = (
     | 'zh_tw_home_view'
     // 게이트 통과 후 폼 필드 단위 진행 — 통과자의 73%(26명 중 19명, 2026-09
     // 실측)가 그 자리에서 이탈하는데 어느 입력에서 막혔는지 못 봤다. field는
-    // 'date' | 'club' | 'menu' | 'name' | 'contact' 중 하나.
+    // 'date' | 'club' | 'club_preset' | 'menu' | 'name' | 'contact' 중 하나.
+    // club_preset = 클럽 페이지 CTA(?club=)로 미리 담긴 클럽을 그대로 둔 경우 — 손님이 고른 'club'과 분리(2026-09-26).
     | 'foreign_form_field_completed'
     // 제출 시도했지만 검증 실패로 막힌 지점. reason은 handleSubmit의 각 분기명.
     | 'foreign_form_submit_blocked',

@@ -155,7 +155,7 @@ export default async function EnVipTablesPage() {
             best table for your budget — real prices, real bottle packages.
             Show up, walk straight in.
           </p>
-          <Link
+          <Link rel="nofollow"
             data-nf-track="book_cta" href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >

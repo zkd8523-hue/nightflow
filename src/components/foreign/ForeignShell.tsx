@@ -26,11 +26,31 @@ const NAV: { key: ForeignNavKey; icon: React.ReactNode }[] = [
   { key: "map", icon: <Map className="w-[18px] h-[18px]" /> },
 ];
 
+/**
+ * 사이드바 하단 CTA 교체. 데스크톱에선 사이드바 버튼이 그 페이지의 유일한 예약 버튼이다 —
+ * 홈·지역 목록은 원래 하단 고정 버튼을 lg에서 숨겼는데, 클럽 상세만 하단 바를 그대로 띄워
+ * 왼쪽 "Book Korean Clubs"(빈 폼)와 아래 "Book X"(그 클럽)가 동시에 보였다(2026-09-26).
+ * 클럽 상세는 하단 바를 lg에서 숨기고 이 자리에 자기 버튼을 넣는다.
+ */
+export type ForeignSidebarCta = {
+  /** 없으면 기본(빈 예약 폼) */
+  href?: string;
+  /** 없으면 기본 "Book Korean Clubs"(언어별) */
+  label?: string;
+  /** 클릭 이벤트 구분값(foreign_sidebar_cta_click.kind) */
+  kind: string;
+  /** 버튼 위(조기 마감 한 줄 등) */
+  above?: React.ReactNode;
+  /** 버튼 아래(찜 버튼 등) */
+  below?: React.ReactNode;
+};
+
 export function ForeignSidebar({
   lang,
   activeKey = null,
   onSelect,
   navLabels,
+  cta,
 }: {
   lang: Lang;
   /** 현재 활성 항목. SEO·상세 페이지처럼 어느 탭도 아니면 null. */
@@ -39,6 +59,8 @@ export function ForeignSidebar({
   onSelect?: (key: ForeignNavKey) => void;
   /** 홈이 이미 번역해 둔 탭 라벨을 그대로 쓰기 위한 오버라이드. */
   navLabels?: Record<ForeignNavKey, string>;
+  /** 없으면 기본 "Book Korean Clubs", null이면 버튼 숨김(예약 폼 화면 — 자기 자신으로 가는 링크라). */
+  cta?: ForeignSidebarCta | null;
 }) {
   const t = makeT(lang);
   const tr = (en: string) => t("", en);
@@ -81,6 +103,10 @@ export function ForeignSidebar({
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:shrink-0 lg:w-[248px] lg:sticky lg:top-0 lg:h-screen border-r border-border px-4 py-6">
+      {/* 위쪽(로고·메뉴·가이드·찜 목록)만 스크롤, 아래 예약 버튼 묶음은 항상 화면 안에 고정.
+          클럽 상세는 데스크톱에서 이 버튼이 유일한 예약 버튼인데, 찜이 2곳만 넘어도 노트북 높이(680px)에서
+          버튼이 화면 밖으로 밀려 안 보였다(2026-09-26 크리틱 실측). */}
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
       <Link href={`/${lang}`} className="px-2.5 pb-6 block">
         <p className="text-[18px] font-black tracking-tight leading-none">NightFlow</p>
         <p className="text-[11px] text-muted-foreground leading-none mt-1">{tr("Korea Club Guide")}</p>
@@ -137,7 +163,7 @@ export function ForeignSidebar({
           <div className="flex flex-col gap-1.5 px-1 max-h-[260px] overflow-y-auto">
             {saved.map((c) => (
               <div key={c.id} className="flex items-center gap-1 rounded-xl bg-card border border-border">
-                <Link
+                <Link rel="nofollow"
                   href={`/flags/new?lang=${lang}&club=${c.id}`}
                   onClick={() =>
                     trackForeignEvent("foreign_sidebar_saved_club_click", {
@@ -175,9 +201,9 @@ export function ForeignSidebar({
         </div>
       )}
 
-      <div className="flex-1" />
+      </div>
 
-      <div className="flex flex-col gap-3 px-1">
+      <div className="shrink-0 flex flex-col gap-3 px-1 pt-4">
         <div className="flex justify-center">
           <LangSwitcher />
         </div>
@@ -188,20 +214,29 @@ export function ForeignSidebar({
             {tr("requests on-going right now")}
           </p>
         )}
-        <Link
-          href={`/flags/new?lang=${lang}`}
-          // 모든 외국어 페이지에 상시 노출되는 CTA인데 클릭 추적이 없어서, 여기로
-          // 전환한 사람이 퍼널 분모·분자 양쪽에서 통째로 빠져 있었다(2026-09-06).
-          onClick={() =>
-            trackForeignEvent("foreign_sidebar_cta_click", {
-              lang,
-              saved_count: saved.length,
-            })
-          }
-          className="block text-center py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors"
-        >
-          {tr("Book Korean Clubs")}
-        </Link>
+        {cta !== null && (
+          <>
+            {cta?.above}
+            <Link
+              href={cta?.href ?? `/flags/new?lang=${lang}`}
+              // 폼(/flags/new)으로 가는 경우만 nofollow — "See bookable clubs"는 색인 대상인 지역 목록으로 간다.
+              rel={(cta?.href ?? "/flags/new").startsWith("/flags/new") ? "nofollow" : undefined}
+              // 모든 외국어 페이지에 상시 노출되는 CTA인데 클릭 추적이 없어서, 여기로
+              // 전환한 사람이 퍼널 분모·분자 양쪽에서 통째로 빠져 있었다(2026-09-06).
+              onClick={() =>
+                trackForeignEvent("foreign_sidebar_cta_click", {
+                  lang,
+                  saved_count: saved.length,
+                  kind: cta?.kind ?? "default",
+                })
+              }
+              className="block text-center px-3 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] leading-tight hover:bg-amber-400 transition-colors"
+            >
+              {cta?.label ?? tr("Book Korean Clubs")}
+            </Link>
+            {cta?.below}
+          </>
+        )}
       </div>
     </aside>
   );
@@ -211,15 +246,18 @@ export function ForeignSidebar({
 export function ForeignShell({
   lang,
   activeKey = null,
+  sidebarCta,
   children,
 }: {
   lang: Lang;
   activeKey?: ForeignNavKey | null;
+  /** ForeignSidebar.cta 그대로 — 없으면 기본, null이면 숨김. */
+  sidebarCta?: ForeignSidebarCta | null;
   children: React.ReactNode;
 }) {
   return (
     <div className="lg:flex lg:items-start bg-background">
-      <ForeignSidebar lang={lang} activeKey={activeKey} />
+      <ForeignSidebar lang={lang} activeKey={activeKey} cta={sidebarCta} />
       <div className="lg:flex-1 lg:min-w-0">{children}</div>
     </div>
   );

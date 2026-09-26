@@ -16,12 +16,15 @@ export function SaveClubButton({
   lang,
   className = "",
   variant = "chip",
+  nameInLabel,
 }: {
   club: Omit<SavedClub, "savedAt">;
   lang: Lang;
   className?: string;
-  /** chip: 인라인 작은 알약 / cta: 하단 예약 버튼 옆에 나란히 서는 큰 버튼 */
-  variant?: "chip" | "cta";
+  /** chip: 인라인 작은 알약 / cta: 하단 예약 버튼 옆에 나란히 서는 큰 버튼 / sidebar: 데스크톱 사이드바 예약 버튼 아래 */
+  variant?: "chip" | "cta" | "sidebar";
+  /** 찜 전 라벨에 클럽명을 붙인다("Save JEJE"). 위 버튼이 다른 클럽들로 보낼 때 무엇을 찜하는지 헷갈리지 않게. */
+  nameInLabel?: string;
 }) {
   const t = makeT(lang);
   // localStorage는 첫 렌더에서 읽지 않음 (SSR HTML과 달라져 하이드레이션 불일치)
@@ -33,7 +36,9 @@ export function SaveClubButton({
 
   const label = saved
     ? t("찜 해제", "Saved", "保存済み", "已收藏")
-    : t("찜하기", "Save", "保存", "收藏");
+    : nameInLabel
+      ? t(`${nameInLabel} 찜하기`, `Save ${nameInLabel}`, `${nameInLabel}を保存`, `收藏 ${nameInLabel}`, `儲存 ${nameInLabel}`)
+      : t("찜하기", "Save", "保存", "收藏");
 
   return (
     <button
@@ -53,15 +58,18 @@ export function SaveClubButton({
       className={`flex items-center justify-center gap-1.5 border transition-colors ${
         variant === "cta"
           ? "py-3.5 rounded-xl text-[15px] font-black"
-          : "shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold"
+          : variant === "sidebar"
+            ? "w-full px-3 py-3 rounded-full text-[13px] font-extrabold"
+            : "shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold"
       } ${
         saved
           ? "bg-amber-500/15 border-amber-500/40 text-brand-amber"
           : "bg-muted border-border text-muted-foreground hover:text-foreground"
       } ${className}`}
     >
-      <Heart className={`${variant === "cta" ? "w-4 h-4" : "w-3.5 h-3.5"} ${saved ? "fill-current" : ""}`} />
-      {label}
+      <Heart className={`shrink-0 ${variant === "cta" ? "w-4 h-4" : "w-3.5 h-3.5"} ${saved ? "fill-current" : ""}`} />
+      {/* 말줄임은 사이드바에서만(클럽명이 붙어 길어짐). 하단 바·시트는 예전처럼 줄바꿈 — 360px에서 "保存済み"가 "保…"로 잘렸다. */}
+      <span className={variant === "sidebar" ? "truncate" : undefined}>{label}</span>
     </button>
   );
 }

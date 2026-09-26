@@ -97,6 +97,16 @@ interface ClubDetailContentProps {
   hasMd?: boolean;
   /** 한국인 예약 스티키바 게이팅 — 주대 데이터(club_menu_items)가 있는가. */
   hasMenu?: boolean;
+  /**
+   * 예약 가능 여부(서버에서 isBookable로 판정 — 외국인 트랙과 같은 기준, 2026-09-26).
+   * 안 넘기면 예전 기준(hasMd && hasMenu)으로 폴백.
+   */
+  bookable?: boolean;
+  /**
+   * 예약 불가일 때 예약 가능 목록 주소 — 같은 지역에 있으면 /clubs?area=…&bookable=1, 없으면 /clubs?bookable=1.
+   * 전 지역에 한 곳도 없을 때만 null → "예약 준비중".
+   */
+  bookableListHref?: string | null;
   /** "답변형" 요약(lib/clubs/clubAnswer). 서버에서 만들어 넘기고 여기선 그리기만 — 스키마와 같은 소스. */
   answer?: ClubAnswer | null;
 }
@@ -112,6 +122,8 @@ export function ClubDetailContent({
   upcomingEvents = [],
   hasMd = false,
   hasMenu = false,
+  bookable: bookableProp,
+  bookableListHref = null,
   answer = null,
 }: ClubDetailContentProps) {
   const activeAuctions = useMemo(() => {
@@ -296,9 +308,10 @@ export function ClubDetailContent({
   // 한국인 예약 스티키바 — 외국인 트랙(isBookable, lib/clubs/bookable.ts)과 동일 게이팅을
   // 한국 트랙에도 적용. MD+주대가 모두 있어야 실제로 예약을 중개할 수 있다.
   // 게스트 간판(무료입장 혜택)과는 목적이 달라 공존한다 — 간판이 있어도 테이블 예약은 별개로 노출.
-  // 한국인 트랙은 예전 기준(담당 MD + 주대)을 그대로 둔다 — isBookable이 2026-09-10에 외국인
-  // 트랙용으로 "메뉴만"으로 완화됐지만, 한국인 예약은 MD 연결이 전제라 여기서 직접 판정한다.
-  const bookable = !isForeigner && hasMd && hasMenu;
+  // 2026-09-26: 한국도 외국인과 같은 기준(isBookable: 주대 + (담당 MD 또는 승인 플래그))으로 통일.
+  // 한국 예약 요청도 운영자가 받아 클럽에 직접 연락하는 구조(Migration 652)라 MD 없는 승인 클럽도 처리된다.
+  // 판정은 page.tsx(서버)에서 해서 넘긴다 — 안 넘어오면 예전 기준으로 폴백.
+  const bookable = !isForeigner && (bookableProp ?? (hasMd && hasMenu));
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   return (
@@ -650,6 +663,14 @@ export function ClubDetailContent({
                           {r.value}
                         </a>
                       </dd>
+                    ) : r.label === "예약" && !bookable && bookableListHref && r.value.includes(" · ") ? (
+                      // "아직 나플 예약 불가 · 이태원 3곳은 바로 예약돼요" — 뒷부분을 예약 가능 목록 링크로
+                      <dd className="text-foreground/90 break-keep">
+                        {r.value.split(" · ")[0]} ·{" "}
+                        <Link href={bookableListHref} target={isEmbedded ? "_top" : undefined} className="font-bold text-brand-amber hover:underline">
+                          {r.value.split(" · ").slice(1).join(" · ")}
+                        </Link>
+                      </dd>
                     ) : (
                       <dd className="text-foreground/90 break-keep">{r.value}</dd>
                     )}
@@ -903,6 +924,18 @@ export function ClubDetailContent({
           style={{ paddingBottom: "calc(60px + env(safe-area-inset-bottom) + 12px)" }}
         >
           <div className="max-w-lg mx-auto pointer-events-auto">
+            {!bookable && bookableListHref ? (
+              // 예약 불가 — 회색 "예약 준비중"(누를 수 없음) 대신 예약 가능 목록으로(2026-09-26). 같은 지역에 없으면 전 지역.
+              // 지도 모달 iframe(embedded) 안이면 모달 안에서 목록이 열리지 않게 최상위 창으로.
+              <Link
+                href={bookableListHref}
+                target={isEmbedded ? "_top" : undefined}
+                onClick={() => trackEvent("club_detail_see_bookable_click", { club_id: club.id, club_name: club.name, area: club.area })}
+                className="w-full h-12 rounded-full font-black text-[15px] shadow-lg shadow-black/40 transition-colors active:scale-[0.98] bg-amber-500 hover:bg-amber-400 text-black flex items-center justify-center"
+              >
+                예약 가능한 클럽 보기 →
+              </Link>
+            ) : (
             <button
               type="button"
               disabled={!bookable}
@@ -923,6 +956,7 @@ export function ClubDetailContent({
             >
               {bookable ? "예약하기" : "예약 준비중"}
             </button>
+            )}
           </div>
         </div>
       )}

@@ -161,7 +161,7 @@ export default function EnKpopClubsPage() {
             table, book with NightFlow and we contact Hongdae K-pop clubs
             directly for you, in English.
           </p>
-          <Link
+          <Link rel="nofollow"
             data-nf-track="book_cta" href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >

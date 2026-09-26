@@ -7,6 +7,7 @@ import type { ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPane
 import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import { getLang, makeT } from "@/lib/i18n";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
+import { localizeReviews } from "@/lib/clubs/reviewI18n";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang: raw } = await searchParams;
   const lang = getLang(raw);
+  // 신청 폼은 색인하지 않는다(2026-09-26). 클럽 페이지마다 ?club=…&area=… 로 고유 URL이 생겨
+  // 구글이 폼 수백 개를 따로 크롤링하고 있었다(내용은 전부 같은 빈 폼). follow는 켜 둔다 —
+  // 폼 안 클럽 링크로는 계속 퍼져나가게. 폼으로 가는 링크 쪽에도 rel="nofollow"를 달았다.
+  const robots = { index: false, follow: true } as const;
   if (lang === "ko") {
     return {
+      robots,
       title: "깃발 꽂기",
       description: "날짜·지역·예산 정하면 강남·홍대 클럽 파트너들이 시크릿오퍼를 보내요.",
       alternates: { canonical: "https://nightflow.kr/flags/new" },
@@ -46,7 +52,7 @@ export async function generateMetadata({
     "韓国のクラブを予約",
     "预订韩国夜店"
   );
-  return { title: { absolute: `${title} | NightFlow` } };
+  return { robots, title: { absolute: `${title} | NightFlow` } };
 }
 
 // country_code → 언어 매핑. 회원가입 완료 후 lang 파라미터 없이 도착한 외국인을 위한 폴백.
@@ -142,14 +148,17 @@ export default async function PuzzleNewPage({
       .map((c) => ({
         ...c,
         has_md: (c.partners?.length ?? 0) > 0,
-    agreed: !!c.foreign_booking_agreed,
+        agreed: !!c.foreign_booking_agreed,
         has_menu: menuIds.has(c.id),
+        // 폼 안 클럽 시트도 리뷰를 보여준다 — 번역 치환 + 연락처 홍보 리뷰 숨김(reviewI18n)
+        google_reviews: localizeReviews(c.google_reviews, lang),
       }))
       .filter(isBookable);
   }
 
   return (
-    <ForeignShell lang={lang}>
+    // 사이드바 예약 버튼은 숨김 — 이 폼 자기 자신으로 가는 링크라 누르면 폼이 초기화될 뿐이다.
+    <ForeignShell lang={lang} sidebarCta={null}>
     <div className="min-h-screen bg-background pb-20">
       <div className="max-w-lg lg:max-w-[900px] mx-auto px-4 lg:px-8 py-6 lg:py-10">
         {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 외국인 홈(/en, /ja, /zh) 복귀 링크 제공.

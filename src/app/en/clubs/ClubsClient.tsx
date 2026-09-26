@@ -15,6 +15,8 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { trackForeignEvent } from "@/lib/analytics/events";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
+import { SeeBookableSheetButton, bookableListHref } from "@/components/foreign/SeeBookableCta";
+import { canonicalAreaSlug } from "@/lib/clubs/slug";
 
 type Club = {
   id: string;
@@ -570,7 +572,7 @@ export function ClubsClient({
         {lang === "ko" && (
           <div className="space-y-4 pt-4 pb-8">
             <p className="text-center text-[14px] text-muted-foreground">{notSureCopy}</p>
-            <Link
+            <Link rel="nofollow"
               href={bottomCtaHref}
               className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
             >
@@ -608,7 +610,7 @@ export function ClubsClient({
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
         >
           <div className="max-w-lg mx-auto pointer-events-auto">
-            <Link
+            <Link rel="nofollow"
               href={bottomCtaHref}
               onClick={() =>
                 trackForeignEvent("foreign_plant_flag_click", { source: "sticky_cta" })
@@ -680,6 +682,7 @@ export function ClubsClient({
                 <ForeignClubDetailPanel
                   club={club}
                   lang={lang}
+                  showFullPageLink
                   cta={
                     // 예약 CTA — 카드 클릭 유저를 구글로 내보내지 않고 깃발 폼으로 유도.
                     // 닫힌 지역(OPEN_FLAG_AREAS 미포함)은 폼에서 area 선택 불가 → 예약 CTA 대신 "Coming soon" 안내.
@@ -712,12 +715,41 @@ export function ClubsClient({
                       // 지역은 열려 있어도 담당 MD·주대(club_menu_items)가 없으면 폼까지
                       // 가도 예약이 성립하지 않는다 — 예전엔 이 체크가 없어서 has_md/has_menu가
                       // false인 클럽도 "Book" 버튼이 그냥 활성화됐다(2026-09-06).
-                      <div className="mt-2 w-full py-3.5 rounded-xl bg-card border border-border text-muted-foreground font-black text-[15px] text-center">
-                        {t("예약 준비중", "Booking coming soon", "予約準備中", "预订即将开放")}
-                      </div>
+                      // 같은 지역에 예약 가능한 곳이 있으면 그 목록으로(2026-09-26). 지역 페이지에선
+                      // 이미 그 목록 위라 이동 없이 시트를 닫고 Bookable 탭으로 바꾼다.
+                      lang !== "ko" && clubs.some((c) => c.area === club.area && isBookable(c)) ? (
+                        // 지역 페이지 위이거나, 지역 페이지가 없는 지역(대구·광주 등 → 전체 목록 = 지금 이 페이지)이면
+                        // 링크 대신 제자리에서 Bookable 탭으로 — 링크로 두면 시트만 닫히고 아무 일도 안 일어났다.
+                        areaName || !canonicalAreaSlug(club.area) ? (
+                          <SeeBookableSheetButton
+                            lang={lang}
+                            onClick={() => {
+                              trackForeignEvent("foreign_see_bookable_click", { source: "list", area: club.area, club_id: club.id });
+                              closeDetail();
+                              setSortKey("recommend");
+                              setVenueType(null);
+                              setGenre(null);
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                          />
+                        ) : (
+                          <SeeBookableSheetButton
+                            lang={lang}
+                            href={bookableListHref(lang, club.area)}
+                            onClick={() => {
+                              trackForeignEvent("foreign_see_bookable_click", { source: "list_all", area: club.area, club_id: club.id });
+                              closeDetail();
+                            }}
+                          />
+                        )
+                      ) : (
+                        <div className="mt-2 w-full py-3.5 rounded-xl bg-card border border-border text-muted-foreground font-black text-[15px] text-center">
+                          {t("예약 준비중", "Booking coming soon", "予約準備中", "预订即将开放", "預訂即將開放")}
+                        </div>
+                      )
                     ) : (
                       <div className="flex gap-2 mt-2">
-                        <Link
+                        <Link rel="nofollow"
                           href={clubFlagHref}
                           onClick={() => {
                             // 회원가입 완료 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트하기 위해

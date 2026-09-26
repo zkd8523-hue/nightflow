@@ -97,7 +97,7 @@ export function AreaTablePrices({
                   <p className="text-[14px] font-black tabular-nums leading-tight">{formatWon(r.from)}</p>
                   {fx && <p className="hidden sm:block text-[10px] text-muted-foreground tabular-nums">≈ {fx}</p>}
                 </div>
-                <Link href={r.bookHref} data-nf-track="area_price_book"
+                <Link rel="nofollow" href={r.bookHref} data-nf-track="area_price_book"
                   className="inline-block px-3 py-2 rounded-lg bg-amber-500 text-black text-[12px] font-black hover:bg-amber-400 whitespace-nowrap">
                   {t.book}
                 </Link>

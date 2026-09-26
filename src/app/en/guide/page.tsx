@@ -367,7 +367,7 @@ export default async function EnglishLanding() {
           >
             Browse Seoul clubs with real prices →
           </Link>
-          <Link
+          <Link rel="nofollow"
             data-nf-track="book_cta" href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
@@ -458,7 +458,7 @@ export default async function EnglishLanding() {
             Set your budget — we&apos;ll find the best table to match.
             The more you bring, the more VIP the night.
           </p>
-          <Link
+          <Link rel="nofollow"
             data-nf-track="book_cta" href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
@@ -510,7 +510,7 @@ export default async function EnglishLanding() {
 
         {/* CTA */}
         <section className="space-y-3 pt-2">
-          <Link
+          <Link rel="nofollow"
             data-nf-track="book_cta" href="/flags/new?lang=en"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >

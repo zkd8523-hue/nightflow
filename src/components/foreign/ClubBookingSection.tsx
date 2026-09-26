@@ -180,7 +180,7 @@ function AltCards({ alts, lang, rates }: { alts: AltClub[]; lang: SeoLang; rates
             {t.altFrom ? `${t.altFrom} ` : ""}{won(a.from!, lang, rates)}{t.altFrom ? "" : "~"}
           </p>
           <div className="flex gap-2 mt-auto">
-            <Link href={a.bookHref} data-nf-track="alt_club_book"
+            <Link rel="nofollow" href={a.bookHref} data-nf-track="alt_club_book"
               className="flex-1 text-center py-2 rounded-lg bg-amber-500 text-black text-[12px] font-black hover:bg-amber-400">
               {t.altBook}
             </Link>
@@ -278,7 +278,7 @@ export function ClubBookingSection({
           ))}
         </ul>
 
-        <Link href={bookHref} data-nf-track="book_cta_inline"
+        <Link rel="nofollow" href={bookHref} data-nf-track="book_cta_inline"
           className="block w-full text-center py-3 rounded-xl bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
           {t.cta(name)} · {formatWon(from)}~
         </Link>

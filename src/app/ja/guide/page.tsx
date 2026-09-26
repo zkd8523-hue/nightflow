@@ -172,7 +172,7 @@ export default async function JaGuidePage() {
           <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
             予算を伝えれば、それに合った最高のテーブルを探します。人数が多いほど、夜はもっとVIPに。
           </p>
-          <Link data-nf-track="book_cta" href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">NightFlowで予約する</Link>
+          <Link rel="nofollow" data-nf-track="book_cta" href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">NightFlowで予約する</Link>
         </section>
 
         {/* Safety tips — collapsible (native details, no JS) */}
@@ -202,7 +202,7 @@ export default async function JaGuidePage() {
         </section>
 
         <section className="space-y-3 pt-2">
-          <Link data-nf-track="book_cta" href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">VIPアクセス取得 — 登録不要</Link>
+          <Link rel="nofollow" data-nf-track="book_cta" href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">VIPアクセス取得 — 登録不要</Link>
           <p className="text-[12px] text-muted-foreground text-center leading-relaxed">19+ · パスポート持参<br />夜をもっと美しく</p>
         </section>
       </div>

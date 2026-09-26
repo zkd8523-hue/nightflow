@@ -30,6 +30,10 @@ export type ClubAnswerInput = {
   /** 세트(category=set, VVIP 제외) 최저가(평일). 없으면 null → 가격 줄 생략 */
   lowestSet: number | null;
   bookable: boolean;
+  /** 같은 지역의 다른 예약 가능 클럽 수(isBookable). 예약 불가일 때 "이태원 3곳은 바로 예약돼요"로 갈 곳을 알린다. */
+  areaBookableCount?: number;
+  /** 전 지역 예약 가능 클럽 수(자기 제외). 같은 지역에 없을 때(수원 등) "다른 지역 N곳"으로 쓴다. */
+  otherBookableCount?: number;
   /** "2026-09" 형태. club.updated_at에서 만든다 */
   asOf: string;
 };
@@ -98,7 +102,24 @@ export function buildClubAnswer(i: ClubAnswerInput): ClubAnswer {
   // 표본 10개 미만이거나 3.0 미만은 안 낸다 — 파트너 클럽 페이지가 "구글 평점 2.4"를 인용시키면 양쪽 다 손해.
   if (i.rating != null && i.rating >= 3.0 && (i.reviewCount ?? 0) >= 10) rows.push({ label: "구글 평점", value: `${i.rating.toFixed(1)} (리뷰 ${i.reviewCount})` });
   if (ig) rows.push({ label: "인스타", value: `@${ig}` });
-  rows.push({ label: "예약", value: i.bookable ? "나플 예약 가능 · 수수료 없음 · 예약금 없음" : "나플 테이블 예약 불가 · 게스트·핫딜 정보만" });
+  // 예약 불가인데 같은 지역에 되는 곳이 있으면 그걸 알린다(2026-09-26) — "게스트·핫딜 정보만"으로 끝내면
+  // 들어온 사람이 갈 곳이 없다. " · " 뒤 문구는 ClubDetailContent가 예약 가능 목록 링크로 바꿔 그린다.
+  // 같은 지역에 없으면(수원 등) 전 지역 수로.
+  const nearby = i.bookable
+    ? null
+    : i.area && (i.areaBookableCount ?? 0) > 0
+      ? `${i.area} ${i.areaBookableCount}곳은 바로 예약돼요`
+      : (i.otherBookableCount ?? 0) > 0
+        ? `다른 지역 ${i.otherBookableCount}곳은 바로 예약돼요`
+        : null;
+  rows.push({
+    label: "예약",
+    value: i.bookable
+      ? "나플 예약 가능 · 수수료 없음 · 예약금 없음"
+      : nearby
+        ? `아직 나플 예약 불가 · ${nearby}`
+        : "나플 테이블 예약 불가 · 게스트·핫딜 정보만",
+  });
 
   // FAQ — 화면에도 그대로 보인다(ClubDetailContent). 예약 방법은 FAQ가 아니라 ReserveAction으로.
   const faqs: { q: string; a: string }[] = [];

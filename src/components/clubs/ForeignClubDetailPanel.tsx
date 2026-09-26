@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { MapPin, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { MapPin, ExternalLink, ArrowUpRight } from "lucide-react";
 import { DrinkMenuViewer } from "@/components/clubs/DrinkMenuViewer";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
@@ -7,6 +8,8 @@ import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
 import { clubFeatureLabels } from "@/lib/clubs/tagLabelsI18n";
 import { clubTagline } from "@/lib/clubs/bookable";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
+import { foreignClubPageHref } from "@/lib/clubs/slug";
+import { trackForeignEvent } from "@/lib/analytics/events";
 
 export type GoogleReview = {
   author_name: string | null;
@@ -87,12 +90,15 @@ export function ForeignClubDetailPanel({
   lang,
   cta,
   showSave = true,
+  showFullPageLink = false,
 }: {
   club: ForeignClubDetail;
   lang: Lang;
   cta: React.ReactNode;
   /** 찜(하트) 버튼 노출. 이미 "선택하기" 액션이 있는 컨시어지 폼에서는 중복이라 끔. */
   showSave?: boolean;
+  /** 클럽 상세 페이지 링크(외국어 홈·목록 시트). 폼 안 시트에선 폼을 떠나게 되므로 끈다. */
+  showFullPageLink?: boolean;
 }) {
   const t = makeT(lang);
   const googleReviewsLabel = t("구글 리뷰", "Google reviews", "Googleレビュー", "谷歌评价");
@@ -106,6 +112,7 @@ export function ForeignClubDetailPanel({
   // 홈 그리드에서는 이 문구를 뺐다(2026-09-06) — 훑어보는 화면에서는 노이즈였다.
   // 클릭해서 관심을 보인 뒤인 여기 상세 시트에서만 보여준다.
   const tagline = clubTagline(club, lang);
+  const fullPageHref = showFullPageLink ? foreignClubPageHref(lang, club.area, club.name_en) : null;
 
   return (
     <div>
@@ -230,11 +237,26 @@ export function ForeignClubDetailPanel({
             ))}
           </div>
         )}
-        {club.instagram && (
-          <a href={`https://instagram.com/${club.instagram}`} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center text-[13px] text-blue-400 hover:text-blue-300 transition-colors">
-            @{club.instagram}
-          </a>
+        {(club.instagram || fullPageHref) && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {club.instagram && (
+              <a href={`https://instagram.com/${club.instagram}`} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center text-[13px] text-blue-400 hover:text-blue-300 transition-colors">
+                @{club.instagram}
+              </a>
+            )}
+            {/* 전체 페이지 — 시트는 주소가 없어 일행에게 보낼 링크가 없었다(2026-09-26). */}
+            {fullPageHref && (
+              <Link
+                href={fullPageHref}
+                onClick={() => trackForeignEvent("foreign_open_full_page_click", { club_id: club.id, area: club.area })}
+                className="inline-flex items-center gap-1 text-[13px] font-extrabold text-brand-amber hover:underline"
+              >
+                {t("전체 페이지 열기", "Open full page", "詳細ページを開く", "打开完整页面", "打開完整頁面")}
+                <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </Link>
+            )}
+          </div>
         )}
 
         {hasDrinkMenu && (

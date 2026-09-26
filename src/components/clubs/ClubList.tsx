@@ -36,6 +36,8 @@ interface ClubListItem {
   entry_fee_detail?: string | null;
   aliases?: string[];
   hasPartner?: boolean;
+  /** 나플 예약 가능(isBookable — 외국인 트랙과 같은 기준). "⚡ 예약 가능" 칩 필터용 */
+  bookable?: boolean;
 }
 
 type ViewMode = "list" | "map";
@@ -64,6 +66,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
     areas: parseList(searchParams.get("area")),
     genres: parseList(searchParams.get("genre")),
     venueTypes: parseList(searchParams.get("venue_type")),
+    bookableOnly: searchParams.get("bookable") === "1",
   }));
   const [view, setView] = useState<ViewMode>(
     () => (searchParams.get("view") === "map" ? "map" : "list")
@@ -100,6 +103,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
     if (filters.areas.length) params.set("area", filters.areas.join(","));
     if (filters.genres.length) params.set("genre", filters.genres.join(","));
     if (filters.venueTypes.length) params.set("venue_type", filters.venueTypes.join(","));
+    if (filters.bookableOnly) params.set("bookable", "1");
     if (view === "map") params.set("view", "map");
     const qs = params.toString();
     const url = qs ? `/clubs?${qs}` : "/clubs";
@@ -147,6 +151,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
 
   const filtered = useMemo(() => {
     return dedupedClubs.filter((c) => {
+      if (filters.bookableOnly && !c.bookable) return false;
       if (filters.areas.length && !filters.areas.includes(c.area || ""))
         return false;
       if (filters.genres.length) {

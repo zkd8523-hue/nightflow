@@ -162,7 +162,7 @@ export default function ZhTwFaqPage() {
         </section>
 
         <section className="space-y-3 pt-4 text-center">
-          <Link
+          <Link rel="nofollow"
             data-nf-track="book_cta" href="/flags/new?lang=zh-tw"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >

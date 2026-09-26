@@ -45,8 +45,11 @@ type Copy = {
   faqHowA: (name: string) => string;
   keywords: (name: string, area: string) => string[];
   cta: (name: string, from: string | null) => string;
-  /** 비예약 페이지 스티키바 — 대안 클럽으로 */
-  ctaAlt: (altName: string, from: string) => string;
+  /**
+   * 비예약 페이지 첫 화면 안내(로고 바로 아래). 버튼은 "예약 가능한 클럽 보기"로 짧게 두고
+   * 몇 곳이 되는지는 이 문장이 말한다(2026-09-26 목업 3차). n = 같은 지역 예약 가능 클럽 수.
+   */
+  unbookableNotice: (name: string, area: string, n: number) => { title: string; sub: string };
 };
 
 const COPY: Record<SeoLang, Copy> = {
@@ -67,7 +70,10 @@ const COPY: Record<SeoLang, Copy> = {
       `Choose your date and group size, pick bottles from ${n}'s menu, and leave your contact. NightFlow confirms directly with ${n} in Korean and replies to you in English — most requests get a reply within hours. No deposit, no broker fee; you pay the club on the night.`,
     keywords: (n, a) => [`${n} table price`, `${n} bottle service price`, `${n} VIP table`, `${n} minimum spend`, `book ${n}`, `${a} table booking`, `${a} bottle service`],
     cta: (n, f) => (f ? `🍾 Book ${n} · from ${f}` : `🍾 Book ${n}`),
-    ctaAlt: (alt, f) => `🍾 Book ${alt} instead · from ${f}`,
+    unbookableNotice: (n, a, k) => ({
+      title: `${n} isn't bookable yet — ${k} other ${a} ${k === 1 ? "club is" : "clubs are"}.`,
+      sub: "Table in your name, pay at the club.",
+    }),
   },
   ja: {
     titleBookable: (n, a, f) => `${n} ${a} — テーブル予約 ${f}〜 | NightFlow`,
@@ -86,7 +92,10 @@ const COPY: Record<SeoLang, Copy> = {
       `日程と人数を選び、${n}のメニューからボトルを選んで連絡先を残すだけ。NightFlowが${n}に韓国語で直接確認し、日本語でご返信します — 多くの場合数時間以内です。デポジット不要・仲介手数料なし、お支払いは当日クラブで。`,
     keywords: (n, a) => [`${n} テーブル料金`, `${n} ボトル 値段`, `${n} VIP`, `${n} 最低料金`, `${n} 予約方法`, `${a} テーブル予約`, `${a} ボトルサービス`],
     cta: (n, f) => (f ? `🍾 ${n}を予約 · ${f}〜` : `🍾 ${n}を予約`),
-    ctaAlt: (alt, f) => `🍾 代わりに${alt}を予約 · ${f}〜`,
+    unbookableNotice: (n, a, k) => ({
+      title: `${n}はまだ予約できません。${a}では${k}軒が予約できます。`,
+      sub: "あなたの名前でテーブルを確保、お支払いは当日クラブで。",
+    }),
   },
   zh: {
     titleBookable: (n, a, f) => `${n} ${a} — 卡座预订 ${f}起 | NightFlow`,
@@ -105,7 +114,10 @@ const COPY: Record<SeoLang, Copy> = {
       `选择日期和人数，从${n}的酒单选酒，留下联系方式即可。NightFlow 会用韩语直接向${n}确认，并用中文回复您 — 多数请求几小时内回复。无需押金、无中介费，当晚在夜店付款。`,
     keywords: (n, a) => [`${n} 卡座价格`, `${n} 酒水价格`, `${n} VIP卡座`, `${n} 最低消费`, `${n} 怎么预订`, `${a} 卡座预订`, `${a} 夜店最低消费`],
     cta: (n, f) => (f ? `🍾 预订 ${n} · ${f}起` : `🍾 预订 ${n}`),
-    ctaAlt: (alt, f) => `🍾 此店暂不可订 · 改订 ${alt} · ${f}起`,
+    unbookableNotice: (n, a, k) => ({
+      title: `${n}暂不可预订 — ${a}另有 ${k} 家可订。`,
+      sub: "以你的名字订卡座，当晚在夜店付款。",
+    }),
   },
   "zh-tw": {
     titleBookable: (n, a, f) => `${n} ${a} — 夜店包廂 ${f}起 | NightFlow`,
@@ -124,7 +136,10 @@ const COPY: Record<SeoLang, Copy> = {
       `選擇日期和人數,從${n}的酒單選酒,留下聯絡方式即可。NightFlow 會用韓語直接向${n}確認,並用中文回覆您 — 多數請求幾小時內回覆。免訂金、無中介費,當晚在夜店付款。`,
     keywords: (n, a) => [`${n} 包廂價格`, `${n} 包廂低消`, `${n} 酒水價格`, `${n} VIP 包廂`, `${n} 桌位價格`, `${n} 怎麼訂包廂`, `${a} 夜店包廂`, `${a} 夜店低消`],
     cta: (n, f) => (f ? `🍾 訂包廂 ${n} · ${f}起` : `🍾 訂包廂 ${n}`),
-    ctaAlt: (alt, f) => `🍾 此店暫不可訂 · 改訂 ${alt} · ${f}起`,
+    unbookableNotice: (n, a, k) => ({
+      title: `${n}暫不可訂 — ${a}另有 ${k} 家可訂。`,
+      sub: "用你的名字訂包廂，當晚在夜店付款。",
+    }),
   },
 };
 
@@ -157,7 +172,9 @@ export function bookingSeoBits(input: BookingSeoInput) {
     descAlt: c.descAlt(input.areaLabel),
     keywords: from != null ? c.keywords(input.name, input.areaLabel) : [],
     cta: c.cta(input.name, fromCompact),
-    ctaAlt: (altName: string, altFrom: number) => c.ctaAlt(altName, wonCompact(altFrom, input.lang)),
+    /** 가격 없는 짧은 버튼 — 데스크톱 사이드바(폭 207px에서 "· from ₩500k"까지 넣으면 두 줄) */
+    ctaShort: c.cta(input.name, null),
+    unbookableNotice: (n: number) => c.unbookableNotice(input.name, input.areaLabel, n),
   };
 }
 

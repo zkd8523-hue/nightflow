@@ -5,6 +5,7 @@ import Link from "next/link";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { isBookable } from "@/lib/clubs/bookable";
+import { SeeBookableSheetButton, bookableListHref } from "@/components/foreign/SeeBookableCta";
 import { canonicalAreaSlug } from "@/lib/clubs/slug";
 import { FaqTab } from "./FaqTab";
 import { ChevronLeft, ChevronRight, ChevronDown, Home, User, HelpCircle, Map, Check, X, ShieldCheck, MessageCircle, Star } from "lucide-react";
@@ -269,7 +270,7 @@ function MyRequestsTab() {
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center min-h-[50vh]">
           <p className="text-[15px] font-bold text-foreground/80">{tr("No requests yet")}</p>
           <p className="text-[13px] text-muted-foreground">{tr("Pick a club & we'll help you book.")}</p>
-          <Link href={`/flags/new?lang=${lang}`} className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
+          <Link rel="nofollow" href={`/flags/new?lang=${lang}`} className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
             {tr("Book Korean Clubs")}
           </Link>
         </div>
@@ -1112,6 +1113,7 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
               <ForeignClubDetailPanel
                 club={detailClub}
                 lang={lang}
+                showFullPageLink
                 cta={
                   // 닫힌 지역은 폼에서 area 선택 자체가 안 된다 — ClubsClient.tsx와 동일 게이팅.
                   !isFlagAreaOpen(detailClub.area) ? (
@@ -1127,12 +1129,24 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
                     // 지역은 열려 있어도 담당 MD·주대(club_menu_items)가 없으면 폼까지
                     // 가도 예약이 성립하지 않는다 — 예전엔 이 체크가 없어서 has_md/has_menu가
                     // false인 클럽도 예약 버튼이 그냥 활성화됐다(2026-09-06).
-                    <div className="mt-2 w-full py-3.5 rounded-xl bg-card border border-border text-muted-foreground font-black text-[15px] text-center">
-                      {t("예약 준비중", "Booking coming soon", "予約準備中", "预订即将开放")}
-                    </div>
+                    // 같은 지역에 예약 가능한 곳이 있으면 막다른 "준비중" 대신 그 목록으로(2026-09-26).
+                    lang !== "ko" && clubs.some((c) => c.area === detailClub.area && isBookable(c)) ? (
+                      <SeeBookableSheetButton
+                        lang={lang}
+                        href={bookableListHref(lang, detailClub.area)}
+                        onClick={() => {
+                          trackForeignEvent("foreign_see_bookable_click", { source: "home", area: detailClub.area, club_id: detailClub.id });
+                          closeDetail();
+                        }}
+                      />
+                    ) : (
+                      <div className="mt-2 w-full py-3.5 rounded-xl bg-card border border-border text-muted-foreground font-black text-[15px] text-center">
+                        {t("예약 준비중", "Booking coming soon", "予約準備中", "预订即将开放", "預訂即將開放")}
+                      </div>
+                    )
                   ) : (
                     <div className="flex gap-2 mt-2">
-                      <Link
+                      <Link rel="nofollow"
                         href={buildFlagHref(lang, detailClub.area, detailClub.id)}
                         onClick={() => {
                           // 회원가입 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트 — ClubsClient와 동일 패턴.
@@ -1203,7 +1217,7 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
                 </span>
               </div>
             ) : (
-              <Link
+              <Link rel="nofollow"
                 key={r.ko}
                 href={`/flags/new?lang=${lang}&area=${encodeURIComponent(r.ko)}`}
                 className="flex items-center justify-center py-4 rounded-2xl bg-card border border-border hover:border-amber-500/50 active:scale-[0.98] transition-all"
@@ -1213,14 +1227,14 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
             )
           )}
           {/* 서울 어디든: 가장 많은 오퍼 */}
-          <Link
+          <Link rel="nofollow"
             href={`/flags/new?lang=${lang}&area=${encodeURIComponent("서울 어디든")}`}
             className="flex items-center justify-center py-4 rounded-2xl bg-card border border-border hover:border-amber-500/50 active:scale-[0.98] transition-all"
           >
             <span className="text-[16px] font-black">{areaLabel("서울 어디든", lang)}</span>
           </Link>
         </div>
-        <Link
+        <Link rel="nofollow"
           ref={bookCtaRef}
           href={`/flags/new?lang=${lang}`}
           className="block w-full mt-1 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all"
@@ -1520,7 +1534,7 @@ function FlagsTab({
         {/* 소셜프루프는 위(헤드라인 아래)로 옮겼다 — 여기 또 두면 스크롤할 때마다
             같은 문구가 반복돼 신뢰 문구가 아니라 소음이 된다. */}
         <UrgencyLine lang={lang} chip className="mb-1.5" />
-        <Link
+        <Link rel="nofollow"
           href={`/flags/new?lang=${lang}`}
           onClick={() => trackForeignEvent("foreign_book_at_club_click", { area: "hero", source: "sticky" })}
           tabIndex={showStickyCta ? 0 : -1}

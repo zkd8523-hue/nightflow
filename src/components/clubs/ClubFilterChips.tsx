@@ -6,6 +6,8 @@ export interface ClubFilters {
   areas: string[];
   genres: string[];
   venueTypes: string[];
+  /** 나플로 바로 예약되는 클럽만(주대 + 담당 MD 또는 승인). URL ?bookable=1 */
+  bookableOnly?: boolean;
 }
 
 interface Props {
@@ -20,6 +22,20 @@ export function ClubAreaChips({ value, onChange }: Props) {
 
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+      {/* 예약 가능 — 지역 칩 맨 앞. 예약 불가 클럽 상세의 "예약 가능한 클럽 보기"가
+          ?area=…&bookable=1로 여기 도착한다(2026-09-26). 지역 칩과 함께 동작(교집합). */}
+      <button
+        type="button"
+        onClick={() => onChange({ ...value, bookableOnly: !value.bookableOnly })}
+        aria-pressed={!!value.bookableOnly}
+        className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+          value.bookableOnly
+            ? "bg-amber-500 text-black"
+            : "bg-muted text-brand-amber hover:text-foreground"
+        }`}
+      >
+        ⚡ 예약 가능
+      </button>
       {AREA_OPTIONS.map((area) => (
         <Chip
           key={area}

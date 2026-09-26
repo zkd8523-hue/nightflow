@@ -214,9 +214,45 @@ FROM clubs c WHERE c.name = '<클럽명>';
   JSON-LD FAQ도 "예약해드립니다"로 전환
 - 외국인 예약 폼(`ForeignRequestForm.tsx`) → 클럽 선택 목록에 등장, 메뉴판 표시
 - `/en/clubs`의 "Bookable" 탭 목록에 포함
+- 예약 불가일 때 나오던 것들은 **자동으로 사라진다**(2026-09-26 도입, 손댈 것 없음):
+  - 클럽 상세 첫 화면 안내 문장 "{클럽} isn't bookable yet — N other {지역} clubs are."
+  - 하단 고정 버튼·데스크톱 사이드바의 "See bookable clubs" → "🍾 Book {클럽}"(사이드바는 가격 없이)
+  - 홈·목록 시트의 "Not bookable yet / See bookable clubs →" → 예약 버튼
+  - 같은 지역 **다른** 예약 불가 클럽 페이지의 N이 1 늘어난다
+- 그 지역에서 처음으로 예약 가능해진 클럽이면(지금 수원·대전 등): 그 지역 예약 불가 클럽 시트에
+  "See bookable clubs" 버튼이 새로 생긴다. 지역 목록 페이지가 없는 지역이라 버튼은 전체 목록
+  `/{lang}/clubs`로 간다(`bookableListHref`). 지역 페이지가 생기면 `CANONICAL_AREA_SLUG`에 추가.
 
 **주의**: Next.js 캐시(`revalidate=30`)로 화면 반영은 최대 30초 지연. DB 조회로
 먼저 확인할 것([[feedback_migration_before_deploy]]의 "방만404" 오진 사례 참고).
+
+### 지역 추천(PICK)으로 올릴 때 — 선택
+
+예약 가능해진 클럽을 그 지역 대표 추천(목록 PICK 리본, 맨 앞 정렬, 시트 "Why we recommend it")으로
+올리려면 **기존 추천을 먼저 끈다**. 지역당 1곳만 허용하는 부분 유니크 인덱스
+(`clubs_area_pick_one_per_area`, Migration 670)가 있어 순서를 바꾸면 UPDATE가 실패한다.
+
+```sql
+-- 1) 기존 추천 끄기 (지역 단위)
+UPDATE clubs SET area_pick = FALSE WHERE area = '<지역>' AND area_pick = TRUE;
+-- 2) 새 추천 켜기
+UPDATE clubs SET area_pick = TRUE WHERE name_en = '<클럽 name_en>' AND area = '<지역>' AND deleted_at IS NULL;
+-- 3) 추천 이유 5개 언어 (비면 시트에서 블록째 숨김 — 문장은 사장님 확정본으로, Migration 672 참고)
+UPDATE clubs SET pick_reason_ko = '…', pick_reason_en = '…', pick_reason_ja = '…',
+                 pick_reason_zh = '…', pick_reason_zh_tw = '…'
+WHERE name_en = '<클럽 name_en>' AND area = '<지역>';
+```
+
+- 추천은 **예약 가능한 클럽에만** 켠다. 예약 불가 클럽에 켜면 PICK 리본을 달고 "See bookable clubs"가 뜬다.
+- 지금 추천이 없는 지역: 대구·광주(예약 가능 클럽은 있음). 켤지는 사장님 판단 — 안 켜도 동작은 정상
+  (리본·추천 이유만 없고, 예약 가능 클럽이 리뷰 많은 순으로 앞에 선다).
+- 클럽 상세의 대안 카드(같은 지역 예약 가능 클럽)도 추천을 맨 앞에 둔다.
+
+### 구글 리뷰 번역 — 새 클럽의 리뷰를 받았을 때
+
+`ingest-google-ratings.mjs`로 리뷰를 받으면 영어로만 저장된다. 일본어·중국어 페이지는 번역 파일
+(`src/data/review-translations/*.json`)에 없는 리뷰를 숨기므로, 새 클럽은 번역 전까지 그 언어에서 리뷰 섹션이 비어 보인다.
+`node scripts/check-review-translations.mjs`로 누락을 뽑아 번역을 채운다(유료 API 없음, 읽기 전용).
 
 ---
 
@@ -240,6 +276,8 @@ FROM clubs c WHERE c.name = '<클럽명>';
 - [ ] **`foreign_booking_agreed = TRUE` 켜기**
 - [ ] 위 3요소 쿼리로 판정 확인
 - [ ] `/en/clubs/<area>/<club>` 페이지에서 실제 "Book" CTA 확인(캐시 지연 감안)
+- [ ] (선택) 지역 추천으로 올릴 거면 기존 추천 끄고 → 새로 켜고 → 추천 이유 5개 언어
+- [ ] 리뷰를 새로 받았으면 `check-review-translations.mjs`로 번역 누락 0 확인
 
 ## 관련
 

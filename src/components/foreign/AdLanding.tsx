@@ -456,7 +456,7 @@ export function AdLanding({ lang }: { lang: SeoLang }) {
       {/* 유일한 CTA. 기존 예약 플로우로 넘긴다 — 여기서 데이터를 받지 않는다. */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur">
         <div className="max-w-lg mx-auto px-5 py-3">
-          <Link
+          <Link rel="nofollow"
             data-nf-track="book_cta"
             href={`/flags/new?lang=${lang}`}
             className="block w-full py-4 rounded-xl bg-brand-amber text-black font-black text-center text-base hover:opacity-90 transition-opacity"

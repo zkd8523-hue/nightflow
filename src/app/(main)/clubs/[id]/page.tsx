@@ -2,10 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ClubDetailContent } from "@/components/clubs/ClubDetailContent";
 import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
-import { SHOW_TEST_DATA } from "@/lib/utils/testData";
+import { SHOW_TEST_DATA, hideTestData } from "@/lib/utils/testData";
 import { normalizeDowSlots, summarizeSlots, pickUpcomingBenefit, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import { getBusinessDateISO } from "@/lib/lineups/time";
-import { fetchMenuClubIds } from "@/lib/clubs/bookable";
+import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
 import { fetchTablePricing } from "@/lib/clubs/tablePricing";
 import { buildClubAnswer } from "@/lib/clubs/clubAnswer";
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .from("clubs")
     // instagram: "OO 인스타" 검색 축(2026-09-10) — 커버리지 96%
     // name_en·hidden_from_guide·is_test: 외국어 상세(/en/clubs/{area}/{slug})가 존재하는 조건 — hreflang용(2026-09-14)
-    .select("id, name, name_en, area, thumbnail_url, dresscode, aliases, instagram, hidden_from_guide, is_test")
+    .select("id, name, name_en, area, thumbnail_url, dresscode, aliases, instagram, hidden_from_guide, is_test, foreign_booking_agreed")
     .eq("id", id)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) metaQuery.eq("status", "approved");
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   // 이 클럽이 실제로 예약 가능한지 — 제목·설명에 "예약"을 넣을지 가른다.
-  // 판정은 lib/clubs/bookable.ts와 동일(담당 MD + 주대 메뉴 둘 다). 단 여기선 한 곳만
+  // 판정은 lib/clubs/bookable.ts의 isBookable과 동일(주대 + (담당 MD 또는 승인 플래그)). 단 여기선 한 곳만
   // 보면 되므로 fetchMenuClubIds(전 클럽 목록)를 쓰지 않고 해당 클럽만 조회한다.
   //
   // 왜 예약 가능한 곳에만 넣나: 106곳 중 19곳만 예약이 되는데 전부에 "예약"을 달면
@@ -57,7 +57,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       .select("id", { count: "exact", head: true })
       .eq("club_id", id),
   ]);
-  const isBookableClub = (mdRows?.length ?? 0) > 0 && (menuCount ?? 0) > 0;
+  // 2026-09-26: 외국인과 같은 기준(주대 + (담당 MD 또는 승인 플래그)) — 본문 판정과 일치.
+  const isBookableClub = isBookable({
+    has_md: (mdRows?.length ?? 0) > 0,
+    agreed: !!club.foreign_booking_agreed,
+    has_menu: (menuCount ?? 0) > 0,
+  });
   const foreignAreaSlug = canonicalAreaSlug(club.area);
   const foreignSlugPath =
     club.name_en?.trim() && foreignAreaSlug && !club.hidden_from_guide && !club.is_test
@@ -295,6 +300,38 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
   // "주대 없음"으로 오판되는 버그가 있어(bookable.ts 참고), RPC 기반 헬퍼를 그대로 재사용한다.
   const menuClubIds = await fetchMenuClubIds(supabase);
   const hasMenu = menuClubIds.has(id);
+  // 예약 가능 판정 — 외국인 트랙과 같은 기준(isBookable). name을 안 넘겨 외국인 전용 제외 목록은 적용 안 함.
+  const bookable = isBookable({ has_md: hasMd, agreed: !!club.foreign_booking_agreed, has_menu: hasMenu });
+  // 예약 불가면 예약 가능한 곳 수를 센다 — "예약 준비중"으로 막는 대신 그 목록(⚡ 예약 가능 칩)으로 보낸다.
+  // 목록(/clubs)과 같은 조건(승인·가이드 노출·테스트 제외)으로 세야 "3곳"이라 해놓고 목록에 2곳이 뜨지 않는다.
+  // 같은 지역에 되는 곳이 없으면(수원 등) 전 지역 목록으로 — 주대 없는 다른 클럽과 똑같이 버튼을 준다(2026-09-26).
+  // 승인 클럽이 110곳 남짓이라 지역 필터 없이 한 번에 받아 지역·전체를 같이 센다.
+  let areaBookableCount = 0;
+  let otherBookableCount = 0;
+  if (!bookable) {
+    const { data: bookableRows } = await hideTestData(
+      supabase
+        .from("clubs")
+        .select("id, area, foreign_booking_agreed, club_partners(md_id)")
+        .is("deleted_at", null)
+        .eq("status", "approved")
+        .not("hidden_from_guide", "is", true)
+        .neq("id", id),
+      "",
+    );
+    const others = (bookableRows ?? []).filter((c) =>
+      isBookable({ has_md: (c.club_partners?.length ?? 0) > 0, agreed: !!c.foreign_booking_agreed, has_menu: menuClubIds.has(c.id) }),
+    );
+    otherBookableCount = others.length;
+    areaBookableCount = club.area ? others.filter((c) => c.area === club.area).length : 0;
+  }
+  const bookableListHref = bookable
+    ? null
+    : club.area && areaBookableCount > 0
+      ? `/clubs?area=${encodeURIComponent(club.area)}&bookable=1`
+      : otherBookableCount > 0
+        ? "/clubs?bookable=1"
+        : null;
 
   // "답변형" 요약(2026-09-14): ChatGPT 리퍼러 세션의 절반이 이 한국어 클럽 상세로 착지한다.
   // LLM은 첫 화면에 숫자로 답이 있는 페이지를 인용하므로, 입장료·영업·주대·예약 가능 여부를
@@ -316,7 +353,9 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     rating: club.google_rating != null ? Number(club.google_rating) : null,
     reviewCount: club.google_review_count != null ? Number(club.google_review_count) : null,
     lowestSet: pricingForAnswer?.lowestSet ?? null,
-    bookable: hasMd && hasMenu,
+    bookable,
+    areaBookableCount,
+    otherBookableCount,
     asOf,
   });
 
@@ -581,7 +620,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         }
       : {}),
     // 예약 방법은 FAQ 보일러플레이트 대신 ReserveAction으로(100페이지 동일 문답 회피).
-    ...(hasMd && hasMenu
+    ...(bookable
       ? { potentialAction: { "@type": "ReserveAction", target: `https://nightflow.kr/clubs/${id}`, name: "테이블 예약" } }
       : {}),
     ...(club.updated_at ? { dateModified: String(club.updated_at).slice(0, 10) } : {}),
@@ -782,6 +821,8 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         upcomingEvents={upcomingEvents}
         hasMd={hasMd}
         hasMenu={hasMenu}
+        bookable={bookable}
+        bookableListHref={bookableListHref}
         answer={clubAnswer}
       />
     </>

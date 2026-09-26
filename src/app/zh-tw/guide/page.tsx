@@ -199,7 +199,7 @@ export default async function ZhTwGuidePage() {
           <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
             設定您的預算 — 我們會為您找到最合適的桌位。帶的人越多,這一夜就越 VIP。
           </p>
-          <Link
+          <Link rel="nofollow"
             data-nf-track="book_cta" href="/flags/new?lang=zh-tw"
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
@@ -264,7 +264,7 @@ export default async function ZhTwGuidePage() {
         </section>
 
         <section className="space-y-3 pt-2">
-          <Link data-nf-track="book_cta" href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
+          <Link rel="nofollow" data-nf-track="book_cta" href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             獲取 VIP 通道 — 無需註冊
           </Link>
           <p className="text-[12px] text-muted-foreground text-center leading-relaxed">

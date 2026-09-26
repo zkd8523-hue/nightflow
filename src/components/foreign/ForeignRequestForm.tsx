@@ -200,6 +200,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   const [selectedClubIds, setSelectedClubIds] = useState<string[]>(
     presetClubId && clubs.some((c) => c.id === presetClubId) ? [presetClubId] : []
   );
+  // 클럽 페이지 CTA(?club=)나 book_intent로 미리 담긴 클럽. 손님이 고른 게 아니라서 폼 통계에서
+  // "club 입력 완료"로 세면 안 된다 — 들어오자마자 찍혀 클럽 단계 이탈이 0처럼 보였다(2026-09-26).
+  const presetClubRef = useRef<string | null>(
+    presetClubId && clubs.some((c) => c.id === presetClubId) ? presetClubId : null
+  );
   const [clubSearch, setClubSearch] = useState("");
 
   // ── 술 메뉴 선택 ──────────────────────────────────────────────────────────
@@ -525,7 +530,12 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     trackEvent("foreign_form_field_completed", { lang: preferredLang, field });
   };
   useEffect(() => { if (eventDate) trackFieldOnce("date"); }, [eventDate]);
-  useEffect(() => { if (selectedClubIds.length > 0) trackFieldOnce("club"); }, [selectedClubIds]);
+  useEffect(() => {
+    if (selectedClubIds.length === 0) return;
+    const preset = presetClubRef.current;
+    // 미리 담긴 클럽 그대로면 "club_preset", 손님이 직접 고르거나 바꾸면 "club".
+    trackFieldOnce(preset && selectedClubIds.length === 1 && selectedClubIds[0] === preset ? "club_preset" : "club");
+  }, [selectedClubIds]);
   useEffect(() => { if (picked) trackFieldOnce("menu"); }, [picked]);
   useEffect(() => { if (guestName.trim()) trackFieldOnce("name"); }, [guestName]);
   useEffect(() => { if (contactValue.trim()) trackFieldOnce("contact"); }, [contactValue]);
@@ -563,6 +573,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       const intent = JSON.parse(raw) as { club_id?: string; area?: string };
       const match = intent.club_id ? clubs.find((c) => c.id === intent.club_id) : undefined;
       if (match) {
+        presetClubRef.current = match.id;
         setSelectedClubIds((prev) =>
           prev.includes(match.id) ? prev : [match.id]
         );

@@ -8,6 +8,7 @@ import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
 import { clubDisplayAlias } from "@/lib/clubs/seoAliases";
 import { hideTestData } from "@/lib/utils/testData";
 import type { HotdealBenefitsByDow } from "@/types/database";
+import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 
 export const revalidate = 60;
 
@@ -67,7 +68,7 @@ export default async function ClubsIndexPage() {
     await hideTestData(
       supabase
         .from("clubs")
-        .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases, seed_favorite_count, club_partners(md_id)")
+        .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases, seed_favorite_count, foreign_booking_agreed, club_partners(md_id)")
         .is("deleted_at", null)
         .eq("status", "approved")
         // 반얀트리 풀파티 등 비-클럽 venue는 가이드/지도에서 제외 (조각/깃발은 정상)
@@ -140,6 +141,10 @@ export default async function ClubsIndexPage() {
       favCountMap[c.id as string] = (favCountMap[c.id as string] || 0) + seed;
     }
   }
+
+  // "⚡ 예약 가능" 칩용 — 외국인 트랙과 같은 판정(isBookable: 주대 + (담당 MD 또는 승인)).
+  // name을 넘기지 않아 외국인 전용 제외 목록(Awesome Red·Waikiki)은 한국엔 적용하지 않는다.
+  const menuIds = await fetchMenuClubIds(supabase);
 
   const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
 
@@ -241,6 +246,11 @@ export default async function ClubsIndexPage() {
           entry_fee_detail: (c.entry_fee_detail as string | null | undefined) ?? null,
           aliases: (c.aliases as string[] | undefined) ?? [],
           hasPartner: ((c.club_partners as { md_id: string }[] | undefined)?.length ?? 0) > 0,
+          bookable: isBookable({
+            has_md: ((c.club_partners as { md_id: string }[] | undefined)?.length ?? 0) > 0,
+            agreed: !!c.foreign_booking_agreed,
+            has_menu: menuIds.has(c.id as string),
+          }),
         }))}
         activeCountMap={activeCountMap}
         hotdealMap={hotdealMap}

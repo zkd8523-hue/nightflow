@@ -15,6 +15,8 @@
  * 비용: 클럽 1개 = 검색 1콜(Text Search) + 리뷰 1콜(Place Details Enterprise+Atmosphere,
  *       $25/1000콜·0~10만 콜 구간). 120개 ≈ $3. 평점·리뷰는 잘 안 변하니 월 1회면 충분.
  * 멱등: 재실행 시 같은 행을 UPDATE. 매칭 실패한 클럽은 다음 실행에서 재시도됨.
+ * ⚠️ 재실행 후: 새 리뷰는 일본어·중국어 번역 파일에 없어서 /ja·/zh·/zh-tw에서 숨겨진다.
+ *       node scripts/check-review-translations.mjs 로 누락을 뽑아 번역을 채울 것(2026-09-26).
  */
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";

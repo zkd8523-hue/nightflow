@@ -34,7 +34,9 @@ export default function MainLayout({
 
   // 외국인 트랙(lang=en) — 한국 글로벌 헤더/푸터/바텀네비를 숨김.
   // /en은 자체 chrome을 쓰고, /flags/new 등 (main) 진입 시 한국 chrome 노출 방지.
-  const [isForeigner, setIsForeigner] = useState(false);
+  // null = 아직 URL을 안 읽음. 한국 전용 시트는 false로 확정된 뒤에만 마운트한다 —
+  // 첫 렌더에 false로 시작하면 외국인 폼에서도 시트가 잠깐 마운트돼 조건 체크·fetch를 돈다.
+  const [isForeigner, setIsForeigner] = useState<boolean | null>(null);
   useEffect(() => {
     const l = new URLSearchParams(window.location.search).get("lang");
     setIsForeigner(!!l && l !== "ko");
@@ -135,19 +137,26 @@ export default function MainLayout({
         <main className={isChromeless ? "" : isChatPage ? "" : "pb-16"}>{children}</main>
         {!isChromeless && !isChatPage && <Footer />}
         {!hideBottomNav && <BottomNav />}
-        <SelectingFlagAlertSheet />
-        <NewOffersAlertSheet />
-        {/* 옛 취소/미선택 설문(CancellationSurveySheet)은 제거됨 — 부정 설문 대신 방문 확인 + 긍정 리뷰로 전환.
-            만료 깃발은 Migration 493에서 이미 빠졌고, 직접 취소 경로도 여기서 노출 중단.
-            과거 수집분(puzzle_cancellation_surveys)은 /admin/puzzles?tab=surveys 에서 계속 조회 가능. */}
-        <VisitConfirmTrigger />
-        <PartyReviewTrigger />
-        {/* 깃발 생성 직후 앱설치 유도 — 깃발 신규 생성 경로가 막혀 트리거되지 않으므로 마운트 해제 */}
-        {/* 파티 가이드 — 홈에서는 "지금 잡을 수 있는 자리가 있을 때"만 (계정당 1회) */}
-        <ShareOnboardingSheet onlyWhenSlotOpen />
-        <GuestSignPromoGate />
-        <AppFeedbackSheet />
-        {/* AppFeedbackSheet 자체가 인게이지먼트 게이팅 → 다른 우선 시트와 시각적으로만 안 겹치게 마지막 마운트 */}
+        {/* 아래 시트는 전부 한국어·한국 깃발 흐름 전용. 외국인 폼(/flags/new?lang=en 등)도
+            이 레이아웃을 타서, 로그인한 외국인에게 "나플, 써보니 어떠세요?"가 한국어로 떴다
+            (2026-09-26). 외국인 트랙에선 통째로 마운트하지 않는다. */}
+        {isForeigner === false && (
+          <>
+            <SelectingFlagAlertSheet />
+            <NewOffersAlertSheet />
+            {/* 옛 취소/미선택 설문(CancellationSurveySheet)은 제거됨 — 부정 설문 대신 방문 확인 + 긍정 리뷰로 전환.
+                만료 깃발은 Migration 493에서 이미 빠졌고, 직접 취소 경로도 여기서 노출 중단.
+                과거 수집분(puzzle_cancellation_surveys)은 /admin/puzzles?tab=surveys 에서 계속 조회 가능. */}
+            <VisitConfirmTrigger />
+            <PartyReviewTrigger />
+            {/* 깃발 생성 직후 앱설치 유도 — 깃발 신규 생성 경로가 막혀 트리거되지 않으므로 마운트 해제 */}
+            {/* 파티 가이드 — 홈에서는 "지금 잡을 수 있는 자리가 있을 때"만 (계정당 1회) */}
+            <ShareOnboardingSheet onlyWhenSlotOpen />
+            <GuestSignPromoGate />
+            <AppFeedbackSheet />
+            {/* AppFeedbackSheet 자체가 인게이지먼트 게이팅 → 다른 우선 시트와 시각적으로만 안 겹치게 마지막 마운트 */}
+          </>
+        )}
       </div>
       {/* 전역 카메라 레이어 — 모든 Sheet/Dialog 바깥. Radix 조상 불투명 레이어 영향 없음 */}
       <CameraLayer />

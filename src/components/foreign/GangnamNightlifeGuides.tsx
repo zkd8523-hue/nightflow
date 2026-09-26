@@ -586,7 +586,7 @@ export function GangnamGuide({ guide, lang }: { guide: GuideKey; lang: SeoLang }
           <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">{c.intro}</p>
           <p className="text-[11px] text-muted-foreground">{c.updated}</p>
           {c.headerCta && (
-            <Link data-nf-track="book_cta" href={bookHref} className="inline-block px-6 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors">
+            <Link rel="nofollow" data-nf-track="book_cta" href={bookHref} className="inline-block px-6 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors">
               {c.cta}
             </Link>
           )}
@@ -605,7 +605,7 @@ export function GangnamGuide({ guide, lang }: { guide: GuideKey; lang: SeoLang }
             )}
             {/* 헤더 CTA가 없는 페이지(룸살롱)는 "대신 이걸 예약한다" 설명이 끝난 직후가 첫 CTA 자리. */}
             {!c.headerCta && idx === c.sections.length - 1 && (
-              <Link data-nf-track="book_cta" href={bookHref} className="inline-block px-6 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors">
+              <Link rel="nofollow" data-nf-track="book_cta" href={bookHref} className="inline-block px-6 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors">
                 {c.cta}
               </Link>
             )}
@@ -656,7 +656,7 @@ export function GangnamGuide({ guide, lang }: { guide: GuideKey; lang: SeoLang }
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">{c.ctaH2}</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">{c.ctaBody}</p>
-          <Link data-nf-track="book_cta" href={bookHref} className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
+          <Link rel="nofollow" data-nf-track="book_cta" href={bookHref} className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             {c.cta}
           </Link>
         </section>

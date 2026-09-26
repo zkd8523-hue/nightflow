@@ -4,6 +4,7 @@ import { hideTestData } from "@/lib/utils/testData";
 import { EnHomeClient, type RecentBooking } from "../en/EnHomeClient";
 import { orderForeignHome } from "@/lib/clubs/foreignSort";
 import { fetchMenuClubIds } from "@/lib/clubs/bookable";
+import { localizeReviews } from "@/lib/clubs/reviewI18n";
 
 export const revalidate = 30;
 
@@ -223,7 +224,8 @@ export default async function ZhTwHomePage() {
         instagram: c.instagram,
         dresscode: c.dresscode,
         tags: c.tags,
-        google_reviews: c.google_reviews,
+        // 번역문으로 치환, 번역 없는 리뷰는 뺀다(reviewI18n)
+        google_reviews: localizeReviews(c.google_reviews, "zh-tw"),
         featured_rank: c.featured_rank,
         area_pick: (c as { area_pick?: boolean | null }).area_pick ?? false,
         pick_reason_ko: (c as { pick_reason_ko?: string | null }).pick_reason_ko ?? null,

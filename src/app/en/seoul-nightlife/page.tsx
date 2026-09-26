@@ -125,7 +125,7 @@ export default function EnSeoulNightlifePage() {
           <p className="text-[13px] text-muted-foreground leading-relaxed">
             Pick your club (or just tell us your vibe) — date, group size, and budget. We contact the club directly and lock in the best table for your budget, in English. Show up, walk in.
           </p>
-          <Link data-nf-track="book_cta" href="/flags/new?lang=en" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
+          <Link rel="nofollow" data-nf-track="book_cta" href="/flags/new?lang=en" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             🍾 Book Korean Clubs
           </Link>
         </section>

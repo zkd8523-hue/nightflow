@@ -33,3 +33,14 @@ export function canonicalAreaSlug(koreanArea: string | null | undefined): string
   if (!koreanArea) return null;
   return CANONICAL_AREA_SLUG[koreanArea.trim()] ?? null;
 }
+
+/**
+ * 외국어 클럽 상세 페이지 주소. 지역 페이지가 있는 4개 지역 + name_en이 있는 클럽만 존재 — 없으면 null.
+ * 시트의 "Open full page ↗"(일행에게 보낼 주소)용.
+ */
+export function foreignClubPageHref(lang: string, koreanArea: string | null | undefined, nameEn: string | null | undefined): string | null {
+  const area = canonicalAreaSlug(koreanArea);
+  const name = nameEn?.trim();
+  if (!area || !name || lang === "ko") return null;
+  return `/${lang}/clubs/${area}/${clubSlug(name)}`;
+}

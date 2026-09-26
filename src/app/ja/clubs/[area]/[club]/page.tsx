@@ -12,7 +12,9 @@ import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { UrgencyLine } from "@/components/foreign/UrgencyLine";
-import { ForeignShell } from "@/components/foreign/ForeignShell";
+import { ForeignShell, type ForeignSidebarCta } from "@/components/foreign/ForeignShell";
+import { SeeBookableStickyButton, bookableListHref, seeBookableLabels } from "@/components/foreign/SeeBookableCta";
+import { localizeReviews } from "@/lib/clubs/reviewI18n";
 import { isBookable, fetchMenuClubIds } from "@/lib/clubs/bookable";
 import { BookingComingSoon } from "@/components/foreign/BookingComingSoon";
 import { fetchTablePricing, tableFrom, trimAtSentence } from "@/lib/clubs/tablePricing";
@@ -42,13 +44,15 @@ const SELECT =
   "google_rating, google_review_count, google_reviews, instagram, dresscode, tags, drink_menu_url, " +
   // 예약 SEO(2026-09-10): 좌표(geo)·테이블 차지·메뉴 갱신일 — ClubBookingSection/JSON-LD Offer용
   "latitude, longitude, table_charge_weekday, table_charge_weekend, drink_menu_updated_at, " +
-  "foreign_booking_agreed, partners:club_partners(md_id)";
+  "foreign_booking_agreed, area_pick, partners:club_partners(md_id)";
 
 type ClubRow = {
   id: string;
   partners?: { md_id: string }[] | null;
   /** 콜드 DM 승인 플래그(Migration 666) — isBookable의 has_md 대체 축 */
   foreign_booking_agreed?: boolean | null;
+  /** 지역별 추천 1곳(Mig 670) — 대안 카드에서 예약 가능한 이웃 중 맨 앞 */
+  area_pick?: boolean | null;
   name: string;
   name_en: string | null;
   area: string;
@@ -104,7 +108,7 @@ const findClub = cache(async (areaSlug: string, clubParam: string) => {
 
   // 같은 지역의 다른 클럽 — 내부 링크(거미줄)용.
   // 예약 가능한 이웃을 앞으로 — 이 페이지에서 예약이 안 될 때 대안으로 보내는 자리다.
-  const siblingsRaw = rows
+  const siblingsAll = rows
     .filter((c) => c.id !== club.id && c.area === club.area && c.name_en?.trim())
     .map((c) => ({
       ...c,
@@ -113,21 +117,25 @@ const findClub = cache(async (areaSlug: string, clubParam: string) => {
     .sort(
       (a, b) =>
         Number(b.bookable) - Number(a.bookable) ||
+        // 지역 추천(PICK)을 예약 가능한 이웃 중 맨 앞으로 — 목록의 PICK 정렬과 같은 순서
+        Number(!!b.area_pick) - Number(!!a.area_pick) ||
         (b.google_review_count ?? 0) - (a.google_review_count ?? 0),
-    )
-    .slice(0, 8);
+    );
+  const siblingsRaw = siblingsAll.slice(0, 8);
 
   // 가격 요약(예약 SEO) — 이 클럽 + 메뉴 있는 이웃(대안 카드용)을 한 쿼리로.
   const pricing = await fetchTablePricing(supabase, [
     club.id,
-    ...siblingsRaw.filter((sib) => sib.bookable).map((sib) => sib.id),
+    ...siblingsAll.filter((sib) => sib.bookable).map((sib) => sib.id),
   ]);
   // "예약 가능" = 메뉴 등록 && 활성 항목에 실제 가격이 있음. 항목이 전부 비활성인 클럽이
   // 스티키바에선 "Book"·본문에선 "isn't bookable yet"로 갈리던 문제를 여기서 한 번에 막는다.
   const bookable = bookableRaw && tableFrom(club.area, pricing.get(club.id)) != null;
   const siblings = siblingsRaw.map((sib) => ({ ...sib, bookable: sib.bookable && tableFrom(sib.area, pricing.get(sib.id)) != null }));
+  // 첫 화면 안내("이 지역 N곳은 예약 가능")용 — 8곳 컷 전 전체에서, 페이지와 같은 규칙(메뉴+가격)으로 센다.
+  const bookableSiblingCount = siblingsAll.filter((sib) => sib.bookable && tableFrom(sib.area, pricing.get(sib.id)) != null).length;
 
-  return { club, siblings, bookable, pricing };
+  return { club, siblings, bookable, pricing, bookableSiblingCount };
 });
 
 export async function generateMetadata({
@@ -218,7 +226,7 @@ export default async function JaClubDetailPage({
   const { area, club: clubParam } = await params;
   const found = await findClub(area, clubParam);
   if (!found) notFound();
-  const { club, siblings, bookable, pricing } = found;
+  const { club, siblings, bookable, pricing, bookableSiblingCount } = found;
   // 예약 불가 페이지에서 "아래에서 고르세요"라고 안내하므로, 실제로 고를 게
   // 있는지 먼저 본다 — 예약 가능한 이웃이 0곳이면 그 문구가 거짓이 된다.
   const bookableSiblings = siblings.filter((s) => s.bookable);
@@ -235,7 +243,8 @@ export default async function JaClubDetailPage({
   const dress = club.dresscode ? translateClubMeta(club.dresscode, "ja") : null;
   const features = clubFeatureLabels(club.tags, "ja");
   // 평점 높은 순 — 구글이 주는 순서는 뒤죽박죽이라 첫 리뷰가 1점이면 바로 이탈한다.
-  const reviews = (club.google_reviews ?? [])
+  // 번역문으로 치환, 번역 없는 리뷰는 뺀다(reviewI18n) — 영어 원문이 섞여 나오지 않게.
+  const reviews = localizeReviews(club.google_reviews, "ja")
     .filter((r) => r.text?.trim())
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 5);
@@ -246,6 +255,14 @@ export default async function JaClubDetailPage({
   // ── 예약 SEO(2026-09-10): 실가격·Offer·대안 카드. 숫자는 폼 카드와 같은 규칙(tablePricing). ──
   const seoInput = { lang: "ja" as const, name, areaLabel: areaJa, areaKo: club.area, bookable, pricing: pricing.get(club.id) };
   const seoBits = bookingSeoBits(seoInput);
+  // 데스크톱은 하단 바를 숨기고 사이드바 버튼이 이 페이지의 예약 버튼이 된다. 가격은 뺀다(폭 207px에서 두 줄).
+  const listHref = bookableListHref("ja", club.area);
+  const saveClub = { id: club.id, name: club.name, name_en: club.name_en, area: club.area, thumbnail_url: club.thumbnail_url };
+  const sidebarCta: ForeignSidebarCta = bookable
+    ? { href: bookHref, label: seoBits.ctaShort, kind: "club_book", above: <UrgencyLine lang="ja" />, below: <SaveClubButton variant="sidebar" club={saveClub} lang="ja" /> }
+    : bookableSiblingCount > 0
+      ? { href: listHref, label: seeBookableLabels("ja").main, kind: "see_bookable", below: <SaveClubButton variant="sidebar" club={saveClub} lang="ja" nameInLabel={name} /> }
+      : { kind: "default", below: <SaveClubButton variant="sidebar" club={saveClub} lang="ja" /> };
   const fxRates = (await getKrwRates()).rates;
   const altClubs = bookableSiblings.map((s) => ({
     id: s.id,
@@ -349,7 +366,7 @@ export default async function JaClubDetailPage({
   );
 
   return (
-    <ForeignShell lang="ja">
+    <ForeignShell lang="ja" sidebarCta={sidebarCta}>
     <div className="min-h-screen bg-background text-foreground pb-28 pb-safe">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -405,6 +422,19 @@ export default async function JaClubDetailPage({
           </div>
         )}
 
+        {/* 예약 불가 — 첫 화면에서 "여긴 아직 안 되지만 이 지역 N곳은 된다"를 먼저 말한다(2026-09-26).
+            대안 카드(ClubBookingSection)는 스크롤 74% 지점이라 첫 화면엔 갈 곳이 없었다.
+            버튼은 하단 고정 바(모바일)·사이드바(데스크톱)가 맡고 여기는 문장만 — 같은 버튼 두 개 금지. */}
+        {!bookable && bookableSiblingCount > 0 && (() => {
+          const notice = seoBits.unbookableNotice(bookableSiblingCount);
+          return (
+            <div className="rounded-2xl border border-amber-500/45 bg-card px-4 py-3.5">
+              <p className="text-[14px] font-bold leading-snug break-keep">{notice.title}</p>
+              <p className="text-[13px] text-muted-foreground mt-0.5 break-keep">{notice.sub}</p>
+            </div>
+          );
+        })()}
+
         <section>
           <h2 className="text-[18px] font-black mb-1">{name} — 営業時間・入場料・住所</h2>
           <dl className="rounded-2xl bg-card border border-border px-4">
@@ -437,7 +467,7 @@ export default async function JaClubDetailPage({
                 <blockquote key={i} className="p-3 rounded-xl bg-card border border-border">
                   <p className="text-[13px] text-foreground leading-relaxed">{r.text}</p>
                   <footer className="text-[11px] text-muted-foreground mt-1.5">
-                    — {r.author_name || "Google user"}
+                    — {r.author_name || "Googleユーザー"}
                     {r.relative_time && <>、{r.relative_time}</>}
                   </footer>
                 </blockquote>
@@ -482,32 +512,24 @@ export default async function JaClubDetailPage({
 
       </div>
 
-      <div className="fixed bottom-0 inset-x-0 lg:left-[248px] z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
         {/* 조기 마감 한 줄 — 예약 가능할 때만. 대안 CTA(다른 클럽)에는 안 붙인다. */}
         {bookable && <UrgencyLine lang="ja" align="left" className="w-full max-w-lg lg:max-w-[900px] mx-auto mb-2 px-0.5" />}
         <div className="flex items-stretch gap-2 w-full max-w-lg lg:max-w-[900px] mx-auto">
           {bookable ? (
-            <Link href={bookHref}
+            <Link rel="nofollow" href={bookHref}
               data-nf-track="book_cta"
               className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
               {seoBits.cta}
             </Link>
+          ) : bookableSiblingCount > 0 ? (
+            // 비예약 — 특정 클럽 이름 대신 이 지역 예약 가능 목록으로(목록 기본 탭이 Bookable).
+            // "Book Groove & Spot instead · from ₩500k"는 JEJE 페이지에 남의 이름이 뜨고 모바일에서 잘렸다(2026-09-26).
+            <SeeBookableStickyButton lang="ja" href={listHref} className="flex-[8] min-w-0" />
           ) : (
-            (() => {
-              // 비예약 페이지에서도 80% 폭 스티키바는 항상 보인다 — 막다른 "coming soon" 대신
-              // 같은 지역에서 지금 잡히는 첫 클럽으로 보낸다(가격 포함).
-              const alt = altClubs.find((a) => a.from != null);
-              return alt ? (
-                <Link href={alt.bookHref} data-nf-track="book_cta_alt"
-                  className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors truncate px-2">
-                  {seoBits.ctaAlt(alt.name, alt.from!)}
-                </Link>
-              ) : (
-                <div className="flex-[8] min-w-0">
-                  <BookingComingSoon lang="ja" />
-                </div>
-              );
-            })()
+            <div className="flex-[8] min-w-0">
+              <BookingComingSoon lang="ja" />
+            </div>
           )}
           <SaveClubButton
             variant="cta"

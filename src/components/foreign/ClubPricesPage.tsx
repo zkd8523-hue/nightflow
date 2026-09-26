@@ -313,7 +313,7 @@ export async function ClubPricesPage({ lang }: { lang: Lang }) {
 
       {/* 예약 CTA — 클럽 상세 페이지와 동일한 하단 sticky 패턴 */}
       <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border lg:hidden">
-        <Link
+        <Link rel="nofollow"
           data-nf-track="book_cta" href={`/flags/new?lang=${lang}`}
           className="flex items-center justify-center w-full max-w-lg mx-auto py-3.5 rounded-2xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
         >

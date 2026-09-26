@@ -281,7 +281,7 @@ export async function RealTablePrices({ lang, rows }: { lang: SeoLang; rows: Pri
                         </p>
                       )}
                     </div>
-                    <Link href={r.bookHref} data-nf-track="vip_price_book"
+                    <Link rel="nofollow" href={r.bookHref} data-nf-track="vip_price_book"
                       className="px-3 py-2 rounded-lg bg-amber-500 text-black text-[12px] font-black hover:bg-amber-400 whitespace-nowrap">
                       {t.book}
                     </Link>

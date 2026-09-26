@@ -185,7 +185,7 @@ export default async function ZhGuidePage() {
           <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
             设定您的预算 — 我们会为您匹配最好的桌位。带的人越多，夜晚就越 VIP。
           </p>
-          <Link data-nf-track="book_cta" href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
+          <Link rel="nofollow" data-nf-track="book_cta" href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             通过 NightFlow 预订
           </Link>
         </section>
@@ -243,7 +243,7 @@ export default async function ZhGuidePage() {
         </section>
 
         <section className="space-y-3 pt-2">
-          <Link data-nf-track="book_cta" href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
+          <Link rel="nofollow" data-nf-track="book_cta" href="/flags/new?lang=zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             获取 VIP 通道 — 无需注册
           </Link>
           <p className="text-[12px] text-muted-foreground text-center leading-relaxed">
