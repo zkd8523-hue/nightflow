@@ -13,6 +13,7 @@ import { useDmThreads } from "@/hooks/useDmThreads";
 import { UnreadBadge, unreadCountOf } from "@/components/chat/UnreadBadge";
 import { WagleIcon } from "@/components/icons/WagleIcon";
 import { useChatComposerStore } from "@/stores/useChatComposerStore";
+import { trackEvent } from "@/lib/analytics/events";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -107,6 +108,8 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
+              // LINE UP 탭 진입 계측(2026-09-27) — 라인업 자동 수집을 계속 돌릴지 판단 근거
+              onClick={href === "/lineups" ? () => trackEvent("lineup_nav_click", { source: "bottom_nav", target: "lineups" }) : undefined}
               className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 transition-colors ${
                 isActive ? activeClass : "text-muted-foreground"
               }`}

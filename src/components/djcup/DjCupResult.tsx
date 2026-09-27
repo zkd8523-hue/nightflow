@@ -220,6 +220,7 @@ export function DjCupResult({
 
       <Link
         href="/lineups"
+        onClick={() => trackEvent("lineup_nav_click", { source: "djcup_result", target: "lineups" })}
         className="h-[38px] mt-3 rounded-xl border border-border text-white font-black text-[12.5px] tracking-[-0.02em] flex items-center justify-center"
       >
         전국 라인업 둘러보기

@@ -218,6 +218,16 @@ export const trackForeignEvent = (
     | 'booking_md_recommend'
     // 한국 클럽 상세 예약 불가 → "예약 가능한 클럽 보기" 클릭(2026-09-26). params: club_id, club_name, area
     | 'club_detail_see_bookable_click'
+    // 라인업·공연 계측(2026-09-27) — 인스타 라인업 자동 수집(Apify)을 계속 돌릴지 판단 근거.
+    // 그 전까지 이 화면들엔 이벤트가 0개라 라인업만 보고 나간 방문은 user_events에 안 남았다.
+    // lineup_page_view: LineupPageTracker. params: page_kind(lineups_home·event_detail·dj_profile 등), area·club_id·slug, upcoming
+    | 'lineup_page_view'
+    // 라인업·공연 진입 클릭. params: source(bottom_nav·header_menu·guest_menu·home_ticker·djcup_result), target(lineups|events)
+    | 'lineup_nav_click'
+    // 클럽 상세 DJ LINE UP 띠 → 예정 라인업 시트. params: club_id, lineups
+    | 'club_lineup_sheet_open'
+    // DJ 음악 미리듣기 열림(링크는 discover-dj-links가 채움). params: dj_name, provider, variant, auto(처음부터 펼쳐짐 — 프로필 시트·발견 카드·DJ컵)
+    | 'dj_preview_open'
     | 'foreign_club_saved'
     | 'foreign_saved_club_added'
     // SEO 정적 페이지 (클럽 개별 328p / 실용정보 16p) — ForeignPageTracker가 발동

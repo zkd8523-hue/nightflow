@@ -9,6 +9,7 @@ import { eventSlug } from "@/lib/events/slug";
 import { splitLineupDate } from "@/lib/lineups/formatDate";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import type { Metadata } from "next";
+import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 
 // 없는 slug는 notFound() — force-dynamic 필수. 없으면 Soft 404가 되어 색인이
 // 오염된다(/dj/[slug]·/venues/[slug]와 동일 이유).
@@ -277,6 +278,7 @@ export default async function ArtistPage({ params }: PageProps) {
 
   return (
     <>
+      <LineupPageTracker kind="artist_profile" meta={{ slug, upcoming: upcoming.length }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <div className="min-h-screen bg-[#0A0A0A] pb-24">

@@ -9,6 +9,7 @@ import { getBusinessDateISO } from "@/lib/lineups/time";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import type { Metadata } from "next";
+import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 
 // 클럽별 라인업 허브 — 날짜별 라인업(/clubs/[id]/lineup/[date], 148개)의 부모.
 // 부모가 없으면 크롤러가 날짜 페이지에서 한 단계 올라왔을 때 404를 맞는다
@@ -212,6 +213,7 @@ export default async function ClubLineupHubPage({ params }: PageProps) {
 
   return (
     <>
+      <LineupPageTracker kind="club_lineup_hub" meta={{ club_id: id, upcoming: upcoming.length }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
       <div className="min-h-screen bg-[#0A0A0A] pb-24">

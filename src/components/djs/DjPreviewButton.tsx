@@ -6,6 +6,7 @@ import { SoundcloudIcon } from "@/components/icons/SoundcloudIcon";
 import { youtubeVideoId } from "@/lib/lineups/youtubeUrl";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { usePauseOnBackground } from "@/hooks/usePauseOnBackground";
+import { trackEvent } from "@/lib/analytics/events";
 
 /**
  * DJ 미리듣기 — 이름만 봐서는 "어떤" DJ인지 모르는 문제를 푸는 자리.
@@ -64,6 +65,19 @@ export function DjPreviewButton({
   nextLabel?: string;
 }) {
   const [open, setOpen] = useState(autoOpen);
+
+  // 미리듣기 열림 계측(2026-09-27) — 미리듣기 링크는 DJ 링크 발굴(discover-dj-links, Apify 유료)이
+  // 채운다. 그 수집을 계속 돌릴지 판단하려면 실제로 듣는지부터 알아야 한다. 어느 화면인지는 path로 갈린다.
+  // auto=true는 autoOpen으로 처음부터 펼쳐진 경우다(DJ 프로필 시트·발견 카드 재생·DJ컵 대결) —
+  // 버튼을 눌러 연 것과 섞이면 "프로필 시트만 열어본 것"까지 재생으로 잡힌다.
+  const openedOnMount = useRef(autoOpen);
+  useEffect(() => {
+    if (!open) return;
+    const auto = openedOnMount.current;
+    openedOnMount.current = false;
+    trackEvent("dj_preview_open", { dj_name: djName, provider: soundcloudUrl ? "soundcloud" : "youtube", variant, auto });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   /* 버튼이 그려진 시점에 연결을 미리 열고 api.js(5.5KB)도 받아둔다 —
      탭한 뒤에 시작하면 DNS→TLS→api.js→iframe 이 직렬로 붙어 체감이 느리다.

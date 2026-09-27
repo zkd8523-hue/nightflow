@@ -9,6 +9,7 @@ import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
 import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import type { Metadata } from "next";
+import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 
 // 지역별 라인업 — /lineups(전국, 1개)와 /clubs/[id]/lineup(클럽 하나)의 중간 계층.
 // "홍대 클럽 라인업" 같은 검색어(구글 노출 최대 3,527의 "홍대 클럽"과 같은 계열)를
@@ -278,6 +279,7 @@ export default async function AreaLineupsPage({ params }: PageProps) {
 
   return (
     <>
+      <LineupPageTracker kind="lineups_area" meta={{ area, upcoming: upcoming.length }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
       <div className="min-h-screen bg-[#0A0A0A] pb-24">

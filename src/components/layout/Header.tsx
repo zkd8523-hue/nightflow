@@ -43,6 +43,7 @@ import {
   Wine,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
+import { trackEvent } from "@/lib/analytics/events";
 
 function getFallbackUrl(type: InAppNotification["type"]): string | null {
   if (type.startsWith("puzzle_")) return "/";
@@ -603,7 +604,7 @@ export function Header({
 
                     <Link
                       href="/lineups"
-                      onClick={() => setMenuOpen(false)}
+                      onClick={() => { trackEvent("lineup_nav_click", { source: "header_menu", target: "lineups" }); setMenuOpen(false); }}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
                       <span className="text-[15px] font-bold">DJ 라인업</span>
@@ -613,7 +614,7 @@ export function Header({
                         메뉴에서도 붙여 둔다(라인업=클럽 DJ 타임테이블, 공연=래퍼/가수) */}
                     <Link
                       href="/events"
-                      onClick={() => setMenuOpen(false)}
+                      onClick={() => { trackEvent("lineup_nav_click", { source: "header_menu", target: "events" }); setMenuOpen(false); }}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
                       <span className="text-[15px] font-bold">공연 정보</span>
@@ -714,7 +715,7 @@ export function Header({
                 <nav className="flex flex-col p-4 gap-1">
                   <Link
                     href="/lineups"
-                    onClick={() => setGuestMenuOpen(false)}
+                    onClick={() => { trackEvent("lineup_nav_click", { source: "guest_menu", target: "lineups" }); setGuestMenuOpen(false); }}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                   >
                     <span className="text-[15px] font-bold">DJ 라인업</span>
@@ -724,7 +725,7 @@ export function Header({
                       여기만 빠져 있으면 가입 전 유저는 공연을 발견할 길이 없다 */}
                   <Link
                     href="/events"
-                    onClick={() => setGuestMenuOpen(false)}
+                    onClick={() => { trackEvent("lineup_nav_click", { source: "guest_menu", target: "events" }); setGuestMenuOpen(false); }}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                   >
                     <span className="text-[15px] font-bold">공연 정보</span>

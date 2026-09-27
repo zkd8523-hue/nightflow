@@ -12,6 +12,7 @@ import { EventShareButton } from "@/components/events/EventShareButton";
 import { LineupLikeButton } from "@/components/lineups/LineupLikeButton";
 import { EventCommentSection } from "@/components/events/EventCommentSection";
 import { ArtistNameWithHeart } from "@/components/artists/ArtistNameWithHeart";
+import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 
 // 공연 상세 — "SENSI SOUND", "팔로알토 공연" 류 고유명사 검색의 착지점.
 // 없는 조합은 notFound() → force-dynamic 필수. 없으면 Suspense 경계가 200을 먼저
@@ -277,6 +278,7 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-28 pb-safe">
+      <LineupPageTracker kind="event_detail" meta={{ date, slug }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* 상단 — 공연 하나만 보고 나가지 않게 목록으로 돌아갈 문을 항상 둔다 */}

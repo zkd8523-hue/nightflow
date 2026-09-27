@@ -7,6 +7,7 @@ import { formatLineupDate } from "@/lib/lineups/formatDate";
 import { LineupPageHeader } from "@/components/lineups/LineupPageHeader";
 import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import type { Metadata } from "next";
+import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 
 // 지역별 공연 — /events(전국)와 /events/{date}/{slug}(공연 하나)의 중간 계층.
 // URL을 /events/[area]가 아니라 /events/area/[area]로 둔 이유: /events/[date]가
@@ -276,6 +277,7 @@ export default async function AreaEventsPage({ params }: PageProps) {
 
   return (
     <>
+      <LineupPageTracker kind="events_area" meta={{ area, upcoming: upcoming.length }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
       <div className="min-h-screen bg-[#0A0A0A] pb-24">

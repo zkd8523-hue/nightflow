@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 
 /**
  * 홈 상단 LED 전광판 — 기존 LIVE(ShotCarousel) 자리.
@@ -92,7 +92,9 @@ function TickerRow({
   const text = items.join("  ·  ");
 
   return (
-    <Link
+    <TrackedLink
+      event="lineup_nav_click"
+      eventProps={{ source: "home_ticker", target: href === "/events" ? "events" : "lineups" }}
       href={href}
       aria-label={`${tag} 보기`}
       className={`relative z-[1] flex items-center gap-2.5 px-3 py-2 ${
@@ -134,6 +136,6 @@ function TickerRow({
       >
         ›
       </span>
-    </Link>
+    </TrackedLink>
   );
 }

@@ -6,6 +6,7 @@ import {
   type EventPerformer,
 } from "@/components/events/UndergroundEventList";
 import { eventAreaOf } from "@/lib/events/area";
+import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 
 // SEO가 이 화면의 존재 이유 중 하나다("이번주 홍대 힙합 공연" 류 쿼리).
 // 크롤러가 공연명·아티스트명을 HTML에서 봐야 하므로 서버 렌더 + 짧은 재검증.
@@ -171,5 +172,10 @@ export default async function EventsPage() {
     });
   }
 
-  return <UndergroundEventList rows={rows} />;
+  return (
+    <>
+      <LineupPageTracker kind="events_home" meta={{ upcoming: rows.length }} />
+      <UndergroundEventList rows={rows} />
+    </>
+  );
 }

@@ -12,6 +12,7 @@ import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import { BackButton } from "@/components/ui/BackButton";
 import { LineupShareButton } from "@/components/lineups/LineupShareButton";
 import type { Metadata } from "next";
+import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 
 // 날짜별 라인업 아카이브 — SEO 본진("클럽명 8월 30일 라인업" 류 쿼리는 이 URL이 아니면
 // 못 잡는다, 클럽 상세는 "오늘"만 보여주므로)이면서, 운영자가 며칠 전 미리 올려둔
@@ -209,6 +210,7 @@ export default async function ClubLineupDatePage({ params }: PageProps) {
 
   return (
     <>
+      <LineupPageTracker kind="club_lineup_date" meta={{ club_id: id, date }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 

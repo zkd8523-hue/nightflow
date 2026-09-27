@@ -13,6 +13,7 @@ import { getBusinessDateISO } from "@/lib/lineups/time";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { clubDisplayAlias } from "@/lib/clubs/seoAliases";
 import type { Metadata } from "next";
+import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 
 // 없는 slug는 notFound() — force-dynamic 필수. 없으면 Soft 404가 되어
 // SEO 색인이 오염된다(클럽 상세·날짜별 라인업 페이지와 동일 이유).
@@ -219,6 +220,7 @@ export default async function DjProfilePage({ params }: PageProps) {
 
   return (
     <>
+      <LineupPageTracker kind="dj_profile" meta={{ slug, upcoming: upcoming.length }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <div className="min-h-screen bg-background text-foreground max-w-lg mx-auto pb-24">

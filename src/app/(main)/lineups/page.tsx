@@ -6,6 +6,7 @@ import {
   NationwideLineupList,
   type LineupClubRow,
 } from "@/components/lineups/NationwideLineupList";
+import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 
 // SEO가 이 화면의 존재 이유 중 하나다("오늘 홍대 DJ 라인업" 류 쿼리).
 // 크롤러가 클럽명·DJ명을 HTML에서 봐야 하므로 서버 렌더 + 짧은 재검증.
@@ -145,5 +146,10 @@ export default async function LineupsPage() {
     });
   }
 
-  return <NationwideLineupList rows={rows} />;
+  return (
+    <>
+      <LineupPageTracker kind="lineups_home" meta={{ upcoming: rows.length }} />
+      <NationwideLineupList rows={rows} />
+    </>
+  );
 }

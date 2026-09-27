@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { createServerClient } from "@supabase/ssr";
 import { eventSlug, isValidEventDate } from "@/lib/events/slug";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
+import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 
 // 날짜별 공연 목록 — /events/{date}/{slug}의 부모.
 // 부모를 비워두면 크롤러가 경로를 타고 올라왔을 때 404를 맞는다
@@ -123,6 +124,7 @@ export default async function EventsByDatePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-10">
+      <LineupPageTracker kind="events_date" meta={{ date }} />
       <div className="max-w-lg mx-auto px-4 py-5 space-y-5">
         <nav className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
           <Link href="/events" className="-ml-2 shrink-0 w-11 h-11 -my-2 flex items-center justify-center rounded-full hover:bg-muted hover:text-foreground transition-colors" aria-label="공연 목록으로">

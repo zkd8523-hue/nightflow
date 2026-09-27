@@ -15,6 +15,7 @@ import { DjNameButton } from "@/components/djs/DjNameButton";
 import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
 import type { TodayLineupSet } from "./ClubLineupSection";
+import { trackEvent } from "@/lib/analytics/events";
 
 export interface UpcomingLineup {
   event_date: string; // "YYYY-MM-DD"
@@ -84,7 +85,12 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          // 클럽 상세 라인업 띠 → 시트 열기 계측(2026-09-27). 클럽 상세 조회의 42%에 이 띠가 뜨는데
+          // 실제로 누르는지 몰랐다 — 라인업 자동 수집을 계속 돌릴지 판단 근거.
+          trackEvent("club_lineup_sheet_open", { club_id: clubId, lineups: lineups.length });
+          setOpen(true);
+        }}
         className="w-full rounded-lg relative overflow-hidden text-left shadow-[0_0_0_1px_rgba(0,0,0,0.4),0_8px_24px_rgba(0,0,0,0.5)]"
         style={{
           backgroundImage:
