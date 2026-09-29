@@ -132,6 +132,12 @@ const TEXT = {
 // 마중 나갈 수 없고, 지나면 이미 끝난 얘기다). 클럽 영업이 자정을 넘기므로
 // KST 기준 "오늘 날짜"로 비교한다 — 기기 타임존이 달라도(외국인 손님) 클럽은
 // 한국에 있으니 한국 기준이 맞다.
+// 지난 예약인지(KST 기준) — 지난 예약엔 취소 버튼을 보여주지 않는다.
+function isPastEvent(eventDateIso: string): boolean {
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" });
+  return eventDateIso < todayStr;
+}
+
 function isEventDay(eventDateIso: string): boolean {
   const todayKst = new Date(
     new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" })
@@ -206,6 +212,42 @@ export function BookingPass(p: Props) {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [reviewErr, setReviewErr] = useState<string | null>(null);
 
+  // 예약 취소 — 한국 예약만(외국인은 운영자 전담 컨시어지). 누르면 바로 취소하지
+  // 않고 "정말 취소하시겠어요?" 확인 단계를 한 번 거친다. 서버가 담당 MD와
+  // 운영자에게 푸시를 보낸다(/api/booking-cancel).
+  const [cancelledNow, setCancelledNow] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelErr, setCancelErr] = useState<string | null>(null);
+  const isCancelled = p.cancelled || cancelledNow;
+  const canCancel = ko && !isCancelled && !p.arrivalConfirmed && !isPastEvent(p.eventDate) && !isSent("arrived");
+
+  const cancelBooking = async () => {
+    setCancelling(true);
+    setCancelErr(null);
+    try {
+      const res = await fetch("/api/booking-cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ public_token: p.publicToken }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setCancelledNow(true);
+        setConfirmingCancel(false);
+      } else if (j.error === "past_event") {
+        setCancelErr("지난 예약은 취소할 수 없어요.");
+      } else if (j.error === "already_arrived") {
+        setCancelErr("이미 입장한 예약은 취소할 수 없어요.");
+      } else {
+        setCancelErr("취소하지 못했어요. 잠시 뒤 다시 시도하거나 담당 MD에게 연락해 주세요.");
+      }
+    } catch {
+      setCancelErr("취소하지 못했어요. 잠시 뒤 다시 시도하거나 담당 MD에게 연락해 주세요.");
+    }
+    setCancelling(false);
+  };
+
   const submitReview = async () => {
     if (reviewRating < 1) {
       setReviewErr(t.reviewNeedRating);
@@ -254,13 +296,13 @@ export function BookingPass(p: Props) {
             </div>
             <div
               className={`inline-flex items-center gap-1.5 mt-2.5 text-[11px] font-bold tracking-wider uppercase rounded-full px-3 py-1 border ${
-                p.cancelled
+                isCancelled
                   ? "text-red-400 bg-red-500/10 border-red-500/30"
                   : "text-money bg-green-500/10 border-green-500/30"
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current" />
-              {p.cancelled ? t.cancelled : t.confirmed}
+              {isCancelled ? t.cancelled : t.confirmed}
             </div>
             <div className="font-mono font-bold text-[34px] tracking-wide text-brand-amber mt-3 tabular-nums">
               {p.refNo}
@@ -387,7 +429,7 @@ export function BookingPass(p: Props) {
                 "10분 전"을 눌러도 "도착"은 그대로 눌러야 완료된다.
                 예약 당일(KST 기준)에만 활성화 — 그 전엔 눌러도 MD가 지금
                 마중 나갈 수 없고, 지나면 이미 끝난 얘기라 의미가 없다. */}
-            {!p.cancelled && (
+            {!isCancelled && (
               <div className="mt-4 pt-3.5 border-t border-border">
                 {!isEventDay(p.eventDate) ? (
                   <p className="text-center text-[12px] text-muted-foreground mb-2">
@@ -442,7 +484,7 @@ export function BookingPass(p: Props) {
             {/* 리뷰 — 입장 완료(arrivalConfirmed) 여부와 무관하게 항상 쓸 수 있다.
                 MD가 그 버튼을 안 눌러도 방문은 끝났을 수 있어서 작성 자체를
                 막지 않고, 안내 문구만 다르게 보여준다. */}
-            {!p.cancelled && (
+            {!isCancelled && (
               <div className="mt-4 pt-3.5 border-t border-border">
                 <div className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted-foreground mb-2">
                   {t.review}
@@ -496,6 +538,56 @@ export function BookingPass(p: Props) {
                       <p className="text-center text-[12px] text-red-400 mt-2">{reviewErr}</p>
                     )}
                   </>
+                )}
+              </div>
+            )}
+
+            {cancelledNow && (
+              <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-3 text-center">
+                <p className="text-[13.5px] font-bold text-red-400">예약이 취소됐어요</p>
+                <p className="text-[12px] text-muted-foreground mt-1">담당 MD와 나이트플로우에 알렸어요.</p>
+              </div>
+            )}
+
+            {canCancel && (
+              <div className="mt-4 pt-3.5 border-t border-border">
+                {!confirmingCancel ? (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingCancel(true)}
+                    className="w-full h-10 rounded-xl text-[12.5px] font-semibold text-muted-foreground hover:text-red-400"
+                  >
+                    예약 취소
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3">
+                    <p className="text-[14px] font-bold text-foreground">정말 취소하시겠어요?</p>
+                    <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">
+                      취소하면 담당 MD와 나이트플로우에 바로 알림이 가고, 되돌릴 수 없어요.
+                    </p>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmingCancel(false);
+                          setCancelErr(null);
+                        }}
+                        disabled={cancelling}
+                        className="flex-1 h-10 rounded-xl border border-border text-[13px] font-bold text-foreground disabled:opacity-50"
+                      >
+                        돌아가기
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelBooking}
+                        disabled={cancelling}
+                        className="flex-1 h-10 rounded-xl bg-red-500 text-white text-[13px] font-bold disabled:opacity-50"
+                      >
+                        {cancelling ? "취소하는 중…" : "예약 취소하기"}
+                      </button>
+                    </div>
+                    {cancelErr && <p className="text-center text-[12px] text-red-400 mt-2">{cancelErr}</p>}
+                  </div>
                 )}
               </div>
             )}
