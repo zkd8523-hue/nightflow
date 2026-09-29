@@ -56,6 +56,18 @@ export default async function AdminForeignPage() {
     (mdsByClub[p.club_id] = mdsByClub[p.club_id] ?? []).push(p.md_id);
   });
 
+  // 승인된 MD 전체 — 여러 클럽을 맡는데 club_partners엔 한 클럽만 걸린 MD가
+  // 있어서, 요청 클럽의 파트너만으론 지정할 수 없는 경우가 생긴다(2026-09-29).
+  // 목록 기본값은 여전히 클럽 파트너이고, 이 전체 목록은 이름 검색할 때만 쓴다.
+  const { data: approvedMds } = await supabase
+    .from("users")
+    .select("id, display_name, phone")
+    .eq("role", "md")
+    .eq("md_status", "approved")
+    .is("deleted_at", null)
+    .order("display_name");
+  const allMds = (approvedMds ?? []).map((m) => ({ id: m.id, name: m.display_name ?? "(이름없음)", phone: m.phone }));
+
   const enriched: ForeignReq[] = requests.map((r) => ({
     ...r,
     club_ids: (r.club_ids as string[]) ?? [],
@@ -77,7 +89,7 @@ export default async function AdminForeignPage() {
             컨시어지 — 클럽 MD에 직접 연락(카톡/전화)해서 자리·가격 확정 후, 아래 연락처로 회신하세요.
           </p>
         </div>
-        <ForeignRequestsClient initial={enriched} />
+        <ForeignRequestsClient initial={enriched} allMds={allMds} />
       </div>
     </div>
   );

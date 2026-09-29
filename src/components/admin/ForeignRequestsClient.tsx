@@ -93,7 +93,13 @@ function contactLink(type: string, value: string): string | null {
   return null; // wechat 등: 딥링크 없음 → 복사만
 }
 
-export function ForeignRequestsClient({ initial }: { initial: ForeignReq[] }) {
+export function ForeignRequestsClient({
+  initial,
+  allMds = [],
+}: {
+  initial: ForeignReq[];
+  allMds?: { id: string; name: string; phone: string | null }[];
+}) {
   const [reqs, setReqs] = useState<ForeignReq[]>(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -322,8 +328,8 @@ export function ForeignRequestsClient({ initial }: { initial: ForeignReq[] }) {
             )}
 
             {/* 제안서·MD응답·확정서 — 외국인/한국 요청 공용(ProposalSection.tsx, 2026-09-06). */}
-            <ProposalCard req={toProposalReq(r)} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
-            <MdResponseCard req={toProposalReq(r)} />
+            <ProposalCard req={toProposalReq(r)} allMds={allMds} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
+            <MdResponseCard req={toProposalReq(r)} allMds={allMds} />
             {r.conf && <ConfirmationCard conf={r.conf} />}
 
             <button
@@ -338,6 +344,7 @@ export function ForeignRequestsClient({ initial }: { initial: ForeignReq[] }) {
               <ConfirmForm
                 key={`${r.id}-${r.conf?.ref_no ?? "new"}`}
                 req={toProposalReq(r)}
+                allMds={allMds}
                 onSaved={(c) => applyConf(r.id, c)}
               />
             )}

@@ -94,7 +94,13 @@ function menuToIncludeLines(snap: SelectedMenuSnapshot | null): string[] {
   return lines;
 }
 
-export function KoreanBookingsClient({ initial }: { initial: KoreanBookingReq[] }) {
+export function KoreanBookingsClient({
+  initial,
+  allMds = [],
+}: {
+  initial: KoreanBookingReq[];
+  allMds?: { id: string; name: string; phone: string | null }[];
+}) {
   const [reqs, setReqs] = useState<KoreanBookingReq[]>(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -298,8 +304,8 @@ export function KoreanBookingsClient({ initial }: { initial: KoreanBookingReq[] 
             </div>
 
             {/* 제안서·MD응답·확정서 — 외국인 요청과 공용(ProposalSection.tsx, 2026-09-06). */}
-            <ProposalCard req={toProposalReq(r)} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
-            <MdResponseCard req={toProposalReq(r)} />
+            <ProposalCard req={toProposalReq(r)} allMds={allMds} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
+            <MdResponseCard req={toProposalReq(r)} allMds={allMds} />
             {r.conf && <ConfirmationCard conf={r.conf} />}
 
             <button
@@ -314,6 +320,7 @@ export function KoreanBookingsClient({ initial }: { initial: KoreanBookingReq[] 
               <ConfirmForm
                 key={`${r.id}-${r.conf?.ref_no ?? "new"}`}
                 req={toProposalReq(r)}
+                allMds={allMds}
                 onSaved={(c) => applyConf(r.id, c)}
               />
             )}

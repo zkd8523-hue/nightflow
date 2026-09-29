@@ -57,6 +57,17 @@ export default async function AdminKoreanBookingsPage() {
     (mdsByClub[p.club_id] = mdsByClub[p.club_id] ?? []).push(p.md_id);
   });
 
+  // 승인된 MD 전체 — 외국인 요청 화면과 동일(여러 클럽 담당 MD가 한 클럽에만
+  // 파트너로 걸려 있어도 이름 검색으로 지정할 수 있게, 2026-09-29).
+  const { data: approvedMds } = await supabase
+    .from("users")
+    .select("id, display_name, phone")
+    .eq("role", "md")
+    .eq("md_status", "approved")
+    .is("deleted_at", null)
+    .order("display_name");
+  const allMds = (approvedMds ?? []).map((m) => ({ id: m.id, name: m.display_name ?? "(이름없음)", phone: m.phone }));
+
   const enriched: KoreanBookingReq[] = requests.map((r) => ({
     ...r,
     // korean_booking_requests에는 budget 컬럼이 없다(Migration 652 — 예산은
@@ -77,7 +88,7 @@ export default async function AdminKoreanBookingsPage() {
             컨시어지 — 클럽 MD에 직접 연락(카톡/전화)해서 자리·가격 확정 후, 아래 연락처로 회신하세요.
           </p>
         </div>
-        <KoreanBookingsClient initial={enriched} />
+        <KoreanBookingsClient initial={enriched} allMds={allMds} />
       </div>
     </div>
   );

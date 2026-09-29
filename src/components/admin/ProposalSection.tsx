@@ -65,21 +65,40 @@ function mdLabel(m: { name: string; phone: string | null }): string {
   return m.phone ? m.name : `${m.name} (번호없음)`;
 }
 
+// 요청 클럽의 파트너가 아닌 승인 MD. 여러 클럽을 맡는데 club_partners엔 한
+// 클럽만 걸린 MD를 지정하려면 필요하다(2026-09-29). 전부 펼치면 목록이 너무
+// 길어지므로 이름을 입력했을 때만 "다른 클럽 MD"로 보여준다.
+function otherMdsOf(candidates: MdCandidate[], allMds: MdCandidate[]): MdCandidate[] {
+  const ids = new Set(candidates.map((m) => m.id));
+  return allMds.filter((m) => !ids.has(m.id));
+}
+
+const OTHER_MD_LIMIT = 30;
+
+function matchOthers(others: MdCandidate[], query: string): MdCandidate[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return others.filter((m) => mdLabel(m).toLowerCase().includes(q)).slice(0, OTHER_MD_LIMIT);
+}
+
 // 담당 MD 검색·선택 — 처음부터 검색창만 있으면 "타이핑해야 뭐가 나오는" 인풋으로만
 // 보여서, 후보가 몇 명인지도 모르는 상태로 이름을 정확히 쳐야 했다. 버튼을 누르면
 // 검색창 + 전체 목록이 같이 펼쳐지는 구조로 한다 — 검색은 그 목록을 좁히는
 // 보조 수단일 뿐, 기본은 목록에서 고르는 것이다(2026-09-06).
 function MdPicker({
   candidates,
+  others,
   assignedId,
   onAssign,
 }: {
   candidates: MdCandidate[];
+  others: MdCandidate[];
   assignedId: string | null;
   onAssign: (mdId: string | null) => Promise<boolean>;
 }) {
+  const pool = useMemo(() => [...candidates, ...others], [candidates, others]);
   const soleMd = candidates.length === 1 ? candidates[0] : null;
-  const initialMd = candidates.find((m) => m.id === assignedId) ?? soleMd ?? null;
+  const initialMd = pool.find((m) => m.id === assignedId) ?? soleMd ?? null;
   const [mdId, setMdId] = useState(initialMd?.id ?? "");
   const [mdQuery, setMdQuery] = useState("");
   const [mdOpen, setMdOpen] = useState(false);
@@ -87,13 +106,18 @@ function MdPicker({
   const boxRef = useRef<HTMLDivElement>(null);
   // 모바일에선 목록이 fixed 하단 시트로 boxRef 밖에 그려지므로 별도 ref로 바깥클릭을 판정한다.
   const panelRef = useRef<HTMLDivElement>(null);
-  const matchedMd = candidates.find((m) => m.id === mdId) ?? null;
+  const matchedMd = pool.find((m) => m.id === mdId) ?? null;
 
   const filtered = useMemo(() => {
     const q = mdQuery.trim().toLowerCase();
-    if (!q) return candidates;
+    if (!q) {
+      // 다른 클럽 MD가 이미 지정돼 있으면 목록 맨 위에 보여줘야 현재 상태가 보인다.
+      const outsideAssigned = matchedMd && !candidates.some((m) => m.id === matchedMd.id) ? [matchedMd] : [];
+      return [...outsideAssigned, ...candidates];
+    }
     return candidates.filter((m) => mdLabel(m).toLowerCase().includes(q));
-  }, [mdQuery, candidates]);
+  }, [mdQuery, candidates, matchedMd]);
+  const filteredOthers = useMemo(() => matchOthers(others, mdQuery), [others, mdQuery]);
 
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
@@ -147,25 +171,51 @@ function MdPicker({
             autoFocus
             value={mdQuery}
             onChange={(e) => setMdQuery(e.target.value)}
-            placeholder="이름으로 좁히기"
+            placeholder="이름 검색 · 다른 클럽 MD 포함"
             className="w-full h-11 px-3 border-b border-border bg-background text-foreground text-[14px] outline-none focus:border-amber-500 sm:h-9 sm:text-[12.5px]"
           />
           <div className="max-h-[46vh] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)] sm:max-h-48 sm:pb-0">
-            {filtered.length === 0 ? (
-              <div className="px-3 py-3 text-[13px] text-muted-foreground sm:py-2 sm:text-[12px]">일치하는 MD 없음</div>
+            {filtered.length === 0 && filteredOthers.length === 0 ? (
+              <div className="px-3 py-3 text-[13px] text-muted-foreground sm:py-2 sm:text-[12px]">
+                {mdQuery.trim() ? "일치하는 MD 없음" : "이 클럽 MD 없음"}
+              </div>
             ) : (
-              filtered.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => pick(m)}
-                  className={`w-full text-left px-3 py-3 hover:bg-muted text-[14px] truncate sm:py-2 sm:text-[12.5px] ${
-                    m.id === mdId ? "text-brand-amber font-bold" : "text-foreground"
-                  }`}
-                >
-                  {mdLabel(m)}
-                </button>
-              ))
+              <>
+                {filtered.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => pick(m)}
+                    className={`w-full text-left px-3 py-3 hover:bg-muted text-[14px] truncate sm:py-2 sm:text-[12.5px] ${
+                      m.id === mdId ? "text-brand-amber font-bold" : "text-foreground"
+                    }`}
+                  >
+                    {mdLabel(m)}
+                  </button>
+                ))}
+                {filteredOthers.length > 0 && (
+                  <div className="px-3 pt-2.5 pb-1 border-t border-border text-[11px] font-bold text-muted-foreground">
+                    다른 클럽 MD
+                  </div>
+                )}
+                {filteredOthers.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => pick(m)}
+                    className={`w-full text-left px-3 py-3 hover:bg-muted text-[14px] truncate sm:py-2 sm:text-[12.5px] ${
+                      m.id === mdId ? "text-brand-amber font-bold" : "text-foreground"
+                    }`}
+                  >
+                    {mdLabel(m)}
+                  </button>
+                ))}
+              </>
+            )}
+            {!mdQuery.trim() && others.length > 0 && (
+              <div className="px-3 py-2.5 border-t border-border text-[11.5px] text-muted-foreground sm:py-2">
+                다른 클럽 MD는 이름을 입력하면 나와요
+              </div>
             )}
             {mdId && (
               <button
@@ -190,11 +240,14 @@ function normalizeIncludeLine(line: string): string {
 /** 제안서 카드 — 링크 + 카톡용 요약 복사 + 받는 MD 지정. */
 export function ProposalCard({
   req,
+  allMds = [],
   onAssignMd,
 }: {
   req: ProposalReq;
+  allMds?: MdCandidate[];
   onAssignMd: (mdId: string | null) => Promise<boolean>;
 }) {
+  const others = useMemo(() => otherMdsOf(req.mdCandidates, allMds), [req.mdCandidates, allMds]);
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 bg-card rounded-lg px-3 py-2 border border-border">
@@ -221,7 +274,7 @@ export function ProposalCard({
         </div>
         <div className="w-full flex items-center gap-2 pt-2 mt-1 border-t border-border/60">
           <span className="text-[11px] text-muted-foreground shrink-0">받는 MD</span>
-          <MdPicker candidates={req.mdCandidates} assignedId={req.assignedMdId} onAssign={onAssignMd} />
+          <MdPicker candidates={req.mdCandidates} others={others} assignedId={req.assignedMdId} onAssign={onAssignMd} />
         </div>
       </div>
 
@@ -246,8 +299,9 @@ ${window.location.origin}/booking/proposal/${req.proposalToken}`;
 }
 
 /** MD 응답 카드 — 승인/거절 + 응답한 MD 이름. */
-export function MdResponseCard({ req }: { req: ProposalReq }) {
+export function MdResponseCard({ req, allMds = [] }: { req: ProposalReq; allMds?: MdCandidate[] }) {
   if (!req.mdResponse) return null;
+  const assignedName = [...req.mdCandidates, ...allMds].find((m) => m.id === req.assignedMdId)?.name;
   const approved = req.mdResponse === "approved";
   return (
     <div
@@ -274,7 +328,7 @@ export function MdResponseCard({ req }: { req: ProposalReq }) {
           보냈는지 안 정해뒀으면) 안내만 표시한다(2026-09-06). */}
       <p className="text-[11.5px] text-muted-foreground mt-1">
         {req.assignedMdId
-          ? `${req.mdCandidates.find((m) => m.id === req.assignedMdId)?.name ?? "알 수 없는 MD"} 님이 응답`
+          ? `${assignedName ?? "알 수 없는 MD"} 님이 응답`
           : "제안서에 담당 MD가 지정되지 않았어요"}
       </p>
       {approved && (
@@ -355,25 +409,30 @@ export function ConfirmationCard({ conf }: { conf: ProposalConf }) {
 /** 확정서 작성/수정 폼 — 담당 MD·확정 클럽·자리·인원·확정가·포함 내역·요청·메모. */
 export function ConfirmForm({
   req,
+  allMds = [],
   onSaved,
 }: {
   req: ProposalReq;
+  allMds?: MdCandidate[];
   onSaved: (conf: ProposalConf) => void;
 }) {
   const c = req.conf;
+  const otherMds = useMemo(() => otherMdsOf(req.mdCandidates, allMds), [req.mdCandidates, allMds]);
+  const mdPool = useMemo(() => [...req.mdCandidates, ...otherMds], [req.mdCandidates, otherMds]);
   const soleMd = req.mdCandidates.length === 1 ? req.mdCandidates[0] : null;
-  const initialMd = req.mdCandidates.find((m) => m.id === req.assignedMdId) ?? soleMd ?? null;
+  const initialMd = mdPool.find((m) => m.id === req.assignedMdId) ?? soleMd ?? null;
   const [mdId, setMdId] = useState(initialMd?.id ?? "");
   const [mdQuery, setMdQuery] = useState(initialMd ? mdLabel(initialMd) : "");
   const [mdOpen, setMdOpen] = useState(false);
   const mdBoxRef = useRef<HTMLDivElement>(null);
-  const matchedMd = req.mdCandidates.find((m) => m.id === mdId) ?? null;
+  const matchedMd = mdPool.find((m) => m.id === mdId) ?? null;
 
   const mdFiltered = useMemo(() => {
     const q = mdQuery.trim().toLowerCase();
     if (!q) return req.mdCandidates;
     return req.mdCandidates.filter((m) => mdLabel(m).toLowerCase().includes(q));
   }, [mdQuery, req.mdCandidates]);
+  const mdFilteredOthers = useMemo(() => matchOthers(otherMds, mdQuery), [otherMds, mdQuery]);
 
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
@@ -474,11 +533,20 @@ export function ConfirmForm({
           )}
           {mdOpen && (
             <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-background shadow-lg">
-              {mdFiltered.length === 0 ? (
+              {mdFiltered.length === 0 && mdFilteredOthers.length === 0 ? (
                 <div className="px-3 py-2 text-[12px] text-muted-foreground">일치하는 MD 없음</div>
               ) : (
-                mdFiltered.map((m) => (
-                  <div key={m.id} className="flex items-center gap-2 px-3 py-2 hover:bg-muted">
+                [
+                  ...mdFiltered.map((m) => ({ m, other: false })),
+                  ...mdFilteredOthers.map((m) => ({ m, other: true })),
+                ].map(({ m, other }, i, rows) => (
+                  <div key={m.id}>
+                  {other && !rows[i - 1]?.other && (
+                    <div className="px-3 pt-2 pb-1 border-t border-border text-[11px] font-bold text-muted-foreground">
+                      다른 클럽 MD
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 px-3 py-2 hover:bg-muted">
                     <button
                       type="button"
                       onClick={() => {
@@ -503,6 +571,7 @@ export function ConfirmForm({
                         {m.phone}
                       </button>
                     )}
+                  </div>
                   </div>
                 ))
               )}
