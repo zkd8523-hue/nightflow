@@ -58,8 +58,24 @@ export default async function BookingPage({
     : { data: null };
 
   const { data: md } = req.assigned_md_id
-    ? await sb.from("users").select("display_name").eq("id", req.assigned_md_id).maybeSingle()
+    ? await sb
+        .from("users")
+        .select("display_name, instagram, kakao_open_chat_url, preferred_contact_methods")
+        .eq("id", req.assigned_md_id)
+        .maybeSingle()
     : { data: null };
+
+  // 담당 MD 인스타·카톡 오픈채팅 — 한국 예약에만 보여준다. 외국인 트랙은
+  // 운영자가 중간에서 응대하는 컨시어지라 MD 직통 연락처를 넘기지 않는다.
+  // MD가 설정에서 고른 "고객에게 표시할 연락 수단"만 쓰고, 아무것도 안
+  // 골랐으면 등록된 걸 다 보여준다(ContactPickerButton과 같은 규칙, 2026-09-29).
+  const methods = (md?.preferred_contact_methods as string[] | null) ?? null;
+  const showAll = !methods || methods.length === 0;
+  const isKorean = conf.request_type === "korean";
+  const hostInstagram =
+    isKorean && md?.instagram && (showAll || methods!.includes("dm")) ? md.instagram.replace(/^@/, "") : null;
+  const hostKakaoUrl =
+    isKorean && md?.kakao_open_chat_url && (showAll || methods!.includes("kakao")) ? md.kakao_open_chat_url : null;
 
   // MD가 "입장 완료"를 눌렀는지 — 리뷰 작성 자체를 막지는 않지만, 안 눌렀을 때는
   // 화면에 다른 안내 문구를 보여준다.
@@ -101,6 +117,8 @@ export default async function BookingPage({
       totalPrice={conf.total_price}
       guestRequest={conf.guest_request}
       hostName={md?.display_name ?? null}
+      hostInstagram={hostInstagram}
+      hostKakaoUrl={hostKakaoUrl}
     />
   );
 }

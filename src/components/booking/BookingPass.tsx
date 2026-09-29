@@ -4,7 +4,7 @@
 // 같은 버튼은 서버에서 UNIQUE(request_id, kind)로 1회만 발송된다.
 
 import { useState, useEffect } from "react";
-import { MapPin, Check, Star } from "lucide-react";
+import { MapPin, Check, Star, Instagram, MessageCircle } from "lucide-react";
 
 type Props = {
   requestId: string;
@@ -25,6 +25,10 @@ type Props = {
   totalPrice: number | null;
   guestRequest: string | null;
   hostName: string | null;
+  /** 한국 예약에서만 채워진다 — MD가 "고객에게 표시"로 고른 인스타 핸들(@ 없이). */
+  hostInstagram?: string | null;
+  /** 한국 예약에서만 채워진다 — MD가 등록한 카톡 오픈채팅 URL. */
+  hostKakaoUrl?: string | null;
   publicToken: string;
   arrivalConfirmed: boolean;
   existingReview: { rating: number; comment: string | null } | null;
@@ -265,6 +269,34 @@ export function BookingPass(p: Props) {
               <div className="text-[13.5px] font-bold text-foreground mt-1.5">
                 <span className="text-[11.5px] font-medium text-muted-foreground">{t.host}</span>
                 {p.hostName}
+              </div>
+            )}
+            {/* 담당 MD 직통 연락처 — 한국 예약만(페이지가 외국인 트랙엔 안 넘긴다).
+                버튼 모양은 MD 대시보드의 MDContactCard와 같다. */}
+            {ko && (p.hostInstagram || p.hostKakaoUrl) && (
+              <div className="flex gap-2 mt-3">
+                {p.hostInstagram && (
+                  <a
+                    href={`https://instagram.com/${p.hostInstagram}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 min-w-0 flex items-center justify-center gap-1.5 h-10 rounded-xl bg-background border border-border text-[13px] font-bold text-foreground"
+                  >
+                    <Instagram className="w-4 h-4 text-pink-400 shrink-0" />
+                    <span className="truncate">@{p.hostInstagram}</span>
+                  </a>
+                )}
+                {p.hostKakaoUrl && (
+                  <a
+                    href={p.hostKakaoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 min-w-0 flex items-center justify-center gap-1.5 h-10 rounded-xl bg-background border border-border text-[13px] font-bold text-foreground"
+                  >
+                    <MessageCircle className="w-4 h-4 text-[#FEE500] shrink-0" />
+                    <span className="truncate">카톡 오픈채팅</span>
+                  </a>
+                )}
               </div>
             )}
           </div>
