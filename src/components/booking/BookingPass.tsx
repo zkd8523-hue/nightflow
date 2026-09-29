@@ -90,6 +90,17 @@ const TEXT = {
     reviewSubmitting: "Submitting...",
     reviewNeedRating: "Please select a rating.",
     reviewFail: "Could not save your review. Please try again.",
+    cancelBtn: "Cancel booking",
+    cancelTitle: "Cancel this booking?",
+    cancelBody: "Your host and NightFlow will be notified right away. This can't be undone.",
+    cancelKeep: "Keep booking",
+    cancelDo: "Yes, cancel",
+    cancelling: "Cancelling…",
+    cancelledTitle: "Your booking has been cancelled",
+    cancelledBody: "We've let your host and NightFlow know.",
+    cancelErrPast: "Past bookings can't be cancelled.",
+    cancelErrArrived: "You've already checked in, so this booking can't be cancelled.",
+    cancelErrGeneric: "Couldn't cancel. Please try again in a moment or message us.",
   },
   ko: {
     confirmed: "예약 확정",
@@ -125,6 +136,17 @@ const TEXT = {
     reviewSubmitting: "보내는 중…",
     reviewNeedRating: "별점을 골라주세요.",
     reviewFail: "리뷰 저장에 실패했어요. 다시 시도해 주세요.",
+    cancelBtn: "예약 취소",
+    cancelTitle: "정말 취소하시겠어요?",
+    cancelBody: "취소하면 담당 MD와 나이트플로우에 바로 알림이 가고, 되돌릴 수 없어요.",
+    cancelKeep: "돌아가기",
+    cancelDo: "예약 취소하기",
+    cancelling: "취소하는 중…",
+    cancelledTitle: "예약이 취소됐어요",
+    cancelledBody: "담당 MD와 나이트플로우에 알렸어요.",
+    cancelErrPast: "지난 예약은 취소할 수 없어요.",
+    cancelErrArrived: "이미 입장한 예약은 취소할 수 없어요.",
+    cancelErrGeneric: "취소하지 못했어요. 잠시 뒤 다시 시도하거나 담당 MD에게 연락해 주세요.",
   },
 };
 
@@ -212,15 +234,15 @@ export function BookingPass(p: Props) {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [reviewErr, setReviewErr] = useState<string | null>(null);
 
-  // 예약 취소 — 한국 예약만(외국인은 운영자 전담 컨시어지). 누르면 바로 취소하지
-  // 않고 "정말 취소하시겠어요?" 확인 단계를 한 번 거친다. 서버가 담당 MD와
-  // 운영자에게 푸시를 보낸다(/api/booking-cancel).
+  // 예약 취소 — 한국·외국인 예약 모두. 누르면 바로 취소하지 않고 "정말
+  // 취소하시겠어요?" 확인 단계를 한 번 거친다. 서버가 담당 MD와 운영자에게
+  // 푸시를 보낸다(/api/booking-cancel).
   const [cancelledNow, setCancelledNow] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelErr, setCancelErr] = useState<string | null>(null);
   const isCancelled = p.cancelled || cancelledNow;
-  const canCancel = ko && !isCancelled && !p.arrivalConfirmed && !isPastEvent(p.eventDate) && !isSent("arrived");
+  const canCancel = !isCancelled && !p.arrivalConfirmed && !isPastEvent(p.eventDate) && !isSent("arrived");
 
   const cancelBooking = async () => {
     setCancelling(true);
@@ -236,14 +258,14 @@ export function BookingPass(p: Props) {
         setCancelledNow(true);
         setConfirmingCancel(false);
       } else if (j.error === "past_event") {
-        setCancelErr("지난 예약은 취소할 수 없어요.");
+        setCancelErr(t.cancelErrPast);
       } else if (j.error === "already_arrived") {
-        setCancelErr("이미 입장한 예약은 취소할 수 없어요.");
+        setCancelErr(t.cancelErrArrived);
       } else {
-        setCancelErr("취소하지 못했어요. 잠시 뒤 다시 시도하거나 담당 MD에게 연락해 주세요.");
+        setCancelErr(t.cancelErrGeneric);
       }
     } catch {
-      setCancelErr("취소하지 못했어요. 잠시 뒤 다시 시도하거나 담당 MD에게 연락해 주세요.");
+      setCancelErr(t.cancelErrGeneric);
     }
     setCancelling(false);
   };
@@ -544,8 +566,8 @@ export function BookingPass(p: Props) {
 
             {cancelledNow && (
               <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-3 text-center">
-                <p className="text-[13.5px] font-bold text-red-400">예약이 취소됐어요</p>
-                <p className="text-[12px] text-muted-foreground mt-1">담당 MD와 나이트플로우에 알렸어요.</p>
+                <p className="text-[13.5px] font-bold text-red-400">{t.cancelledTitle}</p>
+                <p className="text-[12px] text-muted-foreground mt-1">{t.cancelledBody}</p>
               </div>
             )}
 
@@ -557,13 +579,13 @@ export function BookingPass(p: Props) {
                     onClick={() => setConfirmingCancel(true)}
                     className="w-full h-10 rounded-xl text-[12.5px] font-semibold text-muted-foreground hover:text-red-400"
                   >
-                    예약 취소
+                    {t.cancelBtn}
                   </button>
                 ) : (
                   <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3">
-                    <p className="text-[14px] font-bold text-foreground">정말 취소하시겠어요?</p>
+                    <p className="text-[14px] font-bold text-foreground">{t.cancelTitle}</p>
                     <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">
-                      취소하면 담당 MD와 나이트플로우에 바로 알림이 가고, 되돌릴 수 없어요.
+                      {t.cancelBody}
                     </p>
                     <div className="flex gap-2 mt-3">
                       <button
@@ -575,7 +597,7 @@ export function BookingPass(p: Props) {
                         disabled={cancelling}
                         className="flex-1 h-10 rounded-xl border border-border text-[13px] font-bold text-foreground disabled:opacity-50"
                       >
-                        돌아가기
+                        {t.cancelKeep}
                       </button>
                       <button
                         type="button"
@@ -583,7 +605,7 @@ export function BookingPass(p: Props) {
                         disabled={cancelling}
                         className="flex-1 h-10 rounded-xl bg-red-500 text-white text-[13px] font-bold disabled:opacity-50"
                       >
-                        {cancelling ? "취소하는 중…" : "예약 취소하기"}
+                        {cancelling ? t.cancelling : t.cancelDo}
                       </button>
                     </div>
                     {cancelErr && <p className="text-center text-[12px] text-red-400 mt-2">{cancelErr}</p>}

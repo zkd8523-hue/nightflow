@@ -1,8 +1,9 @@
 // 손님이 예약 확인서(/booking/[token])에서 "예약 취소"를 누르면 호출된다.
 // 비로그인 링크라 public_token을 아는 사람만 취소할 수 있다(확인서 조회와 같은 기준).
 //
-// 한국 예약(korean_booking_requests)만 받는다. 외국인 요청은 운영자가 중간에서
-// 응대하는 컨시어지라 손님 본인 취소가 없다(Migration 653 주석 참고).
+// 한국 예약(korean_booking_requests)과 외국인 요청(foreign_requests) 둘 다 받는다.
+// 외국인 요청은 원래 운영자 전담이라 본인 취소가 없었지만(Migration 653 주석),
+// 확인서에서 손님이 직접 취소하고 운영자·MD가 즉시 알림을 받게 넓혔다(2026-09-30).
 //
 // Migration 653은 운영자가 연락하기 전(status='new')까지만 본인 취소를 허용하고
 // 그 뒤로는 고객센터 안내였다 — MD와 이미 얘기가 오간 뒤 조용히 취소되면 MD만
@@ -12,7 +13,7 @@
 //
 // Body: { public_token: string }
 // 200: { ok: true, notified: { admin, md } } | { ok: true, already: true }
-// 403: 한국 예약이 아님 / 409: 지난 예약 · 이미 입장한 예약
+// 409: 지난 예약 · 이미 입장한 예약
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -44,16 +45,26 @@ export async function POST(req: NextRequest) {
     .eq("public_token", token)
     .maybeSingle();
   if (!conf) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  if (conf.request_type !== "korean") {
-    return NextResponse.json({ error: "not_allowed" }, { status: 403 });
-  }
 
-  const { data: reqRow } = await sb
-    .from("korean_booking_requests")
-    .select("id, guest_name, event_date, group_size, status, assigned_md_id, club_id")
+  // 원본 테이블 분기 — 한국은 club_id(단일), 외국인은 club_ids(배열).
+  const requestType = conf.request_type === "korean" ? "korean" : "foreign";
+  const table = requestType === "korean" ? "korean_booking_requests" : "foreign_requests";
+  const { data: rawReq } = await sb
+    .from(table)
+    .select(`id, guest_name, event_date, group_size, status, assigned_md_id, ${requestType === "korean" ? "club_id" : "club_ids"}`)
     .eq("id", conf.request_id)
     .single();
-  if (!reqRow) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!rawReq) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const reqRow = rawReq as unknown as {
+    id: string;
+    guest_name: string | null;
+    event_date: string;
+    group_size: number;
+    status: string;
+    assigned_md_id: string | null;
+    club_id?: string | null;
+    club_ids?: string[] | null;
+  };
   if (reqRow.status === "cancelled") return NextResponse.json({ ok: true, already: true });
 
   // 지난 예약은 취소 대상이 아니다(클럽은 한국에 있으니 KST 기준).
@@ -65,7 +76,7 @@ export async function POST(req: NextRequest) {
   const { count: arrived } = await sb
     .from("arrival_pings")
     .select("*", { count: "exact", head: true })
-    .eq("request_type", "korean")
+    .eq("request_type", requestType)
     .eq("request_id", reqRow.id)
     .eq("kind", "arrived");
   if ((arrived ?? 0) > 0) {
@@ -73,7 +84,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { data: updated, error: updErr } = await sb
-    .from("korean_booking_requests")
+    .from(table)
     .update({ status: "cancelled", updated_at: new Date().toISOString() })
     .eq("id", reqRow.id)
     .neq("status", "cancelled")
@@ -83,7 +94,7 @@ export async function POST(req: NextRequest) {
   if (!updated || updated.length === 0) return NextResponse.json({ ok: true, already: true });
 
   // 알림 문구 — 도착 알림과 같은 틀.
-  const clubId = conf.club_id ?? reqRow.club_id;
+  const clubId = conf.club_id ?? (requestType === "korean" ? reqRow.club_id : reqRow.club_ids?.[0]) ?? null;
   const { data: club } = clubId
     ? await sb.from("clubs").select("name").eq("id", clubId).maybeSingle()
     : { data: null };
@@ -93,7 +104,7 @@ export async function POST(req: NextRequest) {
   const sizeText = /^\d+$/.test(rawSize) ? `${rawSize}명` : rawSize;
   const guest = reqRow.guest_name?.trim() || "게스트";
   const text =
-    `${club?.name ? `${club.name} ` : ""}${guest}님 ${sizeText} ${dateText} 예약을 손님이 취소했어요. (${conf.ref_no})`;
+    `${requestType === "foreign" ? "[외국인] " : ""}${club?.name ? `${club.name} ` : ""}${guest}님 ${sizeText} ${dateText} 예약을 손님이 취소했어요. (${conf.ref_no})`;
 
   const hasPush = async (userId: string) => {
     const { count } = await sb
@@ -141,7 +152,7 @@ export async function POST(req: NextRequest) {
   const { data: admins } = await sb.from("users").select("id").eq("role", "admin");
   for (const a of admins ?? []) {
     if (await hasPush(a.id)) {
-      if (await push(a.id, "/admin/korean-bookings")) notifiedAdmin = true;
+      if (await push(a.id, requestType === "korean" ? "/admin/korean-bookings" : "/admin/foreign")) notifiedAdmin = true;
     }
   }
   if (!notifiedAdmin) {
