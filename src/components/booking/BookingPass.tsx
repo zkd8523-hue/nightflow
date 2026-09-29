@@ -32,24 +32,97 @@ type Props = {
 
 // operating_hours는 자유 텍스트다("금/토 22:00-05:00", "화~일 23:00~", "매일 22:00 OPEN" 등
 // DB에 15가지 넘는 형식이 있다). 요일 조합까지 다 옮기려면 파싱이 끝이 없어서
-// 첫 번째 시각만 뽑아 "Open HH:MM"으로 단순화한다 — 손님은 몇 시부터 여는지만
+// 첫 번째 시각만 뽑아 "Open HH:MM"(한국 예약은 "HH:MM 오픈")으로 단순화한다 — 손님은 몇 시부터 여는지만
 // 알면 되고, 요일별 세부 사항은 어차피 도어에서 확인하게 된다.
-function toEnHours(raw: string | null): string | null {
+function openTime(raw: string | null): string | null {
   if (!raw) return null;
   const match = raw.match(/(\d{1,2}):(\d{2})/);
   if (!match) return null;
-  return `Open ${match[1].padStart(2, "0")}:${match[2]}`;
+  return `${match[1].padStart(2, "0")}:${match[2]}`;
 }
 
-function fmtDate(iso: string): string {
+function fmtDate(iso: string, ko: boolean): string {
   const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-US", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  // ko-KR 로케일은 요일 괄호가 환경마다 달라서("24일 토" / "24일 (토)") 직접 조립한다.
+  return ko
+    ? `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${"일월화수목금토"[d.getDay()]})`
+    : d.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 }
+
+// 한국 예약(korean_booking_requests) 손님은 한국어로 본다. 예전엔 외국인용 영어
+// 문구가 그대로 나와서 한국 손님이 "Your host", "Pay at venue"를 봤다(2026-09-29).
+const TEXT = {
+  en: {
+    confirmed: "Confirmed",
+    cancelled: "Cancelled",
+    host: "Your host ",
+    date: "Date",
+    venue: "Venue",
+    open: (time: string) => `Open ${time}`,
+    party: "Party",
+    guests: (n: number | string) => `${n} guests`,
+    name: "Name",
+    seating: "Seating",
+    included: "Included",
+    total: "Total",
+    price: (n: number) => `KRW ${n.toLocaleString()}`,
+    payNote: "Pay at venue · NightFlow takes no payment",
+    request: "Request",
+    onArrival: "On arrival",
+    maps: "Open in Google Maps",
+    unlockNote: "These buttons unlock on the day of your visit.",
+    letKnow: "Let your host know you're coming",
+    soon: "10 min away",
+    here: "I'm here",
+    sent: "Sent",
+    notified: (host: string | null) => (host ? `${host} has been notified` : "Your host has been notified"),
+    cooldown: "Already sent recently — try again in a few minutes.",
+    sendFail: "Could not send. Please call your host.",
+    review: "Review",
+    reviewNotConfirmed: "Your host hasn't confirmed your arrival yet — you can still leave a review once your visit is done.",
+    reviewThanks: "Thanks for your review!",
+    reviewPlaceholder: "How was it? (optional)",
+    reviewSubmit: "Submit review",
+    reviewSubmitting: "Submitting...",
+    reviewNeedRating: "Please select a rating.",
+    reviewFail: "Could not save your review. Please try again.",
+  },
+  ko: {
+    confirmed: "예약 확정",
+    cancelled: "취소됨",
+    host: "담당 MD ",
+    date: "날짜",
+    venue: "클럽",
+    open: (time: string) => `${time} 오픈`,
+    party: "인원",
+    guests: (n: number | string) => `${n}명`,
+    name: "예약자",
+    seating: "자리",
+    included: "포함",
+    total: "금액",
+    price: (n: number) => `${n.toLocaleString()}원`,
+    payNote: "현장 결제 · 나이트플로우는 결제를 받지 않아요",
+    request: "요청사항",
+    onArrival: "위치",
+    maps: "구글 지도로 열기",
+    unlockNote: "도착 알림 버튼은 예약 당일에 눌러요.",
+    letKnow: "도착 전에 MD에게 알려주세요",
+    soon: "10분 전",
+    here: "도착했어요",
+    sent: "알렸어요",
+    notified: (host: string | null) => (host ? `${host} MD에게 알렸어요` : "담당 MD에게 알렸어요"),
+    cooldown: "방금 보냈어요. 몇 분 뒤에 다시 눌러주세요.",
+    sendFail: "전송에 실패했어요. 담당 MD에게 전화해 주세요.",
+    review: "리뷰",
+    reviewNotConfirmed: "MD가 아직 입장 확인을 안 했어요. 방문을 마쳤다면 리뷰는 지금 남길 수 있어요.",
+    reviewThanks: "리뷰 남겨주셔서 고마워요!",
+    reviewPlaceholder: "어땠나요? (선택)",
+    reviewSubmit: "리뷰 남기기",
+    reviewSubmitting: "보내는 중…",
+    reviewNeedRating: "별점을 골라주세요.",
+    reviewFail: "리뷰 저장에 실패했어요. 다시 시도해 주세요.",
+  },
+};
 
 // 도착 버튼은 예약 당일에만 눌러야 의미가 있다(그 전에 눌러도 MD가 지금 당장
 // 마중 나갈 수 없고, 지나면 이미 끝난 얘기다). 클럽 영업이 자정을 넘기므로
@@ -64,6 +137,8 @@ function isEventDay(eventDateIso: string): boolean {
 }
 
 export function BookingPass(p: Props) {
+  const ko = p.requestType === "korean";
+  const t = ko ? TEXT.ko : TEXT.en;
   // "10분 전"과 "도착"은 서로 다른 신호라 각각 독립적으로 완료 상태를 가져야 한다.
   // 하나로 합치면 "10분 전"을 누른 순간 화면이 통째로 "완료"로 바뀌어서
   // 실제로 도착했을 때 누를 버튼이 사라지는 문제가 있었다.
@@ -108,12 +183,12 @@ export function BookingPass(p: Props) {
         // 쿨다운 중 — 서버가 거부했으니 마지막 발송 시각을 지금으로 갱신해
         // 화면도 "아직 대기 중"으로 정확히 맞춘다.
         setSentAt((prev) => ({ ...prev, [kind]: Date.now() }));
-        setErr("Already sent recently — try again in a few minutes.");
+        setErr(t.cooldown);
       } else {
-        setErr("Could not send. Please call your host.");
+        setErr(t.sendFail);
       }
     } catch {
-      setErr("Could not send. Please call your host.");
+      setErr(t.sendFail);
     }
     setBusyKind(null);
   };
@@ -129,7 +204,7 @@ export function BookingPass(p: Props) {
 
   const submitReview = async () => {
     if (reviewRating < 1) {
-      setReviewErr("Please select a rating.");
+      setReviewErr(t.reviewNeedRating);
       return;
     }
     setReviewSaving(true);
@@ -147,10 +222,10 @@ export function BookingPass(p: Props) {
       if (res.ok) {
         setReviewSaved(true);
       } else {
-        setReviewErr("Could not save your review. Please try again.");
+        setReviewErr(t.reviewFail);
       }
     } catch {
-      setReviewErr("Could not save your review. Please try again.");
+      setReviewErr(t.reviewFail);
     }
     setReviewSaving(false);
   };
@@ -181,38 +256,38 @@ export function BookingPass(p: Props) {
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current" />
-              {p.cancelled ? "Cancelled" : "Confirmed"}
+              {p.cancelled ? t.cancelled : t.confirmed}
             </div>
             <div className="font-mono font-bold text-[34px] tracking-wide text-brand-amber mt-3 tabular-nums">
               {p.refNo}
             </div>
             {p.hostName && (
               <div className="text-[13.5px] font-bold text-foreground mt-1.5">
-                <span className="text-[11.5px] font-medium text-muted-foreground">Your host </span>
+                <span className="text-[11.5px] font-medium text-muted-foreground">{t.host}</span>
                 {p.hostName}
               </div>
             )}
           </div>
 
           <div className="px-5 py-4">
-            <Row k="Date">
-              <div className="text-[18px] font-bold">{fmtDate(p.eventDate)}</div>
+            <Row k={t.date}>
+              <div className="text-[18px] font-bold">{fmtDate(p.eventDate, ko)}</div>
             </Row>
             {p.clubName && (
-              <Row k="Venue">
+              <Row k={t.venue}>
                 <div className="text-[18px] font-bold">{p.clubName}</div>
-                {toEnHours(p.operatingHours) && (
+                {openTime(p.operatingHours) && (
                   <div className="text-[11px] text-muted-foreground mt-0.5">
-                    {toEnHours(p.operatingHours)}
+                    {t.open(openTime(p.operatingHours)!)}
                   </div>
                 )}
               </Row>
             )}
-            <Row k="Party">
-              <div className="text-[18px] font-bold">{p.groupSize} guests</div>
+            <Row k={t.party}>
+              <div className="text-[18px] font-bold">{t.guests(p.groupSize)}</div>
             </Row>
             {p.guestName && (
-              <Row k="Name">
+              <Row k={t.name}>
                 <div className="text-[14.5px] font-semibold">{p.guestName}</div>
               </Row>
             )}
@@ -220,12 +295,12 @@ export function BookingPass(p: Props) {
             {(p.tableInfo || p.includes.length > 0 || p.totalPrice) && (
               <div className="mt-4 pt-3 border-t border-border">
                 {p.tableInfo && (
-                  <Row k="Seating">
+                  <Row k={t.seating}>
                     <div className="text-[14.5px] font-semibold">{p.tableInfo}</div>
                   </Row>
                 )}
                 {p.includes.length > 0 && (
-                  <Row k="Included">
+                  <Row k={t.included}>
                     <ul className="space-y-0.5">
                       {p.includes.map((it) => (
                         <li key={it} className="text-[14px] text-foreground/90">
@@ -236,17 +311,17 @@ export function BookingPass(p: Props) {
                   </Row>
                 )}
                 {p.totalPrice != null && (
-                  <Row k="Total">
+                  <Row k={t.total}>
                     <div className="font-mono text-[21px] font-bold text-money tabular-nums">
-                      KRW {p.totalPrice.toLocaleString()}
+                      {t.price(p.totalPrice)}
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">
-                      Pay at venue · NightFlow takes no payment
+                      {t.payNote}
                     </div>
                   </Row>
                 )}
                 {p.guestRequest && (
-                  <Row k="Request">
+                  <Row k={t.request}>
                     <div className="text-[14px] text-foreground/90">{p.guestRequest}</div>
                   </Row>
                 )}
@@ -256,7 +331,7 @@ export function BookingPass(p: Props) {
             {p.address && (
               <div className="mt-4 pt-3 border-t border-border">
                 <div className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted-foreground mb-1.5">
-                  On arrival
+                  {t.onArrival}
                 </div>
                 <div className="text-[14px] font-semibold">{p.address}</div>
                 {/* 좌표(lat/lng)는 DB 입력 시점 오차가 있을 수 있어 신뢰도가 낮다.
@@ -271,7 +346,7 @@ export function BookingPass(p: Props) {
                   className="flex items-center justify-center gap-2 mt-3 h-12 rounded-xl bg-inverse text-inverse-foreground text-[14px] font-bold"
                 >
                   <MapPin className="w-4 h-4" />
-                  Open in Google Maps
+                  {t.maps}
                 </a>
               </div>
             )}
@@ -284,12 +359,12 @@ export function BookingPass(p: Props) {
               <div className="mt-4 pt-3.5 border-t border-border">
                 {!isEventDay(p.eventDate) ? (
                   <p className="text-center text-[12px] text-muted-foreground mb-2">
-                    These buttons unlock on the day of your visit.
+                    {t.unlockNote}
                   </p>
                 ) : (
                   !isSent("soon") && !isSent("arrived") && (
                     <p className="text-center text-[12px] text-muted-foreground mb-2">
-                      Let your host know you&apos;re coming
+                      {t.letKnow}
                     </p>
                   )
                 )}
@@ -297,7 +372,7 @@ export function BookingPass(p: Props) {
                   {isSent("soon") ? (
                     <div className="flex-1 h-12 flex items-center justify-center gap-1.5 rounded-xl bg-green-500/10 border border-green-500/30">
                       <Check className="w-4 h-4 text-money" />
-                      <span className="text-[13px] font-bold text-money">Sent</span>
+                      <span className="text-[13px] font-bold text-money">{t.sent}</span>
                     </div>
                   ) : (
                     <button
@@ -305,13 +380,13 @@ export function BookingPass(p: Props) {
                       disabled={busyKind === "soon" || !isEventDay(p.eventDate)}
                       className="flex-1 h-12 rounded-xl border border-amber-500/40 bg-amber-500/10 text-brand-amber text-[14px] font-bold disabled:opacity-40"
                     >
-                      10 min away
+                      {t.soon}
                     </button>
                   )}
                   {isSent("arrived") ? (
                     <div className="flex-1 h-12 flex items-center justify-center gap-1.5 rounded-xl bg-green-500/10 border border-green-500/30">
                       <Check className="w-4 h-4 text-money" />
-                      <span className="text-[13px] font-bold text-money">Sent</span>
+                      <span className="text-[13px] font-bold text-money">{t.sent}</span>
                     </div>
                   ) : (
                     <button
@@ -319,13 +394,13 @@ export function BookingPass(p: Props) {
                       disabled={busyKind === "arrived" || !isEventDay(p.eventDate)}
                       className="flex-1 h-12 rounded-xl border border-amber-500/40 bg-amber-500/10 text-brand-amber text-[14px] font-bold disabled:opacity-40"
                     >
-                      I&apos;m here
+                      {t.here}
                     </button>
                   )}
                 </div>
                 {(isSent("soon") || isSent("arrived")) && (
                   <p className="text-center text-[12px] text-money font-semibold mt-2">
-                    {p.hostName ? `${p.hostName} has been notified` : "Your host has been notified"}
+                    {t.notified(p.hostName)}
                   </p>
                 )}
                 {err && <p className="text-center text-[12px] text-red-400 mt-2">{err}</p>}
@@ -338,17 +413,17 @@ export function BookingPass(p: Props) {
             {!p.cancelled && (
               <div className="mt-4 pt-3.5 border-t border-border">
                 <div className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted-foreground mb-2">
-                  Review
+                  {t.review}
                 </div>
                 {!p.arrivalConfirmed && !reviewSaved && (
                   <p className="text-[11.5px] text-muted-foreground mb-2 leading-relaxed">
-                    Your host hasn&apos;t confirmed your arrival yet — you can still leave a review once your visit is done.
+                    {t.reviewNotConfirmed}
                   </p>
                 )}
                 {reviewSaved ? (
                   <div className="flex items-center gap-2 h-11 rounded-xl bg-green-500/10 border border-green-500/30 px-3">
                     <Check className="w-4 h-4 text-money shrink-0" />
-                    <span className="text-[13px] font-bold text-money">Thanks for your review!</span>
+                    <span className="text-[13px] font-bold text-money">{t.reviewThanks}</span>
                   </div>
                 ) : (
                   <>
@@ -373,7 +448,7 @@ export function BookingPass(p: Props) {
                     <textarea
                       value={reviewComment}
                       onChange={(e) => setReviewComment(e.target.value)}
-                      placeholder="How was it? (optional)"
+                      placeholder={t.reviewPlaceholder}
                       rows={2}
                       className="w-full px-3 py-2 rounded-xl bg-background border border-border text-foreground text-[13px] focus:border-amber-500 outline-none resize-none mb-2"
                     />
@@ -383,7 +458,7 @@ export function BookingPass(p: Props) {
                       disabled={reviewSaving}
                       className="w-full h-11 rounded-xl bg-inverse text-inverse-foreground text-[13.5px] font-bold disabled:opacity-50"
                     >
-                      {reviewSaving ? "Submitting..." : "Submit review"}
+                      {reviewSaving ? t.reviewSubmitting : t.reviewSubmit}
                     </button>
                     {reviewErr && (
                       <p className="text-center text-[12px] text-red-400 mt-2">{reviewErr}</p>

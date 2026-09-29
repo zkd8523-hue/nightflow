@@ -87,7 +87,11 @@ export default async function BookingPage({
       eventDate={req.event_date}
       groupSize={conf.confirmed_group_size ?? req.group_size}
       cancelled={req.status === "cancelled"}
-      clubName={club?.name_en || club?.name || null}
+      clubName={
+        conf.request_type === "korean"
+          ? club?.name || club?.name_en || null
+          : club?.name_en || club?.name || null
+      }
       address={club?.address ?? null}
       lat={club?.latitude ?? null}
       lng={club?.longitude ?? null}
