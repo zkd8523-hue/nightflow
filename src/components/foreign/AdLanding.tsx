@@ -20,7 +20,7 @@
 //   - 후기 인용 — 승인된 고객 후기가 0건이다. 구글 실평점만 쓴다.
 
 import Link from "next/link";
-import Image from "next/image";
+import { VipPriceCards } from "@/components/foreign/VipPriceCards";
 import type { Metadata } from "next";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
@@ -364,23 +364,16 @@ export function AdLanding({ lang }: { lang: SeoLang }) {
         <span className="text-[11px] text-muted-foreground uppercase tracking-wider">{lang}</span>
       </header>
 
-      {/* 히어로 — 클럽 플로어. 헤드라인을 이미지 위에 얹어 첫 화면에서 공포 줄까지 보이게 한다.
-          LCP라서 priority + webp(56KB). 하단 그라데이션은 글자 가독성용. */}
-      <div className="relative max-w-lg mx-auto">
-        <Image
-          src="/ad-hero.webp"
-          alt=""
-          width={1200}
-          height={956}
-          priority
-          sizes="(max-width: 512px) 100vw, 512px"
-          className="block w-full h-[46vh] max-h-[340px] object-cover"
-        />
-        <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-background via-background/80 to-transparent" />
-        <h1 className="absolute bottom-0 left-0 right-0 px-5 pb-3 text-[30px] font-black leading-[1.08] tracking-tight break-keep">
+      {/* 히어로 — 헤드라인 + VIP 테이블 시작가 카드(/en 홈과 같은 카드).
+          예전엔 여성 클럽 사진(ad-hero.webp) 위에 헤드라인을 얹었는데 뺐다(2026-09-29, 운영자 결정).
+          "VIP之夜" 헤드라인 + 여성 사진이 대만 검색자에게 酒店(호스티스 술집) 광고처럼 읽힐 수 있고,
+          9/28 tw_hk 광고 클릭 4명이 전부 4~8초 만에 나갔다. 사진 자리에 실제 가격을 올려 첫 화면에서 보이게 한다. */}
+      <div className="max-w-lg mx-auto px-5 pt-3">
+        <h1 className="text-[30px] font-black leading-[1.08] tracking-tight break-keep">
           {c.h1}
         </h1>
       </div>
+      <VipPriceCards lang={lang} className="max-w-lg mx-auto px-4 pt-4" />
 
       <div className="max-w-lg mx-auto">
 
