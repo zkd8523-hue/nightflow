@@ -60,6 +60,11 @@ export function NotificationSettings() {
   //    (로그인 시트에서 "나중에"를 누른 유저의 유일한 복구 경로다)
   const [osPerm, setOsPerm] = useState<"granted" | "denied" | "prompt" | null>(null);
   const [grantingPush, setGrantingPush] = useState(false);
+  // OS 권한은 "granted"인데 서버 push_tokens엔 이 계정 행이 없는 경우(2026-09-30 발견).
+  // 로그인 직후 계정 전환, 토큰 만료 정리 등으로 생길 수 있는데, 지금까지는 이 상태를
+  // 복구할 버튼이 화면 어디에도 없었다 — osPerm==="prompt"일 때만 버튼이 떴기 때문에
+  // 이미 허용된 사람은 "알림이 켜져 있다"고 믿는 채로 영원히 못 받는 함정이었다.
+  const [serverTokenMissing, setServerTokenMissing] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -67,23 +72,31 @@ export function NotificationSettings() {
       if (!Capacitor.isNativePlatform()) return;
       const { PushNotifications } = await import("@capacitor/push-notifications");
       const status = await PushNotifications.checkPermissions();
-      setOsPerm(
-        status.receive === "granted"
-          ? "granted"
-          : status.receive === "denied"
-            ? "denied"
-            : "prompt"
-      );
+      const granted = status.receive === "granted";
+      setOsPerm(granted ? "granted" : status.receive === "denied" ? "denied" : "prompt");
+
+      if (granted && user?.id) {
+        const platform = Capacitor.getPlatform() as "android" | "ios";
+        const { count } = await supabase
+          .from("push_tokens")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("platform", platform);
+        setServerTokenMissing((count ?? 0) === 0);
+      }
     })();
-  }, []);
+  }, [user?.id, supabase]);
 
   const handleEnableOsPush = async () => {
     if (!user || grantingPush) return;
     setGrantingPush(true);
     try {
+      // requestIfNeeded=true라도 이미 granted면 OS 팝업 없이 바로 재등록만 한다 —
+      // "다시 등록" 버튼(serverTokenMissing)도 이 함수를 그대로 재사용한다.
       const result = await initPushNotifications(user.id, true);
       if (result === "granted") {
         setOsPerm("granted");
+        setServerTokenMissing(false);
         toast.success("알림이 켜졌어요");
       } else {
         // 여기서 거절하면 OS 팝업을 소진한 것 → 이후엔 기기 설정으로만 복구 가능
@@ -363,6 +376,28 @@ export function NotificationSettings() {
               className="px-3.5 py-2 rounded-lg bg-amber-500 text-black text-[13px] font-black disabled:opacity-50"
             >
               {grantingPush ? "여는 중..." : "알림 켜기"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 기기 권한은 이미 허용인데 서버에 이 폰 토큰이 없는 경우(2026-09-30 발견) —
+          osPerm==="prompt" 버튼과 달리 이 상태는 "허용" 표시만 보고는 알 수 없어서
+          유저 본인도 왜 안 오는지 알아챌 방법이 없었다. 계정 전환·토큰 만료 정리
+          직후 재로그인만으로 자동 복구가 안 될 때의 유일한 수동 경로. */}
+      {osPerm === "granted" && serverTokenMissing && (
+        <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 mb-4 flex items-start gap-2.5">
+          <Bell className="w-4 h-4 text-brand-amber shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[12.5px] text-foreground/90 leading-relaxed mb-2">
+              이 기기에 알림 등록이 안 돼 있어요. 다시 등록하면 앱 알림을 받을 수 있어요.
+            </p>
+            <button
+              onClick={handleEnableOsPush}
+              disabled={grantingPush}
+              className="px-3.5 py-2 rounded-lg bg-amber-500 text-black text-[13px] font-black disabled:opacity-50"
+            >
+              {grantingPush ? "등록하는 중..." : "이 기기에서 알림 다시 등록"}
             </button>
           </div>
         </div>
