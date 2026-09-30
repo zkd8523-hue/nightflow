@@ -14,7 +14,6 @@ import { MenuPicker } from "@/components/foreign/MenuPicker";
 import { formatBookingContact } from "@/lib/utils/format";
 import { saveFormDraft, loadFormDraft, clearFormDraft } from "@/lib/utils/formDraft";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
-import { bookingFloor } from "@/lib/clubs/tablePricing";
 import type { ClubMenuItem, ClubMenuCombo, SelectedMenuSnapshot, KoreanBookingContactType } from "@/types/database";
 
 // 한국 유저 클럽 예약 요청 폼 (컨시어지 모델, foreign_requests와 동일 구조).
@@ -82,7 +81,7 @@ export function KoreanBookingForm({
   const [menuZone, setMenuZone] = useState<string | null>(null);
   const [picked, setPicked] = useState<{ snapshot: SelectedMenuSnapshot; total: number } | null>(null);
   const [menuDraft, setMenuDraft] = useState<{ snapshot: SelectedMenuSnapshot; total: number } | null>(null);
-  // 추천 세트 예산 버튼의 기준 지역(외국인 폼과 같은 하한표 — tablePricing.bookingFloor).
+  // 추천 세트 예산 버튼의 기준 지역 — 강남인지만 본다(한국 폼 전용 금액표, mdBudgetOptions).
   const [clubArea, setClubArea] = useState<string | null>(null);
 
   const isWeekend = (() => {
@@ -317,10 +316,10 @@ export function KoreanBookingForm({
     trackEvent("booking_md_recommend", { club_id: clubId, budget });
     setStep(2);
   };
-  // 버튼 3단 — 외국인 폼과 같은 규칙(지역 하한 · 1.5배 · 2배). 강남 100/150/200만, 그 외 50/75/100만.
-  // 외국인 폼은 하한을 강제해 첫 버튼에 "최소"를 달지만, 한국 폼은 하한이 없어(35만 원짜리 한 병도 담긴다) 뺀다.
-  const base = bookingFloor(clubArea);
-  const mdBudgetOptions = [base, Math.round((base * 1.5) / 50_000) * 50_000, base * 2];
+  // 버튼 3단 — 한국 폼 전용 금액(사용자 결정 2026-09-30): 강남 50/100/300만, 그 외(홍대·이태원 등)
+  // 30/50/100만. 외국인 폼(지역 하한 · 1.5배 · 2배, tablePricing.bookingFloor)과 따로 간다 —
+  // 한국 손님은 하한 없이 더 낮은 금액부터 고르고, 강남은 위쪽 폭을 넓힌다.
+  const mdBudgetOptions = clubArea === "강남" ? [500_000, 1_000_000, 3_000_000] : [300_000, 500_000, 1_000_000];
 
   // 메뉴 시트 맨 위에만 둔다 — 외국인 폼은 날짜 화면에도 두지만, 한국 폼 1단계는 "주류 선택" 버튼
   // 바로 아래라 두 출구가 겹쳐 보인다(사용자 결정 2026-09-26). 술을 보다가 막힌 순간에 보이면 충분하다.
