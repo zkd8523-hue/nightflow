@@ -539,7 +539,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "profile" && (
           <>
             <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-foreground">{tt("생년월일과 성별을 알려주세요", "Your date of birth and gender")}</p>
+              <p className="text-[18px] font-bold text-foreground">{tt("생년월일을 알려주세요", "Your date of birth")}</p>
               <p className="text-[13px] text-muted-foreground">{tt("만 19세 이상만 가입할 수 있어요", "You must be 19 or older to join.")}</p>
             </div>
 
@@ -563,6 +563,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 )}
               </div>
 
+              {/* App Store 5.1.1(v): 성별은 필수 수집 불가 → 선택 항목. 파티 매칭 시에만 다시 물어봄 */}
+              <p className="text-[13px] text-muted-foreground px-1 -mb-2">
+                {tt("성별 (선택)", "Gender (optional)")}
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 {([
                   { key: "male" as const, ko: "남성", en: "Male" },
@@ -588,7 +592,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
               <Button
                 onClick={() => setStep("nickname")}
-                disabled={!birthdayTouched || !birthdayValid || !isAdult || !gender}
+                disabled={!birthdayTouched || !birthdayValid || !isAdult}
                 className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
               >
                 {tt("다음", "Next")}
