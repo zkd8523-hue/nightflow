@@ -95,10 +95,10 @@ const AREA_BUDGET_TIERS: Record<string, number[]> = {
 };
 const FALLBACK_BUDGET_TIERS = [500000, 800000, 1500000];
 
-// La Rosa(홍대)만 예산 버튼 15/30/100만 — 사용자 요청(2026-09-30), 클럽 단위 예외.
+// La Rosa(홍대)만 예산 버튼 15/30/50만 — 사용자 요청(2026-09-30), 클럽 단위 예외.
 // 첫 값이 최소주문금액. ClubBookingSection.tsx의 CLUB_MIN_SPEND_OVERRIDE와 같은 클럽 ID.
 const CLUB_BUDGET_TIERS_OVERRIDE: Record<string, number[]> = {
-  "4004d7b6-b3d2-4ec4-8c42-32d82405ded0": [150000, 300000, 1000000], // La Rosa
+  "4004d7b6-b3d2-4ec4-8c42-32d82405ded0": [150000, 300000, 500000], // La Rosa
 };
 
 const AREA_MIN_BUDGET: Record<string, number> = Object.fromEntries(
