@@ -829,6 +829,14 @@ export function MDDashboard({
                             : r.proposalToken
                             ? `/booking/proposal/${r.proposalToken}`
                             : null;
+                        // 카드 전체가 링크지만 그냥 정보 카드처럼 보여 "어디를 눌러야 확정서가
+                        // 나오냐"는 혼란이 있었다(2026-09-30) — 손님 "내 예약"의 "예약 확정서 보기"
+                        // 버튼처럼 무엇이 열리는지 명시한다.
+                        const actionLabel = r.mdToken
+                            ? "✅ 예약 확정서 보기"
+                            : needsAnswer
+                            ? "제안서 확인하고 답변하기"
+                            : "제안서 보기";
                         return href ? (
                             <Link
                                 key={r.id}
@@ -838,6 +846,13 @@ export function MDDashboard({
                                 }`}
                             >
                                 {cardBody}
+                                <div
+                                    className={`mt-3 flex items-center justify-center h-10 rounded-lg text-[13px] font-black ${
+                                        r.mdToken || needsAnswer ? "bg-amber-500 text-black" : "bg-muted text-foreground/80"
+                                    }`}
+                                >
+                                    {actionLabel}
+                                </div>
                             </Link>
                         ) : (
                             <div key={r.id} className="bg-card border border-border rounded-2xl p-3.5">

@@ -52,6 +52,39 @@ export function BookingPassMd(p: Props) {
   const [busy, setBusy] = useState(false);
   const [warned, setWarned] = useState(false);
   const [checkErr, setCheckErr] = useState<string | null>(null);
+  // 파트너 쪽 예약 취소(2026-09-30) — 예전엔 클럽이 확정된 예약을 취소할 방법이 없었다.
+  const [cancelStep, setCancelStep] = useState<"idle" | "confirm">("idle");
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelledNow, setCancelledNow] = useState(false);
+  const [cancelErr, setCancelErr] = useState<string | null>(null);
+  const isCancelled = p.cancelled || cancelledNow;
+
+  const doCancel = async () => {
+    if (!cancelReason.trim()) return setCancelErr("취소 사유를 적어주세요.");
+    setBusy(true);
+    setCancelErr(null);
+    try {
+      const res = await fetch("/api/booking-md-cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ md_token: p.mdToken, reason: cancelReason.trim() }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setCancelledNow(true);
+        setCancelStep("idle");
+      } else {
+        setCancelErr(
+          json.error === "already_arrived"
+            ? "손님이 이미 도착했거나 입장한 예약이라 취소할 수 없어요. 나플 담당자에게 연락해 주세요."
+            : "취소하지 못했어요. 잠시 후 다시 시도해 주세요."
+        );
+      }
+    } catch {
+      setCancelErr("취소하지 못했어요. 통신 상태를 확인해 주세요.");
+    }
+    setBusy(false);
+  };
 
   const doCheckin = async () => {
     setBusy(true);
@@ -120,13 +153,13 @@ export function BookingPassMd(p: Props) {
             </div>
             <div
               className={`inline-flex items-center gap-1.5 mt-2.5 text-[11px] font-bold tracking-wider uppercase rounded-full px-3 py-1 border ${
-                p.cancelled
+                isCancelled
                   ? "text-red-400 bg-red-500/10 border-red-500/30"
                   : "text-money bg-green-500/10 border-green-500/30"
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current" />
-              {p.cancelled ? "취소됨" : "확정"}
+              {isCancelled ? "취소됨" : "확정"}
             </div>
             <div className="font-mono font-bold text-[34px] tracking-wide text-brand-amber mt-3 tabular-nums">
               {p.refNo}
@@ -213,7 +246,13 @@ export function BookingPassMd(p: Props) {
               </div>
             )}
 
-            {!p.cancelled && (
+            {isCancelled && (
+              <p className="mt-4 pt-3.5 border-t border-border text-[13px] text-muted-foreground">
+                취소된 예약입니다. 손님과 나플 담당자에게 알림이 갔어요.
+              </p>
+            )}
+
+            {!isCancelled && (
               <div className="mt-4 pt-3.5 border-t border-border">
                 {step === "done" ? (
                   <div
@@ -271,6 +310,52 @@ export function BookingPassMd(p: Props) {
                   >
                     입장 완료
                   </button>
+                )}
+
+                {/* 예약 취소 — 입장 완료된 건은 서버가 막는다(현장 진행 중). */}
+                {step !== "done" && (
+                  cancelStep === "confirm" ? (
+                    <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/[0.06] p-3.5">
+                      <p className="text-[13px] font-bold text-foreground mb-1">정말 이 예약을 취소할까요?</p>
+                      <p className="text-[11.5px] text-muted-foreground mb-2 leading-relaxed">
+                        손님에게는 &ldquo;클럽 사정으로 취소됐다&rdquo;고만 안내되고, 사유는 나플 담당자에게만 전달돼요.
+                      </p>
+                      <input
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        maxLength={200}
+                        placeholder="취소 사유 (예: 그날 단체 대관이 잡혔어요)"
+                        className="w-full h-11 px-3 rounded-lg bg-card border border-border text-[14px] text-foreground outline-none focus:border-red-400"
+                      />
+                      <div className="flex gap-2 mt-2.5">
+                        <button
+                          onClick={doCancel}
+                          disabled={busy || !cancelReason.trim()}
+                          className="flex-1 h-11 rounded-lg bg-red-500 text-white text-[13.5px] font-bold disabled:opacity-40"
+                        >
+                          {busy ? "취소하는 중…" : "예약 취소하기"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCancelStep("idle");
+                            setCancelErr(null);
+                          }}
+                          disabled={busy}
+                          className="w-[88px] h-11 rounded-lg border border-border text-[13.5px] font-bold text-muted-foreground disabled:opacity-50"
+                        >
+                          닫기
+                        </button>
+                      </div>
+                      {cancelErr && <p className="text-[12px] text-red-400 mt-2">{cancelErr}</p>}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setCancelStep("confirm")}
+                      className="w-full h-11 mt-3 rounded-xl border border-red-500/30 text-red-400 text-[13.5px] font-bold"
+                    >
+                      예약 취소
+                    </button>
+                  )
                 )}
 
                 <div className="flex items-center justify-between gap-3 mt-4 pt-3.5 border-t border-border">
