@@ -362,7 +362,12 @@ function warmWidget(url: string, autoPlay: boolean) {
       // display:none 이면 브라우저가 로드를 미루는 경우가 있어 화면 밖으로 뺀다
       f.style.cssText =
         "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;top:-9999px;border:0";
-      f.src = playerSrc(url, autoPlay);
+      // ⚠️ autoPlay 값을 그대로 쓰면 안 된다 — 이 iframe은 화면 밖에 실제로
+      // 붙는 진짜 위젯이라, auto_play=true 로 만들면 앱을 켠 순간 아무도
+      // 누르지 않았는데 소리가 난다(예열은 캐시만 데우면 되고 재생은 목적이
+      // 아니다). 캐시 키(warmedUrls)는 요청한 autoPlay 값 그대로 쓰되,
+      // 실제로 만드는 iframe 은 항상 무음으로 띄운다.
+      f.src = playerSrc(url, false);
       document.body.appendChild(f);
       window.setTimeout(() => f.remove(), 15000);
       return;

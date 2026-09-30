@@ -10,7 +10,10 @@ import { createClient } from "@/lib/supabase/client";
 import { formatBookingContact } from "@/lib/utils/format";
 import type { KoreanBookingRequest, KoreanBookingStatus, KoreanBookingContactType } from "@/types/database";
 
-type Tab = "pending" | "done" | "cancelled";
+// 탭은 진행중/완료 2개만(사용자 결정, 2026-09-30) — "진행중" 안에서 접수/확정을
+// 카드 라벨(STATUS_LABEL)로만 구분한다. "완료"는 방문 종료가 아니라 이 예약
+// 건이 더 진행되지 않는 상태(취소)를 모은다 — 확정 건은 여전히 진행중에 남는다.
+type Tab = "pending" | "finished";
 
 type BookingWithClub = KoreanBookingRequest & {
   club: { id: string; name: string; area: string; thumbnail_url: string | null } | null;
@@ -19,9 +22,11 @@ type BookingWithClub = KoreanBookingRequest & {
 };
 
 const STATUS_LABEL: Record<KoreanBookingStatus, string> = {
-  new: "접수됨",
+  new: "접수",
   contacted: "연락중",
-  done: "완료",
+  // DB 값(status='done')은 그대로 두고 화면 문구만 "예약확정"으로 — "완료"는 방문까지
+  // 끝난 인상을 준다. 실제로는 파트너 승인+운영자 확정서 발급 단계다(2026-09-30).
+  done: "예약확정",
   cancelled: "취소됨",
 };
 
@@ -56,14 +61,12 @@ export function MyBookingList({ bookings: initial }: Props) {
 
   const grouped = useMemo(() => {
     const pending: BookingWithClub[] = [];
-    const done: BookingWithClub[] = [];
-    const cancelled: BookingWithClub[] = [];
+    const finished: BookingWithClub[] = [];
     for (const b of bookings) {
-      if (b.status === "cancelled") cancelled.push(b);
-      else if (b.status === "done") done.push(b);
-      else pending.push(b); // new, contacted
+      if (b.status === "cancelled") finished.push(b);
+      else pending.push(b); // new, contacted, done — 카드 라벨로만 접수/확정 구분
     }
-    return { pending, done, cancelled };
+    return { pending, finished };
   }, [bookings]);
 
   const list = grouped[tab];
@@ -92,8 +95,7 @@ export function MyBookingList({ bookings: initial }: Props) {
       <div className="flex gap-1 bg-card rounded-full p-1">
         {([
           ["pending", `진행중 ${grouped.pending.length}`],
-          ["done", `완료 ${grouped.done.length}`],
-          ["cancelled", `취소 ${grouped.cancelled.length}`],
+          ["finished", `완료 ${grouped.finished.length}`],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -111,7 +113,7 @@ export function MyBookingList({ bookings: initial }: Props) {
       {list.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-[14px] text-muted-foreground">
-            {tab === "pending" ? "진행중인 예약이 없어요" : tab === "done" ? "완료된 예약이 없어요" : "취소된 예약이 없어요"}
+            {tab === "pending" ? "진행중인 예약이 없어요" : "완료된 예약이 없어요"}
           </p>
           {tab === "pending" && (
             <Link href="/clubs" className="inline-block mt-3 text-[12px] font-bold text-brand-amber hover:underline">

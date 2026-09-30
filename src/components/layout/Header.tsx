@@ -41,6 +41,7 @@ import {
   Headset,
   Globe,
   Wine,
+  CalendarCheck,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
@@ -330,6 +331,18 @@ export function Header({
                 >
                   <LayoutDashboard className="w-3.5 h-3.5 text-inverse-foreground" />
                   <span className="text-[12px] font-black text-inverse-foreground whitespace-nowrap">파트너</span>
+                </Link>
+              )}
+              {/* 일반 유저용 "내 예약" — 파트너 버튼과 같은 자리·같은 모양(2026-09-30).
+                  햄버거 메뉴 안에도 있지만, 예약 상태(접수/확정)를 확인하러 오는 손님이
+                  메뉴를 열지 않고도 바로 갈 수 있게 헤더에도 노출한다. */}
+              {!compact && user.role === "user" && (
+                <Link
+                  href="/my-bookings"
+                  className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-inverse hover:opacity-90 transition-colors shadow-sm"
+                >
+                  <CalendarCheck className="w-3.5 h-3.5 text-inverse-foreground" />
+                  <span className="text-[12px] font-black text-inverse-foreground whitespace-nowrap">내 예약</span>
                 </Link>
               )}
               {!compact && user.md_status === "pending" && (
