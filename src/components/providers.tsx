@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { setGlobalRouter } from "@/lib/native/globalRouter";
 import { useWinNotification } from "@/hooks/useWinNotification";
 import { useAuthInit, useCurrentUser } from "@/hooks/useCurrentUser";
 import { useTouchLastSeen } from "@/hooks/useTouchLastSeen";
@@ -17,6 +19,17 @@ import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 import { LoginNotifyPromptSheet } from "@/components/common/LoginNotifyPromptSheet";
 import { initDeepLinkHandler, initBackButtonHandler } from "@/lib/native/deepLink";
 import { ThemeProvider } from "@/components/theme-provider";
+
+// 푸시 알림 탭 시 전체 새로고침 대신 클라이언트 라우팅을 쓸 수 있게, 현재 페이지의
+// router 인스턴스를 전역에 등록해둔다(globalRouter.ts 참고). 경로가 바뀔 때마다
+// router 참조 자체는 App Router에서 안정적이라 재등록이 잦지 않다.
+function GlobalRouterRegistrar() {
+  const router = useRouter();
+  useEffect(() => {
+    setGlobalRouter(router);
+  }, [router]);
+  return null;
+}
 
 function AuthInit() {
   // 앱 전체에서 단 1회만 auth.getUser/onAuthStateChange 실행.
@@ -189,6 +202,7 @@ function LastSeenInit() {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
+      <GlobalRouterRegistrar />
       {/* AuthInit 은 반드시 최상단 — 다른 컴포넌트가 useCurrentUser() 로 store 를 읽기 전에 mount */}
       <AuthInit />
       <LastSeenInit />

@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { navigateGlobally } from "@/lib/native/globalRouter";
 
 export type PushInitResult = "granted" | "denied" | "not_native";
 
@@ -56,7 +57,11 @@ export async function initPushNotifications(
 
   await PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
     const url = action.notification.data?.url as string | undefined;
-    if (url) window.location.href = url;
+    if (!url) return;
+    // 클라이언트 라우팅(router.push)이 되면 전체 새로고침 없이 즉시 전환된다.
+    // window.location.href는 앱을 처음부터 다시 부팅해 홈이 잠깐 스쳐간 뒤 목적지가
+    // 뜨는 지연을 만든다(2026-09-30) — router가 아직 등록 전일 때만 그걸로 폴백한다.
+    if (!navigateGlobally(url)) window.location.href = url;
   });
 
   await PushNotifications.register();
