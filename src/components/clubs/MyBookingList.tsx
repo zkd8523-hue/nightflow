@@ -14,6 +14,8 @@ type Tab = "pending" | "done" | "cancelled";
 
 type BookingWithClub = KoreanBookingRequest & {
   club: { id: string; name: string; area: string; thumbnail_url: string | null } | null;
+  /** status='done'일 때만 채워진다 — 확정서(/booking/{token}) 링크용(2026-09-30) */
+  confirm_public_token: string | null;
 };
 
 const STATUS_LABEL: Record<KoreanBookingStatus, string> = {
@@ -292,6 +294,17 @@ function BookingRow({
                 />
               )}
               <Row label="신청일시" value={new Date(booking.created_at).toLocaleString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })} />
+
+              {/* 확정(status='done') 건은 자리·확정가가 적힌 확정서 페이지로 바로 간다.
+                  도착 10분전/도착했어요 버튼도 그 페이지에 있다(2026-09-30). */}
+              {booking.status === "done" && booking.confirm_public_token && (
+                <Link
+                  href={`/booking/${booking.confirm_public_token}`}
+                  className="flex items-center justify-center gap-1.5 w-full h-11 mt-1 rounded-lg bg-amber-500 text-black text-[13px] font-black"
+                >
+                  ✅ 예약 확정서 보기
+                </Link>
+              )}
 
               {/* 파트너가 거절해 운영자가 보낸 안내 — 조건을 바꿔 같은 파트너에게 다시 주문하거나 취소.
                   md_response==='rejected'일 때만 뜨므로 승인·확정 뒤엔 자동으로 사라진다(2026-09-30). */}

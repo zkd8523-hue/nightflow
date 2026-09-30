@@ -4,7 +4,8 @@
 // 같은 버튼은 서버에서 UNIQUE(request_id, kind)로 1회만 발송된다.
 
 import { useState, useEffect } from "react";
-import { MapPin, Check, Star, Instagram, MessageCircle } from "lucide-react";
+import Link from "next/link";
+import { MapPin, Check, Star, Instagram, MessageCircle, ChevronLeft } from "lucide-react";
 
 type Props = {
   requestId: string;
@@ -310,6 +311,17 @@ export function BookingPass(p: Props) {
   return (
     <div className="min-h-screen bg-background text-foreground py-7 px-4">
       <div className="max-w-md mx-auto">
+        {/* 앱 알림(제안 승인·확정서)으로 이 화면에 바로 들어오면 하단 탭이 없어 갇힌다
+            (2026-09-30). 한국 예약은 로그인 계정이 있으니 "내 예약"으로, 외국인
+            요청은 비로그인 손님이 대부분이라 홈으로 보낸다 — 이 페이지 자체가
+            의도적으로 완전 비로그인 접근이라(WhatsApp 링크) 세션을 확인하지 않는다. */}
+        <Link
+          href={ko ? "/my-bookings" : "/"}
+          className="inline-flex items-center gap-0.5 mb-3 mt-[env(safe-area-inset-top)] text-[13px] font-bold text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {ko ? "내 예약" : "Home"}
+        </Link>
         <div className="rounded-3xl bg-card border border-border overflow-hidden">
           {/* 스텁 */}
           <div className="bg-muted/40 px-5 pt-5 pb-4 text-center">

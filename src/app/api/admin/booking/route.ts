@@ -17,6 +17,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { randomBytes } from "crypto";
 
+// SMS 링크는 운영 도메인으로 고정한다 — 로컬에서 저장해도 손님이 받는 링크는 열려야 한다.
+const SITE = "https://nightflow.kr";
+
 // 클럽명 단어별 첫 글자 이니셜 (예: "Club Ace" → "CA"). "Club"으로 시작하는
 // 클럽이 8개나 있어 앞 2자 그대로 쓰면("CL") 전부 겹친다. 단어가 1개뿐이면
 // 그 단어 앞 2자를 쓴다(예: "Fountain" → "FO"). 영문 이니셜을 못 뽑으면(한글
@@ -60,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   const { data: reqRow, error: reqErr } = await sb
     .from(table)
-    .select(`id, ${clubIdColumn}, event_date`)
+    .select(`id, ${clubIdColumn}, event_date, user_id, guest_name, group_size, contact_type, contact_value`)
     .eq("id", requestId)
     .single();
   if (reqErr || !reqRow) {
@@ -177,6 +180,61 @@ export async function POST(req: NextRequest) {
 
   if (saveErr || !saved) {
     return NextResponse.json({ error: saveErr?.message ?? "save_failed" }, { status: 500 });
+  }
+
+  // 확정서가 나왔으면 원본 요청도 "완료(done)"로 넘긴다 — 안 그러면 손님 "내 예약"이
+  // 계속 "접수됨"에 머물러, 확정서를 만들어도 손님 화면엔 아무 변화가 없었다
+  // (2026-09-30). 이미 done/cancelled면 되돌리지 않는다 — 취소된 걸 여기서
+  // 되살리면 안 되고, 재확정(수정) 때 중복 알림도 막는다.
+  const reqTyped = reqRow as unknown as {
+    id: string; user_id: string; guest_name: string | null; group_size: number;
+    contact_type: string; contact_value: string; event_date: string;
+  };
+  const { data: statusRow } = await sb.from(table).select("status").eq("id", requestId).single();
+  const wasAlreadyDone = statusRow?.status === "done" || statusRow?.status === "cancelled";
+  if (!wasAlreadyDone) {
+    await sb.from(table).update({ status: "done", updated_at: new Date().toISOString() }).eq("id", requestId);
+  }
+
+  // 손님에게 확정 알림 — 앱 푸시가 있으면 푸시, 없으면(전화번호로 신청한 한국 손님만) SMS.
+  // 확정서를 처음 만든 순간에만 보낸다 — 오타 수정 같은 재저장(wasAlreadyDone)마다
+  // 손님 폰이 울리면 안 된다.
+  if (!wasAlreadyDone) {
+    try {
+      const dateD = new Date(reqTyped.event_date + "T00:00:00");
+      const dateText = `${dateD.getMonth() + 1}/${dateD.getDate()}(${"일월화수목금토"[dateD.getDay()]})`;
+      const guest = reqTyped.guest_name?.trim() || "게스트";
+      const sizeText = `${reqTyped.group_size}명`;
+      const priceText = payload.total_price ? ` · ${payload.total_price.toLocaleString("ko-KR")}원` : "";
+      const text = `${clubName || "클럽"} ${dateText} ${sizeText}${priceText} 예약이 확정됐어요. (${saved.ref_no})`;
+      const guestUrl = `/booking/${saved.public_token}`;
+
+      const { count: tokenCount } = await sb
+        .from("push_tokens")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", reqTyped.user_id);
+
+      let pushed = false;
+      if ((tokenCount ?? 0) > 0) {
+        const { error: pushErr } = await sb.rpc("notify_user_push", {
+          p_user_id: reqTyped.user_id,
+          p_title: "✅ 예약이 확정됐어요",
+          p_body: text,
+          p_data: { type: "booking_confirmed", request_id: requestId },
+          p_url: guestUrl,
+          p_category: "transaction",
+        });
+        pushed = !pushErr;
+        if (pushErr) console.error("[admin/booking] guest push 실패", pushErr);
+      }
+      if (!pushed && reqTyped.contact_type === "phone" && reqTyped.contact_value) {
+        const { sendSms } = await import("@/lib/notifications/alimtalk");
+        await sendSms(reqTyped.contact_value, `[나이트플로우] ${guest}님, ${text}\n${SITE}${guestUrl}`);
+      }
+    } catch (e) {
+      // 알림 실패로 확정서 저장 자체가 실패하면 안 된다 — 이미 upsert는 끝났다.
+      console.error("[admin/booking] 손님 확정 알림 실패", e);
+    }
   }
 
   return NextResponse.json({

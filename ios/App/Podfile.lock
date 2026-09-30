@@ -59,17 +59,55 @@ PODS:
   - FBSDKCoreKit_Basics (18.0.3)
   - FBSDKLoginKit (18.0.3):
     - FBSDKCoreKit (= 18.0.3)
+  - FirebaseCore (12.19.0):
+    - FirebaseCoreInternal (~> 12.19.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/Logger (~> 8.1)
+  - FirebaseCoreInternal (12.19.0):
+    - "GoogleUtilities/NSData+zlib (~> 8.1)"
+  - FirebaseInstallations (12.19.0):
+    - FirebaseCore (~> 12.19.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
+    - PromisesObjC (~> 2.4)
+  - FirebaseMessaging (12.19.0):
+    - FirebaseCore (~> 12.19.0)
+    - FirebaseInstallations (~> 12.19.0)
+    - GoogleDataTransport (~> 10.1)
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/Reachability (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
+    - nanopb (~> 3.30910.0)
+  - GoogleDataTransport (10.1.1):
+    - nanopb (~> 3.30910.0)
+    - PromisesObjC (~> 2.4)
   - GoogleSignIn (9.0.0):
     - AppAuth (~> 2.0)
     - AppCheckCore (~> 11.0)
     - GTMAppAuth (~> 5.0)
     - GTMSessionFetcher/Core (~> 3.3)
+  - GoogleUtilities/AppDelegateSwizzler (8.1.0):
+    - GoogleUtilities/Environment
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Network
+    - GoogleUtilities/Privacy
   - GoogleUtilities/Environment (8.1.0):
     - GoogleUtilities/Privacy
   - GoogleUtilities/Logger (8.1.0):
     - GoogleUtilities/Environment
     - GoogleUtilities/Privacy
+  - GoogleUtilities/Network (8.1.0):
+    - GoogleUtilities/Logger
+    - "GoogleUtilities/NSData+zlib"
+    - GoogleUtilities/Privacy
+    - GoogleUtilities/Reachability
+  - "GoogleUtilities/NSData+zlib (8.1.0)":
+    - GoogleUtilities/Privacy
   - GoogleUtilities/Privacy (8.1.0)
+  - GoogleUtilities/Reachability (8.1.0):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
   - GoogleUtilities/UserDefaults (8.1.0):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
@@ -99,6 +137,11 @@ PODS:
     - KakaoSDKCommon/Common (= 2.18.2)
   - KakaoSDKUser (2.18.2):
     - KakaoSDKAuth (= 2.18.2)
+  - nanopb (3.30910.0):
+    - nanopb/decode (= 3.30910.0)
+    - nanopb/encode (= 3.30910.0)
+  - nanopb/decode (3.30910.0)
+  - nanopb/encode (3.30910.0)
   - PromisesObjC (2.4.0)
 
 DEPENDENCIES:
@@ -117,6 +160,7 @@ DEPENDENCIES:
   - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
   - "CapgoCameraPreview (from `../../node_modules/@capgo/camera-preview`)"
   - "CapgoCapacitorSocialLogin (from `../../node_modules/@capgo/capacitor-social-login`)"
+  - FirebaseMessaging
 
 SPEC REPOS:
   trunk:
@@ -127,6 +171,11 @@ SPEC REPOS:
     - FBSDKCoreKit
     - FBSDKCoreKit_Basics
     - FBSDKLoginKit
+    - FirebaseCore
+    - FirebaseCoreInternal
+    - FirebaseInstallations
+    - FirebaseMessaging
+    - GoogleDataTransport
     - GoogleSignIn
     - GoogleUtilities
     - GTMAppAuth
@@ -139,6 +188,7 @@ SPEC REPOS:
     - KakaoSDKTalk
     - KakaoSDKTemplate
     - KakaoSDKUser
+    - nanopb
     - PromisesObjC
 
 EXTERNAL SOURCES:
@@ -196,6 +246,11 @@ SPEC CHECKSUMS:
   FBSDKCoreKit: 65d7f7a7d6fcc3aa6eb6e093ec737a4184fc6049
   FBSDKCoreKit_Basics: 7bc9d8fde8f70985fba2ed7c1d07e319f969a991
   FBSDKLoginKit: 66d20fcb7afcafc0c420477662f96845cd1a5179
+  FirebaseCore: c990214798d7c568ad436a15ba7da25c7a278c9a
+  FirebaseCoreInternal: 656b1c2fd5a1c5976183dc54b73deda78fb26ee3
+  FirebaseInstallations: f70a49eed611f5602f373e40974b3b01556ac217
+  FirebaseMessaging: c15f48126adbe8b4d3238a5e1fa24bab3ad3e472
+  GoogleDataTransport: a24e58982ab3ba2f64d79613e027fe7f57e88539
   GoogleSignIn: c7f09cfbc85a1abf69187be091997c317cc33b77
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
@@ -208,8 +263,9 @@ SPEC CHECKSUMS:
   KakaoSDKTalk: 567d2697b419b4f01f2f8bdb28e13100817c4090
   KakaoSDKTemplate: 0fcfbbb7cc05986fe6690b85e19dd8de0fc634e6
   KakaoSDKUser: 5b0826033381d314f550dd90fbf70d3612044ad6
+  nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
 
-PODFILE CHECKSUM: 681f997223fc635ec1189eab75f37298860e48a7
+PODFILE CHECKSUM: afa52825f25a29da1c188938d5725379d06c75e9
 
 COCOAPODS: 1.16.2
