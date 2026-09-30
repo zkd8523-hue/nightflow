@@ -2,6 +2,7 @@ import { pickUpcomingBenefit } from "@/lib/utils/hotdeal";
 import { SEOUL_AREAS } from "@/lib/clubs/tags";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import type { HotdealBenefitsByDow } from "@/types/database";
+import { PINNED_CLUB_IDS, pinnedRank } from "@/lib/clubs/pinnedClubs";
 
 /**
  * ClubBenefitSection("오늘 어디갈래?")가 그릴 카드 목록을 raw row에서 뽑아내는
@@ -114,15 +115,24 @@ export function buildClubBenefitItems(
   // 같은 요일끼리, 그리고 파트너/그외 그룹 내부(서울·지방 각각)는 셔플로 공정 노출.
   const withBenefit = shuffle(rest.filter((c) => slotMap.has(c.id)));
   withBenefit.sort((a, b) => {
+    // 고정 클럽(pinnedClubs.ts)은 혜택 그룹 안에서도 맨 앞.
+    const ar = pinnedRank(a.id);
+    const br = pinnedRank(b.id);
+    if (ar !== br) return ar - br;
     const aSeoul = isSeoulArea(a.area) ? 0 : 1;
     const bSeoul = isSeoulArea(b.area) ? 0 : 1;
     if (aSeoul !== bSeoul) return aSeoul - bSeoul;
     return (slotMap.get(a.id)?.dowIdx ?? 99) - (slotMap.get(b.id)?.dowIdx ?? 99);
   });
-  const noBenefit = rest.filter((c) => !slotMap.has(c.id));
+  const noBenefitAll = rest.filter((c) => !slotMap.has(c.id));
+  // 혜택 없는 그룹 맨 앞 고정(PINNED_CLUB_IDS 순서 그대로).
+  const pinnedNoBenefit = PINNED_CLUB_IDS.map((id) => noBenefitAll.find((c) => c.id === id)).filter(
+    (c): c is (typeof noBenefitAll)[number] => !!c
+  );
+  const noBenefit = noBenefitAll.filter((c) => !PINNED_CLUB_IDS.includes(c.id));
   const withPartner = seoulFirst(shuffle(noBenefit.filter((c) => (c.club_partners?.length ?? 0) > 0)));
   const withoutPartner = seoulFirst(shuffle(noBenefit.filter((c) => (c.club_partners?.length ?? 0) === 0)));
-  let ordered = [...priorityGroup, ...withBenefit, ...withPartner, ...withoutPartner];
+  let ordered = [...priorityGroup, ...withBenefit, ...pinnedNoBenefit, ...withPartner, ...withoutPartner];
 
   // 비프로덕션: 테스트 클럽(운영자/...)을 최상위로 끌어올림 (Hot Deal Now와 동일 패턴)
   if (SHOW_TEST_DATA) {

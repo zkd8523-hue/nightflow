@@ -17,6 +17,7 @@ import {
 import { clubMatchesQuery } from "@/lib/search/clubMatch";
 import { useSearchMissLogger } from "@/lib/search/logMiss";
 import { benefitLabel } from "@/lib/utils/hotdeal";
+import { pinnedRank } from "@/lib/clubs/pinnedClubs";
 import { distanceKm } from "@/lib/chat/areas";
 import { getCurrentCoords } from "@/lib/geo/currentCoords";
 
@@ -185,7 +186,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
 
   // 정렬 (각 area 내):
   // 1) 오늘 혜택(hotdealMap or benefitTagsMap) 있는 클럽 최상위
-  // 2) 파트너(MD) 지정된 클럽 차상위
+  // 2) 고정 클럽(pinnedClubs.ts — 예: La Rosa) → 파트너(MD) 지정된 클럽 차상위
   // 3) 그 안에서 active 깃발 많은 순
   // 4) 나머지는 일별 시드 기반 셔플(매일 노출 순서 변경, 같은 날에는 안정)
   const hasBenefit = (id: string) =>
@@ -213,6 +214,10 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
       const ab = hasBenefit(a.id) ? 1 : 0;
       const bb = hasBenefit(b.id) ? 1 : 0;
       if (ab !== bb) return bb - ab;
+      // 고정 클럽(pinnedClubs.ts)은 혜택 그룹·혜택 없는 그룹 각각의 맨 앞.
+      const ar = pinnedRank(a.id);
+      const br = pinnedRank(b.id);
+      if (ar !== br) return ar - br;
       const ap = a.hasPartner ? 1 : 0;
       const bp = b.hasPartner ? 1 : 0;
       if (ap !== bp) return bp - ap;
