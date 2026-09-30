@@ -29,6 +29,10 @@ end
 target 'App' do
   capacitor_pods
   # Add your Pods here
+  # FCM 발송 서버(push-dispatch)가 FCM 토큰만 이해한다. Firebase 없이는 Capacitor가
+  # 순수 APNs 토큰을 그대로 넘겨서, 서버가 FCM으로 보내도 조용히 실패했다(2026-09-30,
+  # 123@123.123 iOS 테스트 계정에서 발견 — 토큰은 등록됐는데 알림이 안 옴).
+  pod 'FirebaseMessaging'
 end
 
 post_install do |installer|
