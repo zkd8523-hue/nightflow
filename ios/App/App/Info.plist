@@ -83,6 +83,18 @@
 		<string>remote-notification</string>
 	</array>
 
+	<!-- FirebaseMessaging은 기본값(YES)이면 AppDelegate의
+	     didRegisterForRemoteNotificationsWithDeviceToken을 자동 스위즐링(가로채기)해
+	     자기 로직으로 대체한다. AppDelegate.swift에서 그 메서드 본문을 이미 직접
+	     구현해(Messaging.apnsToken 수동 대입 + MessagingDelegate로 FCM 토큰을
+	     Capacitor에 릴레이) 두 메커니즘이 충돌했다 — register()는 호출되는데
+	     registration/registrationError 이벤트가 전혀 안 오던 원인(2026-09-30,
+	     콘솔 로그 [FCM001000] "will swizzle remote notification receiver handlers"
+	     로 확인). Firebase 공식 문서가 권장하는 대로 스위즐링을 끈다:
+	     https://firebase.google.com/docs/cloud-messaging/ios/client#method_swizzling_in_firebase_messaging -->
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+
 	<!-- Export Compliance — HTTPS/TLS 등 표준 암호화만 사용 (EAR 면제) -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
