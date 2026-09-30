@@ -234,6 +234,19 @@ export function Header({
 
   const handleLogout = async () => {
     setMenuOpen(false);
+    // 이 폰에 등록된 이 계정의 푸시 토큰을 먼저 지운다 — 안 지우면 로그아웃 후 다른
+    // 계정으로 로그인해도 push_tokens에 이전 계정 행이 그대로 남아 두 계정 모두
+    // 이 폰으로 알림을 받는다(2026-09-30 발견). signOut 전에 해야 한다 — 세션이
+    // 끊기면 RLS(auth.uid() = user_id)에 막혀 지울 수 없다. 실패해도 로그아웃 자체는
+    // 계속 진행한다(토큰 삭제 실패로 로그아웃이 막히면 안 된다).
+    if (user?.id) {
+      try {
+        const { removePushToken } = await import("@/lib/native/pushNotifications");
+        await removePushToken(user.id);
+      } catch (e) {
+        console.error("[Header] 푸시 토큰 정리 실패:", e);
+      }
+    }
     // signOut이 hang해도 3초 내 강제 탈출
     try {
       await Promise.race([
