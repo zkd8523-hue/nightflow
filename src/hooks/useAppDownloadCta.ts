@@ -69,13 +69,16 @@ export function useAppDownloadCta() {
     let active = true;
 
     (async () => {
-      // 네이티브 앱이면 무조건 숨김
-      let isNative = false;
+      // 네이티브 앱이면 무조건 숨김. 판정 실패 시엔 보수적으로 네이티브로 간주한다 —
+      // false(웹)로 폴백하면 iOS 앱 안에서 이 판정이 실패할 때 이 배너(Google Play
+      // 링크 포함)가 노출될 수 있고, 그게 App Store 심사 반려 사유였다
+      // (Guideline 2.3.10, 2026-09-08 — useIsNativeApp.ts와 같은 판단).
+      let isNative = true;
       try {
         const { Capacitor } = await import("@capacitor/core");
         isNative = Capacitor.isNativePlatform();
       } catch {
-        isNative = false;
+        isNative = true;
       }
       if (!active) return;
 

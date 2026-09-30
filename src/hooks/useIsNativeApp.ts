@@ -17,12 +17,18 @@ export function useIsNativeApp() {
   useEffect(() => {
     let active = true;
     (async () => {
-      let native = false;
+      let native = true; // 판정 실패 시 보수적으로 네이티브로 간주 — 아래 catch 참고
       try {
         const { Capacitor } = await import("@capacitor/core");
         native = Capacitor.isNativePlatform();
       } catch {
-        native = false;
+        // Capacitor 로드 자체가 실패한 경우. 예전엔 여기서 false(웹)로 폴백했는데,
+        // 그러면 iOS 앱 안에서 이 판정이 실패할 때 "Google Play 받기" 같은 iOS
+        // 앱스토어 심사 반려 사유(Guideline 2.3.10, 2026-09-08)로 이어지는 배너들이
+        // 그대로 노출될 수 있었다. 실패 시엔 반대로 "네이티브"로 간주해 다운로드
+        // CTA를 숨기는 쪽이 안전하다 — 최악의 경우도 "이미 앱 안인데 배너가 안
+        // 뜨는" 정도지, "iOS 앱에 타 스토어 링크가 뜨는" 사고보다는 낫다.
+        native = true;
       }
       if (!active) return;
       setIsNative(native);
