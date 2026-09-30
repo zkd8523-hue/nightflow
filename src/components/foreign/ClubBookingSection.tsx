@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 import type { ClubPriceSummary } from "@/lib/clubs/tablePricing";
-import { tableFrom, formatWon, bookingFloor, itemsToReachFloor, representativeItems } from "@/lib/clubs/tablePricing";
+import { formatWon, bookingFloor, itemsToReachFloor, representativeItems } from "@/lib/clubs/tablePricing";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 import { krwTo, langToCurrency, type KrwRates } from "@/lib/utils/currency";
 
@@ -31,6 +31,7 @@ export type AltClub = {
 
 type Props = {
   lang: SeoLang;
+  clubId?: string;
   name: string;
   areaLabel: string;
   areaKo: string;
@@ -43,6 +44,12 @@ type Props = {
   bookHref: string;
   alternatives: AltClub[];
   rates?: KrwRates;
+};
+
+// La Rosa(홍대)만 최저소비 15만원 — 사용자 요청(2026-09-30), 클럽 단위 예외.
+// 지역 하한(bookingFloor)은 20곳 넘는 자리에서 쓰이는 공통 함수라 여기서만 override한다.
+const CLUB_MIN_SPEND_OVERRIDE: Record<string, number> = {
+  "4004d7b6-b3d2-4ec4-8c42-32d82405ded0": 150_000, // La Rosa
 };
 
 const T = {
@@ -196,24 +203,33 @@ function AltCards({ alts, lang, rates }: { alts: AltClub[]; lang: SeoLang; rates
 }
 
 export function ClubBookingSection({
-  lang, name, areaLabel, areaKo, areaSlug, bookable, pricing, tableChargeWeekday, tableChargeWeekend,
+  lang, clubId, name, areaLabel, areaKo, areaSlug, bookable, pricing, tableChargeWeekday, tableChargeWeekend,
   bookHref, alternatives, rates,
 }: Props) {
   const t = T[lang];
-  const from = bookable ? tableFrom(areaKo, pricing) : null;
+  const floorOverride = clubId ? CLUB_MIN_SPEND_OVERRIDE[clubId] : undefined;
+  const floor = floorOverride ?? bookingFloor(areaKo);
+  const lowestBaseForFrom = pricing?.lowestSet ?? pricing?.lowestItem ?? null;
+  const from = bookable ? (lowestBaseForFrom != null ? Math.max(floor, lowestBaseForFrom) : null) : null;
   const alts = alternatives.filter((a) => a.from != null).slice(0, 4);
   const compareHref = `/${lang}/clubs/${areaSlug}#table-prices`;
 
   if (bookable && from != null) {
-    const floor = bookingFloor(areaKo);
     const lowestBase = pricing?.lowestSet ?? pricing?.lowestItem ?? null;
     // 최저 항목이 하한보다 싸면 "최저소비"로, 아니면 그냥 "테이블 가격"으로 부른다.
     const anchoredByFloor = lowestBase != null && lowestBase < floor;
-    const reach = itemsToReachFloor(areaKo, pricing);
+    const reach = lowestBase != null && lowestBase > 0 ? Math.max(1, Math.ceil(floor / lowestBase)) : itemsToReachFloor(areaKo, pricing);
     // 하한의 20% 미만 저가 항목은 테이블 예약 대표가가 아니라 제외(2026-09-10).
     // 3개까지만 — 이건 요약이고 전체 메뉴는 폼에서 본다.
-    const repSets = representativeItems(areaKo, pricing?.topSets).slice(0, 3);
-    const repItems = representativeItems(areaKo, pricing?.topItems).slice(0, 3);
+    const repMin = floor * 0.2;
+    const repSets = (floorOverride != null
+      ? (pricing?.topSets ?? []).filter((i) => i.price >= repMin)
+      : representativeItems(areaKo, pricing?.topSets)
+    ).slice(0, 3);
+    const repItems = (floorOverride != null
+      ? (pricing?.topItems ?? []).filter((i) => i.price >= repMin)
+      : representativeItems(areaKo, pricing?.topItems)
+    ).slice(0, 3);
     const rows = repSets.length ? repSets : repItems;
     const rowsTitle = repSets.length ? t.setsTitle : t.itemsTitle;
     const chargeText = [

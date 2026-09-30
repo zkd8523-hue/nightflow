@@ -501,6 +501,7 @@ export default async function EnClubDetailPage({
         {/* 예약 블록 — 가능: 실가격+절차+CTA / 불가: 같은 지역 예약 가능 클럽을 가격 카드로 */}
         <ClubBookingSection
           lang="en"
+          clubId={club.id}
           name={name}
           areaLabel={areaEn}
           areaKo={club.area}

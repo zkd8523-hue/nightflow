@@ -95,6 +95,12 @@ const AREA_BUDGET_TIERS: Record<string, number[]> = {
 };
 const FALLBACK_BUDGET_TIERS = [500000, 800000, 1500000];
 
+// La Rosa(홍대)만 예산 버튼 15/30/100만 — 사용자 요청(2026-09-30), 클럽 단위 예외.
+// 첫 값이 최소주문금액. ClubBookingSection.tsx의 CLUB_MIN_SPEND_OVERRIDE와 같은 클럽 ID.
+const CLUB_BUDGET_TIERS_OVERRIDE: Record<string, number[]> = {
+  "4004d7b6-b3d2-4ec4-8c42-32d82405ded0": [150000, 300000, 1000000], // La Rosa
+};
+
 const AREA_MIN_BUDGET: Record<string, number> = Object.fromEntries(
   Object.entries(AREA_BUDGET_TIERS).map(([area, tiers]) => [area, tiers[0]])
 );
@@ -364,7 +370,14 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // 여러 지역이 섞이면 가장 높은 하한을 적용 — 강남 한 곳만 껴도 강남 기준.
   // 금액뿐 아니라 "어느 지역이 이 하한을 만들었는지"까지 같이 들고 나온다 —
   // 안내 문구에 지역명을 박아야 왜 이 금액인지가 바로 읽힌다.
+  // 클럽 단위 예외가 있으면 지역 하한보다 우선한다 — 클럽은 한 곳만 고를 수 있다.
+  const clubTiersOverride = (() => {
+    const id = selectedClubIds.find((cid) => cid in CLUB_BUDGET_TIERS_OVERRIDE);
+    return id ? CLUB_BUDGET_TIERS_OVERRIDE[id] : null;
+  })();
   const budgetFloor = (() => {
+    if (clubTiersOverride) return { amount: clubTiersOverride[0], area: null as string | null };
+
     const areas: string[] = [];
     if (area) areas.push(area);
     selectedClubIds.forEach((id) => {
@@ -1217,9 +1230,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     setFormStep(3);
   };
   const mdBudgetOptions = useMemo(() => {
+    if (clubTiersOverride) return clubTiersOverride;
     const base = minBudget > 0 ? minBudget : 500_000;
     return [base, Math.round((base * 1.5) / 50_000) * 50_000, base * 2];
-  }, [minBudget]);
+  }, [minBudget, clubTiersOverride]);
 
   // 메뉴 시트 맨 위(topSlot)에 끼우는 박스. 예전엔 날짜 화면에도 뒀다가 뺐다(2026-09-26, 아래 Step 1 주석).
   // compact 분기는 시트 배경색용으로 남겨 둔다.
