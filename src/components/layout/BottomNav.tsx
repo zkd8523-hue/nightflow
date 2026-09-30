@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Home, Disc3, Map, Heart, MessageCircle } from "lucide-react";
+import { Home, Disc3, Map, Heart, MessageCircle, ClipboardList } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
@@ -71,9 +71,13 @@ export function BottomNav() {
   //    undefined를 falsy로 흘리면 "찜"이 먼저 그려졌다가 조회 완료 후 "메시지"로
   //    바뀌어 깜빡인다. 확정 전에는 자리만 잡아두고 아무것도 그리지 않는다
   //    (탭을 빼버리면 나머지 4개가 재배치돼 더 크게 흔들린다).
+  // MD는 클럽지도 자리가 맨 오른쪽 "예약관리"로 바뀐다 — 파트너 페이지의 컨시어지
+  // 예약 목록으로 바로 간다. 운영자가 보낸 제안서·확정서를 링크 없이 앱에서 확인하는
+  // 입구(2026-09-30). 처음엔 탭 5개 그대로 두고 클럽지도 위치만 바꿨다가(맨 오른쪽으로),
+  // MD에게는 클럽지도가 필요 없다는 사용자 판단으로 아예 빼고 그 자리를 예약관리가 쓴다.
+  const isMd = user?.role === "md";
   const tabs = [
     { label: "홈", icon: Home, href: "/" },
-    { label: "클럽지도", icon: Map, href: "/clubs" },
     // MY(/profile) → LINE UP 으로 교체 (사용자 결정, 2026-09-02).
     // 라인업이 앱의 주 콘텐츠인데 탭바에서 빠져 있어 홈 상단 토글로만 닿았다.
     // 대신 /profile 은 햄버거 메뉴 "내 정보"로 옮겨 진입 경로를 남긴다 —
@@ -86,6 +90,9 @@ export function BottomNav() {
       : offerChatOn
         ? { label: "메시지", icon: MessageCircle, href: "/messages" }
         : { label: "찜", icon: Heart, href: "/favorites" },
+    isMd
+      ? { label: "예약관리", icon: ClipboardList, href: "/md/dashboard?section=concierge" }
+      : { label: "클럽지도", icon: Map, href: "/clubs" },
   ];
 
   return (
@@ -97,7 +104,8 @@ export function BottomNav() {
           // 플래그 확정 전 슬롯 — 자리만 차지하고 비워둔다 (레이아웃 고정)
           if (!tab) return <div key={`pending-${i}`} className="flex-1" aria-hidden />;
           const { label, icon: Icon, href } = tab;
-          const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
+          const hrefPath = href.split("?")[0];
+          const isActive = href === "/" ? pathname === "/" : pathname.startsWith(hrefPath);
           // 와글 활성 시 보라 시그니처 (MUSIC 가치), 나머지는 흰색
           const activeClass = "text-foreground";
           // "메시지"=안읽은 메시지 개수 뱃지.
@@ -109,7 +117,14 @@ export function BottomNav() {
               key={href}
               href={href}
               // LINE UP 탭 진입 계측(2026-09-27) — 라인업 자동 수집을 계속 돌릴지 판단 근거
-              onClick={href === "/lineups" ? () => trackEvent("lineup_nav_click", { source: "bottom_nav", target: "lineups" }) : undefined}
+              onClick={
+                href === "/lineups"
+                  ? () => trackEvent("lineup_nav_click", { source: "bottom_nav", target: "lineups" })
+                  : // 이미 파트너 페이지면 같은 URL이라 다시 안 내려간다 — 직접 스크롤.
+                    hrefPath === "/md/dashboard" && pathname === "/md/dashboard"
+                    ? () => document.getElementById("concierge")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    : undefined
+              }
               className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 transition-colors ${
                 isActive ? activeClass : "text-muted-foreground"
               }`}

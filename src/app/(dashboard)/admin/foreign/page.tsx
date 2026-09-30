@@ -13,7 +13,7 @@ export default async function AdminForeignPage() {
 
   const { data: rows } = await supabase
     .from("foreign_requests")
-    .select("id, proposal_token, lang, area, event_date, group_size, budget, selected_menu, selected_menu_total, club_ids, guest_name, assigned_md_id, contact_type, contact_value, backup_email, notes, status, created_at, md_response, md_responded_at, md_table_choosable, md_table_options, md_reject_reason, md_required_amount")
+    .select("id, proposal_token, lang, area, event_date, group_size, budget, selected_menu, selected_menu_total, club_ids, guest_name, assigned_md_id, contact_type, contact_value, backup_email, notes, status, created_at, md_response, md_responded_at, md_table_choosable, md_table_options, md_reject_reason, md_required_amount, md_proposed_items, md_reject_note")
     .order("created_at", { ascending: false })
     .limit(200);
 

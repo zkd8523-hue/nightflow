@@ -9,8 +9,10 @@
 // 비밀이 아니라, 하나를 받은 사람이 다른 예약도 열 수 있다) — Migration 648.
 //
 // Body:
-//   { proposal_token, action: "approve", table_choosable: boolean, table_options?: string }
-//   { proposal_token, action: "reject", reason: "budget"|"absent"|"expired", required_amount?: number }
+//   { proposal_token, action: "approve", table_choosable: boolean, table_options?: string, proposed_items?: string }
+//     proposed_items — 주류 제안(MD 추천, selected_menu.md_recommend) 요청이면 필수(Migration 676)
+//   { proposal_token, action: "reject", reason: "budget"|"absent"|"expired"|"other", required_amount?: number, reason_text?: string }
+//     reason_text — reason이 "other"(직접 입력)면 필수(Migration 677)
 // 200: { ok: true }
 
 import { NextRequest, NextResponse } from "next/server";
@@ -20,6 +22,7 @@ const REJECT_LABEL: Record<string, string> = {
   budget: "금액 부족",
   absent: "당일 미출근",
   expired: "예약 만료",
+  other: "기타",
 };
 
 export async function POST(req: NextRequest) {
@@ -30,6 +33,8 @@ export async function POST(req: NextRequest) {
     table_options?: string;
     reason?: string;
     required_amount?: number;
+    proposed_items?: string;
+    reason_text?: string;
   };
   try {
     body = await req.json();
@@ -48,13 +53,14 @@ export async function POST(req: NextRequest) {
   let reqRow = (
     await sb
       .from("foreign_requests")
-      .select("id, guest_name, event_date, club_ids, selected_menu_total, budget, status, assigned_md_id")
+      .select("id, guest_name, event_date, club_ids, selected_menu, selected_menu_total, budget, status, assigned_md_id")
       .eq("proposal_token", proposal_token)
       .maybeSingle()
   ).data as {
     id: string;
     guest_name: string | null;
     club_ids: string[] | null;
+    selected_menu: { md_recommend?: { budget: number } } | null;
     selected_menu_total: number | null;
     budget: number | null;
     status: string;
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
     requestType = "korean";
     const { data } = await sb
       .from("korean_booking_requests")
-      .select("id, guest_name, event_date, club_id, selected_menu_total, status, assigned_md_id")
+      .select("id, guest_name, event_date, club_id, selected_menu, selected_menu_total, status, assigned_md_id")
       .eq("proposal_token", proposal_token)
       .maybeSingle();
     reqRow = data
@@ -92,18 +98,33 @@ export async function POST(req: NextRequest) {
     patch.md_table_options = body.table_choosable
       ? (body.table_options ?? "").trim() || null
       : null;
+    // 주류 제안 요청은 구성이 비어서 온다 — MD가 예산 안에서 드릴 구성을 적어야만
+    // 승인된다. 안 그러면 손님은 뭘 받는지 모른 채 확정으로 넘어간다(Migration 676).
+    const proposedItems = (body.proposed_items ?? "").trim();
+    if (reqRow.selected_menu?.md_recommend && !proposedItems) {
+      return NextResponse.json({ error: "proposed_items_required" }, { status: 400 });
+    }
+    patch.md_proposed_items = proposedItems || null;
     // 승인했으면 이전 거절 흔적은 지운다 — 안 그러면 화면에 둘 다 남아 헷갈린다.
     patch.md_reject_reason = null;
     patch.md_required_amount = null;
+    patch.md_reject_note = null;
   } else {
     if (!body.reason || !REJECT_LABEL[body.reason]) {
       return NextResponse.json({ error: "reason_required" }, { status: 400 });
     }
+    // 직접 입력은 문장이 있어야 한다 — "기타"만 오면 운영자가 손님에게 전할 말이 없다.
+    const rejectNote = (body.reason_text ?? "").trim().slice(0, 200);
+    if (body.reason === "other" && !rejectNote) {
+      return NextResponse.json({ error: "reason_text_required" }, { status: 400 });
+    }
     patch.md_reject_reason = body.reason;
     patch.md_required_amount =
       body.reason === "budget" && body.required_amount ? body.required_amount : null;
+    patch.md_reject_note = body.reason === "other" ? rejectNote : null;
     patch.md_table_choosable = null;
     patch.md_table_options = null;
+    patch.md_proposed_items = null;
   }
 
   const table = requestType === "korean" ? "korean_booking_requests" : "foreign_requests";
@@ -141,9 +162,13 @@ export async function POST(req: NextRequest) {
     const guest = reqRow.guest_name?.trim() || "게스트";
     const mdName = md?.name ?? "미지정 MD";
     const clubName = club?.name ?? "";
+    // 주류 제안 요청이면 MD가 적은 구성을 한 줄로 붙인다 — 알림만 보고도 손님에게 전달할 수 있게.
+    const proposed = (patch.md_proposed_items as string | null)?.split("\n").map((l) => l.trim()).filter(Boolean).join(", ");
     const bodyText = approved
-      ? `${mdName}${clubName ? ` · ${clubName}` : ""} — ${guest}님 요청 승인`
-      : `${mdName}${clubName ? ` · ${clubName}` : ""} — ${guest}님 요청 거절 (${REJECT_LABEL[body.reason ?? ""] ?? body.reason})`;
+      ? `${mdName}${clubName ? ` · ${clubName}` : ""} — ${guest}님 요청 승인${proposed ? ` · 제안: ${proposed}` : ""}`
+      : `${mdName}${clubName ? ` · ${clubName}` : ""} — ${guest}님 요청 거절 (${
+          body.reason === "other" ? (patch.md_reject_note as string) : REJECT_LABEL[body.reason ?? ""] ?? body.reason
+        })`;
 
     for (const admin of admins ?? []) {
       await sb.rpc("notify_user_push", {

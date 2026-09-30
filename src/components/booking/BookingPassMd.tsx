@@ -4,7 +4,8 @@
 // 금액·준비 내역·응대 언어를 보여주고, 손님 연락처는 넘기지 않는다.
 
 import { useState } from "react";
-import { Check, Phone } from "lucide-react";
+import Link from "next/link";
+import { Check, Phone, ChevronLeft } from "lucide-react";
 
 const LANG_LABEL: Record<string, string> = {
   en: "English",
@@ -29,6 +30,8 @@ type Props = {
   guestRequest: string | null;
   hostName: string | null;
   arrivedPings: string[];
+  /** 담당 MD 본인이 로그인해 연 경우에만 — 파트너 페이지 예약관리로 돌아가는 링크 */
+  backHref?: string | null;
   mdToken: string;
   checkedInAt: string | null;
 };
@@ -100,6 +103,16 @@ export function BookingPassMd(p: Props) {
   return (
     <div className="min-h-screen bg-background text-foreground py-7 px-4">
       <div className="max-w-md mx-auto">
+        {/* 앱에서 푸시·예약관리로 들어온 담당 MD만 — 이 화면엔 하단 탭이 없어 돌아갈 길이 필요하다. */}
+        {p.backHref && (
+          <Link
+            href={p.backHref}
+            className="inline-flex items-center gap-0.5 mb-3 mt-[env(safe-area-inset-top)] text-[13px] font-bold text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            예약관리
+          </Link>
+        )}
         <div className="rounded-3xl bg-card border border-border overflow-hidden">
           <div className="bg-muted/40 px-5 pt-5 pb-4 text-center">
             <div className="text-[10.5px] font-bold tracking-[0.22em] uppercase text-muted-foreground">

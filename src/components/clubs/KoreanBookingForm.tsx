@@ -80,6 +80,8 @@ export function KoreanBookingForm({
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuZone, setMenuZone] = useState<string | null>(null);
   const [picked, setPicked] = useState<{ snapshot: SelectedMenuSnapshot; total: number } | null>(null);
+  // 추천 세트 예산 직접 입력 — 만 원 단위("40" = 40만 원). 한국 폼은 하한이 없다.
+  const [customBudgetMan, setCustomBudgetMan] = useState("");
   const [menuDraft, setMenuDraft] = useState<{ snapshot: SelectedMenuSnapshot; total: number } | null>(null);
   // 추천 세트 예산 버튼의 기준 지역 — 강남인지만 본다(한국 폼 전용 금액표, mdBudgetOptions).
   const [clubArea, setClubArea] = useState<string | null>(null);
@@ -341,6 +343,28 @@ export function KoreanBookingForm({
           </button>
         ))}
       </div>
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 min-w-0">
+          <input
+            id="md-budget-custom"
+            value={customBudgetMan}
+            onChange={(e) => setCustomBudgetMan(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+            inputMode="numeric"
+            placeholder="직접 입력"
+            aria-label="예산 직접 입력 (만 원)"
+            className="w-full h-10 rounded-xl border border-border bg-card pl-3 pr-12 text-[13px] font-bold tabular-nums text-foreground placeholder:text-muted-foreground outline-none focus:border-amber-500/60"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">만 원</span>
+        </div>
+        <button
+          type="button"
+          disabled={!Number(customBudgetMan)}
+          onClick={() => handleMdRecommend(Number(customBudgetMan) * 10_000)}
+          className="h-10 px-3.5 rounded-xl bg-inverse text-inverse-foreground text-[13px] font-bold shrink-0 disabled:opacity-40"
+        >
+          이 예산으로
+        </button>
+      </div>
     </section>
   );
 
@@ -436,7 +460,6 @@ export function KoreanBookingForm({
 
               {/* 주류 선택 */}
               <section>
-                {label(<span className="w-4 h-4" />, "주류")}
                 {menuLoading ? (
                   <div className="h-12 rounded-xl bg-card border border-border flex items-center px-4 text-[13px] text-muted-foreground">
                     메뉴 불러오는 중…

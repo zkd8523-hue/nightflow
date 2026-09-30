@@ -30,6 +30,10 @@ export type KoreanBookingReq = {
   md_table_options: string | null;
   md_reject_reason: string | null;
   md_required_amount: number | null;
+  md_proposed_items?: string | null;
+  md_reject_note?: string | null;
+  guest_notice?: string | null;
+  guest_notice_at?: string | null;
   mdCandidates: { id: string; name: string; phone: string | null }[];
   conf: ProposalConf | null;
 };
@@ -55,6 +59,10 @@ function toProposalReq(r: KoreanBookingReq): ProposalReq {
     mdTableOptions: r.md_table_options,
     mdRejectReason: r.md_reject_reason,
     mdRequiredAmount: r.md_required_amount,
+    mdProposedItems: r.md_proposed_items ?? null,
+    mdRejectNote: r.md_reject_note ?? null,
+    guestNotice: r.guest_notice ?? null,
+    guestNoticeAt: r.guest_notice_at ?? null,
     mdCandidates: r.mdCandidates,
     conf: r.conf,
   };
@@ -164,6 +172,8 @@ export function KoreanBookingsClient({
                     md_responded_at: null,
                     md_reject_reason: null,
                     md_required_amount: null,
+                    md_proposed_items: null,
+                    md_reject_note: null,
                     md_table_choosable: null,
                     md_table_options: null,
                   }
@@ -306,7 +316,7 @@ export function KoreanBookingsClient({
             {/* 제안서·MD응답·확정서 — 외국인 요청과 공용(ProposalSection.tsx, 2026-09-06). */}
             <ProposalCard req={toProposalReq(r)} allMds={allMds} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
             <MdResponseCard req={toProposalReq(r)} allMds={allMds} />
-            {r.conf && <ConfirmationCard conf={r.conf} />}
+            {r.conf && <ConfirmationCard conf={r.conf} requestType="korean" hasMd={!!r.assigned_md_id} />}
 
             <button
               onClick={() => setEditing(editing === r.id ? null : r.id)}

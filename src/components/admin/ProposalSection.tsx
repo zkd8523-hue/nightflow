@@ -9,7 +9,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { Copy, FileText, ExternalLink } from "lucide-react";
+import { Copy, FileText, ExternalLink, Send } from "lucide-react";
 
 export type RequestType = "foreign" | "korean";
 
@@ -45,7 +45,14 @@ export type ProposalReq = {
   mdTableChoosable: boolean | null;
   mdTableOptions: string | null;
   mdRejectReason: string | null;
+  /** 손님에게 보낸 안내 문장(Migration 678, 한국 예약 전용) */
+  guestNotice?: string | null;
+  guestNoticeAt?: string | null;
   mdRequiredAmount: number | null;
+  /** 주류 제안 요청에 MD가 승인하며 적은 추천 구성(Migration 676) */
+  mdProposedItems: string | null;
+  /** 거절 사유 직접 입력 문장(Migration 677) */
+  mdRejectNote: string | null;
   mdCandidates: MdCandidate[];
   conf: ProposalConf | null;
 };
@@ -54,6 +61,7 @@ const MD_REJECT_LABEL: Record<string, string> = {
   budget: "금액 부족",
   absent: "당일 미출근",
   expired: "예약 만료",
+  other: "기타",
 };
 
 const copy = (text: string) => {
@@ -233,6 +241,63 @@ function MdPicker({
   );
 }
 
+const SEND_ERROR: Record<string, string> = {
+  md_required: "받는 MD를 먼저 지정하세요",
+  no_confirmation: "확정서를 먼저 저장하세요",
+  cancelled: "취소된 요청이에요",
+  no_channel: "이 MD는 앱 알림도 번호도 없어요 — 링크를 복사해 직접 보내주세요",
+};
+
+// 담당 MD에게 제안서/확정서를 앱 푸시로 보낸다(푸시가 없으면 서버가 SMS로 대신 보낸다).
+// 링크를 복사해 DM으로 붙이던 걸 버튼 하나로 바꾼다(2026-09-30). 다시 누르면 다시 보낸다 —
+// MD가 알림을 지웠거나 못 봤을 때 재촉용.
+function SendToMdButton({
+  requestType,
+  requestId,
+  kind,
+  disabled,
+}: {
+  requestType: RequestType;
+  requestId: string;
+  kind: "proposal" | "confirmation";
+  disabled?: boolean;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [sentAt, setSentAt] = useState<string | null>(null);
+  const send = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/notify-md", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_type: requestType, request_id: requestId, kind }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(SEND_ERROR[j.error] ?? j.error ?? "보내기 실패");
+        return;
+      }
+      toast.success(j.channel === "sms" ? "앱 알림이 없어 문자로 보냈어요" : "MD에게 앱 알림을 보냈어요");
+      setSentAt(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const label = kind === "proposal" ? "제안서 보내기" : "확정서 보내기";
+  return (
+    <button
+      type="button"
+      onClick={send}
+      disabled={disabled || busy}
+      title={disabled ? "받는 MD를 먼저 지정하세요" : `담당 MD에게 ${kind === "proposal" ? "제안서" : "확정서"} 앱 알림 보내기`}
+      className="ml-auto shrink-0 h-8 px-3 rounded-lg bg-white text-black text-[12px] font-black flex items-center gap-1.5 disabled:opacity-40"
+    >
+      <Send className="w-3.5 h-3.5" />
+      {busy ? "보내는 중…" : sentAt ? `다시 보내기 · ${sentAt} 보냄` : label}
+    </button>
+  );
+}
+
 function normalizeIncludeLine(line: string): string {
   return line.trim().replace(/^(\d+)\s*/, "$1 ");
 }
@@ -275,6 +340,7 @@ export function ProposalCard({
         <div className="w-full flex items-center gap-2 pt-2 mt-1 border-t border-border/60">
           <span className="text-[11px] text-muted-foreground shrink-0">받는 MD</span>
           <MdPicker candidates={req.mdCandidates} others={others} assignedId={req.assignedMdId} onAssign={onAssignMd} />
+          <SendToMdButton requestType={req.requestType} requestId={req.id} kind="proposal" disabled={!req.assignedMdId} />
         </div>
       </div>
 
@@ -295,6 +361,70 @@ ${window.location.origin}/booking/proposal/${req.proposalToken}`;
         📋 클럽·인원·금액 포함해서 복사 (카톡용)
       </button>
     </>
+  );
+}
+
+const GUEST_NOTICE_TEMPLATE: Record<string, (req: ProposalReq) => string> = {
+  budget: (req) =>
+    req.mdRequiredAmount
+      ? `요청하신 클럽은 ${req.mdRequiredAmount.toLocaleString()}원부터 예약이 가능해요. 이 금액으로 진행할까요?`
+      : "요청하신 예산으로는 그날 자리가 어렵대요. 예산을 조금 올려서 다시 주문해주시겠어요?",
+  absent: () => "죄송해요, 그날은 담당자가 자리를 비워 예약이 어려워요. 다른 날짜로 다시 주문해주시겠어요?",
+  expired: () => "죄송해요, 그날은 예약이 마감됐어요. 다른 날짜로 다시 주문해주시겠어요?",
+  other: (req) => req.mdRejectNote ?? "그날은 예약이 어렵다고 해요. 다시 주문해주시겠어요?",
+};
+
+/** 거절된 한국 예약에 운영자가 손님용 안내를 보내는 패널. 이미 보냈으면 보낸 문장 + 다시 보내기. */
+function GuestNoticeBox({ req }: { req: ProposalReq }) {
+  const [msg, setMsg] = useState(
+    GUEST_NOTICE_TEMPLATE[req.mdRejectReason ?? ""]?.(req) ?? "그날은 예약이 어렵다고 해요. 다시 주문해주시겠어요?"
+  );
+  const [sending, setSending] = useState(false);
+  const [sentAt, setSentAt] = useState(req.guestNoticeAt ?? null);
+
+  const send = async () => {
+    if (!msg.trim()) return;
+    setSending(true);
+    const res = await fetch("/api/admin/guest-notice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request_id: req.id, message: msg.trim() }),
+    });
+    const j = await res.json().catch(() => ({}));
+    setSending(false);
+    if (!res.ok) return toast.error(j.error === "not_rejected" ? "이미 상태가 바뀌었어요 — 새로고침해주세요" : "전송 실패");
+    setSentAt(j.guest_notice_at);
+    toast.success(
+      j.channel === "push" ? "손님에게 앱 알림을 보냈어요" : j.channel === "sms" ? "앱 알림이 없어 문자로 보냈어요" : "저장했어요 — 손님이 앱을 열면 보여요"
+    );
+  };
+
+  return (
+    <div className="mt-2 pt-2 border-t border-red-500/20">
+      <span className="text-[11px] font-bold text-muted-foreground">손님에게 안내</span>
+      <textarea
+        value={msg}
+        onChange={(e) => setMsg(e.target.value)}
+        rows={2}
+        maxLength={300}
+        className="w-full mt-1 px-2.5 py-2 rounded-lg bg-background border border-border text-[12.5px] text-foreground outline-none focus:border-amber-500 resize-none"
+      />
+      <div className="flex items-center gap-2 mt-1.5">
+        <button
+          type="button"
+          onClick={send}
+          disabled={sending || !msg.trim()}
+          className="h-8 px-3 rounded-lg bg-white text-black text-[12px] font-black disabled:opacity-40"
+        >
+          {sending ? "보내는 중…" : sentAt ? "다시 보내기" : "손님에게 보내기"}
+        </button>
+        {sentAt && (
+          <span className="text-[11px] text-muted-foreground">
+            {new Date(sentAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 보냄
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -338,22 +468,41 @@ export function MdResponseCard({ req, allMds = [] }: { req: ProposalReq; allMds?
             : "랜덤 / 당일배정"}
         </p>
       )}
+      {approved && req.mdProposedItems && (
+        <div className="mt-1.5 pt-1.5 border-t border-green-500/20">
+          <span className="text-[11px] font-bold text-muted-foreground">MD 제안 구성</span>
+          <p className="text-[12.5px] text-foreground/90 whitespace-pre-line">{req.mdProposedItems}</p>
+        </div>
+      )}
       {!approved && (
         <p className="text-[12.5px] text-foreground/80 mt-1">
-          {MD_REJECT_LABEL[req.mdRejectReason ?? ""] ?? req.mdRejectReason}
+          {req.mdRejectReason === "other" && req.mdRejectNote
+            ? req.mdRejectNote
+            : MD_REJECT_LABEL[req.mdRejectReason ?? ""] ?? req.mdRejectReason}
           {req.mdRejectReason === "budget" && req.mdRequiredAmount
             ? ` — ${req.mdRequiredAmount.toLocaleString()}원이면 가능`
             : ""}
         </p>
       )}
+      {/* 손님 재주문(/api/booking-rerequest)이 거절이 아니면 막으므로, 이 패널도 같은
+          조건(!approved)에서만 보인다. 외국인 요청은 손님 로그인이 없어 아직 범위 밖. */}
+      {!approved && req.requestType === "korean" && <GuestNoticeBox req={req} />}
     </div>
   );
 }
 
-/** 확정서 카드 — ref_no + 손님/MD용 링크. */
-export function ConfirmationCard({ conf }: { conf: ProposalConf }) {
+/** 확정서 카드 — ref_no + 손님/MD용 링크 + MD에게 확정서 보내기. */
+export function ConfirmationCard({
+  conf,
+  requestType,
+  hasMd,
+}: {
+  conf: ProposalConf;
+  requestType: RequestType;
+  hasMd: boolean;
+}) {
   return (
-    <div className="flex items-center gap-2 bg-card rounded-lg px-3 py-2 border border-amber-500/25">
+    <div className="flex flex-wrap items-center gap-2 bg-card rounded-lg px-3 py-2 border border-amber-500/25">
       <FileText className="w-3.5 h-3.5 text-brand-amber shrink-0" />
       <span className="text-[13px] font-black text-brand-amber shrink-0">{conf.ref_no}</span>
       {conf.total_price != null && (
@@ -401,6 +550,14 @@ export function ConfirmationCard({ conf }: { conf: ProposalConf }) {
             <Copy className="w-3.5 h-3.5" />
           </button>
         </div>
+      </div>
+      <div className="w-full flex items-center gap-2 pt-2 mt-1 border-t border-border/60">
+        <span className="text-[11px] text-muted-foreground">
+          {hasMd ? "담당 MD 앱으로 확정서 알림" : "담당 MD가 지정되지 않았어요"}
+        </span>
+        {/* 확정서 폼에서 MD를 바꾸면 목록의 assigned_md_id는 새로고침 전까지 옛 값이라 막지 않는다 —
+            MD가 정말 없으면 서버가 md_required로 돌려준다. */}
+        <SendToMdButton requestType={requestType} requestId={conf.request_id} kind="confirmation" />
       </div>
     </div>
   );
@@ -458,7 +615,10 @@ export function ConfirmForm({
   const [groupSize, setGroupSize] = useState(
     c ? (c.confirmed_group_size ? String(c.confirmed_group_size) : "") : String(req.groupSize)
   );
-  const [includes, setIncludes] = useState(c ? (c.includes ?? []).join("\n") : "");
+  // 주류 제안 요청이면 MD가 승인하며 적은 구성을 포함 내역 기본값으로 쓴다.
+  const [includes, setIncludes] = useState(
+    c ? (c.includes ?? []).join("\n") : req.mdResponse === "approved" ? (req.mdProposedItems ?? "") : ""
+  );
   const [price, setPrice] = useState(
     c
       ? (c.total_price ? String(c.total_price) : "")

@@ -37,6 +37,11 @@ const CONTACT_LABEL: Record<KoreanBookingContactType, string> = {
   openchat: "오픈채팅",
 };
 
+// 거절 사유별 금액 재제안 버튼 라벨. "budget"만 md_required_amount로 정액 버튼을 만들고
+// 나머지는 날짜를 바꿔야 하니 "수정해서 다시 주문"으로 유도한다(Migration 678).
+const canQuickReorder = (b: KoreanBookingRequest) =>
+  b.md_response === "rejected" && b.md_reject_reason === "budget" && !!b.md_required_amount;
+
 interface Props {
   bookings: BookingWithClub[];
 }
@@ -152,6 +157,30 @@ function BookingRow({
 
   const wasConfirmedByAdmin = booking.status !== "new";
   const cancellable = booking.status !== "cancelled" && booking.status !== "done";
+  const [reordering, setReordering] = useState(false);
+
+  // 파트너 거절 뒤 운영자가 보낸 안내가 있으면 — 같은 파트너에게 조건을 바꿔 다시 주문할 수 있다.
+  const hasRejectedNotice = booking.md_response === "rejected" && !!booking.guest_notice;
+
+  const reorder = async (body: Record<string, unknown> = {}) => {
+    setReordering(true);
+    const res = await fetch("/api/booking-rerequest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request_id: booking.id, ...body }),
+    });
+    const j = await res.json().catch(() => ({}));
+    setReordering(false);
+    if (!res.ok) return toast.error(j.error === "not_rejected" ? "이미 상태가 바뀌었어요 — 새로고침해주세요" : "다시 주문 실패");
+    onUpdate({
+      md_response: null,
+      md_reject_reason: null,
+      guest_notice: null,
+      guest_notice_at: null,
+      ...(body.budget ? { selected_menu: { ...(booking.selected_menu ?? { items: [] }), md_recommend: { budget: body.budget as number } } } : {}),
+    });
+    toast.success("파트너에게 다시 주문을 보냈어요");
+  };
 
   const resetDraft = () => {
     setEventDate(booking.event_date);
@@ -180,8 +209,15 @@ function BookingRow({
       .eq("id", booking.id);
     setSaving(false);
     if (error) return toast.error(`수정 실패: ${error.message}`);
-    onUpdate({ event_date: eventDate, group_size: groupSize, guest_name: guestName.trim(), contact_type: contactType, contact_value: contactValue.trim(), notes: notes.trim() || null });
+    const patch = { event_date: eventDate, group_size: groupSize, guest_name: guestName.trim(), contact_type: contactType, contact_value: contactValue.trim(), notes: notes.trim() || null };
+    onUpdate(patch);
     setEditing(false);
+    // 거절 안내를 보고 조건을 바꿔 다시 주문하는 길이면, 날짜/인원까지 반영해
+    // 담당 파트너에게 다시 알린다(md_response 등 초기화는 이 API가 한다).
+    if (hasRejectedNotice) {
+      await reorder({ event_date: eventDate, group_size: groupSize });
+      return;
+    }
     toast.success(
       wasConfirmedByAdmin ? "수정됐어요. 운영팀에 재확인 알림을 보냈어요." : "수정됐어요."
     );
@@ -257,6 +293,35 @@ function BookingRow({
               )}
               <Row label="신청일시" value={new Date(booking.created_at).toLocaleString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })} />
 
+              {/* 파트너가 거절해 운영자가 보낸 안내 — 조건을 바꿔 같은 파트너에게 다시 주문하거나 취소.
+                  md_response==='rejected'일 때만 뜨므로 승인·확정 뒤엔 자동으로 사라진다(2026-09-30). */}
+              {hasRejectedNotice && (
+                <div className="rounded-lg bg-red-500/10 border border-red-500/25 px-3 py-2.5 mt-1">
+                  <p className="text-[11px] font-bold text-red-400">파트너 답변</p>
+                  <p className="text-[13px] text-foreground/90 mt-0.5 leading-snug">{booking.guest_notice}</p>
+                  <div className="flex flex-col gap-1.5 mt-2.5">
+                    {canQuickReorder(booking) && (
+                      <button
+                        type="button"
+                        disabled={reordering}
+                        onClick={() => reorder({ budget: booking.md_required_amount })}
+                        className="w-full h-10 rounded-lg bg-amber-500 text-black text-[13px] font-black disabled:opacity-50"
+                      >
+                        {reordering ? "주문하는 중…" : `${booking.md_required_amount!.toLocaleString("en-US")}원으로 다시 주문`}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      disabled={reordering}
+                      onClick={() => setEditing(true)}
+                      className="w-full h-10 rounded-lg bg-muted text-foreground/80 text-[13px] font-bold hover:bg-muted/70 disabled:opacity-50"
+                    >
+                      수정해서 다시 주문
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {(booking.status === "new" || booking.status === "contacted") && (
                 <div className="flex gap-2 pt-2">
                   <button
@@ -281,10 +346,16 @@ function BookingRow({
             </div>
           ) : (
             <div className="rounded-xl bg-card border border-amber-500/40 p-4 space-y-3">
-              {wasConfirmedByAdmin && (
+              {hasRejectedNotice ? (
                 <p className="text-[11px] text-brand-amber leading-relaxed">
-                  ⚠️ 운영팀이 이미 확인한 예약이에요. 수정하면 운영팀에 재확인 알림이 갑니다.
+                  날짜나 인원을 바꾸고 저장하면 같은 파트너에게 다시 주문이 가요.
                 </p>
+              ) : (
+                wasConfirmedByAdmin && (
+                  <p className="text-[11px] text-brand-amber leading-relaxed">
+                    ⚠️ 운영팀이 이미 확인한 예약이에요. 수정하면 운영팀에 재확인 알림이 갑니다.
+                  </p>
+                )
               )}
               <div className="grid grid-cols-2 gap-2">
                 <label className="block">
@@ -363,11 +434,11 @@ function BookingRow({
                 </button>
                 <button
                   type="button"
-                  disabled={saving}
+                  disabled={saving || reordering}
                   onClick={saveEdit}
                   className="flex-[2] h-10 rounded-lg bg-amber-500 text-black text-[13px] font-black disabled:opacity-50"
                 >
-                  {saving ? "저장 중…" : "저장"}
+                  {saving ? "저장 중…" : reordering ? "주문하는 중…" : hasRejectedNotice ? "수정하고 다시 주문" : "저장"}
                 </button>
               </div>
             </div>

@@ -14,7 +14,7 @@ export default async function AdminKoreanBookingsPage() {
   const { data: rows } = await supabase
     .from("korean_booking_requests")
     .select(
-      "id, club_id, event_date, group_size, selected_menu, selected_menu_total, guest_name, contact_type, contact_value, notes, status, created_at, proposal_token, assigned_md_id, md_response, md_responded_at, md_table_choosable, md_table_options, md_reject_reason, md_required_amount"
+      "id, club_id, event_date, group_size, selected_menu, selected_menu_total, guest_name, contact_type, contact_value, notes, status, created_at, proposal_token, assigned_md_id, md_response, md_responded_at, md_table_choosable, md_table_options, md_reject_reason, md_required_amount, md_proposed_items, md_reject_note, guest_notice, guest_notice_at"
     )
     .order("created_at", { ascending: false })
     .limit(200);

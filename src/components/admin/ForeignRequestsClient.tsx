@@ -25,6 +25,8 @@ export type ForeignReq = {
   md_table_options: string | null;
   md_reject_reason: string | null;
   md_required_amount: number | null;
+  md_proposed_items?: string | null;
+  md_reject_note?: string | null;
   club_ids: string[];
   clubNames: string[];
   guest_name: string | null;
@@ -72,6 +74,8 @@ function toProposalReq(r: ForeignReq): ProposalReq {
     mdTableOptions: r.md_table_options,
     mdRejectReason: r.md_reject_reason,
     mdRequiredAmount: r.md_required_amount,
+    mdProposedItems: r.md_proposed_items ?? null,
+    mdRejectNote: r.md_reject_note ?? null,
     mdCandidates: r.mdCandidates,
     conf: r.conf,
   };
@@ -164,6 +168,8 @@ export function ForeignRequestsClient({
                     md_responded_at: null,
                     md_reject_reason: null,
                     md_required_amount: null,
+                    md_proposed_items: null,
+                    md_reject_note: null,
                     md_table_choosable: null,
                     md_table_options: null,
                   }
@@ -330,7 +336,7 @@ export function ForeignRequestsClient({
             {/* 제안서·MD응답·확정서 — 외국인/한국 요청 공용(ProposalSection.tsx, 2026-09-06). */}
             <ProposalCard req={toProposalReq(r)} allMds={allMds} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
             <MdResponseCard req={toProposalReq(r)} allMds={allMds} />
-            {r.conf && <ConfirmationCard conf={r.conf} />}
+            {r.conf && <ConfirmationCard conf={r.conf} requestType="foreign" hasMd={!!r.assigned_md_id} />}
 
             <button
               onClick={() => setEditing(editing === r.id ? null : r.id)}

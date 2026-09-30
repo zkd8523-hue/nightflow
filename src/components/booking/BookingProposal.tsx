@@ -6,7 +6,10 @@
 // 손님이 고른 술은 selected_menu 스냅샷에서 그대로 뽑는다 — 운영자가 옮겨 적지 않는다.
 // MD가 여기서 바로 승인/거절하면 /api/proposal-response로 저장되고 운영자에게 SMS가 간다.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { MenuPhotosOverlay } from "@/components/booking/MenuPhotosOverlay";
 import type { SelectedMenuSnapshot } from "@/types/database";
 
 const LANG_LABEL: Record<string, string> = {
@@ -21,6 +24,7 @@ const REJECT_LABEL: Record<string, string> = {
   budget: "금액 부족",
   absent: "당일 미출근",
   expired: "예약 만료",
+  other: "직접 입력",
 };
 
 type Props = {
@@ -30,6 +34,10 @@ type Props = {
   mdTableOptions: string | null;
   mdRejectReason: string | null;
   mdRequiredAmount: number | null;
+  /** 주류 제안 요청에 MD가 승인하며 적은 추천 구성(Migration 676) */
+  mdProposedItems: string | null;
+  /** 거절 사유 직접 입력 문장(Migration 677) */
+  mdRejectNote: string | null;
   guestName: string | null;
   eventDate: string;
   groupSize: number | string;
@@ -41,6 +49,12 @@ type Props = {
   budget: number | null;
   guestRequest: string | null;
   hostName: string | null;
+  /** 담당 MD 본인이 로그인해 연 경우에만 — 파트너 페이지 예약관리로 돌아가는 링크 */
+  backHref?: string | null;
+  /** 확정서가 나왔으면 MD용 확정서 링크 */
+  confirmHref?: string | null;
+  /** 클럽 주대(메뉴판) 사진 — 주류 제안 요청에서 구성을 적을 때 "메뉴판 보기"로 연다 */
+  menuUrls?: string[];
 };
 
 function fmtDateKo(iso: string): string {
@@ -76,12 +90,24 @@ export function BookingProposal(p: Props) {
   );
 
   const lines = menuLines(p.selectedMenu);
+  // 주류 제안(MD 추천) — 손님이 메뉴를 안 고르고 예산만 정해 "클럽이 세트를 제안"해 달라고 한 요청.
+  const isRecommend = !!p.selectedMenu?.md_recommend;
   // 손님이 메뉴를 고른 요청은 그 합계가, 메뉴 없는 클럽이면 희망 예산이 기준 금액이다.
   const amount = p.selectedMenuTotal ?? p.budget;
 
   return (
     <div className="min-h-screen bg-background text-foreground py-7 px-4">
       <div className="max-w-md mx-auto">
+        {/* 앱에서 푸시·예약관리로 들어온 담당 MD만 — 이 화면엔 하단 탭이 없어 돌아갈 길이 필요하다. */}
+        {p.backHref && (
+          <Link
+            href={p.backHref}
+            className="inline-flex items-center gap-0.5 mb-3 mt-[env(safe-area-inset-top)] text-[13px] font-bold text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            예약관리
+          </Link>
+        )}
         <div className="rounded-3xl bg-card border border-border overflow-hidden">
           <div className="bg-muted/40 px-5 pt-5 pb-4 text-center">
             <div className="text-[10.5px] font-bold tracking-[0.22em] uppercase text-muted-foreground">
@@ -139,8 +165,17 @@ export function BookingProposal(p: Props) {
 
             <div className="mt-4 pt-3 border-t border-border">
               <div className="text-[11px] font-bold text-muted-foreground mb-1.5">
-                손님이 고른 구성
+                {isRecommend ? "손님 요청 — 예산에 맞춰 구성 제안" : "손님이 고른 구성"}
               </div>
+              {/* 주류 제안 요청은 금액이 먼저다 — 파트너가 그 금액을 보고 구성을 짠다(2026-09-30).
+                  이때 금액 밑 "손님 예산" 설명은 뺀다. 손님이 직접 고른 요청은 구성 → 합계 순. */}
+              {isRecommend && amount != null && (
+                <Row k="금액">
+                  <div className="font-mono text-[21px] font-bold text-money tabular-nums">
+                    {amount.toLocaleString()}원
+                  </div>
+                </Row>
+              )}
               {lines.length > 0 ? (
                 <Row k="구성">
                   <ul className="space-y-0.5">
@@ -153,12 +188,21 @@ export function BookingProposal(p: Props) {
                 </Row>
               ) : (
                 <Row k="구성">
-                  <div className="text-[14.5px] text-muted-foreground">
-                    아직 정해지지 않음 — 예산 기준으로 제안 부탁드립니다
-                  </div>
+                  {isRecommend ? (
+                    <div className="break-keep">
+                      <div className="text-[14.5px] font-bold text-brand-amber">구성 제안 요청</div>
+                      <div className="text-[13.5px] text-foreground/85 mt-0.5 leading-snug">
+                        술은 금액 안에서 구성을 적은 다음 예약 승인 버튼을 눌러주세요.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[14.5px] text-muted-foreground">
+                      아직 정해지지 않음 — 예산 기준으로 제안 부탁드립니다
+                    </div>
+                  )}
                 </Row>
               )}
-              {amount != null && (
+              {!isRecommend && amount != null && (
                 <Row k="금액">
                   <div className="font-mono text-[21px] font-bold text-money tabular-nums">
                     {amount.toLocaleString()}원
@@ -199,6 +243,13 @@ export function BookingProposal(p: Props) {
                   initialTableOptions={p.mdTableOptions}
                   initialRejectReason={p.mdRejectReason}
                   initialRequiredAmount={p.mdRequiredAmount}
+                  initialProposedItems={p.mdProposedItems}
+                  initialRejectNote={p.mdRejectNote}
+                  isRecommend={isRecommend}
+                  budget={amount}
+                  menuUrls={p.menuUrls ?? []}
+                  clubName={p.clubName}
+                  confirmHref={p.confirmHref ?? null}
                 />
               )}
               <div className="flex items-center justify-between gap-3 mt-4 pt-3.5 border-t border-border">
@@ -227,13 +278,27 @@ function ResponseBox({
   initialTableOptions,
   initialRejectReason,
   initialRequiredAmount,
+  initialProposedItems,
+  initialRejectNote,
+  isRecommend,
+  budget,
+  menuUrls,
+  clubName,
+  confirmHref,
 }: {
   proposalToken: string;
+  confirmHref: string | null;
   initialResponse: string | null;
   initialTableChoosable: boolean | null;
   initialTableOptions: string | null;
   initialRejectReason: string | null;
   initialRequiredAmount: number | null;
+  initialProposedItems: string | null;
+  initialRejectNote: string | null;
+  isRecommend: boolean;
+  budget: number | null;
+  menuUrls: string[];
+  clubName: string | null;
 }) {
   const [response, setResponse] = useState(initialResponse);
   const [tableChoosable, setTableChoosable] = useState(initialTableChoosable);
@@ -242,6 +307,12 @@ function ResponseBox({
   const [requiredAmount, setRequiredAmount] = useState(
     initialRequiredAmount ? String(initialRequiredAmount) : "",
   );
+  const [proposedItems, setProposedItems] = useState(initialProposedItems ?? "");
+  // 주류 제안 요청은 구성을 적어야 승인할 수 있다(서버도 같은 조건으로 막는다).
+  const itemsMissing = isRecommend && !proposedItems.trim();
+  const itemsRef = useRef<HTMLTextAreaElement>(null);
+  const [rejectNote, setRejectNote] = useState(initialRejectNote ?? "");
+  const [menuOpen, setMenuOpen] = useState(false);
   // "idle" = 아직 뭘 누를지 고르는 중, "approve"/"reject" = 세부 입력 단계
   const [mode, setMode] = useState<"idle" | "approve" | "reject">("idle");
   const [busy, setBusy] = useState(false);
@@ -259,6 +330,8 @@ function ResponseBox({
       // 폴백("잠시 후 다시")으로 두면 MD가 같은 버튼만 계속 누른다.
       table_choosable_required: "테이블 선택 가능 여부를 골라주세요.",
       reason_required: "거절 사유를 골라주세요.",
+      proposed_items_required: "예산 안에서 드릴 구성을 적어주세요.",
+      reason_text_required: "받기 어려운 이유를 적어주세요.",
       invalid_json: "전송에 실패했습니다. 다시 시도해 주세요.",
       update_failed: "저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
       failed: "전송에 실패했습니다. 통신 상태를 확인해 주세요.",
@@ -286,6 +359,47 @@ function ResponseBox({
     }
   };
 
+  // 주류 제안 요청의 구성 입력칸 — 첫 화면부터 보여준다. 승인 버튼을 눌러야 나오게
+  // 했더니 "구성을 적어 승인해 달라"는 안내만 있고 적을 곳이 안 보였다(2026-09-30).
+  // 승인 단계(테이블 선택)에서도 같은 칸을 그대로 둬 고칠 수 있게 한다.
+  const itemsInput = isRecommend ? (
+    <div>
+      <p className="text-[13px] font-bold text-foreground">
+        {budget ? `${budget.toLocaleString()}원 안에서 ` : ""}어떤 구성으로 드릴까요?
+      </p>
+      <div className="flex items-center justify-between gap-2 mt-0.5">
+        <p className="text-[11.5px] text-muted-foreground">한 줄에 하나씩 · 손님에게 그대로 전달돼요</p>
+        {/* 구성을 짜려면 가격을 봐야 한다 — 주대 사진을 이 자리에서 바로 연다. */}
+        {menuUrls.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            className="shrink-0 flex items-center text-[12.5px] font-bold text-brand-amber"
+          >
+            메뉴판 보기
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+      <textarea
+        ref={itemsRef}
+        value={proposedItems}
+        onChange={(e) => {
+          setProposedItems(e.target.value);
+          if (err === "proposed_items_required") setErr(null);
+        }}
+        rows={3}
+        placeholder={"예) 돔페리뇽 1\n잭다니엘 2\n과일·믹서 포함"}
+        className={`w-full mt-1.5 px-3 py-2.5 rounded-xl bg-card border text-[14px] text-foreground outline-none focus:border-amber-500 resize-none ${
+          err === "proposed_items_required" ? "border-red-500/60" : "border-amber-500/40"
+        }`}
+      />
+      {menuOpen && (
+        <MenuPhotosOverlay urls={menuUrls} clubName={clubName} onClose={() => setMenuOpen(false)} />
+      )}
+    </div>
+  ) : null;
+
   // 이미 답한 상태 — 결과 요약 + 다시 답하기
   if (response && mode === "idle") {
     const approved = response === "approved";
@@ -308,9 +422,15 @@ function ResponseBox({
                 : "랜덤 / 당일배정"}
             </div>
           )}
+          {approved && proposedItems.trim() && (
+            <div className="mt-2 pt-2 border-t border-green-500/20">
+              <div className="text-[11px] font-bold text-muted-foreground">제안한 구성</div>
+              <div className="text-[13.5px] text-foreground/90 whitespace-pre-line mt-0.5">{proposedItems.trim()}</div>
+            </div>
+          )}
           {!approved && rejectReason && (
             <div className="text-[13px] text-foreground/80 mt-1">
-              {REJECT_LABEL[rejectReason] ?? rejectReason}
+              {rejectReason === "other" && rejectNote.trim() ? rejectNote.trim() : REJECT_LABEL[rejectReason] ?? rejectReason}
               {rejectReason === "budget" && requiredAmount
                 ? ` — ${Number(requiredAmount).toLocaleString()}원이면 가능`
                 : ""}
@@ -320,12 +440,19 @@ function ResponseBox({
         {/* 승인 직후 MD가 "그래서 이제 뭘 하면 되나"를 몰라 담당자에게 되묻는 일이
             잦았다 — 다음 절차를 알려준다. 승인 카드 안에 작게 넣었더니 결과 요약에
             묻혀 안 읽혔다 — 카드 밖으로 빼서 독립된 안내로 세운다(2026-09-06). */}
-        {approved && (
+        {approved && confirmHref ? (
+          <Link
+            href={confirmHref}
+            className="mt-3 flex items-center justify-center w-full h-12 rounded-xl bg-white text-black text-[15px] font-black"
+          >
+            예약 확정서 보기
+          </Link>
+        ) : approved ? (
           <p className="mt-3 text-[15px] font-bold text-foreground leading-relaxed">
             해당 사항을 고객에게 전달 후<br />
             예약 확인서를 전달해드리겠습니다.
           </p>
-        )}
+        ) : null}
         <button
           type="button"
           onClick={() => setResponse(null)}
@@ -341,6 +468,7 @@ function ResponseBox({
   if (mode === "approve") {
     return (
       <div className="space-y-3">
+        {itemsInput}
         <p className="text-[13px] font-bold text-foreground">
           손님이 테이블을 정할 수 있나요?
         </p>
@@ -395,12 +523,13 @@ function ResponseBox({
           </button>
           <button
             type="button"
-            disabled={busy || tableChoosable === null}
+            disabled={busy || tableChoosable === null || itemsMissing}
             onClick={async () => {
               const ok = await post({
                 action: "approve",
                 table_choosable: tableChoosable,
                 table_options: tableOptions,
+                proposed_items: proposedItems.trim() || undefined,
               });
               if (ok) {
                 setResponse("approved");
@@ -414,8 +543,10 @@ function ResponseBox({
         </div>
         {/* 버튼이 40% 투명도로 죽어 있어도 이유가 안 보이면 "먹통이네" 하고
             나간다. tableChoosable이 초기값 null이라 첫 방문 MD는 항상 이 상태다. */}
-        {tableChoosable === null && (
-          <p className="text-[12px] text-muted-foreground text-center">위에서 하나를 골라주세요.</p>
+        {(itemsMissing || tableChoosable === null) && (
+          <p className="text-[12px] text-muted-foreground text-center">
+            {itemsMissing ? "드릴 구성을 적어주세요." : "위에서 하나를 골라주세요."}
+          </p>
         )}
       </div>
     );
@@ -427,7 +558,7 @@ function ResponseBox({
       <div className="space-y-3">
         <p className="text-[13px] font-bold text-foreground">받기 어려운 이유를 알려주세요</p>
         <div className="grid gap-2">
-          {(["budget", "absent", "expired"] as const).map((r) => (
+          {(["budget", "absent", "expired", "other"] as const).map((r) => (
             <button
               key={r}
               type="button"
@@ -442,6 +573,20 @@ function ResponseBox({
             </button>
           ))}
         </div>
+
+        {rejectReason === "other" && (
+          <div>
+            <label className="text-[11px] text-muted-foreground">받기 어려운 이유</label>
+            <input
+              autoFocus
+              value={rejectNote}
+              onChange={(e) => setRejectNote(e.target.value)}
+              maxLength={200}
+              placeholder="예) 그날 단체석이 다 찼어요"
+              className="w-full h-11 mt-1 px-3 rounded-xl bg-card border border-border text-[14px] text-foreground outline-none focus:border-amber-500"
+            />
+          </div>
+        )}
 
         {rejectReason === "budget" && (
           <div>
@@ -471,11 +616,12 @@ function ResponseBox({
           </button>
           <button
             type="button"
-            disabled={busy || !rejectReason}
+            disabled={busy || !rejectReason || (rejectReason === "other" && !rejectNote.trim())}
             onClick={async () => {
               const ok = await post({
                 action: "reject",
                 reason: rejectReason,
+                reason_text: rejectReason === "other" ? rejectNote.trim() : undefined,
                 required_amount: requiredAmount
                   ? Number(requiredAmount.replace(/[^0-9]/g, ""))
                   : undefined,
@@ -497,15 +643,28 @@ function ResponseBox({
   // 첫 화면 — 승인 / 거절 두 갈래
   return (
     <div className="space-y-2">
-      <p className="text-[13px] text-muted-foreground leading-relaxed mb-3">
-        가능하시면 승인해주세요. 확정되면 손님에게 확정서가 발송됩니다.
-      </p>
+      {/* 주류 제안 요청은 위 구성 칸 안내와 아래 입력칸 제목이 이미 할 일을 말해줘서 안내문을 뺀다. */}
+      {!isRecommend && (
+        <p className="text-[13px] text-muted-foreground leading-relaxed mb-3">
+          가능하시면 승인해주세요. 확정되면 손님에게 확정서가 발송됩니다.
+        </p>
+      )}
+      {itemsInput && <div className="pb-2">{itemsInput}</div>}
+      {err === "proposed_items_required" && <p className="text-[12px] text-red-400">{errText(err)}</p>}
       <button
         type="button"
-        onClick={() => setMode("approve")}
+        onClick={() => {
+          // 구성 없이 누르면 다음 단계로 넘기지 않고 입력칸으로 돌려보낸다.
+          if (itemsMissing) {
+            setErr("proposed_items_required");
+            itemsRef.current?.focus();
+            return;
+          }
+          setMode("approve");
+        }}
         className="w-full h-12 rounded-xl bg-money text-black text-[15px] font-black"
       >
-        가능합니다
+        예약 승인
       </button>
       <button
         type="button"

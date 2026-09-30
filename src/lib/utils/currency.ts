@@ -141,6 +141,27 @@ export function convertKrw(amount: number, code: CurrencyCode, rates: KrwRates =
   return unit ? Math.round(raw / unit) * unit : Math.round(raw);
 }
 
+/** 지원 통화 코드인지 — 문자열로 들어온 통화(손님 선택값 등)를 좁힐 때. */
+export function isCurrencyCode(code: string | null | undefined): code is CurrencyCode {
+  return !!code && code in SYMBOLS;
+}
+
+/** 통화 기호("US$", "JP¥" …). 지원하지 않는 코드면 null. */
+export function currencySymbol(code: string | null | undefined): string | null {
+  return isCurrencyCode(code) ? SYMBOLS[code] : null;
+}
+
+/**
+ * 손님 통화 금액 → 원화(convertKrw의 역방향). 외국인 예약 폼의 예산 직접 입력용 —
+ * 손님은 자기 돈으로 생각하므로 그 통화로 받고, 신청은 원화로 넣는다.
+ * 예산이라 1만 원 단위로 반올림한다.
+ */
+export function currencyToKrw(amount: number, code: CurrencyCode, rates: KrwRates = FALLBACK_SNAPSHOT.rates): number {
+  const rate = Number.isFinite(rates?.[code]) ? rates[code] : FALLBACK_SNAPSHOT.rates[code];
+  if (!Number.isFinite(rate) || rate === 0) return NaN;
+  return Math.round(amount / rate / 10_000) * 10_000;
+}
+
 /**
  * 환율 고시 단위. 은행 고시가 "일본 JPY 100"으로 적는 이유와 같다 —
  * 1엔을 원화로 쓰면 8.9원이라 환율로 읽히지 않는다. 동은 더 심해서 0.05원이다.

@@ -101,6 +101,8 @@ export async function POST(req: NextRequest) {
       assignPatch.md_required_amount = null;
       assignPatch.md_table_choosable = null;
       assignPatch.md_table_options = null;
+      assignPatch.md_proposed_items = null;
+      assignPatch.md_reject_note = null;
       // 새 토큰 — 이전 MD가 들고 있는 링크는 그 즉시 죽는다(404).
       assignPatch.proposal_token = randomBytes(16).toString("hex");
     }

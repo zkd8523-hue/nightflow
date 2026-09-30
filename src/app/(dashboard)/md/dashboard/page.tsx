@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { MDDashboard } from "@/components/md/MDDashboard";
 
 import type { User, Auction, Club, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan, CouponIssue } from "@/types/database";
@@ -16,6 +17,8 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
 
     let userId: string;
     let userData: User | null = null;
+    // 세션(auth.getUser)으로 확인한 id. x-user-id 요청 헤더와 달리 클라이언트가 꾸밀 수 없다.
+    let sessionUserId: string | null = null;
 
     if (testMode) {
         // 테스트 모드 (개발 환경 전용)
@@ -36,6 +39,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) redirect("/login");
             userId = user.id;
+            sessionUserId = user.id;
         } else {
             userId = headerUserId;
         }
@@ -152,6 +156,18 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
 
     const slotClubIds = hotdealClubs.map((c) => c.id);
 
+    // 컨시어지 요청(외국인·한국)과 확정서는 MD가 읽을 RLS 정책이 없어서(어드민·요청자
+    // 본인만 읽힘) 사용자 세션으로 조회하면 늘 빈 목록이었다. service role로 읽고
+    // assigned_md_id로 거른다 — 그래서 여기서는 x-user-id 헤더 값을 믿지 않고
+    // 세션으로 확인한 id만 쓴다(2026-09-30). 테스트 모드(개발 전용)는 고정 id.
+    const conciergeMdId = testMode
+        ? userId
+        : sessionUserId ?? (await supabase.auth.getUser()).data.user?.id ?? null;
+    const adminSb = createAdminClient();
+    // 영업일 기준 날짜(KST, 새벽 6시 경계) — 자정 넘어서도 어젯밤 예약은 아직 진행 중이다.
+    // 예전엔 지난 예약까지 날짜 오름차순으로 10건을 잘라 새 예약이 밀려났다.
+    const conciergeFromDate = new Date(Date.now() + 3 * 3600_000).toISOString().slice(0, 10);
+
     // 나머지 쿼리 모두 병렬
     const [
         { data: auctions },
@@ -199,13 +215,16 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
             : Promise.resolve({ data: [] as { id: string; club_id: string; md_id: string; week_start: string; expires_at: string }[], error: null }),
         // 본인에게 배정된 외국인 컨시어지 요청 — "내 오퍼" 위에 실제로 있을 때만 노출.
         // status는 취소만 제외(new/contacted는 진행중, done도 최근 것은 참고용으로 보여준다).
-        supabase
-            .from("foreign_requests")
-            .select("id, guest_name, event_date, group_size, club_ids, status, budget, created_at")
-            .eq("assigned_md_id", userId)
-            .neq("status", "cancelled")
-            .order("event_date", { ascending: true })
-            .limit(10),
+        conciergeMdId
+            ? adminSb
+                  .from("foreign_requests")
+                  .select("id, guest_name, event_date, group_size, club_ids, status, budget, selected_menu_total, proposal_token, md_response, created_at")
+                  .eq("assigned_md_id", conciergeMdId)
+                  .neq("status", "cancelled")
+                  .gte("event_date", conciergeFromDate)
+                  .order("event_date", { ascending: true })
+                  .limit(20)
+            : Promise.resolve({ data: [], error: null }),
     ]);
 
     if (puzzleOffersError) console.error("puzzleOffers query error:", puzzleOffersError);
@@ -213,13 +232,16 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
 
     // 본인에게 배정된 한국 예약 요청도 같은 카드 목록에 합친다(2026-09-06) —
     // foreign_requests와 같은 assigned_md_id 지정 방식(Migration 654)을 공유한다.
-    const { data: koreanRequestRows, error: koreanRequestsError } = await supabase
-        .from("korean_booking_requests")
-        .select("id, guest_name, event_date, group_size, club_id, status, created_at")
-        .eq("assigned_md_id", userId)
-        .neq("status", "cancelled")
-        .order("event_date", { ascending: true })
-        .limit(10);
+    const { data: koreanRequestRows, error: koreanRequestsError } = conciergeMdId
+        ? await adminSb
+              .from("korean_booking_requests")
+              .select("id, guest_name, event_date, group_size, club_id, status, selected_menu_total, proposal_token, md_response, created_at")
+              .eq("assigned_md_id", conciergeMdId)
+              .neq("status", "cancelled")
+              .gte("event_date", conciergeFromDate)
+              .order("event_date", { ascending: true })
+              .limit(20)
+        : { data: [], error: null };
     if (koreanRequestsError) console.error("koreanRequests query error:", koreanRequestsError);
 
     // 카드에 클럽명을 보여주려면 1순위 클럽만 조회한다(요청은 최대 3곳을 고르지만
@@ -240,14 +262,14 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
     const foreignReqIds = (foreignRequestRows ?? []).map((r) => r.id);
     const koreanReqIds = (koreanRequestRows ?? []).map((r) => r.id);
     const { data: foreignReqConfs } = foreignReqIds.length
-        ? await supabase
+        ? await adminSb
               .from("booking_confirmations")
               .select("request_id, total_price, md_token")
               .eq("request_type", "foreign")
               .in("request_id", foreignReqIds)
         : { data: [] as { request_id: string; total_price: number | null; md_token: string }[] };
     const { data: koreanReqConfs } = koreanReqIds.length
-        ? await supabase
+        ? await adminSb
               .from("booking_confirmations")
               .select("request_id, total_price, md_token")
               .eq("request_type", "korean")
@@ -267,9 +289,11 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 groupSize: r.group_size,
                 status: r.status,
                 clubName: foreignReqClubNameById[(r.club_ids as string[] | null)?.[0] ?? ""] ?? null,
-                price: conf?.total_price ?? r.budget ?? null,
+                price: conf?.total_price ?? r.selected_menu_total ?? r.budget ?? null,
                 priceConfirmed: !!conf?.total_price,
                 mdToken: conf?.md_token ?? null,
+                proposalToken: r.proposal_token ?? null,
+                mdResponse: r.md_response ?? null,
             };
         }),
         ...(koreanRequestRows ?? []).map((r) => {
@@ -282,12 +306,20 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 groupSize: r.group_size,
                 status: r.status,
                 clubName: foreignReqClubNameById[r.club_id ?? ""] ?? null,
-                price: conf?.total_price ?? null,
+                price: conf?.total_price ?? r.selected_menu_total ?? null,
                 priceConfirmed: !!conf?.total_price,
                 mdToken: conf?.md_token ?? null,
+                proposalToken: r.proposal_token ?? null,
+                mdResponse: r.md_response ?? null,
             };
         }),
-    ].sort((a, b) => a.eventDate.localeCompare(b.eventDate));
+    ]
+        // 답변이 필요한 제안서(확정서 전·미응답)를 맨 위로, 그 안에서는 날짜순.
+        .sort((a, b) => {
+            const pa = !a.mdToken && !a.mdResponse ? 0 : 1;
+            const pb = !b.mdToken && !b.mdResponse ? 0 : 1;
+            return pa - pb || a.eventDate.localeCompare(b.eventDate);
+        });
 
     // 유저가 상담을 시작한(leader_chat_started_at) 대기중 오퍼 중, MD 본인이 이미 답장한 것 집합
     // → 대시보드 배지를 "대기중" / "유저가 답장을 기다리고 있어요" / "상담중" 으로 세분화

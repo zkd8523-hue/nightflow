@@ -417,7 +417,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
  * - 줌 1배일 때 좌/우 스와이프 = 이전/다음 사진 (onSwipePrev/onSwipeNext)
  * - 줌 상태에서는 panning이 활성화되어 스와이프는 자동으로 무시됨
  */
-function LightboxImage({
+export function LightboxImage({
   src,
   alt,
   onSwipePrev,

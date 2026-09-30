@@ -4,6 +4,7 @@
 
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { BookingPassMd } from "@/components/booking/BookingPassMd";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +58,10 @@ export default async function BookingMdPage({
     ? await sb.from("users").select("display_name").eq("id", req.assigned_md_id).maybeSingle()
     : { data: null };
 
+  // 담당 MD 본인이 로그인 상태(앱)로 열었을 때만 예약관리로 돌아가는 링크를 단다.
+  const { data: { user: viewer } } = await (await createClient()).auth.getUser();
+  const backHref = viewer && viewer.id === req.assigned_md_id ? "/md/dashboard?section=concierge" : null;
+
   // 이미 도착 신호가 왔는지 (새로고침해도 상태가 유지되어야 한다)
   const { data: pings } = await sb
     .from("arrival_pings")
@@ -81,6 +86,7 @@ export default async function BookingMdPage({
       guestRequest={conf.guest_request}
       hostName={md?.display_name ?? null}
       arrivedPings={(pings ?? []).map((p) => p.kind)}
+      backHref={backHref}
     />
   );
 }

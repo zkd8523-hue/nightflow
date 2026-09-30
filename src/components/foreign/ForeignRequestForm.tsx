@@ -12,7 +12,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
-import { formatAsOfLocale, resolveCurrency, krwTo } from "@/lib/utils/currency";
+import { formatAsOfLocale, resolveCurrency, krwTo, currencyToKrw, currencySymbol, isCurrencyCode } from "@/lib/utils/currency";
 import { useKrwRates } from "@/lib/utils/useKrwRates";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
 import { clubTagline } from "@/lib/clubs/bookable";
@@ -1227,6 +1227,41 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     // 시트 안에서는 손님이 "Change"로 바꾼 통화를 따른다(시트 밖은 Provider가 없어 폼 기본값).
     const fx = useMenuFx();
     const cur = fx.currency ?? menuCurrency;
+    // 예산 직접 입력(2026-09-30). 손님은 자기 돈으로 생각하니 기본은 손님 통화로 받고
+    // 원화로 바꿔 신청한다(1만 원 단위 반올림). 원화가 편한 손님(한국 거주 등)은 ₩로 바꿔 입력.
+    // 외국인 폼은 지역 하한(첫 버튼 금액)을 원화 기준으로 지킨다.
+    // 상태를 이 박스 안에 둬서 입력 중엔 이 박스만 다시 그려진다(부모 폼은 그대로).
+    const rates = fx.rates ?? fxRates;
+    const localCode = isCurrencyCode(cur) ? cur : null;
+    const [inKrw, setInKrw] = useState(false);
+    const useLocal = !!localCode && !inKrw;
+    const [custom, setCustom] = useState("");
+    const [customErr, setCustomErr] = useState<string | null>(null);
+    const customNum = Number(custom || 0);
+    const customKrw = useLocal ? currencyToKrw(customNum, localCode!, rates) : customNum;
+    const customHint = customNum > 0
+      ? useLocal
+        ? (Number.isFinite(customKrw) ? `≈ ₩${customKrw.toLocaleString("en-US")}` : null)
+        : (localCode ? (() => { const l = krwTo(customNum, localCode, rates); return l ? `≈ ${l}` : null; })() : null)
+      : null;
+    const minBudget = mdBudgetOptions[0];
+    // 버튼 등급 이름(2026-09-30). 첫 버튼에 "최소"를 달면 싸구려로 읽혀 "가성비"로 바꿨다.
+    // VIP/VVIP는 클럽의 실제 테이블 구역명이라 "이 예산 = VVIP 자리"로 읽힐 수 있어 쓰지 않는다.
+    const budgetTierLabels = [
+      t("가성비", "Value", "コスパ", "性价比", "CP值"),
+      t("인기", "Popular", "人気", "热门", "熱門"),
+      t("프리미엄", "Premium", "プレミアム", "高端", "頂級"),
+    ];
+    const submitCustom = () => {
+      if (!Number.isFinite(customKrw) || customKrw < minBudget) {
+        const localMin = localCode ? krwTo(minBudget, localCode, rates) : null;
+        const m = `₩${minBudget.toLocaleString("en-US")}${localMin ? ` (≈ ${localMin})` : ""}`;
+        setCustomErr(t(`최소 ${m}부터 가능해요`, `Minimum is ${m}`, `最低 ${m} からです`, `最低 ${m} 起`, `最低 ${m} 起`));
+        return;
+      }
+      setMenuOpen(false);
+      handleMdRecommend(customKrw);
+    };
     return (
     <section className={`rounded-xl border border-border ${compact ? "bg-background" : "bg-card"} px-3.5 py-3 space-y-2.5`}>
       <div>
@@ -1253,10 +1288,57 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             >
               <span className="block text-[13px] font-black tabular-nums">₩{b.toLocaleString("en-US")}</span>
               {local && <span className="block text-[10px] text-muted-foreground tabular-nums">≈ {local}</span>}
-              {i === 0 && <span className="block text-[10px] text-brand-amber font-bold">{t("최소", "minimum", "最低", "最低", "最低")}</span>}
+              <span className="block text-[10px] text-brand-amber font-bold">{budgetTierLabels[i]}</span>
             </button>
           );
         })}
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 min-w-0">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted-foreground">{useLocal ? currencySymbol(localCode) : "₩"}</span>
+          <input
+            id="md-budget-custom"
+            value={custom ? Number(custom).toLocaleString("en-US") : ""}
+            onChange={(e) => {
+              setCustom(e.target.value.replace(/[^0-9]/g, "").slice(0, 9));
+              setCustomErr(null);
+            }}
+            inputMode="numeric"
+            placeholder={t("직접 입력", "Enter amount", "金額を入力", "输入金额", "輸入金額")}
+            aria-label={t("예산 직접 입력", "Enter your budget", "予算を入力", "输入预算", "輸入預算")}
+            className={`w-full h-10 rounded-xl border border-border ${compact ? "bg-card" : "bg-background"} ${useLocal ? "pl-12" : "pl-7"} pr-3 text-[13px] font-bold tabular-nums text-foreground placeholder:text-muted-foreground outline-none focus:border-amber-500/60`}
+          />
+        </div>
+        <button
+          type="button"
+          disabled={!customNum}
+          onClick={submitCustom}
+          className="h-10 px-3.5 rounded-xl bg-inverse text-inverse-foreground text-[13px] font-bold shrink-0 disabled:opacity-40"
+        >
+          {t("이 예산으로", "Use this", "この予算で", "用这个预算", "用這個預算")}
+        </button>
+      </div>
+      <div className="flex items-center justify-between gap-2 min-h-[16px]">
+        {customErr ? (
+          <p className="text-[11.5px] text-red-400">{customErr}</p>
+        ) : (
+          <p className="text-[11px] text-muted-foreground tabular-nums">{customHint}</p>
+        )}
+        {localCode && (
+          <button
+            type="button"
+            onClick={() => {
+              setInKrw((v) => !v);
+              setCustom("");
+              setCustomErr(null);
+            }}
+            className="shrink-0 text-[11px] font-bold text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            {inKrw
+              ? t(`${currencySymbol(localCode)}로 입력`, `Enter in ${currencySymbol(localCode)}`, `${currencySymbol(localCode)}で入力`, `用 ${currencySymbol(localCode)} 输入`, `用 ${currencySymbol(localCode)} 輸入`)
+              : t("₩로 입력", "Enter in ₩ instead", "₩で入力", "用 ₩ 输入", "用 ₩ 輸入")}
+          </button>
+        )}
       </div>
     </section>
     );

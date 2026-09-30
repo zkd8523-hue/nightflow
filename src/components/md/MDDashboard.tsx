@@ -31,7 +31,7 @@ import { ShareOptionManager } from "@/components/md/ShareOptionManager";
 import { ShareWeekdayPlanBoard } from "@/components/md/ShareWeekdayPlanBoard";
 import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
 import { ShareLiveToggleList } from "@/components/md/ShareLiveToggleList";
-import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle, Pencil, Globe, Users, Calendar } from "lucide-react";
+import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle, Pencil, Users, Calendar, ClipboardList } from "lucide-react";
 import { FeatureGate } from "@/components/common/FeatureGate";
 import { toast } from "sonner";
 import { getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
@@ -153,6 +153,10 @@ interface MDDashboardProps {
         price: number | null;
         priceConfirmed: boolean;
         mdToken: string | null;
+        /** 제안서 링크 토큰 — 확정서 전에는 이걸로 제안서를 열어 승인/거절한다. */
+        proposalToken: string | null;
+        /** MD 응답 — null(미응답) | "approved" | "rejected" */
+        mdResponse: string | null;
     }[];
 }
 
@@ -232,6 +236,11 @@ export function MDDashboard({
         return () => window.removeEventListener("nightflow:open-share-setup", handler);
     }, [shareInlineOpen]);
     const [couponInlineOpen, setCouponInlineOpen] = useState(() => initialSection === "coupon");
+    // 하단 탭 "예약관리"(?section=concierge) — 컨시어지 예약 목록으로 바로 내린다.
+    useEffect(() => {
+        if (initialSection !== "concierge") return;
+        document.getElementById("concierge")?.scrollIntoView({ block: "start" });
+    }, [initialSection]);
     // 신규 도구 인지용 반짝임 — 가이드를 아직 안 본 파트너에게만, 한 번 열면 꺼진다
     const [couponOpened, setCouponOpened] = useState(false);
     // 도구별 이용방법 — 도구 버튼 옆 ⓘ로 직접 연다
@@ -730,82 +739,114 @@ export function MDDashboard({
                 </div>
             )}
 
-            {/* 컨시어지 요청(외국인+한국) — 본인에게 배정된 요청이 실제로 있을 때만
-                노출한다. 운영자가 어드민에서 assigned_md_id로 지정한 건만 여기 뜬다.
-                두 트랙을 한 목록에 합치고 카드마다 뱃지로 구분한다(2026-09-06). */}
-            {initialForeignRequests.length > 0 && (
-                <div className="px-4 mt-5">
-                    <p className="text-[13px] font-black text-muted-foreground mb-2 px-1 text-center flex items-center justify-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5" />
-                        컨시어지 예약
-                    </p>
-                    <div className="space-y-2">
-                        {initialForeignRequests.map((r) => {
-                            const cardBody = (
-                                <>
-                                    <div className="mb-1.5 flex items-center gap-1.5">
-                                        <span className="text-[14px] font-black text-foreground">
-                                            {r.clubName ?? "클럽 미정"}
+            {/* 컨시어지 요청(외국인+한국) — 운영자가 어드민에서 assigned_md_id로 지정한 건만
+                여기 뜬다. 두 트랙을 한 목록에 합치고 카드마다 뱃지로 구분한다(2026-09-06).
+                하단 탭 "예약관리"가 이 자리로 온다(?section=concierge) — 그래서 건이 없어도
+                자리를 남기고 빈 상태를 보여준다(2026-09-30). 확정서 전에는 제안서로,
+                확정 뒤에는 MD용 확정서로 연결한다 — 운영자가 링크를 DM으로 보내지 않아도
+                여기서 바로 열린다. */}
+            <div id="concierge" className="px-4 mt-5 scroll-mt-20">
+                {/* 하단 탭 이름과 맞춰 "예약관리"(2026-09-30, 예전 "컨시어지 예약"). 탭을 눌러 내려왔을 때
+                    바로 눈에 걸리도록 다른 섹션 제목(13px 회색)보다 크고 밝게 둔다. */}
+                <p className="text-[16px] font-black text-foreground mb-2.5 px-1 text-center flex items-center justify-center gap-1.5">
+                    <ClipboardList className="w-4 h-4" />
+                    예약관리
+                </p>
+                {initialForeignRequests.length === 0 && (
+                    <div className="bg-card border border-dashed border-border rounded-2xl px-4 py-6 text-center">
+                        <p className="text-[13px] font-bold text-foreground/80">배정된 예약이 없어요</p>
+                        <p className="text-[12px] text-muted-foreground mt-1 break-keep">
+                            나플이 예약 제안서를 보내면 앱 알림으로 알려드려요.
+                        </p>
+                    </div>
+                )}
+                <div className="space-y-2">
+                    {initialForeignRequests.map((r) => {
+                        // 확정서가 있으면 확정, 없으면 제안서 응답 상태로 뱃지를 단다.
+                        const needsAnswer = !r.mdToken && !r.mdResponse && !!r.proposalToken;
+                        const stage = r.mdToken
+                            ? { label: "확정", cls: "bg-green-500/15 text-money" }
+                            : needsAnswer
+                            ? { label: "답변 필요", cls: "bg-amber-500 text-black" }
+                            : r.mdResponse === "approved"
+                            ? { label: "승인함 · 확정서 대기", cls: "bg-green-500/10 text-money/80" }
+                            : r.mdResponse === "rejected"
+                            ? { label: "거절함", cls: "bg-red-500/10 text-red-400" }
+                            : null;
+                        const cardBody = (
+                            <>
+                                <div className="mb-1.5 flex items-center gap-1.5">
+                                    <span className="text-[14px] font-black text-foreground">
+                                        {r.clubName ?? "클럽 미정"}
+                                    </span>
+                                    <span
+                                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                            r.requestType === "korean"
+                                                ? "bg-amber-500/15 text-brand-amber"
+                                                : "bg-blue-500/15 text-blue-400"
+                                        }`}
+                                    >
+                                        {r.requestType === "korean" ? "국내" : "외국인"}
+                                    </span>
+                                    {stage && (
+                                        <span className={`ml-auto shrink-0 text-[10.5px] font-black px-2 py-0.5 rounded-full ${stage.cls}`}>
+                                            {stage.label}
                                         </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-3 text-[12.5px] text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        {r.eventDate}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <Users className="w-3.5 h-3.5" />
+                                        {r.groupSize}명
+                                    </span>
+                                    {r.guestName && <span>· {r.guestName}</span>}
+                                </div>
+                                {r.price != null && (
+                                    <div className="mt-1.5 flex items-center gap-1.5">
+                                        <Coins className="w-3.5 h-3.5 text-muted-foreground" />
                                         <span
-                                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                                                r.requestType === "korean"
-                                                    ? "bg-amber-500/15 text-brand-amber"
-                                                    : "bg-blue-500/15 text-blue-400"
+                                            className={`text-[13px] font-bold ${
+                                                r.priceConfirmed ? "text-money" : "text-muted-foreground"
                                             }`}
                                         >
-                                            {r.requestType === "korean" ? "국내" : "외국인"}
+                                            {r.price.toLocaleString()}원
                                         </span>
+                                        {!r.priceConfirmed && (
+                                            <span className="text-[11px] text-muted-foreground">(희망 예산)</span>
+                                        )}
                                     </div>
-                                    <div className="flex items-center gap-3 text-[12.5px] text-muted-foreground">
-                                        <span className="flex items-center gap-1">
-                                            <Calendar className="w-3.5 h-3.5" />
-                                            {r.eventDate}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <Users className="w-3.5 h-3.5" />
-                                            {r.groupSize}명
-                                        </span>
-                                        {r.guestName && <span>· {r.guestName}</span>}
-                                    </div>
-                                    {r.price != null && (
-                                        <div className="mt-1.5 flex items-center gap-1.5">
-                                            <Coins className="w-3.5 h-3.5 text-muted-foreground" />
-                                            <span
-                                                className={`text-[13px] font-bold ${
-                                                    r.priceConfirmed ? "text-money" : "text-muted-foreground"
-                                                }`}
-                                            >
-                                                {r.price.toLocaleString()}원
-                                            </span>
-                                            {!r.priceConfirmed && (
-                                                <span className="text-[11px] text-muted-foreground">(희망 예산)</span>
-                                            )}
-                                        </div>
-                                    )}
-                                </>
-                            );
-                            // 확정서(md_token)가 있어야 예약 상세로 갈 수 있다 — 아직 확정
-                            // 전이면(어드민이 확정서를 안 만든 상태) 카드만 보여주고 안 눌린다.
-                            return r.mdToken ? (
-                                <a
-                                    key={r.id}
-                                    href={`/booking/md/${r.mdToken}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block bg-card border border-border rounded-2xl p-3.5 active:scale-[0.98] transition-transform"
-                                >
-                                    {cardBody}
-                                </a>
-                            ) : (
-                                <div key={r.id} className="bg-card border border-border rounded-2xl p-3.5">
-                                    {cardBody}
-                                </div>
-                            );
-                        })}
-                    </div>
+                                )}
+                            </>
+                        );
+                        // 확정서가 있으면 MD용 확정서, 없으면 제안서로 간다. 새 탭(target=_blank)은
+                        // 앱에서 외부 브라우저로 튀어 나가서 같은 화면에서 연다.
+                        const href = r.mdToken
+                            ? `/booking/md/${r.mdToken}`
+                            : r.proposalToken
+                            ? `/booking/proposal/${r.proposalToken}`
+                            : null;
+                        return href ? (
+                            <Link
+                                key={r.id}
+                                href={href}
+                                className={`block bg-card border rounded-2xl p-3.5 active:scale-[0.98] transition-transform ${
+                                    needsAnswer ? "border-amber-500/60" : "border-border"
+                                }`}
+                            >
+                                {cardBody}
+                            </Link>
+                        ) : (
+                            <div key={r.id} className="bg-card border border-border rounded-2xl p-3.5">
+                                {cardBody}
+                            </div>
+                        );
+                    })}
                 </div>
-            )}
+            </div>
 
             {/* 내 오퍼 (받은 오퍼) — 위 파티 등록과 구분. 깃발 탭 제거로 파티 오퍼만 항상 노출(탭 UI 없음) */}
             <div className="px-4 mt-5">

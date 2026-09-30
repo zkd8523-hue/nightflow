@@ -1940,4 +1940,11 @@ export interface KoreanBookingRequest {
   status: KoreanBookingStatus;
   created_at: string;
   updated_at: string;
+  /** 담당 파트너 응답 — null(미응답) | "approved" | "rejected" (Migration 654/677) */
+  md_response: string | null;
+  md_reject_reason: string | null;
+  md_required_amount: number | null;
+  /** 파트너 거절 후 운영자가 손님에게 보낸 안내 문장(Migration 678) */
+  guest_notice: string | null;
+  guest_notice_at: string | null;
 }
