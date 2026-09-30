@@ -55,11 +55,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, MessagingDelegate {
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         // Capacitor에는 아직 알리지 않는다 — APNs 토큰을 FCM 토큰으로 바꾼 뒤
         // MessagingDelegate.didReceiveRegistrationToken에서 그 FCM 토큰으로 알린다.
+        // 디버그 로그(2026-09-30): FCM 콜백이 전혀 안 와서, apnsToken 대입까지는
+        // 도달하는지부터 눈으로 확인하기 위해 추가. 원인이 잡히면 지운다.
+        let tokenHex = deviceToken.map { String(format: "%02x", $0) }.joined()
+        print("[Push][Debug] APNs token received: \(tokenHex)")
         Messaging.messaging().apnsToken = deviceToken
-    }
-
-    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+        print("[Push][Debug] Messaging.apnsToken set. FCM token so far: \(Messaging.messaging().fcmToken ?? "nil")")
     }
 
     // apnsToken 대입 직후(또는 토큰이 갱신될 때마다) 호출된다. 여기서 나오는 fcmToken이
@@ -71,8 +72,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, MessagingDelegate {
     // hex 인코딩해 버려서(PushNotificationsPlugin.swift의 Data 분기) FCM 토큰 문자열이
     // 깨진다. String 분기(같은 파일의 stringToken 분기)는 값을 그대로 통과시킨다.
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        print("[Push][Debug] didReceiveRegistrationToken called, fcmToken: \(fcmToken ?? "nil")")
         guard let fcmToken = fcmToken else { return }
         NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: fcmToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("[Push][Debug] APNs registration FAILED: \(error)")
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
 
 }
