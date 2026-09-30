@@ -37,7 +37,9 @@ export async function initPushNotifications(
   // (admin → 테스트 MD 123@123.123 전환에서 발견).
   await PushNotifications.removeAllListeners();
 
+  let registered = false;
   await PushNotifications.addListener("registration", async ({ value: token }) => {
+    registered = true;
     const platform = Capacitor.getPlatform() as "android" | "ios";
     const supabase = createClient();
     const { error } = await supabase.from("push_tokens").upsert(
@@ -65,6 +67,17 @@ export async function initPushNotifications(
   });
 
   await PushNotifications.register();
+
+  // register()는 OS에 등록을 "요청"만 하고 끝난다 — 실제 토큰이 registration
+  // 이벤트로 돌아오는지는 별개다(2026-09-30, 권한은 이미 "허용"인데 서버엔 토큰이
+  // 없는 계정을 실제로 겪음 — OS/네트워크 타이밍에 따라 이벤트가 조용히 안 옴).
+  // 유저가 뭘 누르지 않아도 되게, 5초 안에 안 오면 한 번 더 register()를 시도한다.
+  window.setTimeout(() => {
+    if (!registered) {
+      console.warn("[Push] registration 이벤트 없음 — 재시도");
+      PushNotifications.register();
+    }
+  }, 5000);
 
   return "granted";
 }
