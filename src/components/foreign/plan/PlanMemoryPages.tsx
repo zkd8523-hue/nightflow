@@ -14,7 +14,7 @@ export function PlanMemoryHub() {
     <ForeignShell lang="en" sidebarCta={null}>
       <ActivitiesTopBar />
       <ForeignPageTracker kind="info" lang="en" meta={{ page: "plan-your-memory" }} />
-      <PlanJsonLd path={PLAN_BASE} headline="Korea Night Tours 2026 — Seoul, Busan & More Things to Do" description="Night views, river cruises and evening tours across Korea — Seoul, Busan and more. Plus night routes with clubs you can book in English." image={img(TOURS.hanCruise.image, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }]} />
+      <PlanJsonLd path={PLAN_BASE} headline="Korea Night Tours 2026 — Seoul, Busan & More Things to Do" description="22 evening tours in Korea — Han River night cruises, Seoul and Busan night views, Suwon Hwaseong and Gyeongju after dark. Prices shown before you book." image={img(TOURS.hanCruise.image, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }]} />
       <div className="max-w-2xl lg:max-w-[1100px] mx-auto px-5 lg:px-8 pt-4 lg:pt-6 pb-24 space-y-3">
         <h1 className="text-[26px] lg:text-[30px] font-black leading-[1.1] tracking-tight">Night Activities in Korea</h1>
         <Tabs active="tours" />
@@ -33,7 +33,7 @@ export function PlanMemoryNightRoutes() {
     <ForeignShell lang="en" sidebarCta={null}>
       <ActivitiesTopBar />
       <ForeignPageTracker kind="info" lang="en" meta={{ page: "plan-your-memory/night-routes" }} />
-      <PlanJsonLd path={`${PLAN_BASE}/night-routes`} headline="Korea Night Routes 2026 — Hongdae, Itaewon, Busan Nightlife" description="Pick a night in Seoul or Busan — Hongdae, Itaewon, Busan drone show or Haeundae — and book a club table in English." image={img(ROUTES[0].hero, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }, { name: "Night routes", path: `${PLAN_BASE}/night-routes` }]} />
+      <PlanJsonLd path={`${PLAN_BASE}/night-routes`} headline="Seoul & Busan Night Routes 2026 — Hongdae, Itaewon, Drone Show" description="Four night plans for Seoul and Busan — Hongdae street music, Itaewon rooftops, the Gwangalli drone show and a Haeundae beach evening, with real times and costs." image={img(ROUTES[0].hero, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }, { name: "Night routes", path: `${PLAN_BASE}/night-routes` }]} />
       <div className="max-w-2xl lg:max-w-[1100px] mx-auto px-5 lg:px-8 pt-6 pb-24 space-y-4">
         <Crumb href={PLAN_BASE} label="Night Activities" />
         <header className="space-y-2">
