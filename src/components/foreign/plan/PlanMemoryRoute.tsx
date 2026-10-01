@@ -55,10 +55,10 @@ export async function PlanMemoryRoute({ route }: { route: Route }) {
         headline={route.metaTitle}
         description={route.metaDescription}
         image={img(route.hero, 1200)}
-        crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Plan your Memory", path: PLAN_BASE }, { name: route.card.title, path: `${PLAN_BASE}/${route.slug}` }]}
+        crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }, { name: "Night routes", path: `${PLAN_BASE}/night-routes` }, { name: route.card.title, path: `${PLAN_BASE}/${route.slug}` }]}
       />
       <div className="max-w-2xl mx-auto px-5 pt-6 pb-32 space-y-5">
-        <Crumb href={PLAN_BASE} label="Plan your Memory" />
+        <Crumb href={`${PLAN_BASE}/night-routes`} label="Night routes" />
         <header className="space-y-2">
           <p className="text-[12.5px] font-bold text-brand-amber">{route.eyebrow}</p>
           <h1 className="text-[28px] sm:text-[32px] font-black leading-[1.12] tracking-tight text-balance">{route.title}</h1>
@@ -154,7 +154,7 @@ export async function PlanMemoryRoute({ route }: { route: Route }) {
         )}
 
         {route.slug === "busan-night" && (
-          <Link data-nf-track="route_bridge" href={PLAN_BASE} className="flex items-center gap-3 rounded-2xl bg-card border border-border p-3">
+          <Link data-nf-track="route_bridge" href={`${PLAN_BASE}/night-routes`} className="flex items-center gap-3 rounded-2xl bg-card border border-border p-3">
             <div className="min-w-0"><p className="font-bold text-[15px]">Also in Seoul: Hongdae · Itaewon</p><p className="text-[12.5px] text-muted-foreground">More night routes with bookable clubs.</p></div>
             <span className="ml-auto font-black text-muted-foreground">›</span>
           </Link>

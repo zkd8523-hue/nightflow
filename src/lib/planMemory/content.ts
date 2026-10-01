@@ -25,6 +25,11 @@ const IMG = {
   nTower: "https://images.unsplash.com/photo-1639905808227-4c987d4a71bd", // Riza Gabriela, Seoul
   seoulSunset: "https://images.unsplash.com/photo-1546874177-9e664107314e", // Yohan Cho, Seoul
   club: "https://images.unsplash.com/photo-1506485854521-3e13d857db0b", // Redd Francisco (illustrative)
+  gwangan: "https://images.unsplash.com/photo-1728694884774-f2bfea5a3a24", // Shibin Joseph, Gwangalli Beach (Gwangan Bridge at night)
+  marineCity: "https://images.unsplash.com/photo-1641730146205-f6e594f7a619", // Wonder KIM, Busan (Marine City at night)
+  seoulSkyline: "https://images.unsplash.com/photo-1782889699347-ec87acfe5b79", // yeojin yun, Seongdong-gu, Seoul (Gangnam skyline)
+  suwon: "https://images.unsplash.com/photo-1694994719977-edead6092a70", // Fukuro 0wl, Suwon (Hwaseong at night)
+  gyeongju: "https://images.unsplash.com/photo-1669764372822-3cb8476d4f47", // john ko, Donggung Palace & Wolji Pond
 };
 export const img = (base: string, w = 1200) => `${base}?w=${w}&q=80&auto=format`;
 export const PHOTO_CREDIT: Record<string, string> = {
@@ -34,25 +39,35 @@ export const PHOTO_CREDIT: Record<string, string> = {
   [IMG.itaewon]: "Inkwon hwang",
 };
 
+export const TOUR_REGIONS = ["Seoul", "Busan", "Suwon", "Gyeongju"] as const;
+export type TourRegion = (typeof TOUR_REGIONS)[number];
+
 export type Tour = {
   id: string;
+  /** 투어 페이지 지역 필터 값 */
+  region: TourRegion;
   title: string;
   desc: string;
   badge: string;
-  priceKrw: number;
+  /** Viator 원화 표기에서 반올림. 원화 표기를 못 본 상품은 priceUsd(검색 스니펫 표기) 또는 가격 없이 */
+  priceKrw?: number;
+  priceUsd?: number;
   image: string;
   url: string; // Viator 상품 원 주소(제휴 쿼리는 링크 만들 때 붙임)
 };
 
 export const TOURS: Record<string, Tour> = {
-  seoulSmallGroup: { id: "seoulSmallGroup", title: "Seoul city night view tour", desc: "Small-group evening tour of Seoul's lights.", badge: "Small group · max 8", priceKrw: 50000, image: IMG.seoulSunset, url: "https://www.viator.com/tours/Seoul/Seoul-City-Night-View-tour-Small-Group-8-Max/d973-361415P46" },
-  hanCruise: { id: "hanCruise", title: "Han River night cruise + Gwangjang Market", desc: "River lights, then Seoul's famous food market.", badge: "Cruise · market", priceKrw: 65000, image: IMG.hanRiver, url: "https://www.viator.com/tours/Seoul/Seoul-Night-Han-River-Cruise-and-Gwangjang-Market-and-Hidden-Street/d973-361415P132" },
-  seoulPrivate: { id: "seoulPrivate", title: "Private night tour: skyline & Han River", desc: "Your own guide and pace — good if you travel solo.", badge: "Private · your pace", priceKrw: 116000, image: IMG.hanRiver, url: "https://www.viator.com/tours/Seoul/Seoul-Private-Night-Tour-Skyline-Han-River-and-City-Lights/d973-117866P758" },
-  nTowerWalk: { id: "nTowerWalk", title: "N Seoul Tower & Myeongdong night walk", desc: "City views from the tower, street food after.", badge: "Walking · N Seoul Tower", priceKrw: 136000, image: IMG.nTower, url: "https://www.viator.com/tours/Seoul/Seoul-N-Seoul-Tower-and-Myeongdong-Night-Walking-Tour/d973-5652208P5" },
-  busanHike: { id: "busanHike", title: "Busan night view hike", desc: "Evening hike up Hwangnyeongsan with a local guide.", badge: "Small group · night hike", priceKrw: 35000, image: IMG.busanNight, url: "https://www.viator.com/tours/Busan/Busan-The-best-night-view-with-small-group-tour/d4615-408008P6" },
-  busanByNight: { id: "busanByNight", title: "Busan by Night", desc: "Hwangnyeongsan lookout, Gwangalli, Cinema Center lights.", badge: "Coach · lookout + Gwangalli", priceKrw: 132000, image: IMG.busanNight, url: "https://www.viator.com/tours/Busan/Busan-by-Night/d4615-6630PUSK_6SIC" },
-  skyCapsule: { id: "skyCapsule", title: "Haeundae Sky Capsule at sunset + night view", desc: "Seaside capsule ride, then Busan's night skyline.", badge: "Sunset · Sky Capsule", priceKrw: 78000, image: IMG.haeundae, url: "https://www.viator.com/tours/Busan/Sunset-Haeundae-Sky-Capsule-and-Busan-Night-view-Tour-from-Busan/d4615-48881P202" },
-  busanNightView: { id: "busanNightView", title: "Busan Night-view Tour", desc: "Guided tour of Busan's night views.", badge: "Guided · night views", priceKrw: 99000, image: IMG.haeundae, url: "https://www.viator.com/tours/Busan/Busan-Night-view-Tour/d4615-48881P121" },
+  seoulSmallGroup: { id: "seoulSmallGroup", region: "Seoul", title: "Seoul city night view tour", desc: "Small-group evening tour of Seoul's lights.", badge: "Small group · max 8", priceKrw: 50000, image: IMG.seoulSunset, url: "https://www.viator.com/tours/Seoul/Seoul-City-Night-View-tour-Small-Group-8-Max/d973-361415P46" },
+  hanCruise: { id: "hanCruise", region: "Seoul", title: "Han River night cruise + Gwangjang Market", desc: "River lights, then Seoul's famous food market.", badge: "Cruise · market", priceKrw: 65000, image: IMG.hanRiver, url: "https://www.viator.com/tours/Seoul/Seoul-Night-Han-River-Cruise-and-Gwangjang-Market-and-Hidden-Street/d973-361415P132" },
+  seoulPrivate: { id: "seoulPrivate", region: "Seoul", title: "Private night tour: skyline & Han River", desc: "Your own guide and pace — good if you travel solo.", badge: "Private · your pace", priceKrw: 116000, image: IMG.seoulSkyline, url: "https://www.viator.com/tours/Seoul/Seoul-Private-Night-Tour-Skyline-Han-River-and-City-Lights/d973-117866P758" },
+  nTowerWalk: { id: "nTowerWalk", region: "Seoul", title: "N Seoul Tower & Myeongdong night walk", desc: "City views from the tower, street food after.", badge: "Walking · N Seoul Tower", priceKrw: 136000, image: IMG.nTower, url: "https://www.viator.com/tours/Seoul/Seoul-N-Seoul-Tower-and-Myeongdong-Night-Walking-Tour/d973-5652208P5" },
+  busanHike: { id: "busanHike", region: "Busan", title: "Busan night view hike", desc: "Evening hike up Hwangnyeongsan with a local guide.", badge: "Small group · night hike", priceKrw: 35000, image: IMG.busanNight, url: "https://www.viator.com/tours/Busan/Busan-The-best-night-view-with-small-group-tour/d4615-408008P6" },
+  busanByNight: { id: "busanByNight", region: "Busan", title: "Busan by Night", desc: "Hwangnyeongsan lookout, Gwangalli, Cinema Center lights.", badge: "Coach · lookout + Gwangalli", priceKrw: 132000, image: IMG.gwangan, url: "https://www.viator.com/tours/Busan/Busan-by-Night/d4615-6630PUSK_6SIC" },
+  skyCapsule: { id: "skyCapsule", region: "Busan", title: "Haeundae Sky Capsule at sunset + night view", desc: "Seaside capsule ride, then Busan's night skyline.", badge: "Sunset · Sky Capsule", priceKrw: 78000, image: IMG.haeundae, url: "https://www.viator.com/tours/Busan/Sunset-Haeundae-Sky-Capsule-and-Busan-Night-view-Tour-from-Busan/d4615-48881P202" },
+  // 수원·경주(2026-10-01): viator.com이 403이라 검색 스니펫으로만 확인 — 야간 포함 문구 있는 상품만.
+  suwonFortress: { id: "suwonFortress", region: "Suwon", title: "Suwon Hwaseong Fortress at night", desc: "From Seoul, about 5 hours — the fortress gates lit up after dark.", badge: "From Seoul · night fortress", priceUsd: 69, image: IMG.suwon, url: "https://www.viator.com/tours/Seoul/Night-Tour-of-Suwon-Hwaseong-Fortress/d973-14882P42" },
+  gyeongjuDay: { id: "gyeongjuDay", region: "Gyeongju", title: "Gyeongju day tour, ending at lit-up Wolji Pond", desc: "From Busan, about 11 hours — runs into the evening for Donggung Palace lights.", badge: "From Busan · day into night", image: IMG.gyeongju, url: "https://www.viator.com/tours/Busan/Gyeongju-UNESCO-World-Heritage-One-Day-Tour/d4615-48881P43" },
+  busanNightView: { id: "busanNightView", region: "Busan", title: "Busan Night-view Tour", desc: "Guided tour of Busan's night views.", badge: "Guided · night views", priceKrw: 99000, image: IMG.marineCity, url: "https://www.viator.com/tours/Busan/Busan-Night-view-Tour/d4615-48881P121" },
 };
 
 export const tourHref = (t: Tour, campaign: string) => viator(t.url, campaign);
@@ -206,10 +221,10 @@ export const ROUTES: Route[] = [
 export const routeBySlug = (slug: string) => ROUTES.find((r) => r.slug === slug);
 
 export const HOME_CARDS = [
+  { href: PLAN_BASE, title: "Night tours & views", sub: "Seoul · Busan · more", image: IMG.hanRiver },
   { href: `${PLAN_BASE}/busan-night`, title: "A show, then the club", sub: "Busan · Saturdays", image: IMG.busanNight },
   { href: `${PLAN_BASE}/hongdae-night`, title: "Dance & meet people", sub: "Hongdae · Seoul", image: IMG.hongdae },
   { href: `${PLAN_BASE}/itaewon-night`, title: "Global, English-friendly", sub: "Itaewon · Seoul", image: IMG.itaewon },
-  { href: `${PLAN_BASE}/tours`, title: "No club — views & tours", sub: "Cruises · night views", image: IMG.hanRiver },
   { href: `${PLAN_BASE}/getting-around`, title: "Getting home safely", sub: "Last train · taxi · 1330", image: IMG.seoulSunset },
 ];
 

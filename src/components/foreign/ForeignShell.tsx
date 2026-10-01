@@ -159,8 +159,8 @@ export function ForeignSidebar({
         >
           <span className="text-[18px] leading-none">🌙</span>
           <span className="min-w-0">
-            <span className="block text-[13.5px] font-black text-foreground">Plan your Memory</span>
-            <span className="block text-[11px] leading-snug text-muted-foreground">Night routes, views &amp; tours in Seoul and Busan</span>
+            <span className="block text-[13.5px] font-black text-foreground">Night Activities</span>
+            <span className="block text-[11px] leading-snug text-muted-foreground">Night tours, views &amp; routes across Korea</span>
           </span>
         </Link>
       )}

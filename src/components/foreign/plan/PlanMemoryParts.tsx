@@ -1,4 +1,4 @@
-// "Plan your Memory" 공용 조각(서버 컴포넌트). 클릭 계측은 ForeignPageTracker의
+// "Night Activities" 공용 조각(서버 컴포넌트). 클릭 계측은 ForeignPageTracker의
 // data-nf-track 위임 리스너가 받는다 — book_cta(나플 예약) / viator_tour(제휴) / route / safety.
 import Link from "next/link";
 import { type Tour, tourHref, img, PLAN_BASE } from "@/lib/planMemory/content";
@@ -101,9 +101,14 @@ export function TourCards({ tours, campaign, compact = false }: { tours: Tour[];
             <p className={`font-bold leading-snug ${compact ? "text-[12.5px]" : "text-[14px]"}`}>{t.title}</p>
             {!compact && <p className="flex-1 text-[12px] text-muted-foreground">{t.desc}</p>}
             <div className={`mt-1 flex ${compact ? "flex-col items-start gap-1.5" : "items-center justify-between"}`}>
-              <span className="font-black text-[14px]">
-                <span className="mr-0.5 text-[10.5px] font-semibold text-muted-foreground">from about</span>₩{t.priceKrw.toLocaleString("en-US")}
-              </span>
+              {t.priceKrw || t.priceUsd ? (
+                <span className="font-black text-[14px]">
+                  <span className="mr-0.5 text-[10.5px] font-semibold text-muted-foreground">from about</span>
+                  {t.priceKrw ? `₩${t.priceKrw.toLocaleString("en-US")}` : `US$${t.priceUsd}`}
+                </span>
+              ) : (
+                <span className="text-[11.5px] font-semibold text-muted-foreground">Price on tour page</span>
+              )}
               <span className="rounded-full bg-white px-2.5 py-1 text-[11.5px] font-black text-black">See tour →</span>
             </div>
           </div>
@@ -123,8 +128,8 @@ export function ViatorNote() {
 
 export function Tabs({ active }: { active: "routes" | "tours" | "getting" }) {
   const tabs = [
-    { key: "routes", label: "Night routes", href: PLAN_BASE },
-    { key: "tours", label: "Tours", href: `${PLAN_BASE}/tours` },
+    { key: "tours", label: "Tours", href: PLAN_BASE },
+    { key: "routes", label: "Night routes", href: `${PLAN_BASE}/night-routes` },
     { key: "getting", label: "Getting around", href: `${PLAN_BASE}/getting-around` },
   ] as const;
   return (
