@@ -11,7 +11,7 @@
 // 천 원 단위로 반올림 — 상품 페이지 가격이 기준이라고 매번 밝힌다.
 // 펍크롤·나이트라이프 투어는 클럽 예약과 겹쳐 넣지 않는다(사용자 결정 2026-10-01).
 
-export const PLAN_BASE = "/en/plan-your-memory";
+export const PLAN_BASE = "/en/night-activities";
 
 const VIATOR_QS = "pid=P00323015&mcid=42383&medium=link&campaign=";
 const viator = (url: string, campaign: string) => `${url}?${VIATOR_QS}${campaign}`;

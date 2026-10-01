@@ -152,7 +152,7 @@ export function ForeignSidebar({
           "밤에 뭘 할지 고르는 곳"으로 읽히게. 아직 영어판만 있어 en에서만 보인다. */}
       {lang === "en" && (
         <Link
-          href="/en/plan-your-memory"
+          href="/en/night-activities"
           onClick={() => trackForeignEvent("foreign_sidebar_cta_click", { lang, kind: "plan_memory" })}
           className="mt-5 mx-1 flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-3 hover:border-foreground/30 transition-colors"
         >

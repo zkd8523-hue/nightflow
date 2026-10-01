@@ -13,7 +13,7 @@ export function PlanMemoryHub() {
   return (
     <ForeignShell lang="en" sidebarCta={null}>
       <ActivitiesTopBar />
-      <ForeignPageTracker kind="info" lang="en" meta={{ page: "plan-your-memory" }} />
+      <ForeignPageTracker kind="info" lang="en" meta={{ page: "night-activities" }} />
       <PlanJsonLd path={PLAN_BASE} headline="Korea Night Tours 2026 — Seoul, Busan & More Things to Do" description="22 evening tours in Korea — Han River night cruises, Seoul and Busan night views, Suwon Hwaseong and Gyeongju after dark. Prices shown before you book." image={img(TOURS.hanCruise.image, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }]} />
       <div className="max-w-2xl lg:max-w-[1100px] mx-auto px-5 lg:px-8 pt-4 lg:pt-6 pb-24 space-y-3">
         <h1 className="text-[26px] lg:text-[30px] font-black leading-[1.1] tracking-tight">Night Activities in Korea</h1>
@@ -32,7 +32,7 @@ export function PlanMemoryNightRoutes() {
   return (
     <ForeignShell lang="en" sidebarCta={null}>
       <ActivitiesTopBar />
-      <ForeignPageTracker kind="info" lang="en" meta={{ page: "plan-your-memory/night-routes" }} />
+      <ForeignPageTracker kind="info" lang="en" meta={{ page: "night-activities/night-routes" }} />
       <PlanJsonLd path={`${PLAN_BASE}/night-routes`} headline="Seoul & Busan Night Routes 2026 — Hongdae, Itaewon, Drone Show" description="Four night plans for Seoul and Busan — Hongdae street music, Itaewon rooftops, the Gwangalli drone show and a Haeundae beach evening, with real times and costs." image={img(ROUTES[0].hero, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }, { name: "Night routes", path: `${PLAN_BASE}/night-routes` }]} />
       <div className="max-w-2xl lg:max-w-[1100px] mx-auto px-5 lg:px-8 pt-6 pb-24 space-y-4">
         <Crumb href={PLAN_BASE} label="Night Activities" />
@@ -91,7 +91,7 @@ export function PlanMemoryGettingAround() {
   return (
     <ForeignShell lang="en" sidebarCta={null}>
       <ActivitiesTopBar />
-      <ForeignPageTracker kind="info" lang="en" meta={{ page: "plan-your-memory/getting-around" }} />
+      <ForeignPageTracker kind="info" lang="en" meta={{ page: "night-activities/getting-around" }} />
       <PlanJsonLd path={`${PLAN_BASE}/getting-around`} headline="Getting Home Safely at Night in Korea — Last Train, Taxi, 1330 Helpline" description="Last trains, taxi apps, cash, age rules and help numbers (1330, 112, 119) for a night out in Seoul or Busan." image={img(TOURS.seoulSmallGroup.image, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }, { name: "Getting around", path: `${PLAN_BASE}/getting-around` }]} />
       <div className="max-w-2xl mx-auto px-5 pt-6 pb-24 space-y-4">
         <Crumb href={PLAN_BASE} label="Night Activities" />

@@ -51,7 +51,7 @@ export async function PlanMemoryRoute({ route }: { route: Route }) {
   return (
     <ForeignShell lang="en" sidebarCta={route.bookArea ? { href: bookHref, label: route.ctaLabel, kind: `plan_${route.slug}` } : undefined}>
       <ActivitiesTopBar />
-      <ForeignPageTracker kind="info" lang="en" meta={{ page: `plan-your-memory/${route.slug}` }} />
+      <ForeignPageTracker kind="info" lang="en" meta={{ page: `night-activities/${route.slug}` }} />
       <PlanJsonLd
         path={`${PLAN_BASE}/${route.slug}`}
         headline={route.metaTitle}

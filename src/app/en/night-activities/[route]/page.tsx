@@ -10,7 +10,7 @@ export function generateStaticParams() { return ROUTES.map((r) => ({ route: r.sl
 export async function generateMetadata({ params }: { params: Promise<{ route: string }> }): Promise<Metadata> {
   const r = routeBySlug((await params).route);
   if (!r) return {};
-  const url = `https://nightflow.kr/en/plan-your-memory/${r.slug}`;
+  const url = `https://nightflow.kr/en/night-activities/${r.slug}`;
   return {
     title: { absolute: r.metaTitle },
     description: r.metaDescription,
