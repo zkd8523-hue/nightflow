@@ -10,7 +10,7 @@
 // 실제 발송은 notifyAssignedMd(손님 "다시 요청"과 공용).
 //
 // Body: { request_type: "foreign" | "korean", request_id, kind: "proposal" | "confirmation" }
-// 200: { ok: true, channel: "push" | "sms" }
+// 200: { ok: true, channel: "push" | "sms", guest_channel: "push" | "sms" | "none" | null }
 // 400: md_required · 404: not_found / no_confirmation · 409: cancelled · 422: no_channel
 
 import { NextRequest, NextResponse } from "next/server";
@@ -42,5 +42,5 @@ export async function POST(req: NextRequest) {
     kind,
   });
   if (result.ok === false) return NextResponse.json({ error: result.error }, { status: result.status });
-  return NextResponse.json({ ok: true, channel: result.channel });
+  return NextResponse.json({ ok: true, channel: result.channel, guest_channel: result.guestChannel ?? null });
 }

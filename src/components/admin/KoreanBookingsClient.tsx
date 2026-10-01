@@ -139,7 +139,8 @@ export function KoreanBookingsClient({
   };
 
   const applyConf = (id: string, conf: ProposalConf) => {
-    setReqs((prev) => prev.map((r) => (r.id === id ? { ...r, conf } : r)));
+    // 저장 응답엔 손님 전달 상태(Migration 680)가 없다 — 기존 값을 유지해야 카드가 "아직 안 보냄"으로 되돌아가지 않는다.
+    setReqs((prev) => prev.map((r) => (r.id === id ? { ...r, conf: { ...r.conf, ...conf } } : r)));
     setEditing(null);
   };
 
@@ -316,7 +317,7 @@ export function KoreanBookingsClient({
             {/* 제안서·MD응답·확정서 — 외국인 요청과 공용(ProposalSection.tsx, 2026-09-06). */}
             <ProposalCard req={toProposalReq(r)} allMds={allMds} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
             <MdResponseCard req={toProposalReq(r)} allMds={allMds} />
-            {r.conf && <ConfirmationCard conf={r.conf} requestType="korean" hasMd={!!r.assigned_md_id} />}
+            {r.conf && <ConfirmationCard key={r.conf.ref_no} conf={r.conf} requestType="korean" hasMd={!!r.assigned_md_id} guestContactType={r.contact_type} />}
 
             <button
               onClick={() => setEditing(editing === r.id ? null : r.id)}

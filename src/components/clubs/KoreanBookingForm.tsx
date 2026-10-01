@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { trackEvent } from "@/lib/analytics/events";
+import { trackEvent, trackAppDownloadClick } from "@/lib/analytics/events";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ClubDateCalendar } from "./ClubDateCalendar";
@@ -14,6 +14,8 @@ import { MenuPicker } from "@/components/foreign/MenuPicker";
 import { formatBookingContact } from "@/lib/utils/format";
 import { saveFormDraft, loadFormDraft, clearFormDraft } from "@/lib/utils/formDraft";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
+import { useAppDownloadCta } from "@/hooks/useAppDownloadCta";
+import { AppInstallQr } from "@/components/common/AppInstallQr";
 import type { ClubMenuItem, ClubMenuCombo, SelectedMenuSnapshot, KoreanBookingContactType } from "@/types/database";
 
 // 한국 유저 클럽 예약 요청 폼 (컨시어지 모델, foreign_requests와 동일 구조).
@@ -55,6 +57,10 @@ export function KoreanBookingForm({
   userId: string;
 }) {
   const router = useRouter();
+  // 예약 완료 화면 앱 설치 유도 — 확정서 알림은 앱 푸시로 가는데, 앱이 없는 손님은
+  // 확정서를 못 받고 놓쳤다(2026-10-01). 모바일 웹은 스토어 버튼, PC는 QR(nightflow.kr/app).
+  // 앱 안에서는 둘 다 false라 안 보인다.
+  const { eligible: appCtaEligible, isDesktop, storeUrl } = useAppDownloadCta();
 
   const [eventDate, setEventDate] = useState("");
   // 네이티브 <input type="date">로는 휴무 요일을 회색 처리할 방법이 없다 —
@@ -690,6 +696,41 @@ export function KoreanBookingForm({
                   </div>
                 )}
               </div>
+
+              {appCtaEligible && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-4 text-left space-y-3">
+                  <div className="flex items-start gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/app-icon.png" alt="나플" className="w-11 h-11 rounded-xl shrink-0" />
+                    <div className="space-y-0.5">
+                      <p className="text-[14px] font-black text-foreground break-keep">확정서는 앱 알림으로 보내드려요</p>
+                      <p className="text-[12px] text-muted-foreground leading-relaxed break-keep">
+                        앱이 없으면 예약이 확정돼도 알림을 못 받을 수 있어요.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href={storeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackAppDownloadClick("booking_submitted", { club_id: clubId })}
+                    className="block w-full h-12 leading-[3rem] rounded-full bg-green-600 text-white text-center font-black text-[15px] active:scale-[0.99] transition-transform"
+                  >
+                    앱 설치하고 확정 알림 받기
+                  </a>
+                </div>
+              )}
+              {isDesktop && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-4 text-left space-y-3">
+                  <div className="space-y-0.5">
+                    <p className="text-[14px] font-black text-foreground break-keep">확정서는 앱 알림으로 보내드려요</p>
+                    <p className="text-[12px] text-muted-foreground leading-relaxed break-keep">
+                      휴대폰에 앱을 깔아두면 예약이 확정되는 순간 바로 알려드려요.
+                    </p>
+                  </div>
+                  <AppInstallQr location="booking_submitted" />
+                </div>
+              )}
 
               <button
                 type="button"

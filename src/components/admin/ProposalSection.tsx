@@ -15,6 +15,8 @@ export type RequestType = "foreign" | "korean";
 
 export type MdCandidate = { id: string; name: string; phone: string | null };
 
+export type GuestChannel = "push" | "sms" | "none";
+
 export type ProposalConf = {
   request_id: string;
   ref_no: string;
@@ -27,6 +29,12 @@ export type ProposalConf = {
   total_price: number | null;
   guest_request: string | null;
   internal_memo: string | null;
+  /** 손님 전달 상태(Migration 680) — 확정서 저장 직후엔 없을 수 있다 */
+  guest_notified_at?: string | null;
+  guest_notify_channel?: GuestChannel | null;
+  guest_viewed_at?: string | null;
+  /** 손님 벨 알림 읽음 여부 — 벨 알림이 없으면 null */
+  guest_bell_read?: boolean | null;
 };
 
 export type ProposalReq = {
@@ -256,11 +264,13 @@ function SendToMdButton({
   requestId,
   kind,
   disabled,
+  onSent,
 }: {
   requestType: RequestType;
   requestId: string;
   kind: "proposal" | "confirmation";
   disabled?: boolean;
+  onSent?: (guestChannel: GuestChannel | null) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [sentAt, setSentAt] = useState<string | null>(null);
@@ -278,6 +288,13 @@ function SendToMdButton({
         return;
       }
       toast.success(j.channel === "sms" ? "앱 알림이 없어 문자로 보냈어요" : "MD에게 앱 알림을 보냈어요");
+      // 손님 결과는 따로 알린다 — 앱이 없는 손님은 아무것도 못 받는데 운영자는
+      // MD 성공 토스트만 보고 손님도 받은 줄 알았다(2026-10-01).
+      if (j.guest_channel === "push") toast.success("손님에게 앱 푸시를 보냈어요");
+      else if (j.guest_channel === "sms") toast.success("손님은 앱이 없어 문자로 링크를 보냈어요");
+      else if (j.guest_channel === "none")
+        toast.error("손님은 앱이 없어 알림이 안 갔어요 — 손님 링크를 복사해 직접 보내주세요", { duration: 8000 });
+      onSent?.(j.guest_channel ?? null);
       setSentAt(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
     } finally {
       setBusy(false);
@@ -496,11 +513,17 @@ export function ConfirmationCard({
   conf,
   requestType,
   hasMd,
+  guestContactType,
 }: {
   conf: ProposalConf;
   requestType: RequestType;
   hasMd: boolean;
+  /** 손님 연락 수단(phone·instagram·openchat·whatsapp·email…) — 미전달 시 안내 문구용 */
+  guestContactType?: string | null;
 }) {
+  // "보내기"를 누르면 새로고침 없이 바로 손님 상태 줄이 바뀌게 로컬로 들고 있는다.
+  const [notifiedAt, setNotifiedAt] = useState(conf.guest_notified_at ?? null);
+  const [channel, setChannel] = useState(conf.guest_notify_channel ?? null);
   return (
     <div className="flex flex-wrap items-center gap-2 bg-card rounded-lg px-3 py-2 border border-amber-500/25">
       <FileText className="w-3.5 h-3.5 text-brand-amber shrink-0" />
@@ -557,8 +580,99 @@ export function ConfirmationCard({
         </span>
         {/* 확정서 폼에서 MD를 바꾸면 목록의 assigned_md_id는 새로고침 전까지 옛 값이라 막지 않는다 —
             MD가 정말 없으면 서버가 md_required로 돌려준다. */}
-        <SendToMdButton requestType={requestType} requestId={conf.request_id} kind="confirmation" />
+        <SendToMdButton
+          requestType={requestType}
+          requestId={conf.request_id}
+          kind="confirmation"
+          onSent={(g) => {
+            setNotifiedAt(new Date().toISOString());
+            setChannel(g);
+          }}
+        />
       </div>
+      <GuestDeliveryLine
+        notifiedAt={notifiedAt}
+        channel={channel}
+        bellRead={conf.guest_bell_read ?? null}
+        viewedAt={conf.guest_viewed_at ?? null}
+        guestUrlPath={`/booking/${conf.public_token}`}
+        guestContactType={guestContactType ?? null}
+      />
+    </div>
+  );
+}
+
+const GUEST_CONTACT_HINT: Record<string, string> = {
+  instagram: "인스타 DM",
+  openchat: "오픈채팅",
+  phone: "문자",
+  whatsapp: "WhatsApp",
+  email: "이메일",
+};
+
+const shortTime = (iso: string) =>
+  new Date(iso).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
+/**
+ * 손님 전달 상태 한 줄 — "손님: 앱 푸시 ✅ · 벨 안 읽음 · 확정서 미열람".
+ * 앱이 없는 손님은 푸시가 안 가서 벨 알림만 남는데, 운영자가 이걸 몰라 두 건이
+ * 미전달로 방치됐다(2026-10-01). 못 받은 게 확실하면 링크 복사 안내를 띄운다.
+ */
+function GuestDeliveryLine({
+  notifiedAt,
+  channel,
+  bellRead,
+  viewedAt,
+  guestUrlPath,
+  guestContactType,
+}: {
+  notifiedAt: string | null;
+  channel: GuestChannel | null;
+  bellRead: boolean | null;
+  viewedAt: string | null;
+  guestUrlPath: string;
+  guestContactType: string | null;
+}) {
+  const sent = !!notifiedAt;
+  const chip = "px-1.5 py-0.5 rounded-md text-[11px] font-bold";
+  const undelivered = sent && channel === "none" && !viewedAt && !bellRead;
+  const via = guestContactType ? GUEST_CONTACT_HINT[guestContactType] ?? "연락처" : "연락처";
+  return (
+    <div className="w-full space-y-1.5 pt-2 border-t border-border/60">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[11px] text-muted-foreground mr-0.5">손님</span>
+        {!sent ? (
+          <span className={`${chip} bg-muted/50 text-muted-foreground`}>아직 안 보냄</span>
+        ) : channel === "push" ? (
+          <span className={`${chip} bg-green-500/15 text-green-500`}>앱 푸시 ✅</span>
+        ) : channel === "sms" ? (
+          <span className={`${chip} bg-green-500/15 text-green-500`}>문자 ✅</span>
+        ) : (
+          <span className={`${chip} bg-red-500/15 text-red-500`}>앱 알림 못 받음 ❌</span>
+        )}
+        {sent && bellRead !== null && (
+          <span className={`${chip} ${bellRead ? "bg-green-500/15 text-green-500" : "bg-muted/50 text-muted-foreground"}`}>
+            벨 {bellRead ? "읽음" : "안 읽음"}
+          </span>
+        )}
+        <span className={`${chip} ${viewedAt ? "bg-green-500/15 text-green-500" : "bg-muted/50 text-muted-foreground"}`}>
+          {viewedAt ? `확정서 열람 ${shortTime(viewedAt)}` : "확정서 미열람"}
+        </span>
+      </div>
+      {undelivered && (
+        <div className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/25 px-2.5 py-1.5">
+          <span className="text-[11px] text-red-500 font-bold flex-1 break-keep">
+            앱이 없어 알림이 안 갔어요 — 손님 링크를 복사해서 {via}로 보내주세요
+          </span>
+          <button
+            onClick={() => copy(`${window.location.origin}${guestUrlPath}`)}
+            className="shrink-0 h-7 px-2.5 rounded-md bg-white text-black text-[11px] font-black flex items-center gap-1"
+          >
+            <Copy className="w-3 h-3" />
+            링크 복사
+          </button>
+        </div>
+      )}
     </div>
   );
 }

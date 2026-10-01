@@ -3,12 +3,10 @@
 import { useEffect, useState } from "react";
 import { isAndroid, isIOS } from "@/lib/utils/browser";
 
-// 안드로이드 앱 정식 출시 (공유용 pcampaignid는 제외, 한국어 페이지 고정)
-export const PLAY_STORE_URL =
-  "https://play.google.com/store/apps/details?id=kr.nightflow.app&hl=ko";
-
-// iOS 앱스토어 (한국 스토어 포함, 2026-09-07부터)
-export const APP_STORE_URL = "https://apps.apple.com/app/id6769749996";
+// 스토어 주소 상수는 서버(라우트 핸들러)에서도 쓰므로 일반 모듈에 둔다 —
+// "use client" 파일에서 가져오면 서버에선 문자열이 아니라 클라이언트 참조가 된다.
+import { APP_STORE_URL, PLAY_STORE_URL, APP_SMART_LINK } from "@/lib/appStore";
+export { APP_STORE_URL, PLAY_STORE_URL, APP_SMART_LINK };
 
 const DISMISS_KEY = "naflAppBannerDismissed";
 
@@ -62,6 +60,9 @@ export type AppStorePlatform = "android" | "ios" | null;
 export function useAppDownloadCta() {
   const [eligible, setEligible] = useState(false);
   const [platform, setPlatform] = useState<AppStorePlatform>(null);
+  // PC 웹 — 스토어 버튼 대신 휴대폰으로 찍을 QR(nightflow.kr/app)을 보여줄 때 쓴다.
+  // 네이티브 판정 실패 시엔 isNative=true로 보수 처리되므로 앱 안에선 절대 true가 안 된다.
+  const [isDesktop, setIsDesktop] = useState(false);
   // 기본 닫힘으로 시작해 SSR/초기 렌더 깜빡임 방지
   const [dismissed, setDismissed] = useState(true);
 
@@ -91,6 +92,7 @@ export function useAppDownloadCta() {
             : null;
       setPlatform(detected);
       setEligible(detected !== null);
+      setIsDesktop(!isNative && detected === null);
       if (detected !== null) {
         // '닫기'를 누르면 어디서든(테스트/프로덕션) 영구히 다시 안 뜸.
         setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
@@ -113,5 +115,5 @@ export function useAppDownloadCta() {
 
   const storeUrl = platform === "ios" ? APP_STORE_URL : PLAY_STORE_URL;
 
-  return { eligible, platform, storeUrl, bannerVisible: eligible && !dismissed, dismiss };
+  return { eligible, isDesktop, platform, storeUrl, bannerVisible: eligible && !dismissed, dismiss };
 }

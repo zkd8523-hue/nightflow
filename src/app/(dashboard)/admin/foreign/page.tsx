@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ForeignRequestsClient, type ForeignReq } from "@/components/admin/ForeignRequestsClient";
 
 export const dynamic = "force-dynamic";
@@ -30,10 +31,26 @@ export default async function AdminForeignPage() {
   // 확정서 (있으면 링크·확정 내용 표시)
   const { data: confs } = await supabase
     .from("booking_confirmations")
-    .select("request_id, ref_no, public_token, md_token, club_id, table_info, confirmed_group_size, includes, total_price, guest_request, internal_memo")
+    .select("request_id, ref_no, public_token, md_token, club_id, table_info, confirmed_group_size, includes, total_price, guest_request, internal_memo, guest_notified_at, guest_notify_channel, guest_viewed_at")
     .in("request_id", requests.length ? requests.map((r) => r.id) : ["00000000-0000-0000-0000-000000000000"]);
-  const confByReq: Record<string, NonNullable<typeof confs>[number]> = {};
-  confs?.forEach((c) => { confByReq[c.request_id] = c; });
+  // 손님 벨 알림 읽음 여부 — 어드민 카드 "손님 전달 상태"용(2026-10-01).
+  // in_app_notifications는 본인만 읽는 RLS라 service role로 읽는다.
+  const bellReadByPath: Record<string, boolean> = {};
+  const guestPaths = (confs ?? []).map((c) => `/booking/${c.public_token}`);
+  if (guestPaths.length) {
+    const { data: bells } = await createAdminClient()
+      .from("in_app_notifications")
+      .select("action_url, is_read")
+      .in("action_url", guestPaths);
+    bells?.forEach((b) => {
+      if (b.action_url) bellReadByPath[b.action_url] = (bellReadByPath[b.action_url] ?? false) || b.is_read;
+    });
+  }
+  const confByReq: Record<string, NonNullable<typeof confs>[number] & { guest_bell_read: boolean | null }> = {};
+  confs?.forEach((c) => {
+    const path = `/booking/${c.public_token}`;
+    confByReq[c.request_id] = { ...c, guest_bell_read: path in bellReadByPath ? bellReadByPath[path] : null };
+  });
 
   // 담당 MD 후보 — 요청에 걸린 클럽들의 파트너.
   // 전체 MD를 다 내려주면 목록이 길어 못 쓴다.

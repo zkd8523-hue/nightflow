@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { KoreanBookingsClient, type KoreanBookingReq } from "@/components/admin/KoreanBookingsClient";
 
 export const dynamic = "force-dynamic";
@@ -33,11 +34,27 @@ export default async function AdminKoreanBookingsPage() {
   // request_type='korean'으로 구분해서 공유한다(Migration 654).
   const { data: confs } = await supabase
     .from("booking_confirmations")
-    .select("request_id, ref_no, public_token, md_token, club_id, table_info, confirmed_group_size, includes, total_price, guest_request, internal_memo")
+    .select("request_id, ref_no, public_token, md_token, club_id, table_info, confirmed_group_size, includes, total_price, guest_request, internal_memo, guest_notified_at, guest_notify_channel, guest_viewed_at")
     .eq("request_type", "korean")
     .in("request_id", requests.length ? requests.map((r) => r.id) : ["00000000-0000-0000-0000-000000000000"]);
-  const confByReq: Record<string, NonNullable<typeof confs>[number]> = {};
-  confs?.forEach((c) => { confByReq[c.request_id] = c; });
+  // 손님 벨 알림 읽음 여부 — 어드민 카드 "손님 전달 상태"용(2026-10-01).
+  // in_app_notifications는 본인만 읽는 RLS라 service role로 읽는다.
+  const bellReadByPath: Record<string, boolean> = {};
+  const guestPaths = (confs ?? []).map((c) => `/booking/${c.public_token}`);
+  if (guestPaths.length) {
+    const { data: bells } = await createAdminClient()
+      .from("in_app_notifications")
+      .select("action_url, is_read")
+      .in("action_url", guestPaths);
+    bells?.forEach((b) => {
+      if (b.action_url) bellReadByPath[b.action_url] = (bellReadByPath[b.action_url] ?? false) || b.is_read;
+    });
+  }
+  const confByReq: Record<string, NonNullable<typeof confs>[number] & { guest_bell_read: boolean | null }> = {};
+  confs?.forEach((c) => {
+    const path = `/booking/${c.public_token}`;
+    confByReq[c.request_id] = { ...c, guest_bell_read: path in bellReadByPath ? bellReadByPath[path] : null };
+  });
 
   // 담당 MD 후보 — 요청에 걸린 클럽의 파트너. foreign_requests 관리자 화면과 동일 패턴.
   const { data: partners } = await supabase

@@ -7,6 +7,7 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BookingPass } from "@/components/booking/BookingPass";
+import { BookingViewBeacon } from "@/components/booking/BookingViewBeacon";
 
 export const dynamic = "force-dynamic";
 
@@ -92,33 +93,36 @@ export default async function BookingPage({
     .maybeSingle();
 
   return (
-    <BookingPass
-      publicToken={token}
-      requestId={conf.request_id}
-      requestType={conf.request_type}
-      refNo={conf.ref_no}
-      arrivalConfirmed={(pings ?? []).length > 0}
-      existingReview={existingReview ?? null}
-      guestName={req.guest_name}
-      eventDate={req.event_date}
-      groupSize={conf.confirmed_group_size ?? req.group_size}
-      cancelled={req.status === "cancelled"}
-      clubName={
-        conf.request_type === "korean"
-          ? club?.name || club?.name_en || null
-          : club?.name_en || club?.name || null
-      }
-      address={club?.address ?? null}
-      lat={club?.latitude ?? null}
-      lng={club?.longitude ?? null}
-      operatingHours={club?.operating_hours ?? null}
-      tableInfo={conf.table_info}
-      includes={conf.includes ?? []}
-      totalPrice={conf.total_price}
-      guestRequest={conf.guest_request}
-      hostName={md?.display_name ?? null}
-      hostInstagram={hostInstagram}
-      hostKakaoUrl={hostKakaoUrl}
-    />
+    <>
+      <BookingViewBeacon token={token} />
+      <BookingPass
+        publicToken={token}
+        requestId={conf.request_id}
+        requestType={conf.request_type}
+        refNo={conf.ref_no}
+        arrivalConfirmed={(pings ?? []).length > 0}
+        existingReview={existingReview ?? null}
+        guestName={req.guest_name}
+        eventDate={req.event_date}
+        groupSize={conf.confirmed_group_size ?? req.group_size}
+        cancelled={req.status === "cancelled"}
+        clubName={
+          conf.request_type === "korean"
+            ? club?.name || club?.name_en || null
+            : club?.name_en || club?.name || null
+        }
+        address={club?.address ?? null}
+        lat={club?.latitude ?? null}
+        lng={club?.longitude ?? null}
+        operatingHours={club?.operating_hours ?? null}
+        tableInfo={conf.table_info}
+        includes={conf.includes ?? []}
+        totalPrice={conf.total_price}
+        guestRequest={conf.guest_request}
+        hostName={md?.display_name ?? null}
+        hostInstagram={hostInstagram}
+        hostKakaoUrl={hostKakaoUrl}
+      />
+    </>
   );
 }

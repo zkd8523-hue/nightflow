@@ -32,8 +32,10 @@ async function insertInApp(
   }
 }
 
+export type GuestChannel = "push" | "sms" | "none";
+
 export type NotifyMdResult =
-  | { ok: true; channel: "push" | "sms" }
+  | { ok: true; channel: "push" | "sms"; guestChannel?: GuestChannel }
   | { ok: false; error: "not_found" | "cancelled" | "md_required" | "no_confirmation" | "no_channel"; status: number };
 
 export async function notifyAssignedMd(
@@ -52,7 +54,7 @@ export async function notifyAssignedMd(
   const { data: rawReq } = await sb
     .from(table)
     .select(
-      `id, user_id, guest_name, event_date, group_size, status, assigned_md_id, proposal_token, selected_menu_total, ${
+      `id, user_id, guest_name, event_date, group_size, status, assigned_md_id, proposal_token, selected_menu_total, contact_type, contact_value, ${
         requestType === "korean" ? "club_id" : "club_ids, budget"
       }`
     )
@@ -69,6 +71,8 @@ export async function notifyAssignedMd(
     assigned_md_id: string | null;
     proposal_token: string | null;
     selected_menu_total: number | null;
+    contact_type: string | null;
+    contact_value: string | null;
     budget?: number | null;
     club_id?: string | null;
     club_ids?: string[] | null;
@@ -160,10 +164,15 @@ export async function notifyAssignedMd(
     }
   }
 
-  // 확정서가 나온 경우엔 손님에게도 같은 방식(푸시+인앱)으로 보낸다 — "확정서 저장" 시점
-  // 자동 발송을 없애고 이 "보내기" 버튼 하나로 MD·손님 모두 커버한다(2026-09-30).
+  // 확정서가 나온 경우엔 손님에게도 보낸다 — "확정서 저장" 시점 자동 발송을 없애고
+  // 이 "보내기" 버튼 하나로 MD·손님 모두 커버한다(2026-09-30).
   // 손님 알림은 부가 기능이라 실패해도 MD 발송 결과(mdResult)에는 영향을 주지 않는다.
+  //
+  // 앱이 없는 손님은 푸시 토큰이 없어 벨 알림만 남고 사실상 아무것도 못 받았다
+  // (2026-10-01, 두 건 모두 미수신). 그래서 푸시가 안 되면 연락처가 한국 휴대폰일 때
+  // 링크를 문자로 보내고, 결과 채널을 확정서에 남겨 어드민 카드에서 보이게 한다.
   if (kind === "confirmation" && conf?.public_token) {
+    let guestChannel: GuestChannel = "none";
     try {
       const guestPath = `/booking/${conf.public_token}`;
       const guestTitle = "✅ 예약이 확정됐어요";
@@ -184,10 +193,34 @@ export async function notifyAssignedMd(
           p_category: "transaction",
         });
         if (guestPushErr) console.error("[notifyAssignedMd] 손님 push 실패", guestPushErr);
+        else guestChannel = "push";
+      }
+
+      const guestPhone = r.contact_type === "phone" ? (r.contact_value ?? "").replace(/[^0-9]/g, "") : "";
+      if (guestChannel === "none" && /^01\d{8,9}$/.test(guestPhone)) {
+        try {
+          await sendSms(
+            guestPhone,
+            `[나이트플로우] 예약이 확정됐어요\n${guestText}\n${SITE}${guestPath}\n입장할 때 확정서 화면을 보여주세요.`
+          );
+          guestChannel = "sms";
+        } catch (e) {
+          console.error("[notifyAssignedMd] 손님 sms 실패", e);
+        }
       }
     } catch (e) {
       console.error("[notifyAssignedMd] 손님 알림 실패", e);
     }
+
+    // 컬럼은 Migration 680 — 미적용이어도 에러만 반환되고 발송은 이미 끝났다.
+    const { error: recErr } = await sb
+      .from("booking_confirmations")
+      .update({ guest_notified_at: new Date().toISOString(), guest_notify_channel: guestChannel })
+      .eq("request_type", requestType)
+      .eq("request_id", r.id);
+    if (recErr) console.error("[notifyAssignedMd] 손님 전달 기록 실패", recErr);
+
+    return mdResult.ok ? { ...mdResult, guestChannel } : mdResult;
   }
 
   return mdResult;

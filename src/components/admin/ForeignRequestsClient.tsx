@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Copy, Calendar, Users, UserRound, Coins, MapPin, Trash2, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { SelectedMenuSnapshot } from "@/types/database";
-import { ProposalCard, MdResponseCard, ConfirmationCard, ConfirmForm, type ProposalReq } from "@/components/admin/ProposalSection";
+import { ProposalCard, MdResponseCard, ConfirmationCard, ConfirmForm, type ProposalReq, type ProposalConf } from "@/components/admin/ProposalSection";
 
 export type ForeignReq = {
   id: string;
@@ -31,19 +31,7 @@ export type ForeignReq = {
   clubNames: string[];
   guest_name: string | null;
   assigned_md_id: string | null;
-  conf: {
-    request_id: string;
-    ref_no: string;
-    public_token: string;
-    md_token: string;
-    club_id: string | null;
-    table_info: string | null;
-    confirmed_group_size: string | null;
-    includes: string[];
-    total_price: number | null;
-    guest_request: string | null;
-    internal_memo: string | null;
-  } | null;
+  conf: ProposalConf | null;
   mdCandidates: { id: string; name: string; phone: string | null }[];
   contact_type: string;
   contact_value: string;
@@ -133,7 +121,8 @@ export function ForeignRequestsClient({
   };
 
   const applyConf = (id: string, conf: NonNullable<ForeignReq["conf"]>) => {
-    setReqs((prev) => prev.map((r) => (r.id === id ? { ...r, conf } : r)));
+    // 저장 응답엔 손님 전달 상태(Migration 680)가 없다 — 기존 값을 유지해야 카드가 "아직 안 보냄"으로 되돌아가지 않는다.
+    setReqs((prev) => prev.map((r) => (r.id === id ? { ...r, conf: { ...r.conf, ...conf } } : r)));
     setEditing(null);
   };
 
@@ -336,7 +325,7 @@ export function ForeignRequestsClient({
             {/* 제안서·MD응답·확정서 — 외국인/한국 요청 공용(ProposalSection.tsx, 2026-09-06). */}
             <ProposalCard req={toProposalReq(r)} allMds={allMds} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
             <MdResponseCard req={toProposalReq(r)} allMds={allMds} />
-            {r.conf && <ConfirmationCard conf={r.conf} requestType="foreign" hasMd={!!r.assigned_md_id} />}
+            {r.conf && <ConfirmationCard key={r.conf.ref_no} conf={r.conf} requestType="foreign" hasMd={!!r.assigned_md_id} guestContactType={r.contact_type} />}
 
             <button
               onClick={() => setEditing(editing === r.id ? null : r.id)}

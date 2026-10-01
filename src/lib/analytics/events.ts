@@ -293,7 +293,7 @@ export const trackForeignEvent = (
  * - 'login_sheet': 로그인 직후 1회성 팝업 (Migration 551)
  */
 export const trackAppDownloadClick = (
-  location: 'banner' | 'footer' | 'flag_created_sheet' | 'login_sheet',
+  location: 'banner' | 'footer' | 'flag_created_sheet' | 'login_sheet' | 'booking_submitted' | 'app_page',
   params: Record<string, unknown> = {},
 ) => {
   trackEvent('app_download_click', {
