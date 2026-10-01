@@ -22,7 +22,6 @@ export function SiteTabs({ active }: { active: Active }) {
       <Link href="/en" className={cls(active === "clubs")}>🍾 Clubs</Link>
       <Link href={PLAN_BASE} onClick={track(active)} className={cls(active === "activities", true)}>
         🌙 Activities
-        {active === "clubs" && <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-brand-amber align-top" />}
       </Link>
     </nav>
   );
