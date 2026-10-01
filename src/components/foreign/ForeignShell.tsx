@@ -109,7 +109,6 @@ export function ForeignSidebar({
       <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
       <Link href={`/${lang}`} className="px-2.5 pb-6 block">
         <p className="text-[18px] font-black tracking-tight leading-none">NightFlow</p>
-        <p className="text-[11px] text-muted-foreground leading-none mt-1">{tr("Korea Club Guide")}</p>
       </Link>
 
       <nav className="flex flex-col gap-1">

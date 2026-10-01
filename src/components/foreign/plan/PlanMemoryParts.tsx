@@ -138,7 +138,7 @@ export function Tabs({ active }: { active: "routes" | "tours" | "getting" }) {
         <Link
           key={t.key}
           href={t.href}
-          className={`whitespace-nowrap px-3 py-2.5 text-[13.5px] font-bold ${active === t.key ? "text-foreground border-b-2 border-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          className={`whitespace-nowrap px-3 py-2 text-[13.5px] font-bold ${active === t.key ? "text-foreground border-b-2 border-foreground" : "text-muted-foreground hover:text-foreground"}`}
         >
           {t.label}
         </Link>

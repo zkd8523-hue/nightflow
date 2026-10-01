@@ -1292,7 +1292,7 @@ function HeroSection({
 
   return (
     <div className="lg:max-w-[640px]">
-      <div className="px-5 pt-6 pb-4 space-y-3">
+      <div className="px-5 pt-2.5 pb-3 space-y-1">
         {/* 개편 전 히어로 문구 복구(2026-09-14, 운영자 요청). 번역은 i18n-dict에 그대로 남아 있다. */}
         <p className="text-[13px] font-extrabold text-brand-amber">
           {tr("Looking for a VIP night in Korea's clubs?")}
@@ -1657,10 +1657,7 @@ function EnHomeInner({
         {/* 데스크톱에선 로고·뒤로가기를 사이드바가 대신한다. 찜 진입점만 남긴다. */}
         <div className="lg:hidden">
         {tab === "flags" ? (
-          <div>
-            <span className="text-[17px] font-black tracking-tight">NightFlow</span>
-            <p className="text-[11px] text-muted-foreground leading-none mt-0.5">{tr("Korea Club Guide")}</p>
-          </div>
+          <span className="text-[17px] font-black tracking-tight">NightFlow</span>
         ) : (
           <button
             onClick={() => setTab("flags")}

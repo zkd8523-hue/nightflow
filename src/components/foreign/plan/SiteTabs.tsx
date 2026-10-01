@@ -46,11 +46,8 @@ export function SiteTabsInline({ active }: { active: Active }) {
 export function ActivitiesTopBar() {
   return (
     <div className="sticky top-0 z-30 bg-background">
-      <div className="lg:hidden px-4 pt-3 pb-2">
-        <Link href="/en" className="inline-block">
-          <span className="block text-[17px] font-black tracking-tight">NightFlow</span>
-          <span className="block text-[11px] text-muted-foreground leading-none mt-0.5">Korea Club Guide</span>
-        </Link>
+      <div className="lg:hidden px-4 pt-3 pb-1">
+        <Link href="/en" className="inline-block text-[17px] font-black tracking-tight">NightFlow</Link>
       </div>
       <SiteTabs active="activities" />
       <div className="hidden lg:block border-b border-border px-8 py-3">

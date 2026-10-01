@@ -15,11 +15,8 @@ export function PlanMemoryHub() {
       <ActivitiesTopBar />
       <ForeignPageTracker kind="info" lang="en" meta={{ page: "plan-your-memory" }} />
       <PlanJsonLd path={PLAN_BASE} headline="Korea Night Tours 2026 — Seoul, Busan & More Things to Do" description="Night views, river cruises and evening tours across Korea — Seoul, Busan and more. Plus night routes with clubs you can book in English." image={img(TOURS.hanCruise.image, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }]} />
-      <div className="max-w-2xl lg:max-w-[1100px] mx-auto px-5 lg:px-8 pt-6 pb-24 space-y-4">
-        <header className="space-y-2">
-          <h1 className="text-[30px] font-black leading-[1.1] tracking-tight">Night Activities in Korea</h1>
-          <p className="text-[14.5px] text-muted-foreground">Night views, cruises and evening tours across Korea.</p>
-        </header>
+      <div className="max-w-2xl lg:max-w-[1100px] mx-auto px-5 lg:px-8 pt-4 lg:pt-6 pb-24 space-y-3">
+        <h1 className="text-[26px] lg:text-[30px] font-black leading-[1.1] tracking-tight">Night Activities in Korea</h1>
         <Tabs active="tours" />
         <TourRegionFilter tours={tours} />
         <ViatorNote />
