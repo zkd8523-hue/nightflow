@@ -25,6 +25,7 @@ import { trackForeignEvent } from "@/lib/analytics/events";
 import { ForeignSidebar, type ForeignNavKey } from "@/components/foreign/ForeignShell";
 import { HALLOWEEN_2026, isHalloweenWindow } from "@/lib/foreign/seasonal";
 import { UrgencyLine } from "@/components/foreign/UrgencyLine";
+import { PlanMemoryHomeSection } from "@/components/foreign/plan/PlanMemoryHomeSection";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
@@ -1449,6 +1450,9 @@ function FlagsTab({
 
       {/* 지역 섹션 (강남/홍대 소개 + 클럽 리스트 + 지역 버튼 + 한국인 소셜프루프 캐러셀) */}
       {clubs.length > 0 && <RegionSection clubs={clubs} flags={flags} />}
+
+      {/* Plan your Memory(2026-10-01) — 밤 코스·투어 진입. 영어판만 있어 en에서만. */}
+      {lang === "en" && <PlanMemoryHomeSection />}
 
       {/* Safety tips */}
       <div className="px-4 pb-6 space-y-3">

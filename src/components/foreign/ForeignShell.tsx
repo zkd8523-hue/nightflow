@@ -149,6 +149,22 @@ export function ForeignSidebar({
         ))}
       </nav>
 
+      {/* Plan your Memory(2026-10-01) — 동네 목록 대신 넓은 입구 하나. 동네 이름을 모르는 사람도
+          "밤에 뭘 할지 고르는 곳"으로 읽히게. 아직 영어판만 있어 en에서만 보인다. */}
+      {lang === "en" && (
+        <Link
+          href="/en/plan-your-memory"
+          onClick={() => trackForeignEvent("foreign_sidebar_cta_click", { lang, kind: "plan_memory" })}
+          className="mt-5 mx-1 flex items-start gap-2.5 rounded-xl border border-border bg-card px-3 py-3 hover:border-foreground/30 transition-colors"
+        >
+          <span className="text-[18px] leading-none">🌙</span>
+          <span className="min-w-0">
+            <span className="block text-[13.5px] font-black text-foreground">Plan your Memory</span>
+            <span className="block text-[11px] leading-snug text-muted-foreground">Night routes, views &amp; tours in Seoul and Busan</span>
+          </span>
+        </Link>
+      )}
+
       {/* 찜한 클럽 — 팝업 시트 대신 사이드바에 상시 노출한다. 이전엔 헤더의
           하트 버튼을 눌러야만 보이는 시트였는데, 그러면 "찜했다는 사실"이
           화면 밖으로 사라져서 고민 중인 후보를 계속 보며 비교할 수가 없었다.
