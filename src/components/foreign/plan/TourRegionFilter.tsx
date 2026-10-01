@@ -1,12 +1,9 @@
 "use client";
 // 투어 페이지 지역 필터(2026-10-01, 사용자 요청 "서울 말고 전국 각지"). 상품이 있는 지역만 칩으로 보인다 —
-// 빈 결과로 가는 칩을 만들지 않는다(홈 장르 칩과 같은 원칙). 지역별 다음 행동(클럽 예약 여부)도 함께 바뀐다.
+// 빈 결과로 가는 칩을 만들지 않는다(홈 장르 칩과 같은 원칙).
 import { useState } from "react";
-import { type Tour, type TourRegion, TOUR_REGIONS, BOOK_HREF } from "@/lib/planMemory/content";
-import { TourCards, SecondaryCta } from "./PlanMemoryParts";
-
-// 지역 → 나플 예약 폼 area 값. 나플 클럽이 있는 지역만.
-const BOOK_AREA: Partial<Record<TourRegion, string>> = { Seoul: "", Busan: "부산" };
+import { type Tour, type TourRegion, TOUR_REGIONS } from "@/lib/planMemory/content";
+import { TourCards } from "./PlanMemoryParts";
 
 export function TourRegionFilter({ tours }: { tours: Tour[] }) {
   const regions = TOUR_REGIONS.filter((r) => tours.some((t) => t.region === r));
@@ -30,17 +27,10 @@ export function TourRegionFilter({ tours }: { tours: Tour[] }) {
       </div>
       {shown.map((r) => {
         const list = tours.filter((t) => t.region === r);
-        const area = BOOK_AREA[r];
         return (
           <section key={r} className="space-y-3">
             <h2 className="text-[20px] font-black">{r}</h2>
             <TourCards tours={list} campaign={`tours-${r.toLowerCase()}`} compact />
-            {area !== undefined && (
-              <SecondaryCta
-                href={BOOK_HREF(area || undefined)}
-                label={r === "Busan" ? "🍾 Seomyeon clubs after? Book a table" : "🍾 Want to dance after? Book a club table"}
-              />
-            )}
           </section>
         );
       })}

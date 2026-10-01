@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
+import { ActivitiesTopBar } from "./SiteTabs";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { createClient } from "@/lib/supabase/server";
 import { foreignClubPageHref } from "@/lib/clubs/slug";
@@ -49,6 +50,7 @@ export async function PlanMemoryRoute({ route }: { route: Route }) {
 
   return (
     <ForeignShell lang="en" sidebarCta={route.bookArea ? { href: bookHref, label: route.ctaLabel, kind: `plan_${route.slug}` } : undefined}>
+      <ActivitiesTopBar />
       <ForeignPageTracker kind="info" lang="en" meta={{ page: `plan-your-memory/${route.slug}` }} />
       <PlanJsonLd
         path={`${PLAN_BASE}/${route.slug}`}

@@ -26,6 +26,7 @@ import { ForeignSidebar, type ForeignNavKey } from "@/components/foreign/Foreign
 import { HALLOWEEN_2026, isHalloweenWindow } from "@/lib/foreign/seasonal";
 import { UrgencyLine } from "@/components/foreign/UrgencyLine";
 import { PlanMemoryHomeSection } from "@/components/foreign/plan/PlanMemoryHomeSection";
+import { SiteTabs, SiteTabsInline } from "@/components/foreign/plan/SiteTabs";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
@@ -1310,12 +1311,9 @@ function HeroSection({
       </div>
 
       {/* 가격 앵커 — "Real price"가 배지였는데 랜딩에 가격이 하나도 없었다.
-          공통 라벨(VIP 테이블)은 카드 위에 한 번, 카드 제목은 지역.
+          카드 제목은 지역. 카드 위 "VIP table" 라벨은 뺐다(2026-10-01 사용자 지시).
           인당 환산은 뺐다(2026-09-15) — 인원수 가정 근거를 화면에 못 적어서 노이즈였다. */}
-      <div className="px-4 space-y-1.5">
-        <p className="text-[11px] font-bold text-brand-amber px-1">
-          {t("VIP 테이블", "VIP table", "VIPテーブル", "VIP卡座", "VIP包廂")}
-        </p>
+      <div className="px-4">
         <div className="grid grid-cols-2 gap-2">
           {PRICE_ANCHORS.map((a) => {
             const local = localOf(a.won);
@@ -1673,12 +1671,16 @@ function EnHomeInner({
           </button>
         )}
         </div>
+        {lang === "en" && tab === "flags" && <SiteTabsInline active="clubs" />}
         {/* 우측: 로그인/계정 — 데스크톱에서도 보이도록 lg:hidden 밖에 둔다.
             shrink-0로 좁은 폭에서 버튼이 눌려 잘리는 것을 막는다. */}
         <div className="ml-auto shrink-0 pl-3">
           <HeaderAuthButton />
         </div>
       </header>
+
+      {/* 상단 두 갈래 탭 Clubs | Activities(2026-10-01 사용자 선택). Activities 페이지가 영어판만 있어 en 홈에서만. */}
+      {lang === "en" && tab === "flags" && <SiteTabs active="clubs" />}
 
       {/* 콘텐츠 */}
       {/* lg: 사이드바 오른쪽 영역이 초광폭 모니터에서 끝까지 늘어나지 않도록 가운데 정렬 + 최대폭.
