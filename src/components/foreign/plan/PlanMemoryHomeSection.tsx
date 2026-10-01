@@ -10,7 +10,7 @@ export function PlanMemoryHomeSection() {
       <div className="px-4 flex items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[14px] font-black text-foreground">🌙 Plan your Memory</p>
-          <p className="text-[12px] text-muted-foreground mt-0.5">First night in Korea? Pick a night — clubs, views or tours.</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">Looking for more than clubs? Night views, tours &amp; routes.</p>
         </div>
         <Link href={PLAN_BASE} className="shrink-0 text-[12px] font-bold text-brand-amber">See all →</Link>
       </div>
