@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { ROUTES, TOURS, PLAN_BASE, BOOK_HREF, img } from "@/lib/planMemory/content";
+import { PlanJsonLd } from "./PlanJsonLd";
 import { BookCta, HowBooking, Trust, SafetyLink, TourCards, ViatorNote, Tabs, Crumb, SecondaryCta } from "./PlanMemoryParts";
 
 const ROUTE_ORDER = ["hongdae-night", "itaewon-night", "busan-night", "haeundae-evening"];
@@ -11,6 +12,7 @@ export function PlanMemoryHub() {
   return (
     <ForeignShell lang="en">
       <ForeignPageTracker kind="info" lang="en" meta={{ page: "plan-your-memory" }} />
+      <PlanJsonLd path={PLAN_BASE} headline="Plan Your Night in Korea 2026 — Night Routes, Tours & Clubs" description="Pick a night in Seoul or Busan — Hongdae, Itaewon, Busan drone show, Haeundae or night tours — and book a club table in English." image={img(TOURS.hanCruise.image, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Plan your Memory", path: PLAN_BASE }]} />
       <div className="max-w-2xl mx-auto px-5 pt-6 pb-24 space-y-4">
         <Crumb href="/en" label="NightFlow" />
         <header className="space-y-2">
@@ -58,6 +60,7 @@ export function PlanMemoryTours() {
   return (
     <ForeignShell lang="en">
       <ForeignPageTracker kind="info" lang="en" meta={{ page: "plan-your-memory/tours" }} />
+      <PlanJsonLd path={`${PLAN_BASE}/tours`} headline="Seoul & Busan Night Tours 2026 — Han River Cruise, Night Views" description="Evening tours for travelers in Seoul and Busan: Han River night cruise, N Seoul Tower walk, Busan night views and Haeundae sunset Sky Capsule." image={img(TOURS.hanCruise.image, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Plan your Memory", path: PLAN_BASE }, { name: "Night tours", path: `${PLAN_BASE}/tours` }]} />
       <div className="max-w-2xl mx-auto px-5 pt-6 pb-24 space-y-4">
         <Crumb href={PLAN_BASE} label="Plan your Memory" />
         <header className="space-y-2">
@@ -82,6 +85,7 @@ export function PlanMemoryGettingAround() {
   return (
     <ForeignShell lang="en">
       <ForeignPageTracker kind="info" lang="en" meta={{ page: "plan-your-memory/getting-around" }} />
+      <PlanJsonLd path={`${PLAN_BASE}/getting-around`} headline="Getting Home Safely at Night in Korea — Last Train, Taxi, 1330 Helpline" description="Last trains, taxi apps, cash, age rules and help numbers (1330, 112, 119) for a night out in Seoul or Busan." image={img(TOURS.seoulSmallGroup.image, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Plan your Memory", path: PLAN_BASE }, { name: "Getting around", path: `${PLAN_BASE}/getting-around` }]} />
       <div className="max-w-2xl mx-auto px-5 pt-6 pb-24 space-y-4">
         <Crumb href={PLAN_BASE} label="Plan your Memory" />
         <header className="space-y-2">
@@ -101,7 +105,7 @@ export function PlanMemoryGettingAround() {
           <li><b>Last trains run until around midnight.</b> Times differ by line, station and day — check the subway app on the day.</li>
           <li><b>Set up a taxi app before you go out.</b> Travel guides say Kakao T works with foreign cards. Taxis cost more from 22:00 to 04:00 (VisitKorea).</li>
           <li><b>Carry a little cash.</b> Not every taxi or venue takes every card.</li>
-          <li><b>Bring your passport.</b> Age rule (Korean law, 2026): born in 2007 or earlier. Clubs check at the door.</li>
+          <li><b>Bring your passport.</b> Age rule (Korean law, 2026): born in 2007 or earlier. Clubs check at the door. <Link href="/en/club-entry-rules" className="font-bold text-brand-amber">Full age &amp; ID rules →</Link></li>
         </ul>
         <h2 className="text-[20px] font-black pt-2">Pick your night</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

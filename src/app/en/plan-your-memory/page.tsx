@@ -3,7 +3,7 @@ import { PlanMemoryHub } from "@/components/foreign/plan/PlanMemoryPages";
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
-  title: { absolute: "Plan Your Night in Korea 2026 — Night Routes, Tours & Club Booking (NightFlow)" },
+  title: { absolute: "Plan Your Night in Korea 2026 — Night Routes, Tours & Clubs" },
   description:
     "Not sure where to go at night in Seoul or Busan? Pick a night — Hongdae, Itaewon, Busan drone show, Haeundae or night tours — and book a club table in English.",
   alternates: { canonical: "https://nightflow.kr/en/plan-your-memory" },

@@ -89,6 +89,8 @@ export type Route = {
   card: { title: string; line: string; meta: string };
   days?: boolean;
   footnote?: string;
+  /** 지역 클럽 목록(예약 의도 정본)으로 가는 링크 — SEO 세션 권고(코스 → 지역 클럽 페이지) */
+  allClubs?: { href: string; label: string };
 };
 
 export const ROUTES: Route[] = [
@@ -114,6 +116,7 @@ export const ROUTES: Route[] = [
       { time: "Late", title: "Club street", body: "Hip-hop, K-pop, EDM. Hours and entry differ by club.", bookLink: true },
     ],
     clubsTitle: "Popular in Hongdae",
+    allClubs: { href: "/en/clubs/hongdae", label: "See all Hongdae clubs →" },
     tours: ["seoulSmallGroup", "hanCruise"],
     toursTitle: "Before the club",
     card: { title: "Dance & meet people — Hongdae", line: "Street music → park → club street. Easiest first night.", meta: "Seoul · bookable clubs" },
@@ -140,6 +143,7 @@ export const ROUTES: Route[] = [
       { time: "Late", title: "Main strip — clubs", body: "Busiest Fri–Sat — book ahead.", bookLink: true },
     ],
     clubsTitle: "Popular in Itaewon",
+    allClubs: { href: "/en/clubs/itaewon", label: "See all Itaewon clubs →" },
     tours: ["seoulPrivate", "nTowerWalk"],
     toursTitle: "Before the club",
     footnote: "Route based on travel guides, not an official course.",
@@ -154,7 +158,7 @@ export const ROUTES: Route[] = [
     eyebrow: "Busan · Seomyeon clubs",
     title: "Busan clubs in Seomyeon — plus a free drone show on Saturdays",
     metaTitle: "Busan Nightlife 2026 — Gwangalli Drone Show & Seomyeon Clubs",
-    metaDescription: "Seomyeon is Busan's club street. On Saturdays start with the free Gwangalli drone show (Oct–Feb 19:00 & 21:00). Book a Seomyeon club table in English.",
+    metaDescription: "Free Gwangalli drone show on Saturdays (Oct–Feb 19:00 & 21:00), then Seomyeon, Busan's club street — both on subway Line 2. Book a table in English if you want one.",
     lead: "Seomyeon is Busan's club street. On Saturdays, start with the drone show at Gwangalli Beach — same subway Line 2.",
     hero: IMG.busanNight,
     heroAlt: "Busan at night",
@@ -169,6 +173,7 @@ export const ROUTES: Route[] = [
       { time: "01:00~", title: "Late club — Azit", body: "Opens around 1 a.m., for after the first club." },
     ],
     clubsTitle: "Bookable in Seomyeon",
+    allClubs: { href: "/en/clubs/busan", label: "See all Busan clubs →" },
     clubsNote: "Days, entry and prices from NightFlow listings; may change.",
     tours: ["busanHike", "busanByNight"],
     toursTitle: "Before the club",

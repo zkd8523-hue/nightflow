@@ -4,6 +4,7 @@ import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { createClient } from "@/lib/supabase/server";
 import { foreignClubPageHref } from "@/lib/clubs/slug";
 import { type Route, TOURS, PLAN_BASE, PHOTO_CREDIT, BOOK_HREF, img } from "@/lib/planMemory/content";
+import { PlanJsonLd } from "./PlanJsonLd";
 import { BookCta, HowBooking, Trust, SafetyLink, Hero, TourCards, ViatorNote, Crumb, SecondaryCta } from "./PlanMemoryParts";
 
 type ClubRow = { name_en: string | null; name: string; area: string; google_rating: number | null; google_review_count: number | null; featured_rank: number | null };
@@ -49,6 +50,13 @@ export async function PlanMemoryRoute({ route }: { route: Route }) {
   return (
     <ForeignShell lang="en" sidebarCta={route.bookArea ? { href: bookHref, label: route.ctaLabel, kind: `plan_${route.slug}` } : undefined}>
       <ForeignPageTracker kind="info" lang="en" meta={{ page: `plan-your-memory/${route.slug}` }} />
+      <PlanJsonLd
+        path={`${PLAN_BASE}/${route.slug}`}
+        headline={route.metaTitle}
+        description={route.metaDescription}
+        image={img(route.hero, 1200)}
+        crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Plan your Memory", path: PLAN_BASE }, { name: route.card.title, path: `${PLAN_BASE}/${route.slug}` }]}
+      />
       <div className="max-w-2xl mx-auto px-5 pt-6 pb-32 space-y-5">
         <Crumb href={PLAN_BASE} label="Plan your Memory" />
         <header className="space-y-2">
@@ -133,9 +141,7 @@ export async function PlanMemoryRoute({ route }: { route: Route }) {
               })}
             </div>
             {route.clubsNote && <p className="text-[11px] text-muted-foreground">{route.clubsNote}</p>}
-            {route.clubArea && !route.clubNames && (
-              <SecondaryCta href={`/en/clubs/${route.slug.split("-")[0]}`} label={`See all ${route.eyebrow.split("· ")[1]} clubs →`} track="see_all_clubs" />
-            )}
+            {route.allClubs && <SecondaryCta href={route.allClubs.href} label={route.allClubs.label} track="see_all_clubs" />}
           </section>
         )}
 
