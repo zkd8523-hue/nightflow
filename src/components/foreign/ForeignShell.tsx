@@ -155,13 +155,10 @@ export function ForeignSidebar({
         <Link
           href="/en/plan-your-memory"
           onClick={() => trackForeignEvent("foreign_sidebar_cta_click", { lang, kind: "plan_memory" })}
-          className="mt-5 mx-1 flex items-start gap-2.5 rounded-xl border border-border bg-card px-3 py-3 hover:border-foreground/30 transition-colors"
+          className="mt-5 mx-1 flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-3 hover:border-foreground/30 transition-colors"
         >
           <span className="text-[18px] leading-none">🌙</span>
-          <span className="min-w-0">
-            <span className="block text-[13.5px] font-black text-foreground">Night Activities</span>
-            <span className="block text-[11px] leading-snug text-muted-foreground">Night tours, views &amp; routes across Korea</span>
-          </span>
+          <span className="text-[13.5px] font-black text-foreground">Night Activities</span>
         </Link>
       )}
 

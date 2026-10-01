@@ -30,6 +30,19 @@ const IMG = {
   seoulSkyline: "https://images.unsplash.com/photo-1782889699347-ec87acfe5b79", // yeojin yun, Seongdong-gu, Seoul (Gangnam skyline)
   suwon: "https://images.unsplash.com/photo-1694994719977-edead6092a70", // Fukuro 0wl, Suwon (Hwaseong at night)
   gyeongju: "https://images.unsplash.com/photo-1669764372822-3cb8476d4f47", // john ko, Donggung Palace & Wolji Pond
+  // 2026-10-01 추가 상품용 — 사진 페이지 위치 확인(viator-night-products-2.json)
+  bbqGrill: "https://images.unsplash.com/photo-1548959466-3a93a7b224e8", // Hanbyul Jeong, Jeju (BBQ grill — 서울 사진 못 찾음)
+  myeongdongNight: "https://images.unsplash.com/photo-1590437084089-9f5ae1500176", // Mike Swigunski, Seoul
+  hongdaeStreet: "https://images.unsplash.com/photo-1765375783706-05aeeaf59e5f", // Jinhan Moon, Hongik Univ. Station
+  naksanPath: "https://images.unsplash.com/photo-1777113310407-251c72227184", // note thanun, Seoul
+  myeongdongStore: "https://images.unsplash.com/photo-1760020954071-13a2c86076ff", // Jin-Woo Lee, Myeongdong
+  gwanghwamun: "https://images.unsplash.com/photo-1755985567147-863404bc0824", // Adrian O, Gwanghwamun Square
+  lotteTower: "https://images.unsplash.com/photo-1703838078830-c639058d9522", // Andrea De Santis, Seoul
+  kkangtong: "https://images.unsplash.com/photo-1748838316813-ca91d01294d8", // Cecelia Chang, Busan
+  busanHill: "https://images.unsplash.com/photo-1704544993415-9c6b80c359ed", // Lucas Schneider, Busan
+  gwanganBridge: "https://images.unsplash.com/photo-1702741274890-5160282e53bb", // Ryoo Geon Uk, korea (Gwangan Bridge)
+  marineReflect: "https://images.unsplash.com/photo-1702741306031-457e46c673a1", // Ryoo Geon Uk, korea (Marine City)
+  busanLights: "https://images.unsplash.com/photo-1686232344073-f1b7dd22ca6b", // Nichika Sakurai, Busan
 };
 export const img = (base: string, w = 1200) => `${base}?w=${w}&q=80&auto=format`;
 export const PHOTO_CREDIT: Record<string, string> = {
@@ -68,6 +81,20 @@ export const TOURS: Record<string, Tour> = {
   suwonFortress: { id: "suwonFortress", region: "Suwon", title: "Suwon Hwaseong Fortress at night", desc: "From Seoul, about 5 hours — the fortress gates lit up after dark.", badge: "From Seoul · night fortress", priceUsd: 69, image: IMG.suwon, url: "https://www.viator.com/tours/Seoul/Night-Tour-of-Suwon-Hwaseong-Fortress/d973-14882P42" },
   gyeongjuDay: { id: "gyeongjuDay", region: "Gyeongju", title: "Gyeongju day tour, ending at lit-up Wolji Pond", desc: "From Busan, about 11 hours — runs into the evening for Donggung Palace lights.", badge: "From Busan · day into night", image: IMG.gyeongju, url: "https://www.viator.com/tours/Busan/Gyeongju-UNESCO-World-Heritage-One-Day-Tour/d4615-48881P43" },
   busanNightView: { id: "busanNightView", region: "Busan", title: "Busan Night-view Tour", desc: "Guided tour of Busan's night views.", badge: "Guided · night views", priceKrw: 99000, image: IMG.marineCity, url: "https://www.viator.com/tours/Busan/Busan-Night-view-Tour/d4615-48881P121" },
+  // 2026-10-01 2차 추가: viator.com 403이라 검색 스니펫(시작 시간·야간 문구)으로만 확인. 가격은 스니펫 US$ 표기만, 확실치 않으면 비움.
+  // 뺀 것: 술집 순례·술 게임·치맥 상품, 예약 불가로 뜬 상품, hanCruise와 겹치는 한강 크루즈, 밤 전용 아닌 엑스더스카이.
+  seoulBbqFood: { id: "seoulBbqFood", region: "Seoul", title: "Night food tour with Korean BBQ", desc: "4-hour evening food tour, starting 5pm at Euljiro 1-ga.", badge: "Small group · food", priceUsd: 110, image: IMG.bbqGrill, url: "https://www.viator.com/tours/Seoul/Small-Group-Korean-Night-Food-Tour/d973-5583FOOD" },
+  seoulNightFood: { id: "seoulNightFood", region: "Seoul", title: "Night food tour: traditional & modern", desc: "3-hour night walking food tour, starting 5pm.", badge: "Walking · food", priceUsd: 89, image: IMG.myeongdongNight, url: "https://www.viator.com/tours/Seoul/Night-Food-Tour-in-Seoul-with-Traditional-and-Modern-Cuisine/d973-15527P31" },
+  hongdaeFood: { id: "hongdaeFood", region: "Seoul", title: "Hongdae & Yeonnam night food tour", desc: "Starts 5:30pm with a night stroll in Yeonnam-dong — dinner included.", badge: "Walking · food", priceUsd: 130, image: IMG.hongdaeStreet, url: "https://www.viator.com/tours/Seoul/Seoul-Night-Food-Tour-Yeonnam-and-Hongdae/d973-27619P6" },
+  seoulPalaceNight: { id: "seoulPalaceNight", region: "Seoul", title: "Gwangjang Market, palace & Naksan Park at night", desc: "Meets 5pm in Myeongdong — evening palace, then the lit city wall.", badge: "Guided · palace + market", image: IMG.naksanPath, url: "https://www.viator.com/tours/Seoul/Seoul-Night-Explorer-4-in-1-Day-including-Gwangmyeong-Cave-and-N-Seoul-Tower/d973-47013P23" },
+  nanta: { id: "nanta", region: "Seoul", title: "NANTA show in Myeongdong", desc: "Non-verbal kitchen comedy — 8pm shows run most days.", badge: "Show · 1.5 hours", image: IMG.myeongdongStore, url: "https://www.viator.com/tours/Seoul/Myeongdong-NANTA/d973-114565P1" },
+  painters: { id: "painters", region: "Seoul", title: "The Painters show, Gwanghwamun", desc: "Live drawing performance — daily 8pm show.", badge: "Show · 75 min", priceUsd: 24, image: IMG.gwanghwamun, url: "https://www.viator.com/tours/Seoul/Painters/d973-204437P1" },
+  lotteTower: { id: "lotteTower", region: "Seoul", title: "Lotte World Tower Seoul Sky ticket", desc: "Skip-the-line entry, open until 10pm — Seoul's highest view.", badge: "Ticket · until 22:00", priceUsd: 50, image: IMG.lotteTower, url: "https://www.viator.com/tours/Seoul/Skip-The-Line-Lotte-World-Tower-Sky-Deck-Admission-Including-One-way-Metro-Ticket/d973-54628P1" },
+  kkangtongFood: { id: "kkangtongFood", region: "Busan", title: "Kkangtong Market night food tour", desc: "Bupyeong Kkangtong Market, then a Korean BBQ pork dinner.", badge: "Food · market", priceUsd: 110, image: IMG.kkangtong, url: "https://www.viator.com/tours/Busan/Busan-Night-food-tour-Bupyeong-Kkangtong-market/d4615-42053P84" },
+  busanMarketNight: { id: "busanMarketNight", region: "Busan", title: "Night food market + Hwangnyeongsan lookout", desc: "Leaves 7pm — dinner market, then the city from the hill.", badge: "Guided · market + view", image: IMG.busanHill, url: "https://www.viator.com/tours/Busan/Busan-Night-Tour-Including-Night-Food-Market-Visit/d4615-35385P8" },
+  busanCruise: { id: "busanCruise", region: "Busan", title: "Busan night tour with a fireworks cruise", desc: "See Busan lit up at night from the water.", badge: "Cruise · fireworks", priceUsd: 110, image: IMG.gwanganBridge, url: "https://www.viator.com/tours/Busan/Busan-1-Night-Tour-with-a-Boat-tour/d4615-35385P3" },
+  marineYacht: { id: "marineYacht", region: "Busan", title: "Marine City night tour with yacht cruise", desc: "One-hour yacht ride past Busan's night skyline.", badge: "Yacht · 1 hour on water", priceUsd: 80, image: IMG.marineReflect, url: "https://www.viator.com/tours/Busan/Busan-Marine-City-Night-Tour-Including-Yacht-Cruise/d4615-38395P9" },
+  haeundaeBbq: { id: "haeundaeBbq", region: "Busan", title: "Haeundae night view & food tour with BBQ", desc: "After sunset — street food, skyline, Korean BBQ.", badge: "Small group · food", priceUsd: 102, image: IMG.busanLights, url: "https://www.viator.com/tours/Busan/Small-Group-Haeundae-Night-Food-tour-with-Korean-BBQ/d4615-123012P4" },
 };
 
 export const tourHref = (t: Tour, campaign: string) => viator(t.url, campaign);
@@ -100,8 +127,8 @@ export type Route = {
   toursTitle: string;
   /** 해운대처럼 예약 클럽이 없는 코스 → 다른 코스로 이어 주는 카드 */
   bridge?: { href: string; title: string; body: string; image: string };
-  /** 목록 카드 */
-  card: { title: string; line: string; meta: string };
+  /** 목록 카드 — plan은 실제 시각·비용이 든 동선(facts-nr-*-s.md 범위 안), know는 가기 전에 알아야 할 한 줄 */
+  card: { title: string; line: string; meta: string; plan: { t: string; s: string }[]; know: string };
   days?: boolean;
   footnote?: string;
   /** 지역 클럽 목록(예약 의도 정본)으로 가는 링크 — SEO 세션 권고(코스 → 지역 클럽 페이지) */
@@ -132,9 +159,9 @@ export const ROUTES: Route[] = [
     ],
     clubsTitle: "Popular in Hongdae",
     allClubs: { href: "/en/clubs/hongdae", label: "See all Hongdae clubs →" },
-    tours: ["seoulSmallGroup", "hanCruise"],
+    tours: ["hongdaeFood", "seoulSmallGroup", "hanCruise"],
     toursTitle: "Before the club",
-    card: { title: "Dance & meet people — Hongdae", line: "Street music → park → club street. Easiest first night.", meta: "Seoul · bookable clubs" },
+    card: { title: "Dance & meet people — Hongdae", line: "Street music → park → club street. Easiest first night.", meta: "Seoul · Hongdae", plan: [{ t: "Until 22:00", s: "Street music on the walking street" }, { t: "Dinner", s: "Yeonnam park cafés" }, { t: "Late", s: "Club street · entry often ₩10–30K" }], know: "Saturday last trains end about an hour earlier than weekdays." },
   },
   {
     slug: "itaewon-night",
@@ -162,7 +189,7 @@ export const ROUTES: Route[] = [
     tours: ["seoulPrivate", "nTowerWalk"],
     toursTitle: "Before the club",
     footnote: "Route based on travel guides, not an official course.",
-    card: { title: "Global & English-friendly — Itaewon", line: "World food → rooftop view → clubs.", meta: "Seoul · bookable clubs" },
+    card: { title: "Global & English-friendly — Itaewon", line: "World food → rooftop view → clubs.", meta: "Seoul · Itaewon", plan: [{ t: "Evening", s: "World Food Street dinner" }, { t: "Sunset", s: "Haebangchon rooftop · N Seoul Tower view" }, { t: "Late", s: "Main strip clubs — busiest Fri–Sat" }], know: "The rooftops are uphill — give the climb time." },
   },
   {
     slug: "busan-night",
@@ -190,9 +217,9 @@ export const ROUTES: Route[] = [
     clubsTitle: "Bookable in Seomyeon",
     allClubs: { href: "/en/clubs/busan", label: "See all Busan clubs →" },
     clubsNote: "Days, entry and prices from NightFlow listings; may change.",
-    tours: ["busanHike", "busanByNight"],
+    tours: ["busanCruise", "busanHike", "busanByNight"],
     toursTitle: "Before the club",
-    card: { title: "A show, then the club — Busan", line: "Free drone show → Seomyeon club street.", meta: "Clubs Fri–Sat · drone show Sat" },
+    card: { title: "A show, then the club — Busan", line: "Free drone show → Seomyeon club street.", meta: "Busan · Saturdays", plan: [{ t: "Sat 19:00 / 21:00", s: "Free drone show, Gwangalli (Oct–Feb)" }, { t: "22:00~", s: "Seomyeon — same subway Line 2" }, { t: "01:00~", s: "Late club Azit" }], know: "Weather can cancel the show — check the official site that day." },
   },
   {
     slug: "haeundae-evening",
@@ -211,10 +238,10 @@ export const ROUTES: Route[] = [
       { time: "Evening", title: "Haeundae Beach & market", body: "Beach walk, then street food at Haeundae Market." },
       { time: "Night", title: "The Bay 101 & Marine City view", body: "Skyline across the water — best right after dark." },
     ],
-    tours: ["skyCapsule", "busanNightView"],
+    tours: ["marineYacht", "haeundaeBbq", "skyCapsule", "busanNightView"],
     toursTitle: "See it with a guide",
     bridge: { href: `${PLAN_BASE}/busan-night`, title: "Still want to dance?", body: "Seomyeon club street is on the same Line 2 — clubs you can book (Fri–Sat).", image: IMG.busanNight },
-    card: { title: "Slow beach evening — Haeundae", line: "Seaside train → beach → skyline.", meta: "Busan · tours" },
+    card: { title: "Slow beach evening — Haeundae", line: "Seaside train → beach → skyline.", meta: "Busan · Haeundae", plan: [{ t: "Before 19:30", s: "Beach train · ₩8,000–10,000 a ride (Oct)" }, { t: "Until 22:00", s: "Haeundae Market street food" }, { t: "After dark", s: "Marine City skyline from The Bay 101" }], know: "The beach train is not a night ride — go before sunset." },
   },
 ];
 
