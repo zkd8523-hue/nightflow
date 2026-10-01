@@ -833,7 +833,9 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
 
   // 필터(지역·음악·추천) — 데스크톱 전용. 모바일은 지금처럼 전 지역을 세로로 훑는 흐름을 유지한다
   // (좁은 화면에서 칩 줄이 늘면 첫 화면에서 클럽이 밀려난다).
-  const [activeArea, setActiveArea] = useState<string | null>(null);
+  // 지역 칩 줄은 뺐다(2026-10-01 사용자 결정) — 바로 아래에 지역별 줄(이태원·강남·홍대·부산)이
+  // 다 펼쳐져 있어 같은 선택을 두 번 시키는 셈이었다. 장르·예약가능 필터는 유지.
+  const activeArea = null as string | null;
   const [activeGenre, setActiveGenre] = useState<string | null>(null);
   const [onlyRecommended, setOnlyRecommended] = useState(false);
   const visibleRegions = REGIONS.filter((r) => !activeArea || r.ko === activeArea);
@@ -954,17 +956,6 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
           다만 모바일에서 flex-wrap으로 풀면 칩이 두세 줄로 쌓여 첫 화면을 먹으므로,
           좁은 화면에서는 한 줄 가로 스크롤, lg부터 기존처럼 줄바꿈으로 편다. */}
       <div className="flex flex-col gap-2 px-4 lg:gap-2.5">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible">
-          <button type="button" onClick={() => setActiveArea(null)} className={chipCls(activeArea === null, "lg")}>
-            {t("전체", "All areas", "すべて", "全部", "全部")}
-          </button>
-          {REGIONS.map((r) => (
-            <button key={r.ko} type="button" onClick={() => setActiveArea(r.ko)} className={chipCls(activeArea === r.ko, "lg")}>
-              {r.emoji} {areaLabel(r.ko, lang)}
-            </button>
-          ))}
-        </div>
-
         <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible">
           <button type="button" onClick={() => setActiveGenre(null)} className={chipCls(activeGenre === null)}>
             {t("전체 장르", "All genres", "すべての音楽", "全部曲风", "全部曲風")}
@@ -1186,6 +1177,9 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Plan your Memory(2026-10-01) — 부산 클럽 줄 바로 아래(사용자 지정). 영어판만 있어 en에서만. */}
+      {lang === "en" && <PlanMemoryHomeSection />}
 
       {/* 한국인이 지금 올린 깃발 = 소셜 프루프 (캐러셀) — 클럽 목록 바로 아래, 지역 버튼 바로 위 */}
       {flags.length > 0 && (
@@ -1451,8 +1445,6 @@ function FlagsTab({
       {/* 지역 섹션 (강남/홍대 소개 + 클럽 리스트 + 지역 버튼 + 한국인 소셜프루프 캐러셀) */}
       {clubs.length > 0 && <RegionSection clubs={clubs} flags={flags} />}
 
-      {/* Plan your Memory(2026-10-01) — 밤 코스·투어 진입. 영어판만 있어 en에서만. */}
-      {lang === "en" && <PlanMemoryHomeSection />}
 
       {/* Safety tips */}
       <div className="px-4 pb-6 space-y-3">
