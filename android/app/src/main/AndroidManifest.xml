@@ -27,6 +27,18 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="nightflow" />
             </intent-filter>
+
+            <!-- https App Links — 앱이 깔려 있으면 nightflow.kr 링크(QR·문자)가 앱으로 열린다.
+                 검증 파일: public/.well-known/assetlinks.json (Play 앱 서명 키 SHA-256).
+                 경로는 apple-app-site-association과 맞춘다. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="nightflow.kr" android:path="/app" />
+                <data android:scheme="https" android:host="nightflow.kr" android:pathPrefix="/booking/" />
+                <data android:scheme="https" android:host="nightflow.kr" android:path="/my-bookings" />
+            </intent-filter>
         </activity>
 
         <!-- 카카오 SDK AppKey -->

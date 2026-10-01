@@ -42,6 +42,9 @@ const displayKr = Do_Hyeon({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://nightflow.kr"),
+  // iOS 사파리 스마트 앱 배너 — 앱이 있으면 "열기", 없으면 "받기"(애플 기본 UI, 2026-10-02).
+  // 사파리에서만 뜨고 인앱 브라우저·안드로이드·앱 웹뷰에선 안 뜬다.
+  itunes: { appId: "6769749996" },
   title: {
     default: "나플 | 나이트플로우",
     template: "%s | 나플",

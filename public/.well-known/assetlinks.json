@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "kr.nightflow.app",
+      "sha256_cert_fingerprints": [
+        "A8:81:A5:D7:B4:90:FD:F1:92:9D:EA:99:B6:C1:43:8F:84:1A:F3:87:9C:14:C4:31:DB:8C:56:44:FC:76:2B:31"
+      ]
+    }
+  }
+]

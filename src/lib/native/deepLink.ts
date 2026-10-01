@@ -39,6 +39,25 @@ export function initBackButtonHandler() {
   });
 }
 
+/**
+ * https://nightflow.kr/... 링크(Universal Links / App Links)로 앱이 열렸을 때 웹뷰를 그 경로로 보낸다.
+ * 앱 안에서 /app(다운로드 스마트 링크)은 다시 스토어로 튕기므로 홈으로 바꾼다.
+ * 처리했으면 true.
+ */
+function openWebLink(url: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== "https:" || (u.hostname !== "nightflow.kr" && u.hostname !== "www.nightflow.kr")) return false;
+  const target = u.pathname === "/app" ? "/" : `${u.pathname}${u.search}${u.hash}`;
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (target !== current) window.location.href = target;
+  return true;
+}
+
 export function initDeepLinkHandler() {
   if (typeof window === "undefined") return;
 
@@ -46,7 +65,20 @@ export function initDeepLinkHandler() {
     if (!Capacitor.isNativePlatform()) return;
 
     import("@capacitor/app").then(({ App }) => {
+      // 콜드 스타트로 링크가 앱을 띄운 경우 — 웹뷰가 홈(server.url)을 먼저 로드한 뒤에야
+      // 이 리스너가 붙어서 appUrlOpen을 놓칠 수 있다. 실행 URL을 한 번 확인한다.
+      App.getLaunchUrl()
+        .then((launch) => {
+          if (!launch?.url) return;
+          const key = `naflLaunchUrlHandled:${launch.url}`;
+          if (sessionStorage.getItem(key)) return;
+          sessionStorage.setItem(key, "1");
+          openWebLink(launch.url);
+        })
+        .catch(() => {});
+
       App.addListener("appUrlOpen", async ({ url }) => {
+        if (openWebLink(url)) return;
         if (!url.startsWith("nightflow://auth/callback")) return;
 
         const supabase = createClient();
