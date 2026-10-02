@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/client";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ForeignAppCta } from "@/components/layout/ForeignAppCta";
+import { ContactCard } from "@/components/foreign/ContactButtons";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
 import { recordRecentClub, useRecentClubs, removeRecentClub } from "@/lib/clubs/recentClubs";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -1485,6 +1486,9 @@ function FlagsTab({
           답하는 페이지로 보내는 진입점. SEO 내부링크(거미줄) 역할도 겸한다.
           6장 모두 en/ja/zh/zh-tw 네 언어에 실재하는 페이지로만 연결. */}
       <GuideIndex />
+
+      {/* 문의하기(2026-10-02, 운영자 요청) — 예약 폼 2단계와 같은 WhatsApp·Instagram·Email 아이콘 버튼. */}
+      <ContactCard lang={lang} />
 
       {/* 앱 다운로드 CTA (플랫폼 자동 감지: iPhone→App Store / Android→Play) */}
       <ForeignAppCta lang={lang} />

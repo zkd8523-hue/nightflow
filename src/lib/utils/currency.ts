@@ -243,6 +243,18 @@ export async function getKrwRates(): Promise<RateSnapshot> {
 }
 
 /** 언어별 날짜 표기 — "Aug 11, 2026" / "2026年8月11日" / "2026年8月11日" */
+/** 환율 기준 "날짜 + 시각(KST)" — 가격 옆 고지용(2026-10-02). 날짜만으로는 "언제 숫자냐"가 모호했다. */
+export function formatAsOfDateTimeLocale(iso: string | undefined, lang: string): string {
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return FALLBACK_SNAPSHOT.asOf;
+  const locale =
+    lang === "ja" ? "ja-JP" : lang === "zh" ? "zh-CN" : lang === "zh-tw" ? "zh-TW" : lang === "ko" ? "ko-KR" : "en-US";
+  const s = d.toLocaleString(locale, {
+    year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Seoul",
+  });
+  return `${s} KST`;
+}
+
 export function formatAsOfLocale(iso: string | undefined, lang: string): string {
   if (!iso) return FALLBACK_SNAPSHOT.asOf;
   const d = new Date(iso);

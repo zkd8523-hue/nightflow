@@ -212,6 +212,24 @@ export const trackForeignEvent = (
     | 'foreign_request_submitted'
     // 메뉴 담기 대신 'MD 추천 받기' 우회를 고름(2026-09-15). params: budget, min_budget
     | 'foreign_form_md_recommend'
+    // 외국인 폼 클럽·예산 단계 계측(2026-10-02) — 모바일 65명 중 19명만 클럽을 골랐는데
+    // 추천 목록에서 뭘 보다 나갔는지 기록이 없었다.
+    // shortlist_view: Step 2 노출. params: count, area, top_club_id
+    | 'foreign_shortlist_view'
+    // shortlist_select: 카드 탭으로 선택 이동. params: club_id, rank
+    | 'foreign_shortlist_select'
+    // club_detail_open/close: 상세 시트. params: club_id, source(shortlist·browse·saved·step6), close에는 ms·chose
+    | 'foreign_club_detail_open'
+    | 'foreign_club_detail_close'
+    // club_pick_for_me: "클럽이 알아서 골라주세요". params: area
+    | 'foreign_club_pick_for_me'
+    // budget_sheet_open / pick_drinks_myself: 예산 시트(기본) → 메뉴판(보조). params: club_id, club_pick
+    | 'foreign_budget_sheet_open'
+    | 'foreign_pick_drinks_myself'
+    // chat_click: WhatsApp·인스타·이메일 바로 문의. params: channel(whatsapp·instagram·email), source(form·home), step
+    | 'foreign_chat_click'
+    // next_open_night_click: 그날 여는 곳이 없을 때 '가까운 여는 날' 버튼. params: from, to, count, area
+    | 'foreign_next_open_night_click'
     // 한국인 예약 폼 제출(KoreanBookingForm). ai_referral_sources.booking_count가 이걸 센다.
     | 'booking_request_submitted'
     // 한국인 폼에서 술 담기 대신 '클럽 추천 세트'(예산만)를 고름(2026-09-26). params: club_id, budget

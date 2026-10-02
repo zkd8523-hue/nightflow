@@ -1918,7 +1918,11 @@ export interface SelectedMenuSnapshot {
   table_charge?: { amount: number; basis: "weekday" | "weekend" };
   zone?: string;
   /** 손님이 직접 담지 않고 "MD 추천" 우회를 고른 경우(2026-09-15). items는 비고 budget이 total. */
-  md_recommend?: { budget: number };
+  md_recommend?: {
+    budget: number;
+    /** 클럽까지 맡김("클럽이 알아서 골라주세요", 2026-10-02). club_ids가 비어 들어오고 운영자가 클럽을 지정한다. */
+    club_pick?: boolean;
+  };
 }
 
 /** 한국 유저 클럽 예약 요청 (korean_booking_requests, Migration 652). foreign_requests와 같은 컨시어지 모델. */

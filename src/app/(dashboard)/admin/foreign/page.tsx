@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ForeignRequestsClient, type ForeignReq } from "@/components/admin/ForeignRequestsClient";
+import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +86,29 @@ export default async function AdminForeignPage() {
     .order("display_name");
   const allMds = (approvedMds ?? []).map((m) => ({ id: m.id, name: m.display_name ?? "(이름없음)", phone: m.phone }));
 
+  // "클럽이 알아서 골라주세요" 요청(club_ids 빈 배열)에 지정할 후보 — 손님 폼과 같은 예약 가능 기준
+  // (isBookable: 주대 + MD 또는 중개 승인). 클럽 미지정 요청이 있을 때만 조회한다(2026-10-02).
+  let clubOptions: { id: string; name: string; area: string | null; open_dows: number[] | null }[] = [];
+  if (requests.some((r) => ((r.club_ids as string[] | null) ?? []).length === 0)) {
+    const menuIds = await fetchMenuClubIds(supabase);
+    const { data: cl } = await supabase
+      .from("clubs")
+      .select("id, name, area, open_dows, foreign_booking_agreed, partners:club_partners(md_id)")
+      .is("deleted_at", null)
+      .eq("is_test", false)
+      .order("google_review_count", { ascending: false, nullsFirst: false });
+    clubOptions = (cl ?? [])
+      .filter((c) =>
+        isBookable({
+          name: c.name,
+          has_md: ((c.partners as { md_id: string }[] | null)?.length ?? 0) > 0,
+          agreed: !!c.foreign_booking_agreed,
+          has_menu: menuIds.has(c.id),
+        })
+      )
+      .map((c) => ({ id: c.id, name: c.name, area: c.area, open_dows: (c.open_dows as number[] | null) ?? null }));
+  }
+
   const enriched: ForeignReq[] = requests.map((r) => ({
     ...r,
     club_ids: (r.club_ids as string[]) ?? [],
@@ -106,7 +130,7 @@ export default async function AdminForeignPage() {
             컨시어지 — 클럽 MD에 직접 연락(카톡/전화)해서 자리·가격 확정 후, 아래 연락처로 회신하세요.
           </p>
         </div>
-        <ForeignRequestsClient initial={enriched} allMds={allMds} />
+        <ForeignRequestsClient initial={enriched} allMds={allMds} clubOptions={clubOptions} />
       </div>
     </div>
   );

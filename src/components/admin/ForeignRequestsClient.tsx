@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Copy, Calendar, Users, UserRound, Coins, MapPin, Trash2, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { isClubOpenOn } from "@/lib/utils/clubOpenDays";
 import type { SelectedMenuSnapshot } from "@/types/database";
 import { ProposalCard, MdResponseCard, ConfirmationCard, ConfirmForm, type ProposalReq, type ProposalConf } from "@/components/admin/ProposalSection";
 
@@ -85,19 +86,94 @@ function contactLink(type: string, value: string): string | null {
   return null; // wechat 등: 딥링크 없음 → 복사만
 }
 
+type ClubOption = { id: string; name: string; area: string | null; open_dows: number[] | null };
+
+/** "클럽이 알아서 골라주세요" 요청에 클럽을 지정 — 저장되면 club_ids[0]이 채워져
+ *  제안서(받는 MD 후보)·확정서·MD 알림이 기존 흐름 그대로 이어진다(2026-10-02). */
+function ClubAssignBox({
+  req,
+  options,
+  onAssigned,
+}: {
+  req: ForeignReq;
+  options: ClubOption[];
+  onAssigned: (clubId: string, clubName: string, mdCandidates: ForeignReq["mdCandidates"]) => void;
+}) {
+  // 손님이 고른 지역 클럽을 위로, 그 안에서 그날 여는 곳을 먼저. 쉬는 곳은 "그날 휴무"를 붙여
+  // 실수로 고르지 않게 한다(영업일 데이터가 비어 있으면 매일 여는 것으로 본다 — clubOpenDays 규칙).
+  const sorted = useMemo(() => {
+    const open = (o: ClubOption) => isClubOpenOn(o.open_dows, req.event_date);
+    const byOpen = (a: ClubOption, b: ClubOption) => Number(open(b)) - Number(open(a));
+    const same = options.filter((o) => req.area && o.area === req.area).sort(byOpen);
+    const rest = options.filter((o) => !(req.area && o.area === req.area)).sort(byOpen);
+    return { same, rest, open };
+  }, [options, req.area, req.event_date]);
+  const [clubId, setClubId] = useState(sorted.same.find(sorted.open)?.id ?? "");
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (!clubId) return;
+    setSaving(true);
+    const res = await fetch("/api/admin/foreign-club", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request_id: req.id, club_id: clubId }),
+    });
+    const j = await res.json().catch(() => ({}));
+    setSaving(false);
+    if (!res.ok) return toast.error(j.error ?? "클럽 지정 실패");
+    toast.success(`클럽 지정 — ${j.club_name}`);
+    onAssigned(clubId, j.club_name, j.md_candidates ?? []);
+  };
+  return (
+    <div className="rounded-lg border border-amber-500/40 bg-amber-500/[0.06] px-3 py-2.5 space-y-2">
+      <p className="text-[12px] font-bold text-brand-amber">
+        🎯 클럽 지정 필요 — 손님이 클럽을 맡겼어요{req.area ? ` (${req.area})` : " (지역 무관)"}
+      </p>
+      <p className="text-[11px] text-muted-foreground">지정하면 아래에 제안서·받는 MD·확정서가 열립니다. 지정 후에는 바꿀 수 없어요.</p>
+      <div className="flex gap-2">
+        <select
+          value={clubId}
+          onChange={(e) => setClubId(e.target.value)}
+          className="flex-1 min-w-0 h-10 px-2 rounded-lg bg-background border border-border text-foreground text-[13px] outline-none focus:border-amber-500"
+        >
+          <option value="">클럽 선택…</option>
+          {sorted.same.length > 0 && (
+            <optgroup label={`${req.area} (손님 희망 지역)`}>
+              {sorted.same.map((o) => <option key={o.id} value={o.id}>{o.name}{sorted.open(o) ? "" : " · 그날 휴무"}</option>)}
+            </optgroup>
+          )}
+          <optgroup label={sorted.same.length > 0 ? "다른 지역" : "예약 가능 클럽"}>
+            {sorted.rest.map((o) => <option key={o.id} value={o.id}>{o.name}{o.area ? ` · ${o.area}` : ""}{sorted.open(o) ? "" : " · 그날 휴무"}</option>)}
+          </optgroup>
+        </select>
+        <button
+          type="button"
+          onClick={save}
+          disabled={!clubId || saving}
+          className="shrink-0 h-10 px-4 rounded-lg bg-white text-black text-[13px] font-black disabled:opacity-40"
+        >
+          {saving ? "저장 중…" : "지정"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ForeignRequestsClient({
   initial,
   allMds = [],
+  clubOptions = [],
 }: {
   initial: ForeignReq[];
   allMds?: { id: string; name: string; phone: string | null }[];
+  clubOptions?: ClubOption[];
 }) {
   const [reqs, setReqs] = useState<ForeignReq[]>(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   // 목록이 200건까지 그냥 나열돼서, 지금 손 봐야 할 건(MD 답을 기다리는 것,
   // 거절당해 다시 잡아야 하는 것)을 눈으로 찾아야 했다. 처리 단계로 좁힌다.
-  const [tab, setTab] = useState<"all" | "waiting" | "approved" | "rejected" | "done">("all");
+  const [tab, setTab] = useState<"all" | "needs_club" | "waiting" | "approved" | "rejected" | "done">("all");
 
   const updateStatus = async (id: string, status: string) => {
     setBusy(id);
@@ -182,12 +258,15 @@ export function ForeignRequestsClient({
   // 취소된 건은 "완료"로 묶는다 — 더 볼 일이 없다는 점에서 같다.
   const bucketOf = (r: ForeignReq) =>
     r.status === "cancelled" || r.conf ? "done"
+    // 손님이 클럽을 맡긴 요청 — 클럽을 정해야 제안서를 보낼 수 있어 따로 모은다(2026-10-02).
+    : r.club_ids.length === 0 ? "needs_club"
     : r.md_response === "approved" ? "approved"
     : r.md_response === "rejected" ? "rejected"
     : "waiting";
 
   const counts = {
     all: reqs.length,
+    needs_club: reqs.filter((r) => bucketOf(r) === "needs_club").length,
     waiting: reqs.filter((r) => bucketOf(r) === "waiting").length,
     approved: reqs.filter((r) => bucketOf(r) === "approved").length,
     rejected: reqs.filter((r) => bucketOf(r) === "rejected").length,
@@ -197,6 +276,7 @@ export function ForeignRequestsClient({
 
   const TABS: { key: typeof tab; label: string }[] = [
     { key: "all", label: "전체" },
+    { key: "needs_club", label: "클럽 지정 필요" },
     { key: "waiting", label: "MD 답변 대기" },
     { key: "approved", label: "MD 승인" },
     { key: "rejected", label: "MD 거절" },
@@ -247,7 +327,13 @@ export function ForeignRequestsClient({
                 ))}
               </div>
             ) : (
-              <p className="text-[13px] text-muted-foreground">클럽 미지정 — 지역 기반 추천 필요</p>
+              <ClubAssignBox
+                req={r}
+                options={clubOptions}
+                onAssigned={(cid, name, mds) => {
+                  setReqs((prev) => prev.map((x) => (x.id === r.id ? { ...x, club_ids: [cid], clubNames: [name], mdCandidates: mds } : x)));
+                }}
+              />
             )}
 
             {/* 정보 */}
@@ -267,7 +353,9 @@ export function ForeignRequestsClient({
             {!r.conf && r.selected_menu?.md_recommend && (
               <div className="rounded-lg border border-violet-500/30 bg-violet-500/[0.05] px-3 py-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[11px] font-bold text-violet-400">🎯 MD 추천 요청 (손님이 직접 안 담음)</span>
+                  <span className="text-[11px] font-bold text-violet-400">
+                    {r.selected_menu.md_recommend.club_pick ? "🎯 클럽·세트 모두 추천 요청" : "🎯 MD 추천 요청 (손님이 직접 안 담음)"}
+                  </span>
                   <span className="text-[13px] font-black text-money tabular-nums">예산 {r.selected_menu.md_recommend.budget.toLocaleString()}원</span>
                 </div>
                 <p className="text-[12px] text-foreground/80 mt-1">이 예산 안에서 세트를 제안해 주세요. 확정서에 가격을 적어 보내면 손님이 봅니다.</p>
@@ -323,10 +411,16 @@ export function ForeignRequestsClient({
             )}
 
             {/* 제안서·MD응답·확정서 — 외국인/한국 요청 공용(ProposalSection.tsx, 2026-09-06). */}
-            <ProposalCard req={toProposalReq(r)} allMds={allMds} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
-            <MdResponseCard req={toProposalReq(r)} allMds={allMds} />
+            {/* 클럽이 비어 있으면 받는 MD 후보·제안서 클럽명이 없다 — 위에서 클럽을 먼저 지정한다. */}
+            {r.club_ids.length > 0 && (
+              <>
+                <ProposalCard req={toProposalReq(r)} allMds={allMds} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
+                <MdResponseCard req={toProposalReq(r)} allMds={allMds} />
+              </>
+            )}
             {r.conf && <ConfirmationCard key={r.conf.ref_no} conf={r.conf} requestType="foreign" hasMd={!!r.assigned_md_id} guestContactType={r.contact_type} />}
 
+            {(r.club_ids.length > 0 || r.conf) && (
             <button
               onClick={() => setEditing(editing === r.id ? null : r.id)}
               className="w-full h-9 rounded-lg bg-card border border-border text-[13px] font-bold text-foreground/80 hover:border-amber-500/50 flex items-center justify-center gap-1.5"
@@ -334,6 +428,7 @@ export function ForeignRequestsClient({
               <FileText className="w-3.5 h-3.5" />
               {r.conf ? "확정서 수정" : "담당 MD 지정 · 확정서 작성"}
             </button>
+            )}
 
             {editing === r.id && (
               <ConfirmForm
