@@ -40,10 +40,22 @@ export function VipPriceCards({ lang, className = "" }: { lang: Lang; className?
                 {(() => { const m = local ?? wonShort(a.won); return t(`${m}~`, `from ${m}`, `${m}〜`, `${m} 起`, `${m} 起`); })()}
               </p>
               <p className="text-[11px] text-muted-foreground leading-tight">{anchorLabel[a.key].sub}</p>
+              {/* 1인당(4명 기준) — 테이블 총액이 혼자 내는 돈처럼 읽혀 가격 충격이 컸다(2026-10-04). 실시간 환율. */}
+              {(() => {
+                const m = localOf(a.won / 4) ?? `₩${(a.won / 4).toLocaleString("en-US")}`;
+                return (
+                  <p className="text-[11px] font-bold text-money leading-tight tabular-nums">
+                    {t(`4명이면 1인 ${m}`, `≈ ${m} each for 4`, `4人なら1人約${m}`, `4人每人约 ${m}`, `4人每人約 ${m}`)}
+                  </p>
+                );
+              })()}
             </div>
           );
         })}
       </div>
+      <p className="text-[11px] text-muted-foreground px-1">
+        {t("테이블당 가격이에요(1인당 아님).", "Per table, not per person.", "1卓あたりの料金です（1人あたりではありません）。", "按桌计价，不是按人。", "按桌計價，不是按人。")}
+      </p>
     </div>
   );
 }

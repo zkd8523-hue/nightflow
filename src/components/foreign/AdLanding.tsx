@@ -8,22 +8,27 @@
 // 여기서 폼을 받지 않는다: 랜딩에서 3필드 받아 예약폼으로 넘기면 같은 걸 두 번 묻게 된다.
 // 버튼 하나로 기존 예약 플로우(/flags/new)로 넘기고, 저장·전환태그는 거기서 이미 돈다.
 //
-// 공포를 먼저 판다: 시장별 1순위 검색이 가격이 아니라 "들어갈 수 있나"다
-// (ja 顔審査 / zh-tw 被卡·卡顏 / zh 通过率 / en "can foreigners get in").
-// 그 공포를 짧게 때리고 해결을 붙인 뒤 버튼을 준다. 문장 대신 조각으로 — 텍스트 많으면 떠난다.
+// 첫 약속은 "이름으로 예약된 테이블": 시장별 1순위 검색이 가격이 아니라 "들어갈 수 있나"다
+// (ja 顔審査 / zh-tw 被卡·卡顏 / zh 通过率 / en "can foreigners get in"). 입장 보장은 못 하니
+// "이름으로 예약 → 입구에서 이름"이라는 방식을 약속하고, 막힐 수 있는 조건은 FAQ에 정직하게 둔다.
 //
 // 절대 쓰지 않는 것:
 //   - "입장 보장" — 여권 원본·강남 복장은 면제되지 않고, 만석이면 입장이 멈춘다.
 //   - 담당자 입구 마중 — 22곳 중 1곳은 담당 MD가 없고, 이 페이지는 클럽이 미정이다.
 //   - "MD" 용어 — 한국 업계 내부어. en=our local team, ja=担当者, zh-tw=公關.
 //   - "real menu/real price" — "진짜"라고 하면 가짜가 있다는 뜻이 된다.
-//   - 후기 인용 — 승인된 고객 후기가 0건이다. 구글 실평점만 쓴다.
+//   - 후기 인용·남의 업장 평점 — 승인된 고객 후기가 0건이다(Banyan Tree 평점 줄도 2026-10-04 뺐다).
+//   - 금액 보장(200% 환불 등) — 부가세·추가 주문·정원 초과까지 분쟁이 생긴다(2026-10-04 삭제).
 
 import Link from "next/link";
 import { VipPriceCards } from "@/components/foreign/VipPriceCards";
 import type { Metadata } from "next";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
+import { ContactButtons } from "@/components/foreign/ContactButtons";
+import { MessageCircle } from "lucide-react";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 
 const BASE = "https://nightflow.kr";
@@ -31,7 +36,14 @@ const SLUG = "book";
 
 const OG_LOCALE: Record<SeoLang, string> = { en: "en_US", ja: "ja_JP", zh: "zh_CN", "zh-tw": "zh_TW" };
 
-type Fear = { hit: string; fix: string };
+// 2026-10-04 개편 — 광고 방문 11명 중 6명이 75%까지 읽고 1명만 버튼을 눌렀다. 전문가 검토 3건(UX·전략·MD)의
+// 공통 지적을 반영했다:
+//  · H1 "VIP NIGHT IN KOREA CLUB?" — 영어 비문 + "VIP night"가 접대업소 광고처럼 읽힘 → "이름으로 예약된 테이블"
+//  · 빨간 공포 목록의 "Refused at door? No worries." — FAQ의 "보장 아님"과 모순 → 진행 3단계(폼과 1:1)
+//  · "200% 환불" — 부가세·추가 주문·정원 초과까지 분쟁이 생겨 MD가 외국인을 피하게 됨 → 삭제(운영자 결정).
+//    대신 지킬 수 있는 사실(확정가를 미리 서면으로)만 쓴다.
+//  · "22 best clubs" 근거 없는 최상급 → 실제 예약 가능한 클럽 이름(서버에서 읽음)
+//  · 남의 업장 평점(Banyan Tree) 삭제, 입장료 숫자 통일, 채널 약속을 실제 버튼(WhatsApp·IG·Email)과 맞춤
 
 type Copy = {
   title: string;
@@ -40,10 +52,12 @@ type Copy = {
   ogSub: string;
   keywords: string[];
   h1: string;
-  fears: Fear[];
-  terms: string;
-  clubs: string;
+  sub: string;
+  stepsH2: string;
+  steps: string[];
+  clubsLead: (n: number) => string;
   cta: string;
+  barNote: string;
   buysH2: string;
   buys: { h: string; p: string }[];
   askH2: string;
@@ -51,7 +65,6 @@ type Copy = {
   priceH2: string;
   priceRows: { label: string; value: string }[];
   priceNote: string;
-  rating: string;
   navHome: string;
   navFaq: string;
   navTerms: string;
@@ -60,63 +73,71 @@ type Copy = {
 
 const COPY: Record<SeoLang, Copy> = {
   en: {
-    title: "Book a VIP Table in Seoul Clubs — Real Prices, No Deposit | NightFlow",
+    title: "Book a Club Table in Seoul — Prices Up Front, No Deposit | NightFlow",
     description:
-      "Skip the line at Seoul's clubs. A table booked under your name at 22 of Korea's best clubs — prices from the club's own drink list, no deposit, no booking fee. Gangnam, Hongdae, Itaewon.",
-    ogTitle: "VIP night in Korea club?",
-    ogSub: "Skip the line · 22 best clubs · no deposit",
+      "Skip the line at Seoul's clubs. A table booked under your name — prices from the club's own drink list, no deposit, no booking fee. Gangnam, Hongdae, Itaewon.",
+    ogTitle: "Seoul club tables, booked under your name",
+    ogSub: "Skip the line · prices up front · no deposit",
     keywords: [
       "Seoul club table booking", "Gangnam club VIP table", "Seoul VIP table", "Hongdae club table",
       "Itaewon club booking", "Korea club reservation", "Seoul nightclub table price", "book Seoul club",
     ],
-    h1: "VIP NIGHT IN KOREA CLUB?",
-    fears: [
-      { hit: "60 MIN waiting?", fix: "Skip the line." },
-      { hit: "Refused at door?", fix: "No worries." },
-      { hit: "Fully booked on the night?", fix: "Book ahead." },
-      { hit: "No Korean?", fix: "No need." },
+    h1: "Seoul club tables for foreigners — booked under your name.",
+    sub: "Gangnam · Hongdae · Itaewon. We book it in Korean — you pay the club on the night.",
+    stepsH2: "How it works",
+    steps: [
+      "Tell us your date, group size and area.",
+      "We book the table in Korean and message you to confirm the price.",
+      "Give your name at the door — no queue. Bring your original passport and pay the club.",
     ],
-    terms: "No deposit, no booking fee · pay the venue.",
-    clubs: "Only the 22 best clubs in Korea.",
-    cta: "Book your Table",
+    clubsLead: (n) => `${n} clubs we book, including`,
+    cta: "Book your table",
+    barNote: "No card · no deposit · 3 short steps",
     buysH2: "What the money buys",
     buys: [
       {
         h: "Prices come from the club's own drink list",
-        p: "You see each bottle and set with its price, and the minimum for that room, before you book. The total is what the club confirms.",
+        p: "You see each bottle and set with its price before you book. The total is what the club confirms.",
       },
       {
-        h: "Overcharged? We refund 200%.",
-        p: "If a club bills you above the list you were shown, we pay you double the difference. Send the receipt and we settle it.",
+        h: "Your price is confirmed before the night",
+        p: "We send your total in writing before you go. You pay the club when you're seated — nothing before.",
       },
       {
         h: "Booked without a word of Korean",
-        p: "Our local team handles the club in Korean and answers you in English on WhatsApp, KakaoTalk or Line.",
+        p: "Our local team handles the club in Korean and answers you in English on WhatsApp, Instagram or email.",
       },
     ],
     askH2: "Before you ask",
     asks: [
       {
         q: "Will we get in?",
-        a: "Your table is booked under your name — you give the name at the door instead of queueing. It isn't a guarantee: the original passport is required (a copy is refused), Gangnam dress code is never waived, and rooms stop admitting once full, often after 23:00 on Fri/Sat.",
+        a: "Your name is on the club's table list, so you skip the queue. Three things can still stop you at the door: no original passport (copies are refused), the Gangnam dress code, and arriving after the room fills — often after 23:00 on Fri/Sat.",
+      },
+      {
+        q: "Men-only group, or going solo?",
+        a: "Yes — booking a table is the usual way for men-only groups to get in. ID and dress code still apply.",
+      },
+      {
+        q: "What should we wear?",
+        a: "Men: no shorts, sleeveless tops, sandals or sportswear. Gangnam: dark smart-casual.",
       },
       {
         q: "How do we pay?",
-        a: "Cash or card at the venue. Visa and Mastercard work; Alipay and WeChat Pay do not. Bring ₩20–30,000 cash for the entry fee.",
+        a: "You pay the club when you're seated, cash or card. Visa and Mastercard usually work — bring some cash as backup. Alipay and WeChat Pay don't work.",
       },
       {
         q: "What if we change the date?",
-        a: "Tell us before the night and we move it. Nothing was charged to reserve it.",
+        a: "Message us as early as you can — we'll move it if the new night has a table. Nothing was charged to reserve it.",
       },
     ],
-    priceH2: "Table minimum",
+    priceH2: "Table price",
     priceRows: [
-      { label: "Hongdae / Itaewon", value: "₩500,000" },
-      { label: "Gangnam", value: "₩1,000,000" },
+      { label: "Hongdae / Itaewon", value: "from ₩500,000" },
+      { label: "Gangnam", value: "from ₩1,000,000" },
     ],
     priceNote:
-      "Per table, not per person — 4 people ≈ US$95–190 each. Entry fee ₩10–30,000, higher on Gangnam weekends.",
-    rating: "Banyan Tree Pool Party 4.7 · 3,376 Google reviews",
+      "Per table, not per person — 4 people ≈ ₩125,000–250,000 each. Entry is often included for table guests; carry ₩30,000 cash just in case.",
     navHome: "Home",
     navFaq: "FAQ",
     navTerms: "Terms",
@@ -124,63 +145,71 @@ const COPY: Record<SeoLang, Copy> = {
   },
 
   ja: {
-    title: "ソウルのクラブVIPテーブル予約 — 実際の価格・デポジット不要 | NightFlow",
+    title: "ソウルのクラブ テーブル予約 — 料金は事前確認・デポジット不要 | NightFlow",
     description:
-      "行列に並ばない。韓国の人気クラブ22軒であなたの名前でテーブルを確保。価格はクラブの酒単そのまま、デポジットも予約手数料もなし。江南・弘大・梨泰院。",
-    ogTitle: "韓国のクラブでVIPナイト？",
-    ogSub: "行列なし · 人気22軒 · デポジット不要",
+      "行列に並ばない。ソウルのクラブであなたの名前でテーブルを確保。価格はクラブの酒単そのまま、デポジットも予約手数料もなし。江南・弘大・梨泰院。",
+    ogTitle: "ソウルのナイトクラブ、テーブルはお名前で予約",
+    ogSub: "行列なし · 料金は事前確認 · デポジット不要",
     keywords: [
       "ソウル クラブ 予約", "江南 クラブ VIP", "ソウル VIPテーブル", "弘大 クラブ テーブル",
       "梨泰院 クラブ 予約", "韓国 クラブ 予約", "ソウル クラブ 料金", "韓国 クラブ 顔審査",
     ],
-    h1: "韓国のクラブでVIPナイト？",
-    fears: [
-      { hit: "60分待ち？", fix: "並びません。" },
-      { hit: "顔審査が不安？", fix: "大丈夫です。" },
-      { hit: "当日は満席？", fix: "先に押さえる。" },
-      { hit: "韓国語が不安？", fix: "不要です。" },
+    h1: "ソウルのナイトクラブ、テーブルはお名前で予約",
+    sub: "江南・弘大・梨泰院。予約は私たちが韓国語で — お支払いは当日クラブで。",
+    stepsH2: "ご利用の流れ",
+    steps: [
+      "日付・人数・エリアを教えてください。",
+      "韓国語でテーブルを予約し、料金を確認してご連絡します。",
+      "入口でお名前を伝えるだけ — 並びません。パスポート原本を持参し、お支払いはクラブで。",
     ],
-    terms: "デポジットなし・予約手数料なし — お支払いは当日、店舗で。",
-    clubs: "韓国で最高のクラブ22軒だけ。",
+    clubsLead: (n) => `予約できるクラブ${n}軒（一部）`,
     cta: "テーブルを予約する",
+    barNote: "カード不要・デポジットなし・3ステップ",
     buysH2: "この金額に含まれるもの",
     buys: [
       {
         h: "価格はクラブの酒単のまま",
-        p: "ボトルとセットの価格、その席の最低金額を予約前に確認できます。合計金額はクラブが確定します。",
+        p: "ボトルとセットの価格を予約前に確認できます。合計金額はクラブが確定します。",
       },
       {
-        h: "請求が違っていたら200%返金します。",
-        p: "提示した酒単より高く請求された場合、差額の2倍をお返しします。レシートを送っていただければ精算します。",
+        h: "料金は当日前に確定します",
+        p: "合計金額を事前に書面でお送りします。お支払いは着席してからクラブへ — 事前のお支払いはありません。",
       },
       {
         h: "韓国語なしで予約できます",
-        p: "クラブとのやり取りは担当者が韓国語で行い、お客様にはLINE・WhatsApp・カカオトークで日本語でご連絡します。",
+        p: "クラブとのやり取りは担当者が韓国語で行い、お客様にはWhatsApp・Instagram・メールで日本語でご連絡します。",
       },
     ],
     askH2: "よくある質問",
     asks: [
       {
         q: "入れますか？",
-        a: "テーブルはお名前で予約されているので、入口でお名前を伝えるだけ。行列には並びません。ただし保証ではありません — パスポートは原本が必須（コピーは断られます）、江南の服装規定は免除されず、満席になると入場が止まります（金・土は23時以降が多い）。",
+        a: "テーブルはお名前で予約されているので、行列に並ばずに入れます。ただし入口で止められることがあるのは3つ — パスポート原本がない（コピーは不可）、江南の服装規定、満席後の到着（金・土は23時以降が多い）。",
+      },
+      {
+        q: "男性だけ・一人でも大丈夫？",
+        a: "はい。男性だけのグループはテーブル予約で入るのが一般的です。身分証と服装規定は同じく必要です。",
+      },
+      {
+        q: "服装は？",
+        a: "男性はハーフパンツ・ノースリーブ・サンダル・スポーツウェア不可。江南は黒系のきれいめカジュアルがおすすめです。",
       },
       {
         q: "支払い方法は？",
-        a: "当日、店舗で現金またはカード。Visa・Mastercardは使えます。入場料用に現金2〜3万ウォンをお持ちください。",
+        a: "着席したらクラブにお支払い。現金またはカード。Visa・Mastercardはたいてい使えますが、念のため現金もお持ちください。Alipay・WeChat Payは使えません。",
       },
       {
         q: "日付を変更したい場合は？",
-        a: "当日より前にご連絡いただければ変更します。予約時に請求は発生していません。",
+        a: "できるだけ早くご連絡ください。変更先の日に空きがあれば移します。予約時に請求は発生していません。",
       },
     ],
-    priceH2: "テーブル最低金額",
+    priceH2: "テーブル料金",
     priceRows: [
-      { label: "弘大 / 梨泰院", value: "₩500,000" },
-      { label: "江南", value: "₩1,000,000" },
+      { label: "弘大 / 梨泰院", value: "₩500,000〜" },
+      { label: "江南", value: "₩1,000,000〜" },
     ],
     priceNote:
-      "1卓あたり（1人あたりではありません） — 4人なら1人約12〜25万ウォン。入場料は1万〜3万ウォン、江南の週末は高くなります。",
-    rating: "Banyan Tree Pool Party 4.7 · Googleクチコミ3,376件",
+      "1卓あたり（1人あたりではありません） — 4人なら1人約12.5〜25万ウォン。テーブル客は入場料込みのことが多いですが、念のため現金3万ウォンをお持ちください。",
     navHome: "ホーム",
     navFaq: "よくある質問",
     navTerms: "利用規約",
@@ -188,63 +217,71 @@ const COPY: Record<SeoLang, Copy> = {
   },
 
   zh: {
-    title: "首尔夜店卡座预订 — 真实价格、免订金 | NightFlow",
+    title: "首尔夜店卡座预订 — 价格提前确认、免订金 | NightFlow",
     description:
-      "不用排队。在韩国22家最好的夜店用你的名字订卡座，价格直接来自夜店酒单，免订金、免预订手续费。江南、弘大、梨泰院。",
-    ogTitle: "想在韩国夜店过VIP之夜？",
-    ogSub: "免排队 · 22家精选 · 免订金",
+      "不用排队。用你的名字预订首尔夜店卡座，价格直接来自夜店酒单，免订金、免预订手续费。江南、弘大、梨泰院。",
+    ogTitle: "首尔夜店卡座，用你的名字先订好",
+    ogSub: "免排队 · 价格先确认 · 免订金",
     keywords: [
       "首尔夜店预订", "江南夜店卡座", "首尔卡座", "弘大夜店",
       "梨泰院夜店", "韩国夜店预订", "首尔夜店价格", "韩国夜店外国人能进吗",
     ],
-    h1: "想在韩国夜店过VIP之夜？",
-    fears: [
-      { hit: "排队60分钟？", fix: "不用排。" },
-      { hit: "怕门口被拦？", fix: "别担心。" },
-      { hit: "当天已满座？", fix: "提前订好。" },
-      { hit: "不会韩语？", fix: "不需要。" },
+    h1: "首尔夜店卡座，用你的名字先订好",
+    sub: "江南 · 弘大 · 梨泰院。我们用韩语帮你订 — 当晚在夜店付款。",
+    stepsH2: "怎么订",
+    steps: [
+      "告诉我们日期、人数和区域。",
+      "我们用韩语订好卡座，并发消息跟你确认价格。",
+      "到门口报名字就能进，不用排队。带护照原件，在夜店付款。",
     ],
-    terms: "免订金、免预订手续费 — 当天在店里付款。",
-    clubs: "只有韩国最好的22家夜店。",
+    clubsLead: (n) => `我们能订的 ${n} 家夜店（部分）`,
     cta: "预订卡座",
+    barNote: "无需绑卡 · 免订金 · 3步完成",
     buysH2: "这笔钱买到什么",
     buys: [
       {
         h: "价格直接来自夜店酒单",
-        p: "预订前就能看到每瓶酒和套餐的价格，以及该座位的最低消费。总金额由夜店确认。",
+        p: "预订前就能看到每瓶酒和套餐的价格。总金额由夜店确认。",
       },
       {
-        h: "被多收？我们退你200%。",
-        p: "如果夜店按高于你看到的酒单收费，我们赔付差额的两倍。把收据发给我们就结算。",
+        h: "当晚之前就确认好价格",
+        p: "去之前我们会以书面形式发给你总价。入座后再付给夜店 — 之前不收任何钱。",
       },
       {
         h: "不会韩语也能订",
-        p: "我们的当地团队用韩语和夜店沟通，再用中文通过微信、WhatsApp 或 Line 回复你。",
+        p: "我们的当地团队用韩语和夜店沟通，再用中文通过 WhatsApp、Instagram 或邮件回复你。",
       },
     ],
     askH2: "订之前想知道的",
     asks: [
       {
         q: "我们能进去吗？",
-        a: "卡座是用你的名字订的，到门口说名字就能进，不用排队。但这不是保证 — 必须带护照原件（复印件会被拒），江南的着装要求不会通融，满座后就停止入场（周五六常见于23点后）。",
+        a: "卡座是用你的名字订的，不用排队。但门口仍可能被拦的三种情况：没带护照原件（复印件不行）、江南的着装要求、满座后才到（周五六常见于23点后）。",
+      },
+      {
+        q: "全是男生或一个人也行吗？",
+        a: "可以。全男生的团体一般就是通过订卡座入场。证件和着装要求照样适用。",
+      },
+      {
+        q: "穿什么？",
+        a: "男生不能穿短裤、无袖、拖鞋或运动服。江南建议深色的休闲正装。",
       },
       {
         q: "怎么付款？",
-        a: "当天在店里付现金或刷卡。Visa 和 Mastercard 可以用，支付宝和微信支付不行。门票请准备 2–3 万韩元现金。",
+        a: "入座后付给夜店，现金或刷卡都行。Visa 和 Mastercard 一般可以用，建议也带点现金。支付宝和微信支付不行。",
       },
       {
         q: "想改日期怎么办？",
-        a: "当天之前告诉我们就可以改。预订时没有收取任何费用。",
+        a: "请尽早告诉我们，新日期有位子就帮你改。预订时没有收取任何费用。",
       },
     ],
-    priceH2: "卡座最低消费",
+    priceH2: "卡座价格",
     priceRows: [
-      { label: "弘大 / 梨泰院", value: "₩500,000" },
-      { label: "江南", value: "₩1,000,000" },
+      { label: "弘大 / 梨泰院", value: "₩500,000 起" },
+      { label: "江南", value: "₩1,000,000 起" },
     ],
     priceNote:
-      "按桌算不按人算 — 4个人一人约 12–25 万韩元。门票 1–3 万韩元，江南周末更高。",
-    rating: "Banyan Tree Pool Party 4.7 · 3,376 条谷歌评价",
+      "按桌算不按人算 — 4个人一人约 12.5–25 万韩元。订卡座的客人通常含门票，但建议带 3 万韩元现金备用。",
     navHome: "首页",
     navFaq: "常见问题",
     navTerms: "服务条款",
@@ -252,63 +289,71 @@ const COPY: Record<SeoLang, Copy> = {
   },
 
   "zh-tw": {
-    title: "首爾夜店包廂訂位 — 真實價格、免訂金 | NightFlow",
+    title: "首爾夜店包廂訂位 — 價格先講好、免訂金 | NightFlow",
     description:
-      "不用排隊。在韓國22家最好的夜店用你的名字訂包廂，價格直接來自夜店酒單，免訂金、免訂位手續費。江南、弘大、梨泰院。",
-    ogTitle: "想在韓國夜店過VIP之夜？",
-    ogSub: "免排隊 · 22家精選 · 免訂金",
+      "不用排隊。用你的名字訂首爾夜店包廂，價格直接來自夜店酒單，免訂金、免訂位手續費。江南、弘大、梨泰院。",
+    ogTitle: "首爾夜店包廂，用你的名字先訂好",
+    ogSub: "免排隊 · 價格先講好 · 免訂金",
     keywords: [
       "首爾夜店訂位", "江南夜店包廂", "首爾包廂", "弘大夜店",
       "梨泰院夜店", "韓國夜店訂位", "首爾夜店價格", "韓國夜店被卡",
     ],
-    h1: "想在韓國夜店過VIP之夜？",
-    fears: [
-      { hit: "排隊60分鐘？", fix: "不用排。" },
-      { hit: "怕在門口被卡？", fix: "別擔心。" },
-      { hit: "當天已經滿了？", fix: "先訂好。" },
-      { hit: "不會韓文？", fix: "不需要。" },
+    h1: "首爾夜店包廂，用你的名字先訂好",
+    sub: "江南 · 弘大 · 梨泰院。我們用韓文幫你訂 — 當晚在夜店付款。",
+    stepsH2: "怎麼訂",
+    steps: [
+      "告訴我們日期、人數和區域。",
+      "我們用韓文訂好包廂，並傳訊息跟你確認價格。",
+      "到門口報名字就能進，不用排隊。帶護照正本，在夜店付款。",
     ],
-    terms: "免訂金、免訂位手續費 — 當天在店裡付款。",
-    clubs: "只有韓國最好的22家夜店。",
+    clubsLead: (n) => `我們能訂的 ${n} 家夜店（部分）`,
     cta: "訂包廂",
+    barNote: "免綁卡 · 免訂金 · 3個步驟",
     buysH2: "這筆錢買到什麼",
     buys: [
       {
         h: "價格直接來自夜店酒單",
-        p: "訂之前就能看到每瓶酒和套餐的價格，以及那個位子的低消。總金額由夜店確認。",
+        p: "訂之前就能看到每瓶酒和套餐的價格。總金額由夜店確認。",
       },
       {
-        h: "被多收？我們退你200%。",
-        p: "如果夜店收得比你看到的酒單高，我們賠你價差的兩倍。把收據傳給我們就結算。",
+        h: "當晚之前就把價格講好",
+        p: "去之前我們會用書面傳給你總價。入座後再付給夜店 — 之前不收任何錢。",
       },
       {
         h: "不會韓文也能訂",
-        p: "我們的當地團隊用韓文跟夜店談，再用中文透過 Line、WhatsApp 或微信回覆你。",
+        p: "我們的當地團隊用韓文跟夜店談，再用中文透過 WhatsApp、Instagram 或 Email 回覆你。",
       },
     ],
     askH2: "訂之前想知道的",
     asks: [
       {
         q: "我們進得去嗎？",
-        a: "包廂是用你的名字訂的，到門口說名字就進去，不用排隊。但這不是保證 — 護照正本必備（影本會被拒），江南的服裝規定不會通融，滿了就停止入場（週五六常見於23點後）。",
+        a: "包廂是用你的名字訂的，不用排隊。但門口還是可能被擋的三種情況：沒帶護照正本（影本不行）、江南的服裝規定、滿了之後才到（週五六常見於23點後）。",
+      },
+      {
+        q: "全是男生或一個人也可以嗎？",
+        a: "可以。全男生的團通常就是靠訂包廂入場。證件和服裝規定一樣要遵守。",
+      },
+      {
+        q: "要穿什麼？",
+        a: "男生不能穿短褲、無袖、拖鞋或運動服。江南建議深色的休閒正裝。",
       },
       {
         q: "怎麼付款？",
-        a: "當天在店裡付現金或刷卡。Visa 和 Mastercard 可以用，支付寶和微信支付不行。入場費請準備 2–3 萬韓元現金。",
+        a: "入座後付給夜店，現金或刷卡都可以。Visa 和 Mastercard 通常能用，建議也帶點現金。支付寶和微信支付不行。",
       },
       {
         q: "想改日期怎麼辦？",
-        a: "當天之前告訴我們就可以改。訂位時沒有收取任何費用。",
+        a: "請盡早告訴我們，新日期有位子就幫你改。訂位時沒有收取任何費用。",
       },
     ],
-    priceH2: "包廂低消",
+    priceH2: "包廂價格",
     priceRows: [
-      { label: "弘大 / 梨泰院", value: "₩500,000" },
-      { label: "江南", value: "₩1,000,000" },
+      { label: "弘大 / 梨泰院", value: "₩500,000 起" },
+      { label: "江南", value: "₩1,000,000 起" },
     ],
     priceNote:
-      "按桌計不按人計 — 4個人一人約 12–25 萬韓元。入場費 1–3 萬韓元，江南週末更高。",
-    rating: "Banyan Tree Pool Party 4.7 · 3,376 則 Google 評論",
+      "按桌計不按人計 — 4個人一人約 12.5–25 萬韓元。訂包廂的客人通常含入場費，但建議帶 3 萬韓元現金備用。",
     navHome: "首頁",
     navFaq: "常見問題",
     navTerms: "服務條款",
@@ -348,12 +393,61 @@ export function adLandingMetadata(lang: SeoLang): Metadata {
   };
 }
 
-export function AdLanding({ lang }: { lang: SeoLang }) {
+const CONTACT_H2: Record<SeoLang, string> = {
+  en: "Contact us",
+  ja: "お問い合わせ",
+  zh: "联系我们",
+  "zh-tw": "聯絡我們",
+};
+const CONTACT_MSG: Record<SeoLang, string> = {
+  en: "Hi! I'd like to ask about booking a club table in Korea.",
+  ja: "こんにちは！韓国のクラブのテーブル予約について相談したいです。",
+  zh: "你好！想咨询一下韩国夜店订卡座。",
+  "zh-tw": "你好！想詢問一下韓國夜店訂包廂。",
+};
+
+// "22 best clubs" 대신 실제로 예약 가능한 클럽 이름(2026-10-04) — 검색자는 클럽 이름을 직접 친다
+// (octagon·face·b1 seoul). 폼과 같은 isBookable 기준. 서울 지역만, 리뷰 많은 순, 영문 이름 있는 곳.
+// 실패하면 이름 줄 없이 그린다(랜딩이 DB 때문에 깨지면 안 된다). 페이지는 1시간 단위 재생성(revalidate).
+async function bookableClubNames(): Promise<{ total: number; names: string[] } | null> {
+  try {
+    const sb = createAdminClient();
+    const menuIds = await fetchMenuClubIds(sb);
+    const { data } = await sb
+      .from("clubs")
+      .select("id, name, name_en, area, foreign_booking_agreed, google_review_count, partners:club_partners(md_id)")
+      .is("deleted_at", null)
+      .eq("is_test", false)
+      .eq("hidden_from_guide", false)
+      .not("thumbnail_url", "is", null)
+      .order("google_review_count", { ascending: false, nullsFirst: false });
+    const bookable = (data ?? []).filter((c) =>
+      isBookable({
+        name: c.name,
+        has_md: ((c.partners as { md_id: string }[] | null)?.length ?? 0) > 0,
+        agreed: !!c.foreign_booking_agreed,
+        has_menu: menuIds.has(c.id),
+      })
+    );
+    const names = bookable
+      .filter((c) => ["강남", "홍대", "이태원"].includes(c.area ?? ""))
+      .map((c) => (c.name_en || c.name || "").trim())
+      .filter((n) => /^[\x20-\x7E]+$/.test(n))
+      .slice(0, 6);
+    return bookable.length ? { total: bookable.length, names } : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function AdLanding({ lang }: { lang: SeoLang }) {
   const c = COPY[lang];
+  const clubs = await bookableClubNames();
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-28">
       <ForeignPageTracker kind="info" lang={lang} meta={{ page: "ad-book" }} />
+      <style>{"html{scroll-behavior:smooth}"}</style>
 
       {/* 상호 + 홈 링크 — 광고 랜딩에 운영 주체가 없으면 구글애즈 심사에서 신뢰성으로 걸린다.
           로고는 홈으로 가는 유일한 탈출구이기도 하다(본문엔 이탈 링크를 두지 않으므로). */}
@@ -361,7 +455,6 @@ export function AdLanding({ lang }: { lang: SeoLang }) {
         <Link href={`/${lang}`} className="text-[17px] font-black tracking-tight">
           Night<span className="text-brand-amber">Flow</span>
         </Link>
-        <span className="text-[11px] text-muted-foreground uppercase tracking-wider">{lang}</span>
       </header>
 
       {/* 히어로 — 헤드라인 + VIP 테이블 시작가 카드(/en 홈과 같은 카드).
@@ -369,27 +462,41 @@ export function AdLanding({ lang }: { lang: SeoLang }) {
           "VIP之夜" 헤드라인 + 여성 사진이 대만 검색자에게 酒店(호스티스 술집) 광고처럼 읽힐 수 있고,
           9/28 tw_hk 광고 클릭 4명이 전부 4~8초 만에 나갔다. 사진 자리에 실제 가격을 올려 첫 화면에서 보이게 한다. */}
       <div className="max-w-lg mx-auto px-5 pt-3">
-        <h1 className="text-[30px] font-black leading-[1.08] tracking-tight break-keep">
+        <h1 className="text-[28px] font-black leading-[1.12] tracking-tight break-keep text-balance">
           {c.h1}
         </h1>
+        <p className="mt-2 text-[15px] text-muted-foreground leading-snug break-keep">{c.sub}</p>
       </div>
       <VipPriceCards lang={lang} className="max-w-lg mx-auto px-4 pt-4" />
 
       <div className="max-w-lg mx-auto">
 
-        {/* 공포 → 해결. 조각으로 짧게 — 문장으로 쓰면 광고 클릭은 읽지 않고 나간다. */}
-        <ul className="mt-3 border-y border-border divide-y divide-border">
-          {c.fears.map((f) => (
-            <li key={f.hit} className="flex items-baseline gap-2 px-5 py-2.5">
-              <span className="text-[15px] font-black text-red-400 break-keep">{f.hit}</span>
-              <span className="text-[13px] font-bold text-foreground break-keep">{f.fix}</span>
-            </li>
-          ))}
-        </ul>
+        {/* 진행 3단계 — 예약 폼의 3단계와 1:1(2026-10-04). 예전 빨간 공포 목록("Refused at door? No worries.")은
+            FAQ의 "보장 아님"과 모순이라 뺐다. */}
+        <section className="mt-5 px-5 space-y-2.5">
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{c.stepsH2}</h2>
+          <ol className="space-y-2">
+            {c.steps.map((st, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="w-6 h-6 shrink-0 rounded-full bg-muted text-foreground text-[12px] font-black flex items-center justify-center tabular-nums">{i + 1}</span>
+                <span className="text-[14px] font-bold leading-snug break-keep pt-0.5">{st}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
 
-        <div className="px-5 pt-4 space-y-0.5">
-          <p className="text-[15px] font-black break-keep">{c.terms}</p>
-          <p className="text-[15px] font-black text-money break-keep">{c.clubs}</p>
+        <div className="px-5 pt-4 space-y-2">
+          {/* "Free to request · no deposit · pay on the night" 줄은 뺐다 — 부제·하단 바와 같은 말(중복 점검, 2026-10-04). */}
+          {clubs && clubs.names.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[12px] font-bold text-muted-foreground">{c.clubsLead(clubs.total)}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {clubs.names.map((n) => (
+                  <span key={n} className="px-2.5 py-1 rounded-full bg-card border border-border text-[12px] font-bold">{n}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <section className="mt-6 px-5 pt-5 border-t border-border space-y-4">
@@ -431,7 +538,16 @@ export function AdLanding({ lang }: { lang: SeoLang }) {
           ))}
         </section>
 
-        <p className="mt-6 px-5 text-[11px] text-muted-foreground tabular-nums">{c.rating}</p>
+        {/* 문의하기(2026-10-02, 운영자 결정) — 하단 버튼이 "예약" 하나뿐이라 아직 마음을 못 정한 광고
+            방문자가 끝까지 읽고 그냥 나갔다(10/3: 실제 광고 방문 11 → 버튼 1). 예약보다 부담이 작은 출구.
+            예약 폼·외국어 홈과 같은 ContactButtons, 계측 source=ad_landing. */}
+        <section id="contact" className="mt-6 px-5 pt-5 border-t border-border space-y-3 scroll-mt-4">
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+            {CONTACT_H2[lang]}
+          </h2>
+          <ContactButtons lang={lang} message={CONTACT_MSG[lang]} source="ad_landing" />
+        </section>
+
 
         {/* 사업자 정보 — 전자상거래법 표시 의무 + 구글애즈 랜딩 심사 요건.
             값은 법적 데이터라 번역하지 않고, 라벨만 BusinessInfo가 언어별로 낸다. */}
@@ -448,14 +564,30 @@ export function AdLanding({ lang }: { lang: SeoLang }) {
 
       {/* 유일한 CTA. 기존 예약 플로우로 넘긴다 — 여기서 데이터를 받지 않는다. */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur">
-        <div className="max-w-lg mx-auto px-5 py-3">
-          <Link rel="nofollow"
-            data-nf-track="book_cta"
-            href={`/flags/new?lang=${lang}`}
-            className="block w-full py-4 rounded-xl bg-brand-amber text-black font-black text-center text-base hover:opacity-90 transition-opacity"
-          >
-            {c.cta}
-          </Link>
+        {/* 안내 한 줄 + WhatsApp 보조 버튼(2026-10-04) — "Book"이 결제·확정처럼 읽히지 않게 하고,
+            아직 정하지 못한 방문자에게 엄지 자리에 부담 작은 출구를 둔다. 클릭은 data-nf-track으로 집계. */}
+        <div className="max-w-lg mx-auto px-5 pt-2 pb-3 space-y-1.5">
+          <p className="text-center text-[11px] font-bold text-muted-foreground">{c.barNote}</p>
+          <div className="flex gap-2">
+            {/* 채널을 하나로 정하지 않는다(2026-10-04, 운영자 결정) — 누르면 아래 "Contact us"(WhatsApp·IG·Email)로
+                스크롤한다. 이 페이지에서만 html에 smooth scroll을 건다(아래 style). */}
+            <a
+              data-nf-track="chat_bar_scroll"
+              href="#contact"
+              aria-label={CONTACT_H2[lang]}
+              className="w-14 shrink-0 rounded-xl bg-card border border-border flex items-center justify-center"
+            >
+              <MessageCircle className="w-6 h-6 text-foreground" />
+            </a>
+            <Link rel="nofollow"
+              data-nf-track="book_cta"
+              data-nf-label="bar"
+              href={`/flags/new?lang=${lang}`}
+              className="flex-1 py-4 rounded-xl bg-brand-amber text-black font-black text-center text-base hover:opacity-90 transition-opacity"
+            >
+              {c.cta}
+            </Link>
+          </div>
         </div>
       </div>
     </div>

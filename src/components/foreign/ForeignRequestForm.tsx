@@ -22,7 +22,8 @@ import { trackForeignEvent, trackEvent } from "@/lib/analytics/events";
 import { getCurrentUtm } from "@/lib/analytics/userEvents";
 import { useSavedClubs } from "@/lib/clubs/savedClubs";
 import { MenuPicker, useMenuFx } from "@/components/foreign/MenuPicker";
-import { ContactButtons, CONTACT_INSTAGRAM } from "@/components/foreign/ContactButtons";
+import { ContactButtons } from "@/components/foreign/ContactButtons";
+import { CONTACT_INSTAGRAM } from "@/lib/foreign/contact";
 import { saveFormDraft, loadFormDraft, clearFormDraft, FOREIGN_BOOKING_DRAFT_KEY } from "@/lib/utils/formDraft";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import type { ClubMenuItem, ClubMenuCombo, SelectedMenuSnapshot } from "@/types/database";
@@ -2442,8 +2443,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         <ShieldCheck className="w-4 h-4 text-money shrink-0 mt-0.5" />
         <p className="text-[12px] text-muted-foreground leading-snug break-keep">
           {/* 긴 설명 문장을 뺴고 "카드등록 x · 현장결제"로 압축(2026-09-15, 사용자 지시) — 결제
-              불안(선결제·카드 정보 요구)이 핵심이라 그 사실만 짧게. 200% 보장 문구는 위에서
-              이미 한 번 노출되므로 중복 제거. */}
+              불안(선결제·카드 정보 요구)이 핵심이라 그 사실만 짧게. 200% 보장 문구는 2026-10-04 사이트
+              전체에서 삭제했다(운영자 결정). */}
           {t("카드 등록 없음 · 현장 결제", "No card required · pay at the club", "カード登録不要 · 現地払い", "无需绑卡 · 到店付款", "無需綁卡 · 到店付款")}
         </p>
       </div>

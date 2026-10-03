@@ -396,13 +396,17 @@ export function ClubsClient({
               </div>
               <div className="pt-3 border-t border-border">
                 <p className="flex items-center gap-2 text-[13px] font-black text-money">
-                  {t("🛡️ 바가지 제로 보장", "🛡️ Zero rip-off, guaranteed", "🛡️ ぼったくりゼロ保証", "🛡️ 零宰客保证")}
+                  {/* 예전 "바가지 제로 보장 · 200% 환불"(2026-10-04 삭제, 운영자 결정) — 지킬 수 있는 사실만. */}
+                  {t("🛡️ 당일 전에 금액 확정", "🛡️ Price confirmed before the night", "🛡️ 料金は当日前に確定", "🛡️ 当晚前确认价格", "🛡️ 當晚前把價格講好")}
                 </p>
                 <p className="text-[12px] text-muted-foreground leading-relaxed mt-1 break-keep">
-                  {t("정가보다 더 내셨나요?", "Pay more than the standard price?", "標準価格より多く払いましたか？", "付了高于标准价的钱?")}{" "}
-                  <span className="font-bold text-foreground">
-                    {t("200% 환불해드립니다.", "We refund you 200%.", "200%返金します。", "我们退你200%。")}
-                  </span>
+                  {t(
+                    "가기 전에 총액을 확정서로 보내드려요. 결제는 자리에 앉은 뒤 클럽에 — 그 전엔 아무것도 내지 않아요.",
+                    "We send your total in writing before you go. You pay the club when you're seated — nothing before.",
+                    "合計金額を事前に書面でお送りします。お支払いは着席後にクラブへ — 事前のお支払いはありません。",
+                    "去之前我们会以书面形式发给你总价。入座后再付给夜店 — 之前不收任何钱。",
+                    "去之前我們會用書面傳給你總價。入座後再付給夜店 — 之前不收任何錢。"
+                  )}
                 </p>
               </div>
             </div>

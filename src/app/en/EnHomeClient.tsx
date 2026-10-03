@@ -1299,7 +1299,7 @@ function HeroSection({
           {tr("Looking for a VIP night in Korea's clubs?")}
         </p>
         {/* 헤드라인은 한 문장만, 부제 없음(2026-09-14). "바가지 없이·실가격·현장결제·수수료 0"은
-            바로 아래 가격 카드·200% 환불·배지 4개가 전부 다시 말한다. */}
+            바로 아래 가격 카드·확정가 안내·배지 4개가 전부 다시 말한다. */}
         <h1 className="text-[26px] font-black leading-[1.16] tracking-tight break-keep">
           {t(
             "한국 최고의 클럽 예약.",
@@ -1331,12 +1331,12 @@ function HeroSection({
         </div>
       </div>
 
-      {/* 200% 보장 — 접힌 아코디언 안에 있던 걸 꺼냈다. 경쟁군 통틀어 가장 강한 클레임.
-          박스·테두리·부제는 뺐다(2026-09-15) — 굵은 문장 한 줄 + 아이콘만 남기고 노이즈 제거. */}
+      {/* 예전 "200% 환불" 줄(2026-10-04 삭제, 운영자 결정) — 카드 부가세·추가 주문·정원 초과까지 분쟁이 생겨
+          MD가 외국인 요청을 피하게 된다는 검토. 지킬 수 있는 사실(확정가를 미리 서면으로)만 쓴다. */}
       <div className="px-4 pt-3 flex items-center gap-1.5">
         <ShieldCheck className="w-4 h-4 text-money shrink-0" />
         <p className="text-[14px] font-black text-money leading-tight">
-          {t("바가지 쓰면 200% 환불.", "Overcharged? We refund 200%.", "ぼったくられたら200%返金。", "被多收？我们200%退还。", "被多收？我們200%退還。")}
+          {t("금액은 당일 전에 확정서로 정해드려요.", "Your price is confirmed in writing before the night.", "料金は当日前に書面で確定します。", "当晚之前就书面确认好价格。", "當晚之前就用書面把價格講好。")}
         </p>
       </div>
 

@@ -297,7 +297,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
     priceBullets: [
       `A Gangnam table is ${won(GANGNAM, "en")} minimum spend for the whole group, filled from the club's own menu. Four people ≈ ₩250,000 each — comparable to or below a single room-salon quote for one person.`,
       "Entry ₩20,000–₩50,000 and sometimes a weekend table charge. We put the final number in writing before you commit.",
-      "No deposit, no broker fee. Pay the club on the night. If a club bills you above its printed menu, we refund 200%.",
+      "No deposit, no broker fee. Pay the club on the night. Your total is confirmed in writing before the night.",
     ],
     faqH2: "Room salons — questions visitors ask",
     faqs: [
@@ -359,7 +359,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
     priceBullets: [
       `江南のテーブルは1卓 ${won(GANGNAM, "ja")} の最低予約金額をグループ全体で店のメニューから埋める形。4人なら一人約25万ウォン — ルームサロンの一人分の見積と同等かそれ以下です。`,
       "入場料2〜5万ウォン、週末はテーブルチャージがかかる店も。確定前に最終金額を書面でお伝えします。",
-      "デポジットなし、仲介手数料なし。当日クラブで支払い。印刷メニューより高く請求されたら200%返金します。",
+      "デポジットなし、仲介手数料なし。当日クラブで支払い。合計金額は当日前に書面で確定します。",
     ],
     faqH2: "ルームサロン — 旅行者からよくある質問",
     faqs: [
@@ -421,7 +421,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
     priceBullets: [
       `江南卡座是每桌 ${won(GANGNAM, "zh")} 的最低消费，整组一起从夜店酒单凑满。4 个人一人约 25 万韩元 — 和房间沙龙一个人的报价相当或更低。`,
       "入场费 2〜5 万韩元，周末有时有台费。确认前我们把最终数字写给你。",
-      "无押金、无中介费。当晚在夜店付款。如果夜店收你超过印刷酒单的钱，我们退 200%。",
+      "无押金、无中介费。当晚在夜店付款。总价会在当晚之前以书面确认。",
     ],
     faqH2: "房间沙龙 — 游客常问的问题",
     faqs: [
@@ -483,7 +483,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
     priceBullets: [
       `江南桌位是每桌 ${won(GANGNAM, "zh-tw")} 的低消，整組一起從夜店酒單湊滿。4 個人一人約 25 萬韓元（約 NT$5,700）— 和韓國酒店一個人的報價相當或更低。`,
       "入場費 2〜5 萬韓元，週末有時有桌位費。確認前我們把最終數字寫給你。",
-      "免訂金、無中介費。當晚在夜店付款。如果夜店收你超過印好酒單的錢，我們賠 200%。",
+      "免訂金、無中介費。當晚在夜店付款。總價會在當晚之前用書面講好。",
     ],
     faqH2: "韓國酒店 — 遊客常問的問題",
     faqs: [
