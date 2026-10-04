@@ -25,8 +25,14 @@ function thumb(p: EnBlogPost) {
   return `/api/og?title=${encodeURIComponent(p.h1)}&sub=${encodeURIComponent(`${p.area} · ${p.kind}`)}&lang=en`;
 }
 
-export default function EnBlogIndexPage() {
-  const posts = listEnBlogPosts();
+const AREAS = ["Seoul", "Busan"];
+
+export default async function EnBlogIndexPage({ searchParams }: { searchParams: Promise<{ area?: string }> }) {
+  // 목록 안에서 도시로 거르기(?area=busan) — 위 탭은 블로그 밖으로 나가지 않는다(2026-10-04 사용자 지적)
+  const q = ((await searchParams).area || "").toLowerCase();
+  const area = AREAS.find((a) => a.toLowerCase() === q) || null;
+  const all = listEnBlogPosts();
+  const posts = area ? all.filter((p) => p.area === area) : all;
   const kinds = [...KIND_ORDER.filter((k) => posts.some((p) => p.kind === k)), ...new Set(posts.map((p) => p.kind).filter((k) => !KIND_ORDER.includes(k)))];
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -39,13 +45,20 @@ export default function EnBlogIndexPage() {
             Where to stay, which clubs are still open, and how to go out on your own. Facts come from NightFlow&apos;s club
             listings and official sources, with the date we last checked.
           </p>
-          <div className="flex flex-wrap gap-2 pt-1">
-            {[["Hongdae", "/en/clubs/hongdae"], ["Itaewon", "/en/clubs/itaewon"], ["Gangnam", "/en/clubs/gangnam"], ["Busan", "/en/clubs/busan"]].map(([n, h]) => (
-              <Link key={h} href={h} className="h-9 px-3.5 inline-flex items-center rounded-full border border-border text-[13px] font-bold hover:border-foreground/40">
-                {n} clubs
+          <nav className="flex flex-wrap gap-2 pt-1" aria-label="Filter guides">
+            {[["All", "/en/blog", !area], ...AREAS.map((a) => [a, `/en/blog?area=${a.toLowerCase()}`, area === a] as const)].map(([n, h, on]) => (
+              <Link
+                key={String(h)}
+                href={String(h)}
+                scroll={false}
+                className={`h-9 px-4 inline-flex items-center rounded-full text-[13px] font-bold ${
+                  on ? "bg-foreground text-background" : "border border-border hover:border-foreground/40"
+                }`}
+              >
+                {n} ({n === "All" ? all.length : all.filter((p) => p.area === n).length})
               </Link>
             ))}
-          </div>
+          </nav>
         </header>
 
         {kinds.map((k) => {
@@ -76,6 +89,14 @@ export default function EnBlogIndexPage() {
             </section>
           );
         })}
+
+        <p className="text-[13px] text-muted-foreground text-center">
+          Browse clubs by area:{" "}
+          <Link className="underline underline-offset-2 hover:text-foreground" href="/en/clubs/hongdae">Hongdae</Link> ·{" "}
+          <Link className="underline underline-offset-2 hover:text-foreground" href="/en/clubs/itaewon">Itaewon</Link> ·{" "}
+          <Link className="underline underline-offset-2 hover:text-foreground" href="/en/clubs/gangnam">Gangnam</Link> ·{" "}
+          <Link className="underline underline-offset-2 hover:text-foreground" href="/en/clubs/busan">Busan</Link>
+        </p>
 
         <section className="space-y-3 text-center pt-2">
           <p className="text-[13px] text-muted-foreground">Already know where you&apos;re going? Book entry or a table in English.</p>
