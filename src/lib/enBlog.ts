@@ -13,6 +13,11 @@ export type EnBlogPost = {
   date: string; // YYYY-MM-DD
   updated: string;
   cta: string; // 예약 버튼 위 한 줄
+  area: string; // Seoul / Busan …
+  kind: string; // Where to stay / Club guide / Tips
+  checked: string; // 사실을 마지막으로 확인한 날
+  minutes: number; // 읽는 시간(분)
+  hasAffiliate: boolean;
   related: { href: string; label: string }[];
   html: string;
   toc: { id: string; text: string }[];
@@ -44,6 +49,7 @@ export function mdToHtml(md: string) {
   const out: string[] = [];
   const toc: { id: string; text: string }[] = [];
   let i = 0;
+  let tables = 0;
   while (i < lines.length) {
     const l = lines[i];
     if (!l.trim()) { i++; continue; }
@@ -67,6 +73,8 @@ export function mdToHtml(md: string) {
           .map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join("")}</tr>`)
           .join("")}</tbody></table></div>`,
       );
+      // 첫 비교표 바로 뒤 = 결정 지점 → 페이지가 여기에 예약 버튼을 하나 더 넣는다
+      if (++tables === 1) out.push("<!--NF_MID_CTA-->");
       continue;
     }
     if (/^- /.test(l) || /^\d+\. /.test(l)) {
@@ -115,6 +123,11 @@ function parse(slug: string, raw: string): EnBlogPost {
     date: meta.date,
     updated: meta.updated || meta.date,
     cta: meta.cta || "Want guaranteed entry or a table? Book with NightFlow — we contact the clubs for you, in English.",
+    area: meta.area || "Seoul",
+    kind: meta.kind || "Guide",
+    checked: meta.checked || meta.updated || meta.date,
+    minutes: Math.max(1, Math.round(m[2].split(/\s+/).length / 230)),
+    hasAffiliate: /viator\.com|agoda\.com|booking\.com/.test(m[2]),
     related,
     html,
     toc,

@@ -1,5 +1,5 @@
 ---
-title: Where to Stay in Seoul for Nightlife: Hongdae, Itaewon or Gangnam
+title: Where to Stay in Seoul: Hongdae, Itaewon or Gangnam at Night
 h1: Where to stay in Seoul for nightlife: Hongdae vs Itaewon vs Gangnam
 description: Best area to stay in Seoul for clubbing: Hongdae, Itaewon or Gangnam compared by club scene, nearest subway stations and getting back after the last train.
 date: 2026-10-04
@@ -9,6 +9,9 @@ related: /en/clubs/hongdae | Hongdae clubs
 related: /en/clubs/itaewon | Itaewon clubs
 related: /en/clubs/gangnam | Gangnam clubs
 related: /en/night-activities/getting-around | Getting home at night
+area: Seoul
+kind: Where to stay
+checked: 2026-10-04
 ---
 
 If nights out are a big part of your Seoul trip, stay in the area where you plan to party. Pick **Hongdae** for cheap, easy, walk-in clubs; **Itaewon** for the most international, English-friendly crowd; **Gangnam** only if your group plans to book tables at upscale clubs. The reason is simple: Seoul clubs get busy around 1 a.m., and the last subway leaves around that time or earlier.
@@ -38,6 +41,8 @@ Hongdae is Seoul's hip-hop and K-pop club district next to Hongik University. En
 **Daytime:** VisitKorea describes Hongdae as a young neighborhood of clothing, cosmetics and book shops, cafés and street performers, with its own "Club Street". Street music runs on the walking street in the evening, and the Yeonnam park cafés are a good dinner stop before the clubs.
 
 **Watch out for:** popular clubs queue after 23:00 on Fridays and Saturdays and may stop letting people in when full.
+
+For an early-evening plan before the clubs, a [Han River night cruise and Gwangjang Market tour](https://www.viator.com/tours/Seoul/Seoul-Night-Han-River-Cruise-and-Gwangjang-Market-and-Hidden-Street/d973-361415P132?pid=P00323015&mcid=42383&medium=link&campaign=blog-seoul-stay) is one bookable option.
 
 ## Itaewon: most international and English-friendly
 

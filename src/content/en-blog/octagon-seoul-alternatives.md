@@ -9,9 +9,12 @@ related: /en/clubs/gangnam | Gangnam clubs — all 17 venues
 related: /en/vip-tables | What a table really costs
 related: /en/dress-code | What to wear in Gangnam
 related: /en/club-hours | Seoul club opening hours
+area: Seoul
+kind: Club guide
+checked: 2026-10-04
 ---
 
-Probably not. We found no dated news report or official notice that Club Octagon in Gangnam has reopened, and Korean references have listed it as closed since 2020. If you want the kind of night it was known for, big-sound electronic music in Gangnam, there are clubs open now that play EDM, house and techno, and several of them take table bookings.
+Club Octagon is most likely closed. Korean references list it as shut since 2020, and we found no dated news of a reopening (last checked 4 October 2026). If you want the kind of night it was known for, big-sound electronic music in Gangnam, there are clubs open now that play EDM, house and techno, and several of them take table bookings.
 
 ## Is Club Octagon open in 2026?
 

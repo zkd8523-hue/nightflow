@@ -1,5 +1,5 @@
 ---
-title: Busan Hotel Areas for Nightlife: Seomyeon, Haeundae, Gwangalli
+title: Where to Stay in Busan: Seomyeon, Haeundae or Gwangalli at Night
 h1: Where to stay in Busan for nightlife: Seomyeon vs Haeundae vs Gwangalli
 description: Choosing a Busan hotel area for nights out? Seomyeon, Haeundae and Gwangalli compared by clubs, nearest subway stations and getting back after the last train.
 date: 2026-10-04
@@ -9,6 +9,9 @@ related: /en/clubs/busan | Busan clubs
 related: /en/night-activities/busan-night | Seomyeon clubs and Gwangalli drone show
 related: /en/night-activities/haeundae-evening | Haeundae at night
 related: /en/night-activities/getting-around | Getting home at night
+area: Busan
+kind: Where to stay
+checked: 2026-10-04
 ---
 
 If clubbing is the main reason you are going out in Busan, book your hotel in **Seomyeon**, the city's downtown club street. Pick **Haeundae** if you want a beach hotel and plan only one or two club nights, and **Gwangalli** if you want bridge views and bars more than clubs. The deciding factor is distance: Busan's subway stops around midnight, and the clubs keep going until morning.
@@ -51,6 +54,8 @@ Haeundae Beach is the best-known beach in Korea, and Busan's official guide puts
 **Where to stay:** between Haeundae Station and the beach. You get the beach on your doorstep, but on a Seomyeon club night you are 16 stops away, and the trip home is a taxi.
 
 **Evenings without clubs:** this is where Haeundae is strong. Ride the Blue Line Park beach train before sunset (₩8,000–10,000 a ride, and it stops running at about 19:30 in October), eat at Haeundae Market, and walk out after dark for the Marine City skyline from The Bay 101. Our [Haeundae evening](/en/night-activities/haeundae-evening) route has the details.
+
+If you want to see Busan's lights before a night out, a [sunset Haeundae Sky Capsule and Busan night-view tour](https://www.viator.com/tours/Busan/Sunset-Haeundae-Sky-Capsule-and-Busan-Night-view-Tour-from-Busan/d4615-48881P202?pid=P00323015&mcid=42383&medium=link&campaign=blog-busan-stay) is one bookable option.
 
 ## Gwangalli: views and bars, the middle option
 

@@ -9,6 +9,9 @@ related: /en/clubs/gangnam | Gangnam clubs — all 17 venues
 related: /en/vip-tables | What a table really costs
 related: /en/dress-code | Gangnam dress code
 related: /en/club-hours | Seoul club opening hours
+area: Seoul
+kind: Club guide
+checked: 2026-10-04
 ---
 
 Club Arena in Gangnam is closed. It stopped operating in March 2019, during the police investigation tied to the Burning Sun scandal, and its de facto owner was arrested later that month over alleged tax evasion. If you are looking for a big Gangnam club night today, the clubs below are open, play EDM, and are listed with hours and prices on NightFlow.
