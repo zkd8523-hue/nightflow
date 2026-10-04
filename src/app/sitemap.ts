@@ -3,6 +3,7 @@ import { eventSlug } from "@/lib/events/slug";
 import { createServerClient } from "@supabase/ssr";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
 import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
+import { EN_BLOG_RAW } from "@/content/en-blog/posts.generated";
 
 const BASE_URL = "https://nightflow.kr";
 
@@ -150,6 +151,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/ja/kpop-clubs`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     // /seoul-nightlife — "Seoul nightlife" 메인 키워드 매칭 페이지 (3개 언어)
     { url: `${BASE_URL}/en/seoul-nightlife`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
+    // /en/blog — 기존 가이드와 겹치지 않는 질문형 글(2026-10-04~)
+    { url: `${BASE_URL}/en/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    ...Object.keys(EN_BLOG_RAW).map((s) => ({ url: `${BASE_URL}/en/blog/${s}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.75 })),
     { url: `${BASE_URL}/zh/seoul-nightlife`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE_URL}/ja/seoul-nightlife`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     // /zh-tw — 번체 중국어 트랙 (대만·홍콩 SEO 타겟). 홈 + clubs + 지역 5개 + 서브페이지 9개.
