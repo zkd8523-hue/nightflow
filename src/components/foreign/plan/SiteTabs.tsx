@@ -45,10 +45,13 @@ export function SiteTabsInline({ active }: { active: Active }) {
 export function ActivitiesTopBar() {
   return (
     <div className="sticky top-0 z-30 bg-background">
-      <div className="lg:hidden px-4 pt-3 pb-1">
-        <Link href="/en" className="inline-block text-[17px] font-black tracking-tight">NightFlow</Link>
+      {/* 데스크톱 미만은 홈(max-w-lg 가운데 기둥)과 같은 폭 — 탭을 오가도 화면 폭이 바뀌지 않게(2026-10-04 사용자 지적) */}
+      <div className="lg:hidden max-w-lg mx-auto">
+        <div className="px-4 pt-3 pb-1">
+          <Link href="/en" className="inline-block text-[17px] font-black tracking-tight">NightFlow</Link>
+        </div>
+        <SiteTabs active="activities" />
       </div>
-      <SiteTabs active="activities" />
       <div className="hidden lg:block border-b border-border px-8 py-3">
         <div className="max-w-[1100px] mx-auto"><SiteTabsInline active="activities" /></div>
       </div>

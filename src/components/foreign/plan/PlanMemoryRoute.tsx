@@ -59,7 +59,7 @@ export async function PlanMemoryRoute({ route }: { route: Route }) {
         image={img(route.hero, 1200)}
         crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }, { name: "Night routes", path: `${PLAN_BASE}/night-routes` }, { name: route.card.title, path: `${PLAN_BASE}/${route.slug}` }]}
       />
-      <div className="max-w-2xl mx-auto px-5 pt-6 pb-32 space-y-5">
+      <div className="max-w-lg lg:max-w-2xl mx-auto px-5 pt-6 pb-32 space-y-5">
         <Crumb href={`${PLAN_BASE}/night-routes`} label="Night routes" />
         <header className="space-y-2">
           <p className="text-[12.5px] font-bold text-brand-amber">{route.eyebrow}</p>
@@ -166,7 +166,7 @@ export async function PlanMemoryRoute({ route }: { route: Route }) {
 
       {/* 모바일 하단 고정 예약 바 — 데스크톱은 사이드바 버튼이 같은 역할 */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/90 backdrop-blur px-4 py-2.5 lg:hidden">
-        <div className="mx-auto flex max-w-2xl items-center gap-3">
+        <div className="mx-auto flex max-w-lg lg:max-w-2xl items-center gap-3">
           <div className="min-w-0 flex-1 text-[12px] text-muted-foreground">
             <b className="block text-[13.5px] text-foreground">{route.bookArea ? route.ctaLabel : "Still want to dance?"}</b>
             {route.bookArea ? (route.priceLine?.split(" · ")[0] ?? "Zero fee") + " · pay at club" : "Seomyeon · Line 2 · Fri–Sat"}
