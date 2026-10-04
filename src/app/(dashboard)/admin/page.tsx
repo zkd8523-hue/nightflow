@@ -379,6 +379,16 @@ export default async function AdminDashboardPage() {
       href: "/admin/foreign",
     },
     {
+      // MD 정산(2026-10-04) — 확정 건 수수료 5%, 익월 10일 전. Migration 682.
+      label: "MD 정산",
+      value: "수수료 5%",
+      icon: Landmark,
+      color: "text-money",
+      bgColor: "bg-green-500/10",
+      badge: null,
+      href: "/admin/settlements",
+    },
+    {
       label: "크레딧 입금확인",
       value: pendingBankCredits ? `${pendingBankCredits}건 대기` : "관리",
       icon: Landmark,

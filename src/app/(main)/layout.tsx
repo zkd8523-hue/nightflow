@@ -10,7 +10,6 @@ import { VisitConfirmTrigger } from "@/components/puzzles/VisitConfirmTrigger";
 import { PartyReviewTrigger } from "@/components/puzzles/PartyReviewTrigger";
 import { NewOffersAlertSheet } from "@/components/puzzles/NewOffersAlertSheet";
 import { InAppBrowserBanner } from "@/components/common/InAppBrowserBanner";
-import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
 import { GuestSignPromoGate } from "@/components/md/GuestSignPromoGate";
 import { AppFeedbackSheet } from "@/components/feedback/AppFeedbackSheet";
 import { CameraLayer } from "@/components/chat/CameraLayer";
@@ -150,8 +149,7 @@ export default function MainLayout({
             <VisitConfirmTrigger />
             <PartyReviewTrigger />
             {/* 깃발 생성 직후 앱설치 유도 — 깃발 신규 생성 경로가 막혀 트리거되지 않으므로 마운트 해제 */}
-            {/* 파티 가이드 — 홈에서는 "지금 잡을 수 있는 자리가 있을 때"만 (계정당 1회) */}
-            <ShareOnboardingSheet onlyWhenSlotOpen />
+            {/* 파티 가이드 자동 팝업("파티이 바뀌었어요!")은 2026-10-04 운영자 결정으로 뺐다 — 직접 여는 ⓘ이용방법만 남김 */}
             <GuestSignPromoGate />
             <AppFeedbackSheet />
             {/* AppFeedbackSheet 자체가 인게이지먼트 게이팅 → 다른 우선 시트와 시각적으로만 안 겹치게 마지막 마운트 */}
