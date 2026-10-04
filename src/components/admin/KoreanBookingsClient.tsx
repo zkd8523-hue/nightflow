@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Copy, Calendar, Users, UserRound, Trash2, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { SelectedMenuSnapshot, KoreanBookingContactType, KoreanBookingStatus } from "@/types/database";
+import { cancelReasonLabel } from "@/lib/booking/cancelReasons";
 import { ProposalCard, MdResponseCard, ConfirmationCard, ConfirmForm, type ProposalReq, type ProposalConf } from "@/components/admin/ProposalSection";
 
 export type KoreanBookingReq = {
@@ -34,6 +35,11 @@ export type KoreanBookingReq = {
   md_reject_note?: string | null;
   guest_notice?: string | null;
   guest_notice_at?: string | null;
+  // 취소 사유(Migration 686) — 손님 확인서·파트너 확정서에서 취소할 때 채워진다.
+  cancelled_by?: "guest" | "md" | "admin" | null;
+  cancel_reason?: string | null;
+  cancel_note?: string | null;
+  cancelled_at?: string | null;
   mdCandidates: { id: string; name: string; phone: string | null }[];
   conf: ProposalConf | null;
 };
@@ -302,6 +308,26 @@ export function KoreanBookingsClient({
             )}
 
             {r.notes && <p className="text-[13px] text-muted-foreground bg-card rounded-lg px-3 py-2">📝 {r.notes}</p>}
+
+            {/* 취소 사유 — 누가 왜 취소했는지(Migration 686 이후 취소분부터 남는다). */}
+            {r.status === "cancelled" && r.cancelled_by && (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/[0.06] px-3 py-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[11px] font-bold text-red-400">
+                    ❌ {r.cancelled_by === "guest" ? "손님 취소" : r.cancelled_by === "md" ? "파트너 취소" : "운영자 취소"}
+                  </span>
+                  {r.cancelled_at && (
+                    <span className="text-[11px] text-muted-foreground">
+                      {new Date(r.cancelled_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[13px] font-bold text-foreground mt-1">
+                  {r.cancelled_by === "md" ? "파트너가 적은 사유" : cancelReasonLabel(r.cancel_reason) ?? "사유 미선택"}
+                </p>
+                {r.cancel_note && <p className="text-[12.5px] text-foreground/80 mt-0.5 whitespace-pre-wrap">{r.cancel_note}</p>}
+              </div>
+            )}
 
             {/* 연락처 */}
             <div className="flex items-center gap-2 bg-card rounded-lg px-3 py-2">

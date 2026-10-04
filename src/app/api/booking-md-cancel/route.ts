@@ -80,7 +80,15 @@ export async function POST(req: NextRequest) {
 
   const { data: updated, error: updErr } = await sb
     .from(table)
-    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+    .update({
+      status: "cancelled",
+      // 파트너가 적은 사유는 운영자용 기록으로 남긴다(Migration 686) — 손님에게는 안 보인다.
+      cancelled_by: "md",
+      cancel_reason: "md",
+      cancel_note: reason,
+      cancelled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", r.id)
     .neq("status", "cancelled")
     .select("id");

@@ -11,13 +11,18 @@
 // 즉시 푸시를 보내 그 문제를 막는다(2026-09-30). 푸시 토큰이 없는 사람에게만
 // SMS로 대신 보낸다 — 아무 채널도 없으면 취소가 조용히 묻히기 때문.
 //
-// Body: { public_token: string }
+// 취소 사유(Migration 686): 손님이 고른 코드(cancel_reason)와 '기타' 직접 입력
+// (cancel_note)을 원본 요청에 같이 남긴다 — 취소 이유 데이터 수집용. 사유는 MD·운영자
+// 알림 문구에도 붙인다. 옛 화면에서 사유 없이 들어오는 요청도 취소는 막지 않는다.
+//
+// Body: { public_token: string, reason?: string, note?: string }
 // 200: { ok: true, notified: { admin, md } } | { ok: true, already: true }
 // 409: 지난 예약 · 이미 입장한 예약
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSms } from "@/lib/notifications/alimtalk";
+import { isGuestCancelReason, cancelReasonLabel } from "@/lib/booking/cancelReasons";
 
 // 운영자 SMS 대체 수신 번호 — 도착 알림(/api/arrival)과 같은 환경변수.
 const ADMIN_PHONES = (process.env.ARRIVAL_ADMIN_PHONES ?? "01022051052")
@@ -28,7 +33,7 @@ const ADMIN_PHONES = (process.env.ARRIVAL_ADMIN_PHONES ?? "01022051052")
 const DOW = "일월화수목금토";
 
 export async function POST(req: NextRequest) {
-  let body: { public_token?: string };
+  let body: { public_token?: string; reason?: string; note?: string };
   try {
     body = await req.json();
   } catch {
@@ -36,6 +41,8 @@ export async function POST(req: NextRequest) {
   }
   const token = body.public_token;
   if (!token) return NextResponse.json({ error: "bad_params" }, { status: 400 });
+  const reason = isGuestCancelReason(body.reason) ? body.reason : null;
+  const note = (body.note ?? "").trim().slice(0, 300) || null;
 
   const sb = createAdminClient();
 
@@ -85,7 +92,14 @@ export async function POST(req: NextRequest) {
 
   const { data: updated, error: updErr } = await sb
     .from(table)
-    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+    .update({
+      status: "cancelled",
+      cancelled_by: "guest",
+      cancel_reason: reason,
+      cancel_note: note,
+      cancelled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", reqRow.id)
     .neq("status", "cancelled")
     .select("id");
@@ -103,8 +117,9 @@ export async function POST(req: NextRequest) {
   const rawSize = (conf.confirmed_group_size ?? String(reqRow.group_size)).trim();
   const sizeText = /^\d+$/.test(rawSize) ? `${rawSize}명` : rawSize;
   const guest = reqRow.guest_name?.trim() || "게스트";
+  const reasonText = reason ? ` 사유: ${reason === "other" && note ? note : cancelReasonLabel(reason)}` : "";
   const text =
-    `${requestType === "foreign" ? "[외국인] " : ""}${club?.name ? `${club.name} ` : ""}${guest}님 ${sizeText} ${dateText} 예약을 손님이 취소했어요. (${conf.ref_no})`;
+    `${requestType === "foreign" ? "[외국인] " : ""}${club?.name ? `${club.name} ` : ""}${guest}님 ${sizeText} ${dateText} 예약을 손님이 취소했어요.${reasonText} (${conf.ref_no})`;
 
   const hasPush = async (userId: string) => {
     const { count } = await sb

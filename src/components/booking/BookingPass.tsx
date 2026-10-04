@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { MapPin, Check, Star, Instagram, MessageCircle, ChevronLeft } from "lucide-react";
+import { GUEST_CANCEL_REASONS, type GuestCancelReason } from "@/lib/booking/cancelReasons";
 
 type Props = {
   requestId: string;
@@ -94,6 +95,9 @@ const TEXT = {
     cancelBtn: "Cancel booking",
     cancelTitle: "Cancel this booking?",
     cancelBody: "Your host and NightFlow will be notified right away. This can't be undone.",
+    cancelReasonLabel: "Why are you cancelling?",
+    cancelNotePh: "Tell us a bit more (optional)",
+    cancelReasonRequired: "Please pick a reason.",
     cancelKeep: "Keep booking",
     cancelDo: "Yes, cancel",
     cancelling: "Cancelling…",
@@ -140,6 +144,9 @@ const TEXT = {
     cancelBtn: "예약 취소",
     cancelTitle: "정말 취소하시겠어요?",
     cancelBody: "취소하면 담당 MD와 나이트플로우에 바로 알림이 가고, 되돌릴 수 없어요.",
+    cancelReasonLabel: "취소하시는 이유를 알려주세요",
+    cancelNotePh: "어떤 이유인지 적어주세요 (선택)",
+    cancelReasonRequired: "취소 이유를 골라주세요.",
     cancelKeep: "돌아가기",
     cancelDo: "예약 취소하기",
     cancelling: "취소하는 중…",
@@ -242,17 +249,28 @@ export function BookingPass(p: Props) {
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelErr, setCancelErr] = useState<string | null>(null);
+  // 취소 사유 — 데이터 수집용으로 고르게 한다(Migration 686). '기타'만 직접 입력칸이 열린다.
+  const [cancelReason, setCancelReason] = useState<GuestCancelReason | null>(null);
+  const [cancelNote, setCancelNote] = useState("");
   const isCancelled = p.cancelled || cancelledNow;
   const canCancel = !isCancelled && !p.arrivalConfirmed && !isPastEvent(p.eventDate) && !isSent("arrived");
 
   const cancelBooking = async () => {
+    if (!cancelReason) {
+      setCancelErr(t.cancelReasonRequired);
+      return;
+    }
     setCancelling(true);
     setCancelErr(null);
     try {
       const res = await fetch("/api/booking-cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ public_token: p.publicToken }),
+        body: JSON.stringify({
+          public_token: p.publicToken,
+          reason: cancelReason,
+          note: cancelReason === "other" ? cancelNote.trim() : "",
+        }),
       });
       const j = await res.json().catch(() => ({}));
       if (res.ok) {
@@ -599,12 +617,53 @@ export function BookingPass(p: Props) {
                     <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">
                       {t.cancelBody}
                     </p>
+                    <p className="text-[12.5px] font-bold text-foreground mt-3">{t.cancelReasonLabel}</p>
+                    <div className="mt-2 space-y-1.5">
+                      {GUEST_CANCEL_REASONS.map((r) => {
+                        const on = cancelReason === r.code;
+                        return (
+                          <button
+                            key={r.code}
+                            type="button"
+                            onClick={() => {
+                              setCancelReason(r.code);
+                              setCancelErr(null);
+                            }}
+                            disabled={cancelling}
+                            className={`w-full flex items-center gap-2 h-10 px-3 rounded-xl border text-left text-[13px] font-semibold disabled:opacity-50 ${
+                              on ? "border-red-500/60 bg-red-500/10 text-foreground" : "border-border text-foreground/80"
+                            }`}
+                          >
+                            <span
+                              className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                                on ? "border-red-500" : "border-muted-foreground/50"
+                              }`}
+                            >
+                              {on && <span className="w-2 h-2 rounded-full bg-red-500" />}
+                            </span>
+                            {ko ? r.ko : r.en}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {cancelReason === "other" && (
+                      <textarea
+                        value={cancelNote}
+                        onChange={(e) => setCancelNote(e.target.value)}
+                        maxLength={300}
+                        rows={2}
+                        placeholder={t.cancelNotePh}
+                        className="w-full mt-2 rounded-xl border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-red-500/60"
+                      />
+                    )}
                     <div className="flex gap-2 mt-3">
                       <button
                         type="button"
                         onClick={() => {
                           setConfirmingCancel(false);
                           setCancelErr(null);
+                          setCancelReason(null);
+                          setCancelNote("");
                         }}
                         disabled={cancelling}
                         className="flex-1 h-10 rounded-xl border border-border text-[13px] font-bold text-foreground disabled:opacity-50"
@@ -614,7 +673,7 @@ export function BookingPass(p: Props) {
                       <button
                         type="button"
                         onClick={cancelBooking}
-                        disabled={cancelling}
+                        disabled={cancelling || !cancelReason}
                         className="flex-1 h-10 rounded-xl bg-red-500 text-white text-[13px] font-bold disabled:opacity-50"
                       >
                         {cancelling ? t.cancelling : t.cancelDo}
