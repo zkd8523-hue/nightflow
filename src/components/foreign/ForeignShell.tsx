@@ -93,6 +93,8 @@ export function ForeignSidebar({
     { href: `/${lang}/club-prices`, label: t("클럽 가격", "Club prices", "クラブ料金", "夜店价格", "夜店價格") },
     { href: `/${lang}/club-hours`, label: t("영업시간", "Opening hours", "営業時間", "营业时间", "營業時間") },
     { href: `/${lang}/club-entry-rules`, label: t("입장 규정", "Entry rules", "入場ルール", "入场规定", "入場規定") },
+    // 영어 블로그(2026-10-04~)는 영어판만 있음
+    ...(lang === "en" ? [{ href: "/en/blog", label: "More guides" }] : []),
   ];
 
   const saved = useSavedClubs();

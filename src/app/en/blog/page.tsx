@@ -33,48 +33,49 @@ export default function EnBlogIndexPage() {
       <ForeignPageTracker kind="info" lang="en" meta={{ page: "blog" }} />
       <div className="max-w-2xl mx-auto px-5 py-12 space-y-10">
         <header className="space-y-3">
-          <Link href="/en" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
-          <h1 className="text-[28px] font-black tracking-tight leading-[1.2]">Korea Nightlife Guides</h1>
-          <p className="text-[14px] text-muted-foreground leading-relaxed">
-            Answers to the questions travelers ask before a night out in Korea: where to stay, which clubs are still open,
-            and how to go out on your own. Club names, areas, music and hours come from the venues listed on NightFlow, and
-            every guide shows the date we last checked the facts.
+          <Link href="/en" className="text-[13px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
+          <h1 className="text-[30px] font-black tracking-tight leading-[1.2]">Korea Nightlife Guides</h1>
+          <p className="text-[15px] text-muted-foreground leading-relaxed">
+            Where to stay, which clubs are still open, and how to go out on your own. Facts come from NightFlow&apos;s club
+            listings and official sources, with the date we last checked.
           </p>
-          <p className="text-[13px] text-muted-foreground">
-            Browse clubs by area:{" "}
-            <Link className="underline underline-offset-2 hover:text-foreground" href="/en/clubs/hongdae">Hongdae</Link> ·{" "}
-            <Link className="underline underline-offset-2 hover:text-foreground" href="/en/clubs/itaewon">Itaewon</Link> ·{" "}
-            <Link className="underline underline-offset-2 hover:text-foreground" href="/en/clubs/gangnam">Gangnam</Link> ·{" "}
-            <Link className="underline underline-offset-2 hover:text-foreground" href="/en/clubs/busan">Busan</Link>
-          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {[["Hongdae", "/en/clubs/hongdae"], ["Itaewon", "/en/clubs/itaewon"], ["Gangnam", "/en/clubs/gangnam"], ["Busan", "/en/clubs/busan"]].map(([n, h]) => (
+              <Link key={h} href={h} className="h-9 px-3.5 inline-flex items-center rounded-full border border-border text-[13px] font-bold hover:border-foreground/40">
+                {n} clubs
+              </Link>
+            ))}
+          </div>
         </header>
 
-        {kinds.map((k) => (
-          <section key={k} className="space-y-3">
-            <h2 className="text-[18px] font-black">{k}</h2>
-            <ul className="space-y-3">
-              {posts.filter((p) => p.kind === k).map((p) => (
-                <li key={p.slug}>
-                  <Link
-                    href={`/en/blog/${p.slug}`}
-                    className="block rounded-2xl bg-card border border-border overflow-hidden hover:border-foreground/30"
-                  >
-                    {/* 글마다 다른 제목 이미지(/api/og) — 사진이 생기면 교체 */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={thumb(p)} alt="" width={1200} height={630} loading="lazy" className="w-full aspect-[1200/630] object-cover" />
-                    <div className="p-4 space-y-1.5">
-                      <p className="text-[11px] font-bold text-brand-amber uppercase tracking-wide">
-                        {p.area} · {p.minutes} min read
-                      </p>
-                      <p className="font-bold text-[15px] leading-snug">{p.h1}</p>
-                      <p className="text-[13px] text-muted-foreground leading-relaxed">{p.description}</p>
-                    </div>
-                  </Link>
-                </li>
+        {kinds.map((k) => {
+          const list = posts.filter((p) => p.kind === k);
+          const [first, ...rest] = list;
+          return (
+            <section key={k} className="space-y-3">
+              <h2 className="text-[19px] font-black">{k}</h2>
+              <Link href={`/en/blog/${first.slug}`} className="block rounded-2xl bg-card border border-border overflow-hidden hover:border-foreground/30">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={first.hero?.url || thumb(first)} alt={first.hero?.alt || ""} width={1200} height={675} loading="lazy" className="w-full aspect-[16/9] object-cover" />
+                <div className="p-4 space-y-1.5">
+                  <p className="text-[12px] font-bold text-brand-amber uppercase tracking-wide">{first.area} · {first.minutes} min read</p>
+                  <p className="font-bold text-[17px] leading-snug">{first.h1}</p>
+                  <p className="text-[14px] text-muted-foreground leading-relaxed line-clamp-2">{first.description}</p>
+                </div>
+              </Link>
+              {rest.map((p) => (
+                <Link key={p.slug} href={`/en/blog/${p.slug}`} className="flex gap-3 p-3 rounded-2xl bg-card border border-border hover:border-foreground/30">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.hero?.url || thumb(p)} alt={p.hero?.alt || ""} width={96} height={96} loading="lazy" className="w-24 h-24 rounded-xl object-cover shrink-0" />
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-[12px] font-bold text-brand-amber uppercase tracking-wide">{p.area} · {p.minutes} min</p>
+                    <p className="font-bold text-[15px] leading-snug line-clamp-3">{p.h1}</p>
+                  </div>
+                </Link>
               ))}
-            </ul>
-          </section>
-        ))}
+            </section>
+          );
+        })}
 
         <section className="space-y-3 text-center pt-2">
           <p className="text-[13px] text-muted-foreground">Already know where you&apos;re going? Book entry or a table in English.</p>

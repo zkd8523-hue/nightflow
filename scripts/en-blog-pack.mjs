@@ -9,6 +9,9 @@ for (const f of fs.readdirSync(dir).sort()) {
   if (!f.endsWith(".md") || f.startsWith("_")) continue;
   raw[f.slice(0, -3)] = fs.readFileSync(path.join(dir, f), "utf8");
 }
-const out = `// 자동 생성 — 직접 고치지 말고 md를 고친 뒤 node scripts/en-blog-pack.mjs\nexport const EN_BLOG_RAW: Record<string, string> = ${JSON.stringify(raw, null, 1)};\n`;
+// 사진(Unsplash) 배치 — _images.json { slug: { hero, inline: [{ after: "## 제목", ... }] } }
+const imgPath = path.join(dir, "_images.json");
+const images = fs.existsSync(imgPath) ? JSON.parse(fs.readFileSync(imgPath, "utf8")) : {};
+const out = `// 자동 생성 — 직접 고치지 말고 md·_images.json을 고친 뒤 node scripts/en-blog-pack.mjs\nimport type { EnBlogImages } from "@/lib/enBlog";\nexport const EN_BLOG_RAW: Record<string, string> = ${JSON.stringify(raw, null, 1)};\nexport const EN_BLOG_IMAGES: Record<string, EnBlogImages> = ${JSON.stringify(images, null, 1)};\n`;
 fs.writeFileSync(path.join(dir, "posts.generated.ts"), out);
 console.log(`en-blog: ${Object.keys(raw).length}편 묶음`);

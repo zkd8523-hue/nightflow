@@ -1487,6 +1487,20 @@ function FlagsTab({
           6장 모두 en/ja/zh/zh-tw 네 언어에 실재하는 페이지로만 연결. */}
       <GuideIndex />
 
+      {/* 영어 블로그(2026-10-04) — 모바일엔 사이드바가 없어 홈에서 들어가는 길. 영어판만 있음 */}
+      {lang === "en" && (
+        <div className="px-4 pb-6 -mt-2">
+          <Link
+            href="/en/blog"
+            data-nf-track="home_blog_link"
+            className="flex items-center justify-between rounded-2xl bg-card border border-border px-4 py-3.5 hover:border-foreground/30 transition-colors"
+          >
+            <span className="text-[14px] font-bold">More guides: where to stay, going out solo, Busan nights</span>
+            <span className="text-muted-foreground">→</span>
+          </Link>
+        </div>
+      )}
+
       {/* 문의하기(2026-10-02, 운영자 요청) — 예약 폼 2단계와 같은 WhatsApp·Instagram·Email 아이콘 버튼. */}
       <ContactCard lang={lang} />
 

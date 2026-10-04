@@ -1,9 +1,24 @@
-import { EN_BLOG_RAW } from "@/content/en-blog/posts.generated";
+import { EN_BLOG_IMAGES, EN_BLOG_RAW } from "@/content/en-blog/posts.generated";
 
 // 영어 블로그(/en/blog) 글 저장소 — src/content/en-blog/<slug>.md (배포용으로 posts.generated.ts에 묶음: node scripts/en-blog-pack.mjs)
 // 머리말(--- key: value ---) + 본문 마크다운. 외부 라이브러리 없이 필요한 문법만 직접 변환한다
 // (## / ### 제목, 문단, - 목록, 1. 목록, | 표 |, **굵게**, [링크](주소), > 인용).
 // 글은 우리가 쓴 것만 들어가므로 HTML은 이스케이프 후 허용된 태그만 만든다.
+
+export type EnBlogImage = { url: string; alt: string; caption: string; credit: string; creditUrl: string; page?: string };
+export type EnBlogImages = { hero?: EnBlogImage; inline?: (EnBlogImage & { after: string })[] };
+
+function figure(img: EnBlogImage) {
+  // Unsplash 라이선스: 작가·Unsplash 표기(링크에 utm)
+  const utm = "utm_source=nightflow&utm_medium=referral";
+  const by = img.creditUrl ? `<a href="${esc(img.creditUrl)}${img.creditUrl.includes("?") ? "&" : "?"}${utm}" target="_blank" rel="nofollow noopener">${esc(img.credit)}</a>` : esc(img.credit);
+  return `<figure class="nf-fig"><img src="${esc(img.url)}" alt="${esc(img.alt)}" loading="lazy" width="1200" height="800"/><figcaption>${esc(img.caption)} · Photo: ${by} on <a href="https://unsplash.com/?${utm}" target="_blank" rel="nofollow noopener">Unsplash</a></figcaption></figure>`;
+}
+
+export function heroFigureParts(img: EnBlogImage) {
+  const utm = "utm_source=nightflow&utm_medium=referral";
+  return { ...img, creditHref: img.creditUrl ? `${img.creditUrl}${img.creditUrl.includes("?") ? "&" : "?"}${utm}` : "", unsplashHref: `https://unsplash.com/?${utm}` };
+}
 
 export type EnBlogPost = {
   slug: string;
@@ -18,6 +33,7 @@ export type EnBlogPost = {
   checked: string; // 사실을 마지막으로 확인한 날
   minutes: number; // 읽는 시간(분)
   hasAffiliate: boolean;
+  hero?: EnBlogImage;
   related: { href: string; label: string }[];
   html: string;
   toc: { id: string; text: string }[];
@@ -44,7 +60,7 @@ function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-export function mdToHtml(md: string) {
+export function mdToHtml(md: string, inlineImages: (EnBlogImage & { after: string })[] = []) {
   const lines = md.replace(/\r/g, "").split("\n");
   const out: string[] = [];
   const toc: { id: string; text: string }[] = [];
@@ -58,6 +74,8 @@ export function mdToHtml(md: string) {
       const id = slugify(h[2]);
       if (h[1] === "##") toc.push({ id, text: h[2] });
       out.push(`<h${h[1].length} id="${id}">${inline(h[2])}</h${h[1].length}>`);
+      // 이 제목 뒤에 둘 사진(머리글 텍스트가 같으면)
+      for (const img of inlineImages) if (img.after.replace(/^#+\s*/, "").trim() === h[2].trim()) out.push(figure(img));
       i++; continue;
     }
     if (l.startsWith("|")) {
@@ -95,7 +113,9 @@ export function mdToHtml(md: string) {
     }
     const p: string[] = [];
     while (i < lines.length && lines[i].trim() && !/^(#{2,3}\s|\||- |\d+\. |> )/.test(lines[i])) { p.push(inline(lines[i])); i++; }
-    out.push(`<p>${p.join(" ")}</p>`);
+    // 첫 문단 = 검색자에게 주는 답 → 요약 상자로
+    const lead = !out.some((o) => o.startsWith("<p"));
+    out.push(lead ? `<p class="nf-lead">${p.join(" ")}</p>` : `<p>${p.join(" ")}</p>`);
   }
   return { html: out.join("\n"), toc };
 }
@@ -114,7 +134,8 @@ function parse(slug: string, raw: string): EnBlogPost {
       related.push({ href, label });
     } else meta[kv[1]] = kv[2].trim();
   }
-  const { html, toc } = mdToHtml(m[2]);
+  const imgs = EN_BLOG_IMAGES[slug] || {};
+  const { html, toc } = mdToHtml(m[2], imgs.inline || []);
   return {
     slug,
     title: meta.title,
@@ -128,6 +149,7 @@ function parse(slug: string, raw: string): EnBlogPost {
     checked: meta.checked || meta.updated || meta.date,
     minutes: Math.max(1, Math.round(m[2].split(/\s+/).length / 230)),
     hasAffiliate: /viator\.com|agoda\.com|booking\.com/.test(m[2]),
+    hero: imgs.hero,
     related,
     html,
     toc,

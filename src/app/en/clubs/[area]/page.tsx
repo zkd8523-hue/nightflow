@@ -1,3 +1,4 @@
+import { listEnBlogPosts } from "@/lib/enBlog";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -481,6 +482,27 @@ export default async function EnClubsAreaPage({
           })}
         </div>
       </nav>
+
+      {/* 영어 블로그 글 — 이 지역(서울 동네면 서울 글, 부산이면 부산 글)로 가는 내부 링크(2026-10-04) */}
+      {(() => {
+        const city = area === "busan" ? "Busan" : "Seoul";
+        const guides = listEnBlogPosts().filter((p) => p.area === city);
+        if (!guides.length) return null;
+        return (
+          <nav className="max-w-lg lg:max-w-[1000px] mx-auto px-4 lg:px-8 pb-12">
+            <h2 className="text-[15px] font-black text-foreground mb-2">{city} guides</h2>
+            <ul className="space-y-1.5 text-[14px]">
+              {guides.map((g) => (
+                <li key={g.slug}>
+                  <Link href={`/en/blog/${g.slug}`} className="text-muted-foreground hover:text-brand-amber underline underline-offset-2">
+                    {g.h1}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        );
+      })()}
     </>
   );
 }
