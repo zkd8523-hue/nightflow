@@ -129,7 +129,7 @@ function useTr() {
 // 로그인 후에는 같은 자리가 계정 삭제 진입점이 된다.
 // App Store 심사 Guideline 5.1.1(v) 대응 — 제거 금지.
 function HeaderAuthButton() {
-  const { lang, tr } = useTr();
+  const { lang, t, tr } = useTr();
   const { user, isLoading } = useCurrentUser();
   const router = useRouter();
   const resetAuth = useAuthStore((s) => s.reset);
@@ -164,16 +164,28 @@ function HeaderAuthButton() {
     }
   };
 
-  if (isLoading) return <div className="w-[72px] h-8" />;
+  if (isLoading) return <div className="w-[164px] h-8" />;
 
   if (!user) {
     return (
-      <Link
-        href={`/login?lang=${lang}`}
-        className="px-4 py-1.5 rounded-full bg-inverse text-inverse-foreground font-black text-[13px] hover:opacity-90 transition-opacity"
-      >
-        {tr("Log in")}
-      </Link>
+      <div className="flex items-center gap-1.5">
+        {/* 외국인 트랙은 접수에 로그인을 요구하지 않는다(Model B · 관광객 마찰 최소화).
+            그래서 "Log in"만 있으면 계정 없이 접수한 손님은 자기 예약을 다시 볼
+            방법이 홈에서 사라진다 — 접수번호 + 이메일로 되찾는 입구를 같이 둔다
+            (Migration 691). */}
+        <Link
+          href={`/booking/lookup?lang=${lang}`}
+          className="px-3 py-1.5 rounded-full border border-border text-foreground/80 font-bold text-[13px] hover:bg-muted transition-colors whitespace-nowrap"
+        >
+          {t("예약조회", "My booking", "予約照会", "查询预订", "查詢預訂")}
+        </Link>
+        <Link
+          href={`/login?lang=${lang}`}
+          className="px-4 py-1.5 rounded-full bg-inverse text-inverse-foreground font-black text-[13px] hover:opacity-90 transition-opacity whitespace-nowrap"
+        >
+          {tr("Log in")}
+        </Link>
+      </div>
     );
   }
 
@@ -254,6 +266,20 @@ function MyRequestsTab() {
         <p className="text-[13px] text-muted-foreground">{tr("Track your requests and our replies.")}</p>
         <Link href={`/login?lang=${lang}`} className="px-7 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors">
           {tr("Log in")}
+        </Link>
+        {/* 계정 없이 접수한 손님 — 로그인해도 요청이 안 보인다(user_id가 없다).
+            접수번호 + 이메일로 가는 길을 여기서 알려줘야 막다른 길이 안 된다. */}
+        <Link
+          href={`/booking/lookup?lang=${lang}`}
+          className="text-[13px] font-bold text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors break-keep"
+        >
+          {t(
+            "계정 없이 접수했다면 — 접수번호로 조회",
+            "Booked without an account? Look it up",
+            "アカウントなしで申し込んだ方はこちら",
+            "没有账号也能用请求编号查询",
+            "沒有帳號也能用請求編號查詢"
+          )}
         </Link>
       </div>
     );

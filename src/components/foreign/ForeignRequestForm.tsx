@@ -2980,7 +2980,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         {loading ? t("전송 중…", "Sending…", "送信中…", "提交中…", "提交中…") : t("요청 보내기 — 무료", "Send request — free", "リクエスト送信 — 無料", "提交请求 — 免费", "提交請求 — 免費")}
       </button>
       <p className="text-center text-[12px] text-muted-foreground -mt-3">
-        {t("대부분 몇 시간 안에 회신 · 보증금 없음 · 현장 결제", "Most requests get a reply within hours · No deposit · Pay at the club", "多くは数時間以内に返信 · デポジット不要 · 現地払い", "大多数几小时内回复 · 无需订金 · 到店付款", "大多數幾小時內回覆 · 無需訂金 · 到店付款")}
+        {t("대부분 하루 안에 회신 · 보증금 없음 · 현장 결제", "Most requests get a reply within a day · No deposit · Pay at the club", "多くは1日以内に返信 · デポジット不要 · 現地払い", "大多数一天内回复 · 无需订金 · 到店付款", "大多數一天內回覆 · 無需訂金 · 到店付款")}
       </p>
       </>
       )}
@@ -3014,11 +3014,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               </h2>
               <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
                 {t(
-                  `대부분 몇 시간 안에 회신해요. 확정되는 즉시 ${CONTACT_LABEL[contactType]}로 알려드릴게요.`,
-                  `Most requests get a reply within hours. We'll message you on ${CONTACT_LABEL[contactType]} the moment it's confirmed.`,
-                  `多くは数時間以内に返信します。確定次第 ${CONTACT_LABEL[contactType]} でお知らせします。`,
-                  `大多数几小时内回复。一确认就通过 ${CONTACT_LABEL[contactType]} 通知你。`,
-                  `大多數幾小時內回覆。一確認就透過 ${CONTACT_LABEL[contactType]} 通知你。`
+                  `대부분 하루 안에 회신해요. 확정되는 즉시 ${CONTACT_LABEL[contactType]}로 알려드릴게요.`,
+                  `Most requests get a reply within a day. We'll message you on ${CONTACT_LABEL[contactType]} the moment it's confirmed.`,
+                  `多くは1日以内に返信します。確定次第 ${CONTACT_LABEL[contactType]} でお知らせします。`,
+                  `大多数一天内回复。一确认就通过 ${CONTACT_LABEL[contactType]} 通知你。`,
+                  `大多數一天內回覆。一確認就透過 ${CONTACT_LABEL[contactType]} 通知你。`
                 )}
               </p>
               {requestRef && <p className="text-[12px] font-bold text-muted-foreground tabular-nums">{t("접수 번호", "Request", "受付番号", "请求编号", "請求編號")} #{requestRef}</p>}
@@ -3028,7 +3028,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             <div className="rounded-2xl bg-card border border-border p-4">
               {[
                 { done: true, active: false, title: t("접수 완료", "Request received", "受付完了", "已收到请求", "已收到請求"), sub: contactType === "email" ? t(`${contactValue.trim()}로 사본을 보냈어요`, `Copy sent to ${contactValue.trim()}`, `${contactValue.trim()} に控えを送信`, `副本已发送至 ${contactValue.trim()}`, `副本已寄至 ${contactValue.trim()}`) : t("방금", "Just now", "たった今", "刚刚", "剛剛") },
-                { done: false, active: true, title: t("클럽이 테이블 확인 중", "Club confirming your table", "クラブがテーブルを確認中", "夜店正在确认桌位", "夜店正在確認包廂"), sub: t("보통 몇 시간 · 메뉴판 기준으로 가격 검수", "Usually within hours · Price checked against the menu", "通常数時間 · メニューで価格を照合", "通常几小时 · 按酒单核对价格", "通常幾小時 · 依酒單核對價格") },
+                { done: false, active: true, title: t("클럽이 테이블 확인 중", "Club confirming your table", "クラブがテーブルを確認中", "夜店正在确认桌位", "夜店正在確認包廂"), sub: t("보통 하루 안 · 메뉴판 기준으로 가격 검수", "Usually within a day · Price checked against the menu", "通常1日以内 · メニューで価格を照合", "通常一天内 · 按酒单核对价格", "通常一天內 · 依酒單核對價格") },
                 { done: false, active: false, title: t(`${CONTACT_LABEL[contactType]}로 예약 패스 발송`, `Booking pass on ${CONTACT_LABEL[contactType]}`, `${CONTACT_LABEL[contactType]} で予約パス`, `通过 ${CONTACT_LABEL[contactType]} 发送入场凭证`, `透過 ${CONTACT_LABEL[contactType]} 傳送入場憑證`), sub: t("입구에서 여권과 함께 보여주세요", "Show it at the door with your passport", "入口でパスポートと一緒に提示", "入口出示凭证和护照", "入口出示憑證和護照") },
               ].map((step, i, arr) => (
                 <div key={i} className="flex gap-3">
@@ -3146,6 +3146,24 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                 </button>
               ) : null}
             </div>
+
+            {/* 예약조회 — 이 화면을 닫은 뒤에도 상태를 다시 볼 수 있는 유일한 경로.
+                접수확인 메일의 "예약조회" 버튼과 같은 곳으로 보낸다(Migration 691). */}
+            {requestRef && (() => {
+              const lookupEmail = contactType === "email" ? contactValue.trim() : backupEmail.trim();
+              const qs = new URLSearchParams({ ref: requestRef, lang: lang === "ko" ? "en" : lang });
+              if (lookupEmail) qs.set("email", lookupEmail);
+              return (
+                <Link
+                  href={`/booking/lookup?${qs.toString()}`}
+                  className="flex items-center gap-2.5 rounded-xl bg-card border border-border px-3 py-3 text-[13px] font-bold hover:bg-muted transition-colors"
+                >
+                  <Search className="w-4 h-4 text-money shrink-0" />
+                  <span className="flex-1">{t("나중에 상태 다시 보기", "Check this later", "あとで状態を確認", "稍后再查看状态", "稍後再查看狀態")}</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </Link>
+              );
+            })()}
 
             {/* 준비물 */}
             <div className="space-y-2">

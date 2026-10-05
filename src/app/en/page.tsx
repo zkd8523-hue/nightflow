@@ -417,7 +417,7 @@ export default async function EnHomePage() {
         <p>
           {flagCount} people are planning nights out in Seoul right now
           (Gangnam, Hongdae, Itaewon, Apgujeong). Pick a club and we&apos;ll
-          help you book it — most requests get a reply within hours.
+          help you book it — most requests get a reply within a day.
         </p>
 
         <h2>Browse Korea Clubs by District</h2>

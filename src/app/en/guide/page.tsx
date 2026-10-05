@@ -301,7 +301,7 @@ export default async function EnglishLanding() {
         <p>
           Pick your club — Gangnam, Hongdae, or Itaewon — along with your
           date, party size, and budget. NightFlow contacts the club directly
-          and locks in the best table for your budget, usually within hours.
+          and locks in the best table for your budget, usually within a day.
           Pay the club directly when you arrive. Zero booking fee, no broker
           markup, no deposit.
         </p>

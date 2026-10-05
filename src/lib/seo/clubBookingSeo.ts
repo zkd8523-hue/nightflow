@@ -17,7 +17,7 @@
 // "開放式桌位，不是密閉房間"으로 한 번 정의한다. 桌位는 키워드에 보조로 남긴다.
 // 最低消費는 低消. zh(대륙)는 卡座/预订/最低消费 그대로.
 // ja는 "予約最低額" 대신 "最低予約金額". 응답 약속은 폼 문구("Most requests get a reply
-// within hours")와 맞춰 "보통 몇 시간 안"으로 — 24시간 SLA를 새로 만들지 않는다.
+// within a day")와 맞춰 "하루 안"으로 통일 — 몇 시간은 현실적으로 못 지켜서 하루로 완화했다.
 // zh-tw 구두점은 기존 /zh-tw 페이지 관례(반각 쉼표)를 따른다 — 한 description 안에서 전각·반각이 섞이지 않게.
 //
 // "2~3개면 최저소비 도달"(크리틱 2차): 최저 항목이 ₩40,000인 클럽에선 거짓이라
@@ -67,7 +67,7 @@ const COPY: Record<SeoLang, Copy> = {
         : `Table bookings at ${n} through NightFlow start at ${f}. You pick items from the club's real menu, so the total you see is the price you pay at the club.`,
     faqHowQ: (n) => `How do I book a table at ${n}?`,
     faqHowA: (n) =>
-      `Choose your date and group size, pick bottles from ${n}'s menu, and leave your contact. NightFlow confirms directly with ${n} in Korean and replies to you in English — most requests get a reply within hours. No deposit, no broker fee; you pay the club on the night.`,
+      `Choose your date and group size, pick bottles from ${n}'s menu, and leave your contact. NightFlow confirms directly with ${n} in Korean and replies to you in English — most requests get a reply within a day. No deposit, no broker fee; you pay the club on the night.`,
     keywords: (n, a) => [`${n} table price`, `${n} bottle service price`, `${n} VIP table`, `${n} minimum spend`, `book ${n}`, `${a} table booking`, `${a} bottle service`],
     cta: (n, f) => (f ? `🍾 Book ${n} · from ${f}` : `🍾 Book ${n}`),
     unbookableNotice: (n, a, k) => ({
@@ -89,7 +89,7 @@ const COPY: Record<SeoLang, Copy> = {
         : `NightFlow経由の${n}テーブル予約は${f}〜です。クラブの実際のメニューから選ぶので、表示合計がそのまま当日のお支払い額です。`,
     faqHowQ: (n) => `${n}のテーブルはどう予約しますか？`,
     faqHowA: (n) =>
-      `日程と人数を選び、${n}のメニューからボトルを選んで連絡先を残すだけ。NightFlowが${n}に韓国語で直接確認し、日本語でご返信します — 多くの場合数時間以内です。デポジット不要・仲介手数料なし、お支払いは当日クラブで。`,
+      `日程と人数を選び、${n}のメニューからボトルを選んで連絡先を残すだけ。NightFlowが${n}に韓国語で直接確認し、日本語でご返信します — 多くの場合1日以内です。デポジット不要・仲介手数料なし、お支払いは当日クラブで。`,
     keywords: (n, a) => [`${n} テーブル料金`, `${n} ボトル 値段`, `${n} VIP`, `${n} 最低料金`, `${n} 予約方法`, `${a} テーブル予約`, `${a} ボトルサービス`],
     cta: (n, f) => (f ? `🍾 ${n}を予約 · ${f}〜` : `🍾 ${n}を予約`),
     unbookableNotice: (n, a, k) => ({
@@ -111,7 +111,7 @@ const COPY: Record<SeoLang, Copy> = {
         : `通过 NightFlow 预订${n}卡座${f}起。您直接从夜店真实酒单选酒，看到的总额就是当晚在夜店支付的价格。`,
     faqHowQ: (n) => `怎样预订${n}的卡座？`,
     faqHowA: (n) =>
-      `选择日期和人数，从${n}的酒单选酒，留下联系方式即可。NightFlow 会用韩语直接向${n}确认，并用中文回复您 — 多数请求几小时内回复。无需押金、无中介费，当晚在夜店付款。`,
+      `选择日期和人数，从${n}的酒单选酒，留下联系方式即可。NightFlow 会用韩语直接向${n}确认，并用中文回复您 — 多数请求一天内回复。无需押金、无中介费，当晚在夜店付款。`,
     keywords: (n, a) => [`${n} 卡座价格`, `${n} 酒水价格`, `${n} VIP卡座`, `${n} 最低消费`, `${n} 怎么预订`, `${a} 卡座预订`, `${a} 夜店最低消费`],
     cta: (n, f) => (f ? `🍾 预订 ${n} · ${f}起` : `🍾 预订 ${n}`),
     unbookableNotice: (n, a, k) => ({
@@ -133,7 +133,7 @@ const COPY: Record<SeoLang, Copy> = {
         : `透過 NightFlow 在${n}訂包廂${f}起。您直接從夜店真實酒單選酒,看到的總額就是當晚在夜店支付的價格。`,
     faqHowQ: (n) => `怎麼在${n}訂包廂？`,
     faqHowA: (n) =>
-      `選擇日期和人數,從${n}的酒單選酒,留下聯絡方式即可。NightFlow 會用韓語直接向${n}確認,並用中文回覆您 — 多數請求幾小時內回覆。免訂金、無中介費,當晚在夜店付款。`,
+      `選擇日期和人數,從${n}的酒單選酒,留下聯絡方式即可。NightFlow 會用韓語直接向${n}確認,並用中文回覆您 — 多數請求一天內回覆。免訂金、無中介費,當晚在夜店付款。`,
     keywords: (n, a) => [`${n} 包廂價格`, `${n} 包廂低消`, `${n} 酒水價格`, `${n} VIP 包廂`, `${n} 桌位價格`, `${n} 怎麼訂包廂`, `${a} 夜店包廂`, `${a} 夜店低消`],
     cta: (n, f) => (f ? `🍾 訂包廂 ${n} · ${f}起` : `🍾 訂包廂 ${n}`),
     unbookableNotice: (n, a, k) => ({
