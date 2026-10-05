@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { WEEKLY_ISSUES } from "@/lib/weekly/issues";
 import { eventSlug } from "@/lib/events/slug";
 import { createServerClient } from "@supabase/ssr";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
@@ -34,6 +35,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/dj-cup`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     { url: `${BASE_URL}/dj-cup/ranking`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE_URL}/events`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    // 클러빙 뉴스 — 목록은 호가 늘 때마다 바뀌고, 각 호는 한 번 쓰면 안 바뀐다.
+    // 호 자체가 "이번 주 어디 갈까"를 담은 글이라 검색 유입을 받을 만한 페이지다.
+    { url: `${BASE_URL}/weekly`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    ...WEEKLY_ISSUES.map((issue) => ({
+      url: `${BASE_URL}/weekly/${issue.slug}`,
+      // slug 가 발행일(YYYY-MM-DD)이라 그대로 쓴다 — now 로 두면 매 빌드마다
+      // 전부 "방금 수정됨"이 되어 크롤러가 신뢰하지 않는다.
+      lastModified: new Date(`${issue.slug}T12:00:00+09:00`),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })),
     ...SHARE_AREAS.map((area) => ({
       url: `${BASE_URL}/share/${encodeURIComponent(area)}`,
       lastModified: now,
