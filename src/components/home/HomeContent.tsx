@@ -35,7 +35,7 @@ import type { ClubBenefitItem } from "@/lib/home/clubBenefitData";
 import { CouponHomeStrip } from "@/components/home/CouponHomeStrip";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
-import { DjCupPromoSheet } from "@/components/home/DjCupPromoSheet";
+import { WeeklyPromoSheet } from "@/components/home/WeeklyPromoSheet";
 import { PartyOnboardingSheet } from "@/components/home/PartyOnboardingSheet";
 import { OfferCreditGuideSheet } from "@/components/md/OfferCreditGuideSheet";
 import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
@@ -681,7 +681,7 @@ export function HomeContent({
           깃발을 쓴 적 없는 신규 유저에게는 없는 서비스의 종료 소식이라 혼란만 준다.
           컴포넌트는 남겨둠(재공지 필요 시 다시 마운트). */}
       {/* DJ 이상형 월드컵 홍보 — 비로그인 포함 기기당 1회 (localStorage) */}
-      <DjCupPromoSheet />
+      <WeeklyPromoSheet />
       {/* 최근 매치 깃발 모달 */}
       <Sheet open={showMatchedModal} onOpenChange={setShowMatchedModal}>
         <SheetContent

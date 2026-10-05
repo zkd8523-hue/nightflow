@@ -99,6 +99,14 @@ export function NewsletterSignup({ source = "home" }: { source?: string }) {
       return;
     }
 
+    // 구독한 사람에게는 홈 팝업을 더 띄우지 않는다 — 메일로 받을 사람에게
+    // 매주 같은 안내가 뜨면 성가시다. WeeklyPromoSheet 가 이 키를 읽는다.
+    try {
+      localStorage.setItem("nightflow_weekly_subscribed", "1");
+    } catch {
+      // 프라이빗 모드 등 — 표시를 못 남겨도 구독 자체는 끝났으니 넘어간다
+    }
+
     trackEvent("newsletter_subscribe", {
       source,
       duplicate,

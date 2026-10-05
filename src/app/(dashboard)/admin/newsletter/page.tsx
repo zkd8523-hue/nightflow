@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Mail, Users, UserMinus, MailWarning } from "lucide-react";
+import { ChevronLeft, Mail, Users, UserMinus, MailWarning, Eye } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import dayjs from "dayjs";
+import { WEEKLY_ISSUES } from "@/lib/weekly/issues";
 
 // 뉴스레터 구독자 현황 — Migration 689/690.
 //
@@ -123,6 +124,61 @@ export default async function AdminNewsletterPage() {
   }
   const sourceRows = [...bySource.entries()].sort((a, b) => b[1].total - a[1].total);
 
+  // 편별 조회수 — user_events 의 weekly_issue_view (WeeklyIssueTracker, 호 페이지 진입 시 1회).
+  // 이 이벤트는 2026-10-05 에 붙였다. 그 전 조회는 어디에도 남아 있지 않아서 집계할 수 없다.
+  //
+  // PostgREST 는 한 번에 1000행까지만 돌려준다 — 페이지를 넘겨 가며 읽는다.
+  // 호가 늘어도 이 화면은 "최근 호가 읽히나"를 보는 용도라 2만 건을 넘기면 잘라낸다.
+  const PAGE = 1000;
+  const MAX_ROWS = 20000;
+  const viewRows: { anon_id: string; user_id: string | null; properties: { slug?: string } | null }[] = [];
+  let viewsTruncated = false;
+  for (let from = 0; from < MAX_ROWS; from += PAGE) {
+    const { data: chunk } = await admin
+      .from("user_events")
+      .select("anon_id, user_id, properties")
+      .eq("event_name", "weekly_issue_view")
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (!chunk || chunk.length === 0) break;
+    viewRows.push(...(chunk as typeof viewRows));
+    if (chunk.length < PAGE) break;
+    if (from + PAGE >= MAX_ROWS) viewsTruncated = true;
+  }
+
+  // 관리자 본인이 미리보기로 연 조회는 뺀다 — 구독자 1명인 지금은 내 조회가 숫자를 좌우한다.
+  // 로그인하지 않고 연 조회는 구분할 수 없다.
+  const { data: adminUsers } = await admin.from("users").select("id").eq("role", "admin");
+  const adminIds = new Set((adminUsers ?? []).map((u: { id: string }) => u.id));
+
+  const viewsBySlug = new Map<string, { views: number; visitors: Set<string> }>();
+  for (const r of viewRows) {
+    if (r.user_id && adminIds.has(r.user_id)) continue;
+    const slug = r.properties?.slug;
+    if (!slug) continue;
+    const cur = viewsBySlug.get(slug) ?? { views: 0, visitors: new Set<string>() };
+    cur.views += 1;
+    cur.visitors.add(r.anon_id);
+    viewsBySlug.set(slug, cur);
+  }
+
+  // 구독 전환 — WeeklyIssueBody 가 source 를 `weekly_${slug}` 로 남긴다.
+  const issueRows = WEEKLY_ISSUES.map((issue) => {
+    const v = viewsBySlug.get(issue.slug);
+    const visitors = v?.visitors.size ?? 0;
+    const subs = subscribers.filter((x) => x.source === `weekly_${issue.slug}`).length;
+    return {
+      slug: issue.slug,
+      volume: issue.volume,
+      title: issue.title.replace(/\n/g, " "),
+      views: v?.views ?? 0,
+      visitors,
+      subs,
+      // 방문자 기준 — 같은 사람이 여러 번 열어도 한 명으로 센다.
+      rate: visitors > 0 ? Math.round((subs / visitors) * 1000) / 10 : null,
+    };
+  });
+
   // 판정 기준(689 주석): 4주 안에 200명이면 발행 시작, 50명 미만이면 접는다.
   const first = subscribers.length > 0 ? subscribers[subscribers.length - 1].created_at : null;
   const daysSinceFirst = first ? dayjs().diff(dayjs(first), "day") : 0;
@@ -189,6 +245,53 @@ export default async function AdminNewsletterPage() {
             tone={notMailed > 0 ? "warn" : "default"}
             icon={<MailWarning className="w-3.5 h-3.5" />}
           />
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="text-lg font-black flex items-center gap-2">
+              <Eye className="w-5 h-5 text-muted-foreground" />
+              편별 조회수
+            </h2>
+            <p className="text-xs text-muted-foreground text-right">
+              10/05 이후 조회만 집계됩니다. 관리자 계정 조회는 제외.
+            </p>
+          </div>
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-muted-foreground text-xs font-bold border-b border-border">
+                  <th className="text-left px-4 py-3">호</th>
+                  <th className="text-right px-4 py-3">조회</th>
+                  <th className="text-right px-4 py-3">방문자</th>
+                  <th className="text-right px-4 py-3">구독</th>
+                  <th className="text-right px-4 py-3">전환율</th>
+                </tr>
+              </thead>
+              <tbody>
+                {issueRows.map((r) => (
+                  <tr key={r.slug} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3">
+                      <Link href={`/weekly/${r.slug}`} className="font-bold hover:underline">
+                        {r.volume} · {r.title}
+                      </Link>
+                      <div className="text-xs text-muted-foreground mt-0.5">{r.slug}</div>
+                    </td>
+                    <td className="px-4 py-3 text-right font-black">{r.views.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right font-black">{r.visitors.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right text-green-500 font-black">{r.subs.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right font-black">
+                      {r.rate === null ? <span className="text-muted-foreground">-</span> : `${r.rate}%`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            조회 = 페이지를 연 횟수, 방문자 = 브라우저 기준 순방문자. 전환율 = 구독 ÷ 방문자.
+            {viewsTruncated && " (조회 로그가 2만 건을 넘어 일부만 집계됨)"}
+          </p>
         </section>
 
         <section className="space-y-3">

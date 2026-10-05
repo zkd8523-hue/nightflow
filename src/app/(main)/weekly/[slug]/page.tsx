@@ -4,6 +4,7 @@ import Link from "next/link";
 import { WEEKLY_ISSUES } from "@/lib/weekly/issues";
 import { WeeklyIssueBody } from "@/components/weekly/WeeklyIssueBody";
 import { WeeklyBenefitSections } from "@/components/weekly/WeeklyBenefitSections";
+import { WeeklyIssueTracker } from "@/components/analytics/WeeklyIssueTracker";
 
 export const dynamic = "force-static";
 
@@ -46,6 +47,7 @@ export default async function WeeklyIssuePage({
 
   return (
     <main className="max-w-lg mx-auto pb-10">
+      <WeeklyIssueTracker slug={issue.slug} />
       <nav className="flex items-center justify-between px-4 py-2.5 border-b border-border">
         <Link href="/weekly" className="font-mono text-[11px] text-muted-foreground">
           ‹ 지난 호
