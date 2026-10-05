@@ -6,6 +6,8 @@ import { ChevronLeft } from "lucide-react";
 interface Props {
   clubId: string | null;
   onClose: () => void;
+  /** 임베드 URL 에 덧붙일 쿼리(앞에 & 없이). 예: "coupons=1" */
+  query?: string;
 }
 
 /**
@@ -14,7 +16,7 @@ interface Props {
  * - 닫으면 지도 그대로 → 다른 핀 비교 쉬움
  * - 공유/SEO용 외부 링크 버튼 별도 제공
  */
-export function ClubDetailSheet({ clubId, onClose }: Props) {
+export function ClubDetailSheet({ clubId, onClose, query }: Props) {
   const open = !!clubId;
 
   // 모바일 바텀시트 아래로 드래그 → 닫기
@@ -98,7 +100,7 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
           {/* 클럽 이미지 좌상단 floating 뒤로가기 */}
           <BackButton onClose={onClose} />
           <iframe
-            src={`/clubs/${clubId}?embedded=1`}
+            src={`/clubs/${clubId}?embedded=1${query ? `&${query}` : ""}`}
             title="클럽 상세"
             className="flex-1 w-full border-0 bg-background"
           />
@@ -119,7 +121,7 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
           {/* 클럽 이미지 좌상단 floating 뒤로가기 */}
           <BackButton onClose={onClose} />
           <iframe
-            src={`/clubs/${clubId}?embedded=1`}
+            src={`/clubs/${clubId}?embedded=1${query ? `&${query}` : ""}`}
             title="클럽 상세"
             className="flex-1 w-full border-0 bg-background"
           />

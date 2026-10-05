@@ -26,9 +26,18 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const APIFY_TOKEN = Deno.env.get("APIFY_API_TOKEN")!;
 
-/** 1회 실행 상한. 하루 새 DJ 는 보통 10~20명이라 넉넉하면서, 뭔가 잘못돼도
- *  피해가 $0.12 를 넘지 않는다. */
-const MAX_PER_RUN = 50;
+/**
+ * 1회 실행 상한.
+ *
+ * 주 1회 실행(Migration 674)으로 바꾸면서 50 → 120 으로 올렸다. 하루 새 DJ 가
+ * 10~20명이니 일주일이면 70~140명이 쌓이는데, 50 에서 잘리면 나머지는 다음 주로
+ * 밀려 영영 못 따라잡는다.
+ *
+ * ⚠️ 이 값을 올려도 비용은 안 는다 — 조회 대상은 "링크 없는 DJ" 로 정해져 있고
+ *    어차피 언젠가 조회할 사람들을 한 번에 묶을 뿐이다(건당 $0.0023 는 동일).
+ *    이건 폭주 방지용 상한이지 조절 손잡이가 아니다.
+ */
+const MAX_PER_RUN = 120;
 /** 못 찾은 DJ 를 다시 볼 때까지의 유예. 프로필은 자주 안 바뀌므로 길게 둔다. */
 const RECHECK_DAYS = 90;
 const CHUNK = 25;

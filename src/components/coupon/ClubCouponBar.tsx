@@ -31,6 +31,16 @@ export function ClubCouponBar({ clubId }: { clubId: string }) {
     return () => { cancelled = true; };
   }, [supabase, clubId]);
 
+  /* ?coupons=1 로 들어오면 쿠폰 시트를 바로 편다 — 뉴스레터 본문의 쿠폰 줄처럼
+     "쿠폰을 보러" 온 진입에서는 클럽 상세를 한 번 더 눌러야 할 이유가 없다.
+     쿠폰을 받아온 뒤에 펴야 하므로 로딩이 끝난 다음에 연다. */
+  useEffect(() => {
+    if (!coupons || coupons.length === 0) return;
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("coupons") !== "1") return;
+    setSheetOpen(true);
+  }, [coupons]);
+
   if (!coupons || coupons.length === 0) return null;
 
   return (

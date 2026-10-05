@@ -24,6 +24,11 @@ import { groupPuzzlesByClub } from "@/components/puzzles/ClubDirectCard";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { LineupTicker } from "@/components/home/LineupTicker";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
+import { WeeklyNewsCarousel } from "@/components/home/WeeklyNewsCarousel";
+import { getHomeWeeklyCards } from "@/lib/weekly/issues";
+
+/** 주간 호 카드 — 코드 상수라 렌더마다 다시 만들 이유가 없다 */
+const WEEKLY_CARDS = getHomeWeeklyCards();
 import { DjDiscoveryCard, type DiscoveryDj } from "@/components/lineups/DjDiscoveryCard";
 import { useDetectedArea } from "@/hooks/useDetectedArea";
 import type { ClubBenefitItem } from "@/lib/home/clubBenefitData";
@@ -872,6 +877,17 @@ export function HomeContent({
             <div className="mt-3">
               <CouponHomeStrip />
             </div>
+
+            {/* ── 클러빙 뉴스 ──
+                   구독 폼을 홈에 두지 않는 이유: 한 호를 읽기 전에 "매주 받으실래요?"를
+                   물으면 받을 게 뭔지 모르는 상태에서 묻는 셈이다. 홈은 표지만 보여주고
+                   구독은 /weekly 본문을 끝까지 읽은 자리에서 받는다.
+                   0건이면 캐러셀이 스스로 렌더하지 않는다. */}
+            {WEEKLY_CARDS.length > 0 && (
+              <div className="mt-4">
+                <WeeklyNewsCarousel issues={WEEKLY_CARDS} />
+              </div>
+            )}
           </div>
 
           {/* ── 클럽 다이렉트 섹션 (파트너 클럽이 올린 조각) — 0건이면 헤더까지 통째 숨김 ── */}

@@ -64,18 +64,39 @@ const CURATION_ACCOUNT = "hiphopplayacalendar";
 //    동일함을 실측). 고정글은 대부분 오래된 글이라 날짜 필터가 대신 걸러준다 —
 //    HIVE는 고정글 3개(📌)가 맨 위에 있어 깊이 3으로는 진짜 라인업이 안 보였는데,
 //    날짜 필터를 넣으니 8/27 주말 라인업이 정상적으로 잡혔다.
-const POSTS_PER_CLUB = 8;
+//
+// ⚠️ 위 "깊이는 비용과 무관" 기록은 2026-09-26 재실측에서 뒤집혔다.
+//    같은 5개 계정·창 2일로 돌린 결과: limit 2 → 6건, limit 8 → 9건.
+//    게다가 limit 8 에서는 **요청하지도 않은 계정**의 글이 섞여 나왔다
+//    (marie_glauca, haven.hq — 요청 목록에 없는 핸들). 액터가 빈자리를
+//    남의 글로 채우고 그것도 과금된다. 깊이는 상한이 아니라 실제 청구 건수다.
+//
+//    3으로 내린 근거: 9/23 실행에서 글을 받은 34곳 중 4건 이상 받은 곳은 6곳뿐.
+//    자주 올리는 클럽이 잘릴 여지는 남지만, 아래 창(2일)과 격일 주기 조합에서는
+//    한 주기에 3건을 넘게 올리는 클럽이 드물다.
+const POSTS_PER_CLUB = 3;
 
 // 게시된 지 이보다 오래된 글은 수집·파싱하지 않는다.
 //
-// 왜 3일인가: 수집기는 매일 돈다. 어제·오늘 글만 보면 충분하지만, 실행이 하루
-// 밀리면(장애·배포·Apify 오류) 그 사이 게시물을 영영 놓친다 — ig_permalink가
-// UNIQUE라 한 번 건너뛴 글은 다시 수집되지 않는다. 하루치 여유를 둔 값이다.
+// 왜 2일인가: 이 값은 **실행 주기와 같아야 한다**. 창이 주기보다 길면 그 배수만큼
+// 같은 글을 다시 사기 때문이다. 매일 실행 + 창 3일이던 2026-09 상태에서
+// collection_runs 12회 실측 중복률이 59% 였다(수신 1680 / 신규 682).
+// 비용 = 고유 게시물 수 × (창 ÷ 주기) 이므로 창=주기면 중복이 0이 된다.
 //
-// 더 늘려도 얻는 게 거의 없다(실측 2026-08-30): 8/27~29 수집에서 3일 이상 된
-// 게시물 6건 중 5건이 not_timetable이었다. 반대로 이 값이 곧 Apify 청구 건수를
-// 정한다 — 아래 POSTS_PER_CLUB이 아니라 이 기간이 실제 비용을 좌우한다.
-const CLUB_POST_MAX_AGE_DAYS = 3;
+// 2026-10-04 결정: **매일 실행 + 창 2일**. 창이 주기의 2배라 하루치가 중복되지만
+// 그 중복이 곧 보험이다 — cron 이 한 번 실패해도 다음 날이 메운다. 실제로
+// 2026-09-23 Apify 한도 소진으로 3일 멈췄고 그 사이 라인업은 복구하지 못했다
+// (ig_permalink UNIQUE 라 한 번 건너뛴 글은 영영 안 들어온다).
+//
+// 격일로 내리면 월 $1.9 를 아끼지만, 클럽이 화·수에 올리는 주말 공지를 하루
+// 늦게 잡게 된다(드래프트 1,153건 기준 업로드 요일 화 229·수 234가 최다).
+// Migration 683 으로 대상을 32곳으로 줄여 월 $3.83 이면 되므로, Starter $19
+// 안에서 $15 가 남는다. 그 여유를 신선도와 맞바꿀 이유가 없다.
+//
+// 3일이 낭비였던 근거(2026-09-26 실측): 9월 드래프트 762건의 "게시→수집" 간격이
+// 당일 734건(96%) / 1일 20건 / 2일 8건 / **3일 이상 0건**. 3일치를 매일 사면서
+// 건진 게 0건이었다.
+const CLUB_POST_MAX_AGE_DAYS = 2;
 
 /** 게시물이 너무 오래됐나. timestamp가 없으면(=알 수 없음) 통과시킨다. */
 function isStalePost(timestamp: string | null | undefined): boolean {
@@ -925,7 +946,7 @@ async function processCurationPost(post: any, ctx: SaveCtx, venueHint?: string):
 }
 
 // Apify 비동기 실행 → 완료 폴링 → 데이터셋 반환
-async function runApify(urls: string[]): Promise<any[]> {
+async function runApify(urls: string[], postLimit = POSTS_PER_CLUB): Promise<any[]> {
   // 타임아웃을 안 걸면 fetchImageToStorage/Anthropic 호출과 같은 방식으로 워커가
   // 영원히 멈출 수 있다(2026-08-27 실측 — 다른 fetch에서 실제로 발생, 여기도 예방).
   const FETCH_TIMEOUT_MS = 30_000;
@@ -938,7 +959,7 @@ async function runApify(urls: string[]): Promise<any[]> {
       body: JSON.stringify({
         directUrls: urls,
         resultsType: "posts",
-        resultsLimit: POSTS_PER_CLUB,
+        resultsLimit: postLimit,
         // 고정글 제외 요청. ⚠️ 실측상 이 액터에서는 동작하지 않는다(true/false
         // 결과 동일). 액터가 고치면 바로 효과를 보도록 남겨둔다 — 실제로 고정글을
         // 걸러주는 건 아래 onlyPostsNewerThan이다.
@@ -1146,26 +1167,40 @@ async function runCollection() {
     // 1) 수집 대상 계정
     const { data: clubs, error: clubErr } = await supabase
       .from("clubs")
-      .select("id,name,name_en,aliases,instagram")
+      .select("id,name,name_en,aliases,instagram,lineup_post_limit")
       .eq("status", "approved")
       .eq("is_test", false)
+      // Migration 683: 12일 실측에서 공연 0건이던 69곳은 꺼져 있다.
+      // 빼도 잃는 공연이 0건이고 월 $7.30 이 절약된다.
+      .eq("lineup_collect", true)
       .is("deleted_at", null);
     if (clubErr) throw clubErr;
 
+    // registry 에도 수집 대상이 있다 — 공연장·페스티벌은 clubs 가 아니라 여기 있고,
+    // 생산 1·2위인 축제·롤링홀이 그렇다(Migration 683).
     const { data: registryHandles, error: regErr } = await supabase
       .from("club_name_registry")
-      .select("name_raw, instagram_handle, matched_club_id")
+      .select("name_raw, instagram_handle, matched_club_id, lineup_post_limit")
+      .eq("lineup_collect", true)
       .not("instagram_handle", "is", null)
       .neq("instagram_handle", "");
     if (regErr) throw regErr;
 
     const handleToClub = new Map<string, ClubRef>();
+    // 계정별 수집 깊이(Migration 683). Apify 는 받은 글 수만큼 과금하므로
+    // 드물게 올리는 계정에 깊은 limit 을 주면 빈자리를 남의 글로 채워 그것까지
+    // 청구된다(2026-09-26 실측). 값이 없으면 기존 기본값을 쓴다.
+    const handleLimit = new Map<string, number>();
     const urls = [`https://www.instagram.com/${CURATION_ACCOUNT}/`];
+    // 큐레이션 계정은 clubs 테이블에 없어서 위 limit 맵에 안 잡힌다. 그런데
+    // club_events 754건 중 588건(78%)이 이 한 계정에서 나온다 — 가장 깊게 판다.
+    handleLimit.set(CURATION_ACCOUNT, 5);
 
     for (const c of clubs ?? []) {
       const handle = (c.instagram ?? "").trim().replace(/^@/, "");
       if (!handle) continue;
       handleToClub.set(handle.toLowerCase(), { id: c.id, name: c.name });
+      handleLimit.set(handle.toLowerCase(), (c as any).lineup_post_limit ?? POSTS_PER_CLUB);
     }
     for (const r of registryHandles ?? []) {
       const handle = (r.instagram_handle ?? "").trim().replace(/^@/, "");
@@ -1174,6 +1209,7 @@ async function runCollection() {
         id: r.matched_club_id,
         name: r.name_raw,
       });
+      handleLimit.set(handle.toLowerCase(), (r as any).lineup_post_limit ?? POSTS_PER_CLUB);
     }
     for (const handle of handleToClub.keys()) urls.push(`https://www.instagram.com/${handle}/`);
     results.accounts = urls.length;
@@ -1211,14 +1247,38 @@ async function runCollection() {
       return !(m && restricted.includes(m[1].toLowerCase()));
     });
 
-    const [mainItems, restrictedItems] = await Promise.all([
-      runApify(mainUrls),
+    // limit 이 같은 계정끼리 묶어서 호출한다. Apify 의 resultsLimit 은 run 전체에
+    // 하나뿐이라, 계정별 깊이를 주려면 호출을 나누는 수밖에 없다. 묶음 수는
+    // 많아야 서넛(limit 2~5)이라 오버헤드는 작다.
+    const urlsByLimit = new Map<number, string[]>();
+    for (const u of mainUrls) {
+      const m = u.match(/instagram\.com\/([^/?#]+)/i);
+      const h = m ? m[1].toLowerCase() : "";
+      const lim = handleLimit.get(h) ?? POSTS_PER_CLUB;
+      if (!urlsByLimit.has(lim)) urlsByLimit.set(lim, []);
+      urlsByLimit.get(lim)!.push(u);
+    }
+    console.log(
+      `📐 깊이별 묶음: ${[...urlsByLimit].map(([l, u]) => `limit${l}×${u.length}곳`).join(", ")}`
+    );
+
+    const [mainGroups, restrictedItems] = await Promise.all([
+      Promise.all(
+        [...urlsByLimit].map(([lim, groupUrls]) =>
+          // 한 묶음이 실패해도 나머지 묶음은 살린다.
+          runApify(groupUrls, lim).catch((e) => {
+            console.error(`⚠️ limit${lim} 묶음 수집 실패: ${String(e).slice(0, 150)}`);
+            return [] as any[];
+          })
+        )
+      ),
       // 보조 액터가 죽어도 전체 수집은 계속되어야 한다.
       runApifyRestricted(restricted).catch((e) => {
         console.error(`⚠️ 제한계정 수집 실패: ${String(e).slice(0, 150)}`);
         return [] as any[];
       }),
     ]);
+    const mainItems = mainGroups.flat();
     if (restrictedItems.length > 0) {
       console.log(`🔒 제한계정에서 ${restrictedItems.length}건 수집`);
     }

@@ -29,6 +29,7 @@ import {
   Disc3,
   Activity,
   Users2,
+  Mail,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -512,6 +513,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-purple-500/10",
       badge: "발행→참여→성사",
       href: "/admin/parties",
+    },
+    {
+      label: "뉴스레터 구독자",
+      value: "수집 현황",
+      icon: Mail,
+      color: "text-[#DFFF00]",
+      bgColor: "bg-[#DFFF00]/10",
+      badge: "클러빙 뉴스",
+      href: "/admin/newsletter",
     },
     {
       label: "이탈·전환 인사이트",
