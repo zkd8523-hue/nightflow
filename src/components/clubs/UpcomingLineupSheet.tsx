@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { formatBusinessMin, nowBusinessMinutes } from "@/lib/lineups/time";
 import { formatLineupDate } from "@/lib/lineups/formatDate";
-import { Disc3, Play } from "lucide-react";
+import { Disc3, Instagram, Play } from "lucide-react";
 import { DjNameButton } from "@/components/djs/DjNameButton";
 import { DjProfileSheet, type DjProfileTarget } from "@/components/djs/DjProfileSheet";
 import { LineupReportSheet } from "@/components/lineups/LineupReportSheet";
@@ -347,13 +347,19 @@ export function UpcomingLineupSheet({ clubId, lineups }: { clubId: string; lineu
                       <span className="min-w-0 flex-1">
                         {/* 시트는 행이 연다 — 이름 글자만 표적이면 누르기 어렵다
                             (날짜별 라인업 표와 같은 규칙) */}
-                        <DjNameButton dj={set.dj} className="text-sm text-foreground" nameOnly showPreview={false} />
+                        <DjNameButton dj={set.dj} className="text-sm text-foreground" nameOnly showPreview={false} hideInstagram />
                       </span>
                     ) : (
                       <span className="text-sm text-muted-foreground truncate">-</span>
                     )}
                     {/* ▶ 는 오른쪽 끝 고정 — 날짜별 라인업 표와 같은 배치 */}
+                    {/* 인스타·▶ 둘 다 오른쪽 끝 고정 — 이름 뒤에 붙이면 이름 길이에
+                        따라 아이콘이 행마다 다른 자리에 서서 지저분해진다.
+                        순서는 인스타 → ▶ (재생이 가장 바깥, 날짜별 표와 동일) */}
                     <span className="ml-auto flex items-center gap-2 flex-shrink-0">
+                    {set.dj?.instagram && (
+                      <Instagram className="w-3.5 h-3.5 text-muted-foreground" aria-label="인스타그램 있음" />
+                    )}
                     {(set.dj?.soundcloud_url || set.dj?.youtube_url) && (
                       <Play className="w-3.5 h-3.5 fill-current text-muted-foreground" aria-label="미리듣기 가능" />
                     )}

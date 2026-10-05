@@ -31,6 +31,7 @@ export function DjNameButton({
   showPreview = true,
   fill = false,
   nameOnly = false,
+  hideInstagram = false,
 }: {
   dj: DjProfileTarget;
   className?: string;
@@ -44,6 +45,9 @@ export function DjNameButton({
   /** 라인업 표는 재생 버튼을 행 오른쪽 끝 열에 따로 두므로 여기선 끈다.
    *  (이름 옆에 두면 인스타 아이콘과 붙어 오탭이 났다) */
   showPreview?: boolean;
+  /** 인스타 아이콘을 바깥(행 오른쪽 열)이 그릴 때 끈다 — 이름 바로 뒤에 붙으면
+   *  이름 길이에 따라 아이콘 위치가 행마다 들쭉날쭉해 보인다. */
+  hideInstagram?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   /* 시트는 바깥 pointerdown 에서 닫히는데, 이어지는 click 은 그 아래 행까지
@@ -95,7 +99,7 @@ export function DjNameButton({
         <DjPreviewButton soundcloudUrl={dj.soundcloud_url} djName={dj.display_name} />
       )}
 
-      {dj.instagram && (
+      {dj.instagram && !hideInstagram && (
         <button
           type="button"
           onClick={(e) => {

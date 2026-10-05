@@ -873,21 +873,23 @@ export function HomeContent({
                 <GuestSignMdCta />
               </div>
             )}
-            {/* 쿠폰 스트립 — 활성 쿠폰 0건이면 자체적으로 렌더 안 함 (Migration 539) */}
-            <div className="mt-3">
-              <CouponHomeStrip />
-            </div>
-
             {/* ── 클러빙 뉴스 ──
+                   쿠폰보다 위에 둔다. 쿠폰은 "이미 갈 곳을 정한 사람"이 쓰는 것이고,
+                   이건 "어디 갈지 정하는" 단계라 순서상 먼저다.
                    구독 폼을 홈에 두지 않는 이유: 한 호를 읽기 전에 "매주 받으실래요?"를
                    물으면 받을 게 뭔지 모르는 상태에서 묻는 셈이다. 홈은 표지만 보여주고
                    구독은 /weekly 본문을 끝까지 읽은 자리에서 받는다.
                    0건이면 캐러셀이 스스로 렌더하지 않는다. */}
             {WEEKLY_CARDS.length > 0 && (
-              <div className="mt-4">
+              <div className="mt-3">
                 <WeeklyNewsCarousel issues={WEEKLY_CARDS} />
               </div>
             )}
+
+            {/* 쿠폰 스트립 — 활성 쿠폰 0건이면 자체적으로 렌더 안 함 (Migration 539) */}
+            <div className="mt-4">
+              <CouponHomeStrip />
+            </div>
           </div>
 
           {/* ── 클럽 다이렉트 섹션 (파트너 클럽이 올린 조각) — 0건이면 헤더까지 통째 숨김 ── */}
