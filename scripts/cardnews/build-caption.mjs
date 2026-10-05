@@ -90,18 +90,33 @@ const topGenreTags = [...genreCounts.entries()]
   .map(([g]) => GENRE_HASHTAG[g])
   .filter(Boolean);
 
+// ⚠️ 인스타는 2025-12-18부터 게시물당 해시태그 **5개** 제한이다.
+// 6개째부터는 태그로 인식되지 않고 그냥 텍스트로 떨어진다(댓글에 더 달아도 무의미).
+// 예전엔 20개를 깔았는데 그중 15개가 죽은 글자였다.
+//
+// 남길 5개를 고르는 기준 — 검색 유입이 실제로 일어나는 순서다:
+//   1~2. 지역 태그(#이태원클럽 등) — 클럽을 찾는 사람이 가장 많이 치는 말.
+//        여러 지역이면 클럽이 많은 지역부터.
+//   3.   장르 태그 1개 — 그 편에서 제일 많았던 장르.
+//   4.   #DJ라인업 — 이 콘텐츠가 뭔지 알려주는 카테고리.
+//   5.   #나이트플로우 — 브랜드. 쌓여야 아카이브가 된다.
+// 클럽명 태그는 뺐다. 그 클럽 이름을 아는 사람은 이미 검색으로 안 들어온다.
+const areaCounts = new Map();
+for (const c of clubs) {
+  if (!c.club_area) continue;
+  areaCounts.set(c.club_area, (areaCounts.get(c.club_area) ?? 0) + 1);
+}
+const topAreaTags = [...areaCounts.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 2)
+  .map(([a]) => `#${a}클럽`);
+
 const hashtags = [
-  "#나이트플로우",
-  "#오늘의라인업",
+  ...topAreaTags,
+  ...topGenreTags.slice(0, 1),
   "#DJ라인업",
-  "#클럽라인업",
-  ...topGenreTags,
-  ...new Set(
-    clubs.flatMap((c) => [toHashtag(c.club_name), c.club_area ? `#${c.club_area}클럽` : null].filter(Boolean))
-  ),
-  "#미리듣기",
-  "#클럽스타그램",
-].slice(0, 20);
+  "#나이트플로우",
+].slice(0, 5);
 
 lines.push(hashtags.join(" "));
 

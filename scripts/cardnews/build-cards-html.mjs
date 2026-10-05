@@ -287,9 +287,18 @@ function coverCard() {
 }
 
 function clubCard(club, index) {
-  const shown = club.sets.slice(0, 6);
+  // DJ 는 자르지 않는다. 이 카드뉴스의 존재 이유가 "미리듣기 → 라인업 확인 →
+  // 선택 도움"이라, 누가 나오는지를 빼면 카드의 쓸모 자체가 없어진다.
+  // 예전엔 slice(0, 6) 으로 잘랐는데 케이크샵 8명 중 뒤 2명(BAGAGEE·(X)PIDER)이
+  // 통째로 사라졌다 — 요약 카드엔 8명이 다 나와서 같은 세트 안에서 말이 어긋났다.
+  // 대신 행 높이·폰트를 한 단계 더 줄이는 packed 를 두어 1350px 안에 넣는다.
+  const shown = club.sets;
   // 셋이 적을수록 행 하나가 커 보이게 — 카드 안이 항상 꽉 차 보여야 한다.
-  const density = shown.length <= 2 ? "sparse" : shown.length <= 4 ? "normal" : "dense";
+  const density =
+    shown.length <= 2 ? "sparse"
+    : shown.length <= 4 ? "normal"
+    : shown.length <= 6 ? "dense"
+    : "packed";
 
   const setsHtml = shown
     .map((s, i) => {
@@ -552,7 +561,11 @@ const html = `<!doctype html>
   }
   .preview-badge.no-preview { color: #999; background: #333; }
   .no-preview-row .dj-name { color: #ccc; }
-  .club-footer { font-size: 26px; color: #666; font-weight: 600; letter-spacing: 1px; }
+  /* margin-top:auto 로 카드 바닥에 밀어둔다 — 이게 없으면 DJ 행이 많아질 때
+     마지막 행과 겹친다(실제로 케이크샵 8명에서 겹쳤다). padding-top 은 행과
+     붙지 않게 하는 최소 간격. */
+  .club-footer { font-size: 26px; color: #666; font-weight: 600; letter-spacing: 1px;
+    margin-top: auto; padding-top: 20px; }
 
   /* 셋이 적을수록 행을 키워서 카드가 항상 꽉 차 보이게 */
   .density-sparse .set-row { padding: 44px 40px; }
@@ -562,6 +575,14 @@ const html = `<!doctype html>
   .density-dense .set-row { padding: 20px 28px; }
   .density-dense .set-time { font-size: 28px; }
   .density-dense .dj-name { font-size: 32px; }
+  /* 7명 이상 — 다 넣으려면 여기까지 줄여야 1350px 안에 들어온다.
+     실측: 8명 + 클럽 배너(320px) + 정보칩 3줄 기준으로 맞춘 값이다. */
+  .density-packed .set-row { padding: 12px 24px; }
+  .density-packed .set-time { font-size: 24px; }
+  .density-packed .dj-name { font-size: 27px; }
+  .density-packed .dj-ig { font-size: 20px; }
+  .density-packed .preview-badge { font-size: 20px; padding: 6px 14px; }
+  .density-packed .sets { gap: 10px; }
 
   /* 요약 카드 — 클럽당 사진+위치+영업시간+입장료+DJ까지 다 보여줘 카드가
      휑하지 않게 한다. 클럽 카드에서 이미 보여준 정보를 한 장에 압축 재진열. */
