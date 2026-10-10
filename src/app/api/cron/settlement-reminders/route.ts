@@ -14,8 +14,9 @@ import { sendSms } from "@/lib/notifications/alimtalk";
 const KIND_BY_DAY: Record<number, SettlementReminderKind> = { 7: "due_soon", 10: "due_today" };
 
 async function handle(req: NextRequest) {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key || req.headers.get("authorization") !== `Bearer ${key}`) {
+  // Vercel env 값 끝에 줄바꿈이 붙어 있다(2026-10-10 확인) — trim 없이 비교하면 항상 401.
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!key || req.headers.get("authorization")?.trim() !== `Bearer ${key}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
