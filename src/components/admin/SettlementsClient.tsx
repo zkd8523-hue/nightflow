@@ -194,7 +194,7 @@ export function SettlementsClient({
             <div className="flex items-center justify-between gap-2">
               <p className="text-[11px] text-muted-foreground">
                 {last
-                  ? `${new Date(last.sent_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} ${last.channel === "push" ? "앱 푸시" : "문자"}로 보냄 · ${won(last.fee_amount)}`
+                  ? `${new Date(last.sent_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} ${last.sent_by === null ? "자동 " : ""}${last.channel === "push" ? "앱 푸시" : "문자"}로 보냄 · ${won(last.fee_amount)}`
                   : "아직 안 보냄"}
               </p>
               {g.mdId ? (
@@ -219,7 +219,7 @@ export function SettlementsClient({
                   rows={8}
                   className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-[13px] leading-relaxed outline-none focus:border-amber-500"
                 />
-                <p className="text-[11px] text-muted-foreground">앱 푸시가 있으면 푸시, 없으면 문자(솔라피)로 갑니다. 입금 계좌 등은 여기서 덧붙이세요.</p>
+                <p className="text-[11px] text-muted-foreground">앱 푸시가 있으면 푸시, 없으면 문자(솔라피)로 갑니다. 이걸 보낸 MD에게만 7일·10일 리마인드 문자가 자동으로 나가요(정산 완료 체크하면 멈춤).</p>
                 <button
                   type="button"
                   disabled={sending}

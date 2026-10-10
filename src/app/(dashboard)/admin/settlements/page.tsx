@@ -18,7 +18,7 @@ export default async function AdminSettlementsPage() {
   const rows = await loadSettlementRows(sb);
   const { data: notices } = await sb
     .from("settlement_notices")
-    .select("month, md_id, channel, sent_at, fee_amount")
+    .select("month, md_id, channel, sent_at, fee_amount, sent_by")
     .order("sent_at", { ascending: false })
     .limit(500);
   const rates = await loadMonthRates(sb);
