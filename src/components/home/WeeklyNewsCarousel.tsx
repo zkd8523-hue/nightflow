@@ -49,7 +49,7 @@ export function WeeklyNewsCarousel({
             제목 크기가 다르면 아래쪽이 한 단 낮은 항목처럼 읽힌다 */}
         <h2 className="text-[18px] font-black text-foreground flex items-center gap-1.5 tracking-tight">
           <span className="text-[18px]">🪩</span>
-          클러빙 뉴스
+          아티클
         </h2>
         <Link
           href="/weekly"

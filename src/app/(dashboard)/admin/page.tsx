@@ -515,12 +515,12 @@ export default async function AdminDashboardPage() {
       href: "/admin/parties",
     },
     {
-      label: "뉴스레터 구독자",
+      label: "아티클 구독자",
       value: "수집 현황",
       icon: Mail,
       color: "text-[#DFFF00]",
       bgColor: "bg-[#DFFF00]/10",
-      badge: "클러빙 뉴스",
+      badge: "아티클",
       href: "/admin/newsletter",
     },
     {

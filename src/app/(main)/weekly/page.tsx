@@ -7,12 +7,12 @@ import { WEEKLY_ISSUES } from "@/lib/weekly/issues";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "클러빙 뉴스 - 이번 주 클럽·공연·DJ 정리",
+  title: "아티클 - 이번 주 클럽·공연·DJ 정리",
   description:
     "이번 주 서울·지방 클럽에서 열리는 파티와 공연, 들어볼 만한 DJ를 매주 목요일 저녁 한 통으로 정리합니다.",
   alternates: { canonical: "https://nightflow.kr/weekly" },
   openGraph: {
-    title: "클러빙 뉴스 - 이번 주 클럽·공연·DJ 정리",
+    title: "아티클 - 이번 주 클럽·공연·DJ 정리",
     description: "주말 제일 핫한 곳, 매주 깔끔하게. 나플.",
     url: "https://nightflow.kr/weekly",
     type: "website",
@@ -28,7 +28,7 @@ export default function WeeklyIndexPage() {
           매주 목요일 저녁
         </p>
         <h1 className="text-[26px] font-black tracking-tight leading-[1.18] mt-1.5">
-          클러빙 뉴스
+          아티클
         </h1>
         <p className="text-[13.5px] text-muted-foreground mt-2 leading-relaxed">
           주말 제일 핫한 곳, 매주 깔끔하게 정리해드릴게요

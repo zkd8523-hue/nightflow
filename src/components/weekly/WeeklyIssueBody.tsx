@@ -298,7 +298,7 @@ export function WeeklyIssueBody({
 
       <WeeklyShareRow
         url="https://nightflow.kr/weekly/2026-10-06"
-        title="스피커를 직접 만든 남자가 온다 - 클러빙 뉴스"
+        title="스피커를 직접 만든 남자가 온다 - 아티클"
       />
 
       <div className="mt-[15px] rounded-[11px] bg-card border border-border px-3.5 py-3 flex justify-between items-center gap-2.5 flex-wrap">

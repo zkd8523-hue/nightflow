@@ -10,6 +10,7 @@ import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { EventShareButton } from "@/components/events/EventShareButton";
 import { LineupLikeButton } from "@/components/lineups/LineupLikeButton";
+import { NewsletterSignup } from "@/components/home/NewsletterSignup";
 import { EventCommentSection } from "@/components/events/EventCommentSection";
 import { ArtistNameWithHeart } from "@/components/artists/ArtistNameWithHeart";
 import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
@@ -569,6 +570,17 @@ export default async function EventDetailPage({ params }: PageProps) {
               더 많은 공연 보기
             </Link>
           )}
+
+          {/* 아티클 구독 — 구매 의도가 가장 높은 화면이다. 예매 CTA는 바로 위에
+              있고 이 폼은 그 아래라 동선을 막지 않는다. */}
+          <div className="pt-1">
+            <NewsletterSignup
+              source="event_detail"
+              headline={"이런 공연, 매주 목요일마다\n정리해서 보내줘요"}
+              subline="놓치기 전에 메일로 먼저"
+              showArticleLink
+            />
+          </div>
         </div>
       </div>
     </div>

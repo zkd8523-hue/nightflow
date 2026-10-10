@@ -19,15 +19,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const issue = WEEKLY_ISSUES.find((i) => i.slug === slug);
-  if (!issue) return { title: "클러빙 뉴스" };
+  if (!issue) return { title: "아티클" };
 
   const flat = issue.title.replace(/\n/g, " ");
   return {
-    title: `${flat} - 클러빙 뉴스 ${issue.volume}`,
+    title: `${flat} - 아티클 ${issue.volume}`,
     description: `${issue.period} 이번 주 클럽·공연·DJ 정리. ${issue.meta}`,
     alternates: { canonical: `https://nightflow.kr/weekly/${issue.slug}` },
     openGraph: {
-      title: `${flat} - 클러빙 뉴스 ${issue.volume}`,
+      title: `${flat} - 아티클 ${issue.volume}`,
       description: `${issue.period} · ${issue.meta}`,
       url: `https://nightflow.kr/weekly/${issue.slug}`,
       type: "article",
@@ -56,7 +56,7 @@ export default async function WeeklyIssuePage({
             온 줄 알면 안 된다 */}
         <span className="text-[13px] font-black tracking-tight inline-flex items-center gap-1">
           <span>🪩</span>
-          클러빙 뉴스
+          아티클
         </span>
         <span className="font-mono text-[11px] text-muted-foreground">
           {issue.volume}

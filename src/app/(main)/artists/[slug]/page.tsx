@@ -10,6 +10,7 @@ import { splitLineupDate } from "@/lib/lineups/formatDate";
 import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import type { Metadata } from "next";
 import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
+import { NewsletterSignup } from "@/components/home/NewsletterSignup";
 
 // 없는 slug는 notFound() — force-dynamic 필수. 없으면 Soft 404가 되어 색인이
 // 오염된다(/dj/[slug]·/venues/[slug]와 동일 이유).
@@ -347,6 +348,16 @@ export default async function ArtistPage({ params }: PageProps) {
               <p className="text-[13px] text-muted-foreground">등록된 공연이 없어요</p>
             </div>
           )}
+
+          {/* 아티클 구독 — 특정 DJ를 찾아온 사람이라 취향이 뚜렷하다.
+              다만 우리가 보내는 건 주간 큐레이션이지 이 DJ 알림이 아니므로,
+              "이런 DJ들"까지만 말하고 그 이상을 약속하지 않는다. */}
+          <NewsletterSignup
+            source="artist_profile"
+            headline={"이런 DJ들, 매주 목요일마다\n정리해서 보내줘요"}
+            subline="누가 어디서 트는지 한 통에"
+            showArticleLink
+          />
         </div>
       </div>
     </>

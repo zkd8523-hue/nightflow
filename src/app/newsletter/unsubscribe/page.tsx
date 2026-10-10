@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "뉴스레터 수신거부",
+  title: "아티클 수신거부",
   robots: { index: false, follow: false },   // 토큰이 붙은 주소가 색인되면 안 된다
 };
 
@@ -72,9 +72,9 @@ export default async function NewsletterUnsubscribePage({
               </h1>
               <p className="text-sm text-muted-foreground leading-relaxed font-medium">
                 {result === "ok" &&
-                  "앞으로 클러빙 뉴스를 보내지 않습니다. 다시 받고 싶으시면 언제든 구독 폼에서 신청하실 수 있습니다."}
+                  "앞으로 아티클을 보내지 않습니다. 다시 받고 싶으시면 언제든 구독 폼에서 신청하실 수 있습니다."}
                 {result === "already" &&
-                  "이 주소로는 이미 뉴스레터를 보내지 않고 있습니다. 추가로 하실 일은 없습니다."}
+                  "이 주소로는 이미 아티클을 보내지 않고 있습니다. 추가로 하실 일은 없습니다."}
                 {result === "notfound" &&
                   "링크가 잘리거나 만료됐을 수 있습니다. 받으신 메일의 수신거부 링크를 다시 눌러주세요."}
                 {result === "error" &&

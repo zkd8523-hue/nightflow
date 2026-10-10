@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { trackEvent } from "@/lib/analytics/events";
 import { Check, Loader2 } from "lucide-react";
 
@@ -34,7 +35,27 @@ function readAnonId(): string | null {
  * 입력을 시작한 시점(focus)을 센다. 스크롤만 지나간 노출까지 분모에 넣으면
  * 전환율이 의미 없이 낮게 나온다.
  */
-export function NewsletterSignup({ source = "home" }: { source?: string }) {
+export function NewsletterSignup({
+  source = "home",
+  headline = "아티클 구독",
+  subline = "주말 제일 핫한 곳, 매주 깔끔하게 정리해드릴게요",
+  showArticleLink = false,
+}: {
+  source?: string;
+  /**
+   * 맥락별 헤드라인. 클럽 상세에서는 "핫플 정보", 아티스트에서는 "DJ들"처럼
+   * 그 화면에서 보고 있던 것을 그대로 받아야 광고가 아니라 이어지는 말이 된다.
+   * 줄바꿈은 \n 으로 넣는다 — whitespace-pre-line 이라 그 자리에서 끊긴다
+   * (자동 줄바꿈에 맡기면 마지막 한 단어만 떨어져 나간다).
+   */
+  headline?: string;
+  subline?: string;
+  /**
+   * "아티클 보러가기" 링크. 폼만 있으면 뭘 받는지 모르는 채로 이메일을 내야 한다.
+   * /weekly 본문 하단에서는 이미 한 호를 읽은 뒤라 끈다.
+   */
+  showArticleLink?: boolean;
+}) {
   const [email, setEmail] = useState("");
   const [agreedPrivacy, setAgreedPrivacy] = useState(false);
   const [agreedMarketing, setAgreedMarketing] = useState(false);
@@ -134,11 +155,11 @@ export function NewsletterSignup({ source = "home" }: { source?: string }) {
   return (
     <section className="rounded-2xl bg-[#DFFF00] text-[#0A0A0A] px-[15px] py-[18px] space-y-3">
       <div className="space-y-1.5">
-        <h2 className="text-[22px] font-black tracking-tight leading-[1.25]">
-          뉴스레터 구독
+        <h2 className="text-[19px] font-black tracking-tight leading-[1.3] whitespace-pre-line">
+          {headline}
         </h2>
-        <p className="text-[13.5px] leading-[1.6] text-[#2E3300] font-semibold">
-          주말 제일 핫한 곳, 매주 깔끔하게 정리해드릴게요
+        <p className="text-[13px] leading-[1.55] text-[#2E3300] font-semibold">
+          {subline}
         </p>
       </div>
 
@@ -221,9 +242,18 @@ export function NewsletterSignup({ source = "home" }: { source?: string }) {
         </button>
       </form>
 
-      <p className="text-[9.5px] font-mono text-[#4A5000] tracking-wide">
-        주 1회만 · 언제든 수신거부
-      </p>
+      {/* 수신거부 안내는 여기 두지 않는다 — 정보통신망법 제50조가 요구하는 자리는
+          실제로 발송되는 광고성 메일이고, 그쪽은 unsubscribe_token(Migration 690)과
+          /newsletter/unsubscribe 로 이미 갖춰져 있다. 폼에서는 그 자리를
+          "뭘 받는지 먼저 본다"는 길에 쓰는 쪽이 낫다. */}
+      {showArticleLink && (
+        <Link
+          href="/weekly"
+          className="block text-center text-[12.5px] font-extrabold text-[#1A1C00] underline underline-offset-[3px]"
+        >
+          아티클 보러가기 →
+        </Link>
+      )}
     </section>
   );
 }

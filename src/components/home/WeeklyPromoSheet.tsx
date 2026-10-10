@@ -74,9 +74,9 @@ export function WeeklyPromoSheet() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-[330px] rounded-3xl bg-card border-border p-0 overflow-hidden gap-0">
-        <DialogTitle className="sr-only">클러빙 뉴스</DialogTitle>
+        <DialogTitle className="sr-only">아티클</DialogTitle>
         <DialogDescription className="sr-only">
-          이번 주 클럽·공연·DJ를 정리한 클러빙 뉴스 안내
+          이번 주 클럽·공연·DJ를 정리한 아티클 안내
         </DialogDescription>
 
         {/* 이번 호 표지 — /weekly 목록·홈 캐러셀과 같은 그림이라 흐름이 이어진다 */}

@@ -34,6 +34,7 @@ import { ClubLocationModal } from "./ClubLocationModal";
 import { ClubProfileEditor } from "./ClubProfileEditor";
 import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
 import { WordCloudSection } from "./WordCloudSection";
+import { NewsletterSignup } from "@/components/home/NewsletterSignup";
 import { FlagExplainerSheet } from "./FlagExplainerSheet";
 import { ClubSharePuzzles } from "./ClubSharePuzzles";
 import { trackEvent } from "@/lib/analytics/events";
@@ -816,6 +817,20 @@ export function ClubDetailContent({
       {!hideShareList && sharePuzzles.length > 0 && (
         <ClubSharePuzzles puzzles={sharePuzzles} />
       )}
+
+      {/* 아티클 구독 — 정보를 다 읽은 직후가 "매주 이렇게 정리해 보낸다"가
+          가장 자연스럽게 붙는 자리다. 공연 전광판 아래가 더 맥락에 맞지만
+          그쪽은 upcomingEvents 가 있는 클럽에만 떠서 앵커로 못 쓴다
+          (2026-10-10 실측: 클럽 상세 조회 2,579 중 공연 있는 클럽은 일부).
+          워드클라우드는 조건 없이 항상 렌더되므로 그 바로 위에 둔다. */}
+      <div className="px-4 pt-2 pb-1">
+        <NewsletterSignup
+          source="club_detail"
+          headline={"이런 핫플 정보, 매주 목요일마다\n정리해서 보내줘요"}
+          subline="이번 주 갈 만한 곳만 골라서 한 통"
+          showArticleLink
+        />
+      </div>
 
       {/* 5자 리뷰 워드클라우드 */}
       <WordCloudSection clubId={club.id} clubName={clubName} />

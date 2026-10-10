@@ -197,10 +197,10 @@ export default async function AdminNewsletterPage() {
           <div>
             <h1 className="text-2xl font-black flex items-center gap-2">
               <Mail className="w-6 h-6 text-[#DFFF00]" />
-              뉴스레터 구독자
+              아티클 구독자
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              클러빙 뉴스. 아직 한 호도 발행하지 않았고, 신청 확인 메일만 나간다.
+              아티클. 아직 한 호도 발행하지 않았고, 신청 확인 메일만 나간다.
             </p>
           </div>
         </header>

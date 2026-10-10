@@ -19,7 +19,7 @@ const MUTED = "#9ca3af";
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
 
-export const NEWSLETTER_SUBJECT = "클러빙 뉴스 구독 신청이 접수됐습니다";
+export const NEWSLETTER_SUBJECT = "아티클 구독 신청이 접수됐습니다";
 
 /**
  * 아직 **한 호도 발행하지 않았다.** 그래서 "이번 주 호를 보내드립니다"가 아니라
@@ -42,7 +42,7 @@ export function newsletterWelcomeHtml(opts: { email: string; unsubscribeUrl: str
 
 <tr><td style="background:${CARD};border-radius:20px;padding:28px 24px;">
 <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:1.6px;color:${LIME};">매주 목요일 저녁</p>
-<h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:900;color:#fff;letter-spacing:-0.5px;">클러빙 뉴스 구독 신청이 접수됐습니다</h1>
+<h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:900;color:#fff;letter-spacing:-0.5px;">아티클 구독 신청이 접수됐습니다</h1>
 
 <p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:#e5e7eb;">
 주말 제일 핫한 곳, 매주 깔끔하게 정리해드릴게요.
