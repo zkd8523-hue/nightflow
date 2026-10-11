@@ -526,6 +526,17 @@ export default async function EventDetailPage({ params }: PageProps) {
           </Link>
         </div>
 
+        {/* 아티클 구독 — 공연 정보를 다 읽은 뒤, 댓글 앞.
+            ⚠️ 아래 하단 CTA는 `fixed bottom-0` 고정 바라 거기에 넣으면
+            화면에 붙어 댓글을 덮는다(2026-10-11에 그렇게 넣었다가 되돌림).
+            반드시 이 스크롤 본문 안에 둔다. */}
+        <NewsletterSignup
+          source="event_detail"
+          headline={"이런 공연, 매주 목요일마다\n정리해서 보내줘요"}
+          subline="놓치기 전에 메일로 먼저"
+          showArticleLink
+        />
+
         {/* 댓글 — 자유 댓글이 기본이고, 여기서 "같이 갈 사람" 채팅방을 만들어
             댓글로 올릴 수 있다 (Migration 598). 지난 공연은 읽기 전용. */}
         <EventCommentSection eventId={row.id} isPast={isPast} />
@@ -570,17 +581,6 @@ export default async function EventDetailPage({ params }: PageProps) {
               더 많은 공연 보기
             </Link>
           )}
-
-          {/* 아티클 구독 — 구매 의도가 가장 높은 화면이다. 예매 CTA는 바로 위에
-              있고 이 폼은 그 아래라 동선을 막지 않는다. */}
-          <div className="pt-1">
-            <NewsletterSignup
-              source="event_detail"
-              headline={"이런 공연, 매주 목요일마다\n정리해서 보내줘요"}
-              subline="놓치기 전에 메일로 먼저"
-              showArticleLink
-            />
-          </div>
         </div>
       </div>
     </div>

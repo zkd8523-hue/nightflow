@@ -13,6 +13,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { LineupShareButton } from "@/components/lineups/LineupShareButton";
 import type { Metadata } from "next";
 import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
+import { NewsletterSignup } from "@/components/home/NewsletterSignup";
 
 // 날짜별 라인업 아카이브 — SEO 본진("클럽명 8월 30일 라인업" 류 쿼리는 이 URL이 아니면
 // 못 잡는다, 클럽 상세는 "오늘"만 보여주므로)이면서, 운영자가 며칠 전 미리 올려둔
@@ -358,6 +359,15 @@ export default async function ClubLineupDatePage({ params }: PageProps) {
               <ExternalLink className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
             </a>
           )}
+
+          {/* 아티클 구독 — 타임테이블을 다 보고 난 자리. 이 화면은 본문이 짧아
+              아래가 비기 때문에 폼이 공간을 뺏지 않는다. */}
+          <NewsletterSignup
+            source="club_lineup_date"
+            headline={"이런 라인업, 매주 목요일마다\n정리해서 보내줘요"}
+            subline="누가 어디서 트는지 한 통에"
+            showArticleLink
+          />
         </div>
       </div>
     </>

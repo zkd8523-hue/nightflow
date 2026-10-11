@@ -10,6 +10,8 @@ import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import { clubDisplayAlias, clubAllAliases } from "@/lib/clubs/seoAliases";
 import type { Metadata } from "next";
 import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
+import { NewsletterSignup } from "@/components/home/NewsletterSignup";
+import { CollapsiblePastLineups } from "@/components/lineups/CollapsiblePastLineups";
 
 // 클럽별 라인업 허브 — 날짜별 라인업(/clubs/[id]/lineup/[date], 148개)의 부모.
 // 부모가 없으면 크롤러가 날짜 페이지에서 한 단계 올라왔을 때 404를 맞는다
@@ -268,14 +270,11 @@ export default async function ClubLineupHubPage({ params }: PageProps) {
           )}
 
           {past.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-sm font-bold text-foreground">지난 라인업</h2>
-              <div className="space-y-2">
-                {past.map((row) => (
-                  <DateCard key={row.id} row={row} />
-                ))}
-              </div>
-            </div>
+            <CollapsiblePastLineups>
+              {past.map((row) => (
+                <DateCard key={row.id} row={row} />
+              ))}
+            </CollapsiblePastLineups>
           )}
 
           {club.area && (
@@ -286,6 +285,14 @@ export default async function ClubLineupHubPage({ params }: PageProps) {
               {club.area} 다른 클럽 라인업 보기 →
             </Link>
           )}
+
+          {/* 아티클 구독 — 이 클럽 라인업을 훑고 난 자리 */}
+          <NewsletterSignup
+            source="club_lineup_hub"
+            headline={"이런 라인업, 매주 목요일마다\n정리해서 보내줘요"}
+            subline="누가 어디서 트는지 한 통에"
+            showArticleLink
+          />
         </div>
       </div>
     </>
