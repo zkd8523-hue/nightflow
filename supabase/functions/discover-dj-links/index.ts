@@ -189,8 +189,21 @@ Deno.serve(async (req) => {
     const slice = candidates.slice(i, i + CHUNK);
     let rows: any[];
     try {
+      // ⚠️ Apify 는 directUrls 에 같은 주소가 두 번 들어오면 배치 전체를 400 으로
+      // 거절한다("must NOT have duplicate items"). 같은 인스타를 쓰는 DJ 가
+      // 실제로 31쌍 있다 — 이름 표기만 다른 같은 사람(FICTION / fictionseoul)이
+      // 따로 등록된 경우다. 중복을 걸러 보내지 않으면 그 배치 25명이 통째로
+      // 날아간다(2026-10-11 실측: 50명 중 7명만 처리됨).
+      const seen = new Set<string>();
+      const urls: string[] = [];
+      for (const d of slice) {
+        const key = String(d.instagram).toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        urls.push(`https://www.instagram.com/${d.instagram}/`);
+      }
       rows = await apify({
-        directUrls: slice.map((d) => `https://www.instagram.com/${d.instagram}/`),
+        directUrls: urls,
         resultsType: "details",
         resultsLimit: 1,
       });
