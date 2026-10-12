@@ -1,0 +1,244 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;700;800;900&family=IBM+Plex+Mono:wght@400;600;700&display=swap">
+<style>
+
+:root{--amber:#FBBF24;--pg:#EFEDE8;--pg-2:#FFF;--fg:#17160F;--fg-2:#6B6760;
+ --rule:#D9D5CC;--acc:#D94A16;--grid:rgba(0,0,0,.05);
+ --f-d:"Gothic A1","Apple SD Gothic Neo",sans-serif;--f-m:"IBM Plex Mono",ui-monospace,Menlo,monospace;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --pg:#131311;--pg-2:#1C1C19;--fg:#EDEBE5;--fg-2:#9A958C;--rule:#33322D;--acc:#FF8A5C;--grid:rgba(255,255,255,.05);color-scheme:dark;}}
+:root[data-theme="dark"]{--pg:#131311;--pg-2:#1C1C19;--fg:#EDEBE5;--fg-2:#9A958C;--rule:#33322D;--acc:#FF8A5C;--grid:rgba(255,255,255,.05);color-scheme:dark;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pg);color:var(--fg);font-family:var(--f-d);font-size:15px;line-height:1.7;word-break:keep-all}
+.wrap{max-width:980px;margin:0 auto;padding-inline:20px}
+.top{background:#0A0A0A;color:#F2F0EC;border-bottom:3px solid var(--amber)}
+.top .wrap{padding-block:26px}
+.top .k{font-family:var(--f-m);font-size:10.5px;letter-spacing:.2em;color:var(--amber);font-weight:700}
+.top h1{margin:9px 0 0;font-weight:900;font-size:clamp(22px,4.4vw,32px);line-height:1.15;letter-spacing:-.028em}
+.top p{color:#A4A09A;margin:10px 0 0;font-size:14.5px;max-width:60ch}
+.sec{padding-block:30px;border-bottom:1px solid var(--rule)}
+.sec h2{margin:0 0 4px;font-weight:800;font-size:clamp(17px,2.7vw,21px);letter-spacing:-.022em}
+.lede{color:var(--fg-2);margin:0 0 16px;font-size:14px;max-width:62ch}
+
+.deck{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.card{position:relative;margin:0;aspect-ratio:4/5;border-radius:10px;overflow:hidden;
+ background:#0A0A0A;color:#fff;display:flex;align-items:center;justify-content:center;padding:84px 34px 48px}
+.card .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card .scrim{position:absolute;inset:0;
+ background:linear-gradient(180deg,rgba(10,10,10,.82) 0%,rgba(10,10,10,.6) 42%,rgba(10,10,10,.93) 100%)}
+.card .in{z-index:1;width:100%;text-align:center}
+.card.howto{padding:30px 22px}
+.card span{display:block}
+.brand{position:absolute;left:14px;bottom:11px;font-family:var(--f-m);font-size:8px;
+ letter-spacing:.14em;color:rgba(255,255,255,.38);z-index:2}
+.pg{position:absolute;right:14px;bottom:11px;font-family:var(--f-m);font-size:8px;color:rgba(255,255,255,.38);z-index:2}
+
+.eyebrow{position:absolute;top:36px;left:0;right:0;z-index:3;
+ font-family:var(--f-m);font-size:8px;letter-spacing:.2em;color:var(--amber);font-weight:700}
+.htitle{font-weight:900;font-size:27px;line-height:1.26;letter-spacing:-.03em;margin-top:0}
+.htitle em{font-style:normal;color:var(--amber)}
+.hsub{font-size:10.5px;color:#9A9AA0;margin-top:22px;line-height:1.75;letter-spacing:.01em}
+.daytag{position:absolute;top:34px;left:50%;transform:translateX(-50%);z-index:3;
+ display:inline-block !important;font-family:var(--f-m);font-size:8px;letter-spacing:.16em;
+ background:var(--amber);color:#0A0A0A;font-weight:700;padding:4px 10px;border-radius:4px;white-space:nowrap}
+.name{font-weight:900;font-size:27px;letter-spacing:-.022em;margin-top:0}
+.role{font-size:10px;color:var(--amber);margin-top:8px;font-weight:700;letter-spacing:.02em}
+.line{font-size:11.5px;line-height:1.95;color:#C9C7CC;margin-top:20px}
+.line b{color:#fff;font-weight:800}
+.line i{font-style:normal;display:block;color:#7A7A80;font-size:10px;margin-top:12px;line-height:1.7}
+.big{font-weight:900;font-size:29px;line-height:1.22;letter-spacing:-.028em;margin-top:0}
+.big em{font-style:normal;color:var(--amber)}
+.big2{font-weight:900;font-size:22px;line-height:1.34;letter-spacing:-.025em;margin-top:0}
+.big2 em{font-style:normal;color:var(--amber)}
+.line4{font-size:10.5px;color:#8A8A90;margin-top:18px;letter-spacing:.01em}
+.line4 b{color:#D4D2D8;font-weight:700}
+.fitlist{margin-top:26px}
+.fitlist .f2{display:block;font-size:12px;color:#C9C7CC;line-height:2.1}
+.fitlist .f2 b{color:var(--amber);font-weight:800}
+.facts{margin-top:26px}
+.facts .f{display:block;font-size:12px;color:#C9C7CC;line-height:2.1}
+.facts .f b{color:var(--amber);font-weight:800}
+.numrow{display:flex !important;justify-content:center;gap:22px;margin-top:26px}
+.numrow .n{display:block}
+.numrow b{display:block;font-family:var(--f-m);font-size:25px;font-weight:700;color:var(--amber);line-height:1}
+.numrow b u{text-decoration:none;font-size:15px;margin-left:1px}
+.numrow i{display:block;font-style:normal;font-size:9.5px;color:#9A9AA0;margin-top:6px}
+.line5{font-size:10.5px;color:#7A7A80;margin-top:22px;letter-spacing:.01em;line-height:1.95}
+.line5 em{font-style:normal;color:var(--amber);font-weight:700}
+.statline{margin-top:12px}
+.statline b{font-family:var(--f-m);font-size:38px;font-weight:700;color:var(--amber);display:inline-block}
+.statline i{font-style:normal;font-size:11px;color:#9A9AA0;display:inline-block;margin-left:8px}
+.line2{font-size:11.5px;line-height:1.95;color:#C9C7CC;margin-top:24px}
+.line2 em{font-style:normal;color:var(--amber);font-weight:800}
+.fit{display:block;font-size:35.6px;color:#C9C7CC;line-height:2.05}
+.fit b{color:var(--amber);font-weight:800}
+.line3{font-weight:800;font-size:13px;line-height:1.5;letter-spacing:-.018em;margin-top:10px}
+.shot{display:block;width:100%;margin:18px 0 0;border-radius:9px;overflow:hidden;
+ border:1px solid rgba(255,255,255,.14)}
+.line6{font-weight:800;font-size:17px;line-height:1.42;letter-spacing:-.022em;margin-top:0}
+.line7{font-size:12.5px;color:#C9C7CC;letter-spacing:-.01em;margin-top:16px}
+.line7 em{font-style:normal;color:var(--amber);font-weight:800}
+.shot img{display:block;width:100%}
+.chips{display:flex !important;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:22px}
+.chip{display:inline-block !important;font-family:var(--f-m);font-size:9px;font-weight:700;
+ border:1px solid rgba(251,191,36,.45);color:var(--amber);border-radius:99px;padding:5px 11px}
+.ctaEye{position:absolute;top:36px;left:0;right:0;z-index:3;
+ font-family:var(--f-m);font-size:8px;letter-spacing:.2em;color:var(--amber);font-weight:700}
+.ctaTitle{font-weight:900;font-size:21px;line-height:1.38;letter-spacing:-.028em;margin-top:0}
+.ctaTitle .l1{display:block;white-space:nowrap}
+.ctaTitle em{font-style:normal;color:var(--amber)}
+.ctaBody{font-size:11.5px;line-height:1.8;color:#9A9AA0;margin-top:22px}
+.ctaBtn{background:linear-gradient(135deg,#FBBF24,#F97316);color:#0A0A0A;font-weight:900;
+ font-size:12.5px;border-radius:12px;padding:13px 10px;margin-top:20px;letter-spacing:-.01em}
+.ctaHint{font-size:10.5px;color:#8A8A90;margin-top:12px;letter-spacing:.01em}
+.ctaBrand{font-family:var(--f-m);font-size:9px;color:#6B6B70;margin-top:12px;letter-spacing:.06em}
+
+.cap{background:var(--pg-2);border:1px solid var(--rule);border-radius:10px;padding:18px;
+ white-space:pre-wrap;font-size:13.5px;line-height:1.85}
+.tag{display:inline-block;font-family:var(--f-m);font-size:11px;background:#17160F;color:#FBBF24;
+ border-radius:5px;padding:3px 8px;margin:2px 3px 2px 0}
+.note{border-left:3px solid var(--acc);padding:2px 0 2px 14px;margin-top:14px;color:var(--fg-2);font-size:13.5px}
+.note b{color:var(--fg)}
+.foot{padding-block:26px;color:var(--fg-2);font-size:12.5px}
+
+/* ── 렌더 전용 래퍼 ───────────────────────────────────────────
+   아티팩트 카드는 그리드 폭에 따라 크기가 정해지는 반응형이라,
+   1080px 폭으로 바로 찍으면 비율이 깨진다. 원본과 같은 폭으로
+   그린 뒤 스케일업해서 1080x1350을 만든다. */
+html,body{margin:0;padding:0;background:#000}
+.nf-frame{width:1080px;height:1350px;overflow:hidden;position:relative}
+.nf-frame > .card.howto > .in{transform:scale(.82);transform-origin:center center}
+.nf-frame > .card{
+  width:270px !important;
+  height:337.5px !important;
+  aspect-ratio:auto !important;
+  border-radius:0 !important;
+  transform:scale(4.0);
+  transform-origin:top left;
+  margin:0 !important;
+}
+</style></head><body>
+<style>
+/* ── VOL.02 전용 보정 ──────────────────────────────────────
+   원본 포스터가 작다(바비 360×301, 모데시 640×640). 1080×1350 으로
+   올리면 계단이 보여서, 배경으로 깔 때만 살짝 흐리고 1.08 배 키운다
+   (흐리면서 생기는 가장자리 빈틈을 덮는다). 인물이 주인공인 모데시
+   포스터는 약하게, 질감만 쓰는 바비 포스터는 세게 건다. */
+.card .bg{transform:scale(1.08)}
+.card.soft .bg{filter:blur(1.2px) saturate(1.06)}
+.card.very-soft .bg{filter:blur(5px) saturate(1.15) brightness(1.1)}
+/* 표지는 크롬 질감이 보여야 한다 — 뭉개지 말고 대비만 올린다 */
+/* 표지 — 원본 포스터가 360px 라 전면 배경으로 깔면 뭉갠다. 글자는 검정 위에
+   또렷하게 두고, 포스터는 작게·선명하게 끼워 넣는다(잡지 표지의 사진 칩). */
+.card.solid{background:#0A0A0A}
+.card.solid::before{content:"";position:absolute;inset:0;
+ background:radial-gradient(120% 70% at 50% 108%,rgba(251,191,36,.26),transparent 62%)}
+.card.cover{padding:62px 30px 42px}
+.card.cover .htitle{font-size:26px}
+/* 포스터 원본이 360px 라 66% 보다 키우면 흐려진다 — 여기가 선명함의 한계선 */
+.coverShot{display:block;width:66%;margin:20px auto 0;border-radius:8px;overflow:hidden;
+ border:1px solid rgba(255,255,255,.18);box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.coverShot img{display:block;width:100%}
+
+/* 올해 이력처럼 왼쪽 날짜 + 이름으로 떨어지는 줄 */
+.roll{margin-top:24px}
+.roll .r{display:flex !important;justify-content:center;gap:12px;font-size:12px;line-height:2.05;color:#C9C7CC}
+.roll .r u{text-decoration:none;font-family:var(--f-m);font-size:10.5px;color:#7A7A80;
+ width:46px;text-align:right;flex:none;display:block}
+.roll .r.now{font-weight:800}
+.roll .r.now u,.roll .r.now b{color:var(--amber)}
+.roll .r b{font-weight:800;color:#fff}
+</style>
+
+<!-- 1 / 8 — 표지. 포스터는 배경으로 깔지 않고 작고 선명한 칩으로 넣는다
+     (원본이 360px 이라 전면으로 키우면 뭉개지고, 포스터 안의 'BOBBY' 가
+     내 헤드라인 뒤에 겹쳐 보인다). -->
+<div class="nf-frame"><figure class="card cover solid">
+  <div class="in"><span class="eyebrow">아티클 · 10.16 금요일</span>
+  <span class="htitle">부산 서면 BOBBY<br><em>연차 쓰고 ㄱ?</em></span>
+  <span class="coverShot"><img alt="10.16 제제 BOBBY 포스터" src="img/jeje.png"></span>
+  <span class="hsub" style="margin-top:15px">목 · 홍대 모데시 &nbsp;|&nbsp; 금 · 서면 제제</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">1/8</span>
+</figure></div>
+
+<!-- 2 / 8 -->
+<div class="nf-frame"><figure class="card who solid">
+  <div class="in"><span class="daytag">금요일 10.16</span>
+  <span class="name">BOBBY</span>
+  <span class="role">래퍼 · 쇼미더머니3 우승</span>
+  <span class="line">부산 서면 <b>제제</b> 무대에 선다<br><b>새벽 1시</b> 한 타임</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">2/8</span>
+</figure></div>
+
+<!-- 3 / 8 — 이 호에서 제일 쓸모 있는 장. 시간을 모르고 가면 못 본다. -->
+<div class="nf-frame"><figure class="card fact solid">
+  <div class="in"><span class="daytag">금요일 10.16</span>
+  <span class="big">새벽 1시<br><em>한 타임</em></span>
+  <span class="line">오픈 <b>21:30</b> · 입장 <b>선착순</b><br>공연 중 나가면 <b>재입장 제한</b><br><i>1시에 맞춰 가면 늦는다<br>그 전에 들어가 자리를 잡아야 한다</i></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">3/8</span>
+</figure></div>
+
+
+
+
+
+<!-- 4 / 8 — 목요일로 넘어간다 -->
+<div class="nf-frame"><figure class="card who soft">
+  <img class="bg" src="img/modeci.jpg" style="object-position:center 28%"><span class="scrim"></span>
+  <div class="in"><span class="daytag">목요일 10.15</span>
+  <span class="name">DMX Krew</span>
+  <span class="role">1994년부터 일렉트로만 · 영국</span>
+  <span class="line">30년 동안 한 장르에서 안 내려온 사람<br>금·토에만 여는 홍대 <b>모데시</b>가<br>이 사람 때문에 <b>목요일에 연다</b></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">4/8</span>
+</figure></div>
+
+<!-- 5 / 8 -->
+<div class="nf-frame"><figure class="card stat">
+  <div class="in"><span class="daytag">어떤 음악인가</span>
+  <span class="big2">일렉트로</span>
+  <span class="line4"><b>125~135 BPM</b> · 하우스와 속도는 비슷하다</span>
+  <span class="facts">
+    <span class="f">다른 건 <b>킥</b>이다</span>
+    <span class="f">네 번 균등하게 <b>안 떨어진다</b></span>
+    <span class="f">808 스네어가 박자를 <b>엇갈리게</b> 놓는다</span>
+  </span>
+  <span class="line5">걷는 리듬이 아니라 <em>끊어 밟는 리듬</em></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">5/8</span>
+</figure></div>
+
+<!-- 6 / 8 -->
+<div class="nf-frame"><figure class="card fact soft">
+  <img class="bg" src="img/modeci.jpg" style="object-position:center 55%"><span class="scrim"></span>
+  <div class="in"><span class="daytag">목요일 10.15</span>
+  <span class="big">예매가<br><em>1만 원 싸다</em></span>
+  <span class="line">예매 <b>15,000원</b> · 프리드링크 1잔<br>도어 <b>25,000원</b> · 오픈 밤 10시<br><i>DMX Krew · Mogwaa · 2ndfloor · Jesse You<br>@modeci_seoul 프로필 링크에서 예매</i></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">6/8</span>
+</figure></div>
+
+<!-- 7 / 8 — 아티클 전문으로 보낸다 -->
+<div class="nf-frame"><figure class="card howto">
+  <div class="in"><span class="line6">둘 중 어디로 갈지,<br>아티클에 정리해 뒀어요</span>
+  <span class="shot"><img alt="아티클 VOL.02 화면" src="img/article-shot.png"></span>
+  <span class="line7">일렉트로 리듬은 <em>직접 들어볼 수</em> 있어요</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">7/8</span>
+</figure></div>
+
+<!-- 8 / 8 -->
+<div class="nf-frame"><figure class="card cta">
+  <div class="in"><span class="ctaEye">아티클</span>
+  <span class="ctaTitle"><span class="l1">가장 핫한 국내 소식</span><em>매주 정리해서</em> 보내드릴게요</span>
+  <span class="ctaBody">놓치지 않고 싶다면?</span>
+  <span class="ctaBtn">팔로잉 + 이메일 구독</span>
+  <span class="ctaHint">구독은 프로필 링크에서 가능해요</span>
+  <span class="ctaBrand">@nightflow.kr</span></div>
+  <span class="pg">8/8</span>
+</figure></div>
+
+</body></html>

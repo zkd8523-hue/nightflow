@@ -1,0 +1,122 @@
+<style>
+/* ── VOL.02 전용 보정 ──────────────────────────────────────
+   원본 포스터가 작다(바비 360×301, 모데시 640×640). 1080×1350 으로
+   올리면 계단이 보여서, 배경으로 깔 때만 살짝 흐리고 1.08 배 키운다
+   (흐리면서 생기는 가장자리 빈틈을 덮는다). 인물이 주인공인 모데시
+   포스터는 약하게, 질감만 쓰는 바비 포스터는 세게 건다. */
+.card .bg{transform:scale(1.08)}
+.card.soft .bg{filter:blur(1.2px) saturate(1.06)}
+.card.very-soft .bg{filter:blur(5px) saturate(1.15) brightness(1.1)}
+/* 표지는 크롬 질감이 보여야 한다 — 뭉개지 말고 대비만 올린다 */
+/* 표지 — 원본 포스터가 360px 라 전면 배경으로 깔면 뭉갠다. 글자는 검정 위에
+   또렷하게 두고, 포스터는 작게·선명하게 끼워 넣는다(잡지 표지의 사진 칩). */
+.card.solid{background:#0A0A0A}
+.card.solid::before{content:"";position:absolute;inset:0;
+ background:radial-gradient(120% 70% at 50% 108%,rgba(251,191,36,.26),transparent 62%)}
+.card.cover{padding:62px 30px 42px}
+.card.cover .htitle{font-size:26px}
+/* 포스터 원본이 360px 라 66% 보다 키우면 흐려진다 — 여기가 선명함의 한계선 */
+.coverShot{display:block;width:66%;margin:20px auto 0;border-radius:8px;overflow:hidden;
+ border:1px solid rgba(255,255,255,.18);box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.coverShot img{display:block;width:100%}
+
+/* 올해 이력처럼 왼쪽 날짜 + 이름으로 떨어지는 줄 */
+.roll{margin-top:24px}
+.roll .r{display:flex !important;justify-content:center;gap:12px;font-size:12px;line-height:2.05;color:#C9C7CC}
+.roll .r u{text-decoration:none;font-family:var(--f-m);font-size:10.5px;color:#7A7A80;
+ width:46px;text-align:right;flex:none;display:block}
+.roll .r.now{font-weight:800}
+.roll .r.now u,.roll .r.now b{color:var(--amber)}
+.roll .r b{font-weight:800;color:#fff}
+</style>
+
+<!-- 1 / 8 — 표지. 포스터는 배경으로 깔지 않고 작고 선명한 칩으로 넣는다
+     (원본이 360px 이라 전면으로 키우면 뭉개지고, 포스터 안의 'BOBBY' 가
+     내 헤드라인 뒤에 겹쳐 보인다). -->
+<div class="nf-frame"><figure class="card cover solid">
+  <div class="in"><span class="eyebrow">아티클 · 10.16 금요일</span>
+  <span class="htitle">부산 서면 BOBBY<br><em>연차 쓰고 ㄱ?</em></span>
+  <span class="coverShot"><img alt="10.16 제제 BOBBY 포스터" src="img/jeje.png"></span>
+  <span class="hsub" style="margin-top:15px">목 · 홍대 모데시 &nbsp;|&nbsp; 금 · 서면 제제</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">1/8</span>
+</figure></div>
+
+<!-- 2 / 8 -->
+<div class="nf-frame"><figure class="card who solid">
+  <div class="in"><span class="daytag">금요일 10.16</span>
+  <span class="name">BOBBY</span>
+  <span class="role">래퍼 · 쇼미더머니3 우승</span>
+  <span class="line">부산 서면 <b>제제</b> 무대에 선다<br><b>새벽 1시</b> 한 타임</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">2/8</span>
+</figure></div>
+
+<!-- 3 / 8 — 이 호에서 제일 쓸모 있는 장. 시간을 모르고 가면 못 본다. -->
+<div class="nf-frame"><figure class="card fact solid">
+  <div class="in"><span class="daytag">금요일 10.16</span>
+  <span class="big">새벽 1시<br><em>한 타임</em></span>
+  <span class="line">오픈 <b>21:30</b> · 입장 <b>선착순</b><br>공연 중 나가면 <b>재입장 제한</b><br><i>1시에 맞춰 가면 늦는다<br>그 전에 들어가 자리를 잡아야 한다</i></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">3/8</span>
+</figure></div>
+
+
+
+
+
+<!-- 4 / 8 — 목요일로 넘어간다 -->
+<div class="nf-frame"><figure class="card who soft">
+  <img class="bg" src="img/modeci.jpg" style="object-position:center 28%"><span class="scrim"></span>
+  <div class="in"><span class="daytag">목요일 10.15</span>
+  <span class="name">DMX Krew</span>
+  <span class="role">1994년부터 일렉트로만 · 영국</span>
+  <span class="line">30년 동안 한 장르에서 안 내려온 사람<br>금·토에만 여는 홍대 <b>모데시</b>가<br>이 사람 때문에 <b>목요일에 연다</b></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">4/8</span>
+</figure></div>
+
+<!-- 5 / 8 -->
+<div class="nf-frame"><figure class="card stat">
+  <div class="in"><span class="daytag">어떤 음악인가</span>
+  <span class="big2">일렉트로</span>
+  <span class="line4"><b>125~135 BPM</b> · 하우스와 속도는 비슷하다</span>
+  <span class="facts">
+    <span class="f">다른 건 <b>킥</b>이다</span>
+    <span class="f">네 번 균등하게 <b>안 떨어진다</b></span>
+    <span class="f">808 스네어가 박자를 <b>엇갈리게</b> 놓는다</span>
+  </span>
+  <span class="line5">걷는 리듬이 아니라 <em>끊어 밟는 리듬</em></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">5/8</span>
+</figure></div>
+
+<!-- 6 / 8 -->
+<div class="nf-frame"><figure class="card fact soft">
+  <img class="bg" src="img/modeci.jpg" style="object-position:center 55%"><span class="scrim"></span>
+  <div class="in"><span class="daytag">목요일 10.15</span>
+  <span class="big">예매가<br><em>1만 원 싸다</em></span>
+  <span class="line">예매 <b>15,000원</b> · 프리드링크 1잔<br>도어 <b>25,000원</b> · 오픈 밤 10시<br><i>DMX Krew · Mogwaa · 2ndfloor · Jesse You<br>@modeci_seoul 프로필 링크에서 예매</i></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">6/8</span>
+</figure></div>
+
+<!-- 7 / 8 — 아티클 전문으로 보낸다 -->
+<div class="nf-frame"><figure class="card howto">
+  <div class="in"><span class="line6">둘 중 어디로 갈지,<br>아티클에 정리해 뒀어요</span>
+  <span class="shot"><img alt="아티클 VOL.02 화면" src="img/article-shot.png"></span>
+  <span class="line7">일렉트로 리듬은 <em>직접 들어볼 수</em> 있어요</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">7/8</span>
+</figure></div>
+
+<!-- 8 / 8 -->
+<div class="nf-frame"><figure class="card cta">
+  <div class="in"><span class="ctaEye">아티클</span>
+  <span class="ctaTitle"><span class="l1">가장 핫한 국내 소식</span><em>매주 정리해서</em> 보내드릴게요</span>
+  <span class="ctaBody">놓치지 않고 싶다면?</span>
+  <span class="ctaBtn">팔로잉 + 이메일 구독</span>
+  <span class="ctaHint">구독은 프로필 링크에서 가능해요</span>
+  <span class="ctaBrand">@nightflow.kr</span></div>
+  <span class="pg">8/8</span>
+</figure></div>

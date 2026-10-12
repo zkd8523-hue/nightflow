@@ -268,11 +268,11 @@ export function Issue20261015({ benefits }: { benefits?: React.ReactNode }) {
 
         <h3 className="mt-6 text-[17px] font-black leading-[1.5]">DMX Krew란?</h3>
         <p className="mt-3 text-[16px] leading-[1.78] font-medium">
-          DMX Krew는 한 사람이다. 영국인 에드워드 업턴. 1994년 첫 EP를 냈다.
-          에이펙스 트윈의 레이블 Rephlex에 정규 앨범 여섯 장. 1997년엔 자기 레이블 Breakin&rsquo;을 세웠다.
+          DMX Krew는 30년 동안 일렉트로만 판 사람이다. 영국인 에드워드 업턴. 1994년 첫 EP를 냈고, 에이펙스 트윈의 레이블 Rephlex에 정규 앨범 여섯 장을 남겼다.
+          1997년엔 자기 레이블 Breakin&rsquo;을 세웠다.
         </p>
         <p className="mt-4 text-[15.5px] leading-[1.78]">
-          유행이 몇 번 바뀌는 동안 일렉트로에서 내려온 적이 없다. 이 사람 셋은 &lsquo;요즘 소리&rsquo;가 아니다.
+          유행이 몇 번 바뀌는 동안 내려온 적이 없다. 이 사람 셋은 &lsquo;요즘 소리&rsquo;가 아니라
           한 사람이 30년 쌓은 소리다.
         </p>
         <p className="mt-4 text-[15.5px] leading-[1.78]">
