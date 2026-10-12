@@ -669,3 +669,48 @@ video::-webkit-media-controls-play-button {
   appearance: none !important;
   opacity: 0 !important;
 }
+/* ── 아티클 NEW 리본 (홈 캐러셀) ─────────────────────────────
+   발행 24시간 안인 호에만 붙는다. 판정은 WeeklyNewsCarousel 이
+   마운트 뒤에 하므로(서버 렌더에 박제되면 안 사라진다) 여기서는
+   모양만 둔다. 빨강인 이유: 라임은 VOL 배지가 이미 쓰고 있어
+   같은 색이면 둘이 한 덩어리로 읽힌다. */
+.nf-rib {
+  position: absolute;
+  top: 0; right: 0;
+  width: 124px; height: 124px;
+  overflow: hidden;
+  z-index: 3;
+  pointer-events: none;
+}
+.nf-rib i {
+  position: absolute;
+  display: block;
+  width: 190px;
+  top: 30px; right: -46px;
+  padding: 8px 0;
+  text-align: center;
+  transform: rotate(45deg);
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 15px; font-weight: 700; font-style: normal;
+  letter-spacing: 0.22em;
+  color: #fff;
+  background: #FF4A3D;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+/* 광택이 주기적으로 지나간다 */
+.nf-rib i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 18%, rgba(255,255,255,.6) 50%, transparent 82%);
+  transform: translateX(-130%);
+  animation: nf-rib-sweep 2.8s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+@keyframes nf-rib-sweep {
+  0%   { transform: translateX(-130%); }
+  60%, 100% { transform: translateX(130%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nf-rib i::after { animation: none; }
+}

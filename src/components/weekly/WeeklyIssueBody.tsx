@@ -9,6 +9,7 @@ import { WeeklyShareRow } from "@/components/weekly/WeeklyShareRow";
 import { ClubPeekRow } from "@/components/weekly/ClubPeekRow";
 import { WeeklyVideoCard } from "@/components/weekly/WeeklyVideoCard";
 import { ClubSheetProvider } from "@/components/weekly/ClubSheetProvider";
+import { Issue20261015 } from "@/components/weekly/Issue20261015";
 
 /**
  * 호 본문.
@@ -116,6 +117,9 @@ export function WeeklyIssueBody({
   /** 쿠폰·게스트 간판 섹션(서버에서 읽어 페이지가 넘긴다) */
   benefits?: React.ReactNode;
 }) {
+  // 호마다 글이 다르다. 2호부터는 파일을 따로 두고 여기서 고른다 —
+  // 한 파일에 전부 쌓으면 호가 늘수록 손댈 수 없어진다.
+  if (slug === "2026-10-15") return <Issue20261015 benefits={benefits} />;
   if (slug !== "2026-10-06") return null;
 
   return (

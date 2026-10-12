@@ -34,6 +34,20 @@ export function weekLabel(mondayISO: string): string {
  */
 export const WEEKLY_ISSUES: WeeklyIssueCard[] = [
   {
+    slug: "2026-10-15",
+    volume: "VOL.02",
+    period: weekLabel("2026-10-13"),
+    title: "목요일 홍대 DMX Krew\n금요일 서면 BOBBY",
+    // 표지는 BOBBY 포스터(@jeje_busan). 홈 카드에서 멈춰 세우는 힘이 이쪽이
+    // 더 세다 — 포스터에 이름·날짜가 크게 박혀 있어 제목이 주어를 또 말할
+    // 필요가 없다. 본문 안에서는 두 포스터를 각 섹션에 하나씩 쓴다.
+    coverUrl:
+      "https://ihqztsakxczzsxfvdkpq.supabase.co/storage/v1/object/public/auction-images/weekly/2026-10-15/jeje.png",
+    meta: "공연 2 · 홍대 · 부산 서면",
+    // 발행 시각 — 이걸 넣은 호에만 24시간 동안 홈 카드에 NEW 리본이 붙는다
+    publishedAt: "2026-10-12T13:20:00Z",
+  },
+  {
     slug: "2026-10-06",
     volume: "VOL.01",
     period: weekLabel("2026-10-05"),

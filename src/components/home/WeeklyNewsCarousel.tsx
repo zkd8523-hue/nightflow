@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 export interface WeeklyIssueCard {
@@ -19,6 +20,75 @@ export interface WeeklyIssueCard {
   meta: string;
   /** 아직 안 나온 호 — 링크를 걸지 않는다 */
   upcoming?: boolean;
+  /**
+   * 실제 발행 시각(ISO). 이걸 기준으로 24시간 동안 NEW 리본이 붙는다.
+   *
+   * slug(발행일)로 대신하지 않는 이유: slug 는 날짜뿐이라 그 날 00시가 기준이
+   * 되고, 목요일 저녁에 올리면 반나절이 그냥 날아간다.
+   */
+  publishedAt?: string;
+}
+
+const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * "발행 24시간 안인가"를 **마운트 뒤에** 판정한다.
+ *
+ * 서버에서 계산하면 빌드·캐시 시점에 박제돼서 24시간이 지나도 리본이 안
+ * 사라진다. 첫 렌더는 무조건 false 로 두고(서버·클라이언트 HTML 이 같아야
+ * 하이드레이션이 깨지지 않는다) 마운트 후에 켠다.
+ */
+function useFreshSlugs(issues: WeeklyIssueCard[]): Set<string> {
+  const [fresh, setFresh] = useState<Set<string>>(() => new Set());
+
+  // 의존성은 발행 시각 목록으로 잡는다 — issues 배열은 매 렌더 새로 만들어져
+  // 그대로 넣으면 effect 가 끝없이 돈다.
+  const stamps = issues.map((i) => `${i.slug}:${i.publishedAt ?? ""}`).join("|");
+
+  useEffect(() => {
+    const now = Date.now();
+    const next = new Set<string>();
+    let soonest = Infinity;
+
+    for (const i of issues) {
+      if (!i.publishedAt) continue;
+      const at = Date.parse(i.publishedAt);
+      if (Number.isNaN(at)) continue;
+      const left = at + NEW_WINDOW_MS - now;
+      if (left > 0) {
+        next.add(i.slug);
+        soonest = Math.min(soonest, left);
+      }
+    }
+
+    setFresh(next);
+    if (next.size === 0) return;
+
+    // 보고 있는 동안 24시간이 지나면 그 자리에서 떼어낸다
+    const t = window.setTimeout(() => {
+      setFresh((prev) => {
+        const after = new Set(prev);
+        for (const i of issues) {
+          if (!i.publishedAt) continue;
+          if (Date.parse(i.publishedAt) + NEW_WINDOW_MS <= Date.now()) after.delete(i.slug);
+        }
+        return after;
+      });
+    }, soonest + 500);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stamps]);
+
+  return fresh;
+}
+
+/** 우측 상단 대각선 NEW 리본. 광택이 주기적으로 지나간다(A안). */
+function NewRibbon() {
+  return (
+    <span className="nf-rib" aria-label="새 호">
+      <i>NEW</i>
+    </span>
+  );
 }
 
 /**
@@ -38,6 +108,9 @@ export function WeeklyNewsCarousel({
   issues: WeeklyIssueCard[];
   totalCount?: number;
 }) {
+  // 훅은 조건부 return 보다 먼저 — 호가 0개가 되는 순간 훅 개수가 달라지면 터진다
+  const fresh = useFreshSlugs(issues);
+
   if (issues.length === 0) return null;
 
   const total = totalCount ?? issues.filter((i) => !i.upcoming).length;
@@ -82,6 +155,7 @@ export function WeeklyNewsCarousel({
                 ) : (
                   <span className="block w-full aspect-video bg-muted" />
                 )}
+                {fresh.has(issue.slug) && <NewRibbon />}
                 {/* 사진 위 글씨가 읽히려면 아래쪽을 확실히 덮어야 한다 */}
                 <span
                   className="absolute inset-0"
