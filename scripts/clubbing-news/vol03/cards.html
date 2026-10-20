@@ -1,0 +1,292 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;700;800;900&family=IBM+Plex+Mono:wght@400;600;700&display=swap">
+<style>
+
+:root{--amber:#FBBF24;--pg:#EFEDE8;--pg-2:#FFF;--fg:#17160F;--fg-2:#6B6760;
+ --rule:#D9D5CC;--acc:#D94A16;--grid:rgba(0,0,0,.05);
+ --f-d:"Gothic A1","Apple SD Gothic Neo",sans-serif;--f-m:"IBM Plex Mono",ui-monospace,Menlo,monospace;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --pg:#131311;--pg-2:#1C1C19;--fg:#EDEBE5;--fg-2:#9A958C;--rule:#33322D;--acc:#FF8A5C;--grid:rgba(255,255,255,.05);color-scheme:dark;}}
+:root[data-theme="dark"]{--pg:#131311;--pg-2:#1C1C19;--fg:#EDEBE5;--fg-2:#9A958C;--rule:#33322D;--acc:#FF8A5C;--grid:rgba(255,255,255,.05);color-scheme:dark;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pg);color:var(--fg);font-family:var(--f-d);font-size:15px;line-height:1.7;word-break:keep-all}
+.wrap{max-width:980px;margin:0 auto;padding-inline:20px}
+.top{background:#0A0A0A;color:#F2F0EC;border-bottom:3px solid var(--amber)}
+.top .wrap{padding-block:26px}
+.top .k{font-family:var(--f-m);font-size:10.5px;letter-spacing:.2em;color:var(--amber);font-weight:700}
+.top h1{margin:9px 0 0;font-weight:900;font-size:clamp(22px,4.4vw,32px);line-height:1.15;letter-spacing:-.028em}
+.top p{color:#A4A09A;margin:10px 0 0;font-size:14.5px;max-width:60ch}
+.sec{padding-block:30px;border-bottom:1px solid var(--rule)}
+.sec h2{margin:0 0 4px;font-weight:800;font-size:clamp(17px,2.7vw,21px);letter-spacing:-.022em}
+.lede{color:var(--fg-2);margin:0 0 16px;font-size:14px;max-width:62ch}
+
+.deck{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.card{position:relative;margin:0;aspect-ratio:4/5;border-radius:10px;overflow:hidden;
+ background:#0A0A0A;color:#fff;display:flex;align-items:center;justify-content:center;padding:84px 34px 48px}
+.card .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card .scrim{position:absolute;inset:0;
+ background:linear-gradient(180deg,rgba(10,10,10,.82) 0%,rgba(10,10,10,.6) 42%,rgba(10,10,10,.93) 100%)}
+.card .in{z-index:1;width:100%;text-align:center}
+.card.howto{padding:30px 22px}
+.card span{display:block}
+.brand{position:absolute;left:14px;bottom:11px;font-family:var(--f-m);font-size:8px;
+ letter-spacing:.14em;color:rgba(255,255,255,.38);z-index:2}
+.pg{position:absolute;right:14px;bottom:11px;font-family:var(--f-m);font-size:8px;color:rgba(255,255,255,.38);z-index:2}
+
+.eyebrow{position:absolute;top:36px;left:0;right:0;z-index:3;
+ font-family:var(--f-m);font-size:8px;letter-spacing:.2em;color:var(--amber);font-weight:700}
+.htitle{font-weight:900;font-size:27px;line-height:1.26;letter-spacing:-.03em;margin-top:0}
+.htitle em{font-style:normal;color:var(--amber)}
+.hsub{font-size:10.5px;color:#9A9AA0;margin-top:22px;line-height:1.75;letter-spacing:.01em}
+.daytag{position:absolute;top:34px;left:50%;transform:translateX(-50%);z-index:3;
+ display:inline-block !important;font-family:var(--f-m);font-size:8px;letter-spacing:.16em;
+ background:var(--amber);color:#0A0A0A;font-weight:700;padding:4px 10px;border-radius:4px;white-space:nowrap}
+.name{font-weight:900;font-size:27px;letter-spacing:-.022em;margin-top:0}
+.role{font-size:10px;color:var(--amber);margin-top:8px;font-weight:700;letter-spacing:.02em}
+.line{font-size:11.5px;line-height:1.95;color:#C9C7CC;margin-top:20px}
+.line b{color:#fff;font-weight:800}
+.line i{font-style:normal;display:block;color:#7A7A80;font-size:10px;margin-top:12px;line-height:1.7}
+.big{font-weight:900;font-size:29px;line-height:1.22;letter-spacing:-.028em;margin-top:0}
+.big em{font-style:normal;color:var(--amber)}
+.big2{font-weight:900;font-size:22px;line-height:1.34;letter-spacing:-.025em;margin-top:0}
+.big2 em{font-style:normal;color:var(--amber)}
+.line4{font-size:10.5px;color:#8A8A90;margin-top:18px;letter-spacing:.01em}
+.line4 b{color:#D4D2D8;font-weight:700}
+.fitlist{margin-top:26px}
+.fitlist .f2{display:block;font-size:12px;color:#C9C7CC;line-height:2.1}
+.fitlist .f2 b{color:var(--amber);font-weight:800}
+.facts{margin-top:26px}
+.facts .f{display:block;font-size:12px;color:#C9C7CC;line-height:2.1}
+.facts .f b{color:var(--amber);font-weight:800}
+.numrow{display:flex !important;justify-content:center;gap:22px;margin-top:26px}
+.numrow .n{display:block}
+.numrow b{display:block;font-family:var(--f-m);font-size:25px;font-weight:700;color:var(--amber);line-height:1}
+.numrow b u{text-decoration:none;font-size:15px;margin-left:1px}
+.numrow i{display:block;font-style:normal;font-size:9.5px;color:#9A9AA0;margin-top:6px}
+.line5{font-size:10.5px;color:#7A7A80;margin-top:22px;letter-spacing:.01em;line-height:1.95}
+.line5 em{font-style:normal;color:var(--amber);font-weight:700}
+.statline{margin-top:12px}
+.statline b{font-family:var(--f-m);font-size:38px;font-weight:700;color:var(--amber);display:inline-block}
+.statline i{font-style:normal;font-size:11px;color:#9A9AA0;display:inline-block;margin-left:8px}
+.line2{font-size:11.5px;line-height:1.95;color:#C9C7CC;margin-top:24px}
+.line2 em{font-style:normal;color:var(--amber);font-weight:800}
+.fit{display:block;font-size:35.6px;color:#C9C7CC;line-height:2.05}
+.fit b{color:var(--amber);font-weight:800}
+.line3{font-weight:800;font-size:13px;line-height:1.5;letter-spacing:-.018em;margin-top:10px}
+.shot{display:block;width:100%;margin:18px 0 0;border-radius:9px;overflow:hidden;
+ border:1px solid rgba(255,255,255,.14)}
+.line6{font-weight:800;font-size:17px;line-height:1.42;letter-spacing:-.022em;margin-top:0}
+.line7{font-size:12.5px;color:#C9C7CC;letter-spacing:-.01em;margin-top:16px}
+.line7 em{font-style:normal;color:var(--amber);font-weight:800}
+.shot img{display:block;width:100%}
+.chips{display:flex !important;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:22px}
+.chip{display:inline-block !important;font-family:var(--f-m);font-size:9px;font-weight:700;
+ border:1px solid rgba(251,191,36,.45);color:var(--amber);border-radius:99px;padding:5px 11px}
+.ctaEye{position:absolute;top:36px;left:0;right:0;z-index:3;
+ font-family:var(--f-m);font-size:8px;letter-spacing:.2em;color:var(--amber);font-weight:700}
+.ctaTitle{font-weight:900;font-size:21px;line-height:1.38;letter-spacing:-.028em;margin-top:0}
+.ctaTitle .l1{display:block;white-space:nowrap}
+.ctaTitle em{font-style:normal;color:var(--amber)}
+.ctaBody{font-size:11.5px;line-height:1.8;color:#9A9AA0;margin-top:22px}
+.ctaBtn{background:linear-gradient(135deg,#FBBF24,#F97316);color:#0A0A0A;font-weight:900;
+ font-size:12.5px;border-radius:12px;padding:13px 10px;margin-top:20px;letter-spacing:-.01em}
+.ctaHint{font-size:10.5px;color:#8A8A90;margin-top:12px;letter-spacing:.01em}
+.ctaBrand{font-family:var(--f-m);font-size:9px;color:#6B6B70;margin-top:12px;letter-spacing:.06em}
+
+.cap{background:var(--pg-2);border:1px solid var(--rule);border-radius:10px;padding:18px;
+ white-space:pre-wrap;font-size:13.5px;line-height:1.85}
+.tag{display:inline-block;font-family:var(--f-m);font-size:11px;background:#17160F;color:#FBBF24;
+ border-radius:5px;padding:3px 8px;margin:2px 3px 2px 0}
+.note{border-left:3px solid var(--acc);padding:2px 0 2px 14px;margin-top:14px;color:var(--fg-2);font-size:13.5px}
+.note b{color:var(--fg)}
+.foot{padding-block:26px;color:var(--fg-2);font-size:12.5px}
+
+/* ── 렌더 전용 래퍼 ───────────────────────────────────────────
+   아티팩트 카드는 그리드 폭에 따라 크기가 정해지는 반응형이라,
+   1080px 폭으로 바로 찍으면 비율이 깨진다. 원본과 같은 폭으로
+   그린 뒤 스케일업해서 1080x1350을 만든다. */
+html,body{margin:0;padding:0;background:#000}
+.nf-frame{width:1080px;height:1350px;overflow:hidden;position:relative}
+.nf-frame > .card.howto > .in{transform:scale(.82);transform-origin:center center}
+.nf-frame > .card{
+  width:270px !important;
+  height:337.5px !important;
+  aspect-ratio:auto !important;
+  border-radius:0 !important;
+  transform:scale(4.0);
+  transform-origin:top left;
+  margin:0 !important;
+}
+</style></head><body>
+<style>
+/* ── VOL.03 전용 보정 ──────────────────────────────────────
+   이 호의 포스터는 전부 글자가 박혀 있다(vurt = 하단 DELTA FUNKTIONEN,
+   rosso = 상단 JADALAREIGN + 좌측 타임테이블, tamana = 중앙 TAMANA RAMEN).
+   그대로 배경으로 깔면 내 제목 뒤에 포스터 글자가 겹쳐 읽힌다.
+   → 배경으로 쓸 때는 (1) 글자가 없는 구역만 확대해 잡고 (2) 흐려서
+     남은 글자 흔적을 죽인다. 표지 포스터는 칩으로만 쓴다. */
+.card .bg{transform:scale(1.08)}
+.card.soft .bg{filter:blur(1.2px) saturate(1.06)}
+.card.very-soft .bg{filter:blur(5px) saturate(1.15) brightness(1.1)}
+
+/* 검정 바탕 + 하단 앰버 글로우 (포스터를 깔지 않는 카드) */
+.card.solid{background:#0A0A0A}
+.card.solid::before{content:"";position:absolute;inset:0;
+ background:radial-gradient(120% 70% at 50% 108%,rgba(251,191,36,.26),transparent 62%)}
+
+/* 표지 — evianchrist.jpg 상단에 "EVIAN CHRIST" 글자가 박혀 있어
+   전면 배경으로 깔 수 없다. 작고 선명한 칩으로만 넣는다. */
+.card.cover{padding:58px 22px 42px}
+/* 25px 면 "칸예 앨범 만들던 사람이" 가 세 줄로 쪼개진다 — 두 줄로 떨어지는 한계선 */
+.card.cover .htitle{font-size:21px;line-height:1.32;letter-spacing:-.032em}
+.coverShot{display:block;width:66%;margin:18px auto 0;border-radius:8px;overflow:hidden;
+ border:1px solid rgba(255,255,255,.18);box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.coverShot img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;object-position:center 15%}
+
+/* ── 카드별 보정 ────────────────────────────────────────── */
+/* 2번: 설명 두 줄이 길어 기본 .line 간격이면 아래가 뜬다 */
+.c2 .line{font-size:11px;line-height:1.9;margin-top:18px}
+
+/* 3번: facts 3줄 + line5 2줄 → 기본값이면 위아래로 넘친다 */
+.c3{padding:76px 26px 46px}
+.c3 .big2{font-size:21px}
+.c3 .facts{margin-top:20px}
+.c3 .facts .f{font-size:11px;line-height:1.95}
+.c3 .line5{margin-top:18px;font-size:10px}
+
+/* 4번: big 2줄 + line 3줄 + i 1줄 */
+.c4 .big{font-size:27px}
+.c4 .line{font-size:11px;line-height:1.9;margin-top:18px}
+
+/* 5번: 한글 롱라인 — 글자 크기를 줄여 두 줄로 묶는다 */
+.c5 .name{font-size:26px}
+.c5 .line{font-size:10.5px;line-height:1.95;margin-top:18px}
+
+/* 6번: 이름이 길다(JADALAREIGN) — 한 줄에 들어가게 줄인다 */
+.c6 .name{font-size:22px;letter-spacing:-.03em}
+.c6 .line{font-size:10.5px;line-height:1.95;margin-top:18px}
+
+/* 7번: 가격 두 개 + 배수 + 보조줄 */
+.c7{padding:78px 24px 46px}
+.c7 .big{font-size:27px}
+.c7 .line{font-size:10.5px;line-height:1.95;margin-top:18px}
+
+/* 8번: 세 줄짜리 설명 */
+.c8 .name{font-size:25px}
+.c8{padding:84px 26px 48px}
+.card.very-soft.c8 .bg{filter:blur(4.5px) saturate(1.7) brightness(1.3) contrast(1.05)}
+.c8 .line{font-size:10px;line-height:1.95;margin-top:18px}
+
+/* 9번: vol02 와 달리 하단에 NIGHTFLOW 워드마크를 넣어서 @nightflow.kr 가
+   워드마크와 맞붙는다 — 블록 간격을 줄여 전체를 위로 올린다 */
+.c9{padding:78px 34px 72px}
+.c9 .ctaBody{margin-top:18px}
+.c9 .ctaBtn{margin-top:16px;padding:11px 10px}
+.c9 .ctaHint{margin-top:10px}
+.c9 .ctaBrand{margin-top:9px}
+</style>
+
+<!-- 1 / 9 — 표지 -->
+<div class="nf-frame"><figure class="card cover solid c1">
+  <div class="in"><span class="eyebrow">아티클 · 10.23 금요일</span>
+  <span class="htitle">칸예 앨범 만들던 사람이<br><em>트랜스</em>를 들고 온다</span>
+  <span class="coverShot"><img alt="10.23 케이크샵 Evian Christ 포스터" src="img/evianchrist.jpg"></span>
+  <span class="hsub" style="margin-top:15px">금 케이크샵 · 토 vurt. 로쏘 루카 · 일 축제</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">1/9</span>
+</figure></div>
+
+<!-- 2 / 9 — Evian Christ -->
+<div class="nf-frame"><figure class="card who solid c2">
+  <div class="in"><span class="daytag">금요일 10.23</span>
+  <span class="name">Evian Christ</span>
+  <span class="role">프로듀서 · Warp Records</span>
+  <span class="line">칸예 『Yeezus』 <b>&lsquo;I&rsquo;m In It&rsquo;</b>을 만들었다<br>지금은 <b>트랜스</b>를 한다</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">2/9</span>
+</figure></div>
+
+<!-- 3 / 9 — 트랜스란 -->
+<div class="nf-frame"><figure class="card stat c3">
+  <div class="in"><span class="daytag">왜 트랜스인가</span>
+  <span class="big2">2013년에 차렸다</span>
+  <span class="facts">
+    <span class="f"><b>TranceParty</b> — 본인이 만든 클럽 나이트</span>
+    <span class="f">2023년 Warp 데뷔작 <b>『Revanchist』</b></span>
+    <span class="f">환희 너머 <b>숭고</b>까지 간다는 앨범</span>
+  </span>
+  <span class="line5">힙합 최전선에 있던 사람이<br><em>한 번 밀려났던 장르로 갔다</em></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">3/9</span>
+</figure></div>
+
+<!-- 4 / 9 — 가격 -->
+<div class="nf-frame"><figure class="card fact solid c4">
+  <div class="in"><span class="daytag">금요일 10.23</span>
+  <span class="big">자정 전에<br><em>5천 원 싸다</em></span>
+  <span class="line">자정 전 <b>25,000원</b> / 자정 후 <b>30,000원</b><br>케이크샵 · 이태원<br><i>DJ 7명 중 6명 미리듣기 가능</i></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">4/9</span>
+</figure></div>
+
+<!-- 5 / 9 — IMMEDIATE PROXIMITY (vurt.jpg)
+     포스터 하단에 DELTA FUNKTIONEN & NAPIRELLY 가 큰 흰 글자로 박혀 있고
+     우상단에 SAT 24 OCT 2026 이 있다. 가운데 보라색 추상 구간만 확대해 잡는다. -->
+<div class="nf-frame"><figure class="card who soft c5">
+  <img class="bg" src="img/vurt.jpg" style="transform:scale(2.5) translateY(15%)"><span class="scrim"></span>
+  <div class="in"><span class="daytag">토요일 10.24</span>
+  <span class="name">다섯 시간</span>
+  <span class="role">Delta Funktionen × Napirelly</span>
+  <span class="line">네덜란드와 조지아가 <b>새벽 1시부터 6시까지</b><br>따로 또 같이 돈다 · vurt. 홍대</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">5/9</span>
+</figure></div>
+
+<!-- 6 / 9 — JADALAREIGN (rosso.jpg)
+     상단 JADALAREIGN, 좌측 타임테이블, 하단 ROSSO 전부 글자다.
+     가운데 인물 얼굴만 확대해 잡고 약하게 흐린다. -->
+<div class="nf-frame"><figure class="card who soft c6">
+  <img class="bg" src="img/rosso.jpg" style="transform:scale(2.4) translate(-3%,-5%)"><span class="scrim"></span>
+  <div class="in"><span class="daytag">토요일 10.24</span>
+  <span class="name">JADALAREIGN</span>
+  <span class="role">뉴욕 · Nowadays 부커</span>
+  <span class="line">브루클린 클럽의 <b>금요일 라인업을 짜는 사람</b><br>그 사람이 직접 튼다 · 로쏘 이태원</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">6/9</span>
+</figure></div>
+
+<!-- 7 / 9 — BOTL 티켓 -->
+<div class="nf-frame"><figure class="card fact solid c7">
+  <div class="in"><span class="daytag">토요일 10.24</span>
+  <span class="big">티켓이<br><em>여섯 단계</em></span>
+  <span class="line"><b>15,000원</b>(거의 매진)<br>→ <b>38,000원</b>(자정 후 도어)<br>가장 싼 표와 가장 비싼 표가 <b>2.5배</b><br><i>루카 강남 · 밤 11시 ~ 아침 7시</i></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">7/9</span>
+</figure></div>
+
+<!-- 8 / 9 — Tamanaramen (tamana.jpg)
+     포스터 전면이 글자투성이(TAMANA RAMEN / KIRIN / @festivalfestivalseoul).
+     형광 색감만 남기고 세게 흐린다. -->
+<div class="nf-frame"><figure class="card who very-soft c8">
+  <img class="bg" src="img/tamana.jpg" style="transform:scale(1.9) translateY(14%)"><span class="scrim"></span>
+  <div class="in"><span class="daytag">일요일 10.25</span>
+  <span class="name">Tamanaramen</span>
+  <span class="role">도쿄 + 런던 · 자매</span>
+  <span class="line">팀 이름은 동생이 고등학생 때<br><b>일본어 자판을 아무렇게나 두드려 나온 글자</b><br>축제 · 중구 · 저녁 7시 30분</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">8/9</span>
+</figure></div>
+
+<!-- 9 / 9 — CTA -->
+<div class="nf-frame"><figure class="card cta c9">
+  <div class="in"><span class="ctaEye">아티클</span>
+  <span class="ctaTitle"><span class="l1">가장 핫한 국내 소식</span><em>매주 정리해서</em> 보내드릴게요</span>
+  <span class="ctaBody">놓치지 않고 싶다면?</span>
+  <span class="ctaBtn">팔로잉 + 이메일 구독</span>
+  <span class="ctaHint">구독은 프로필 링크에서 가능해요</span>
+  <span class="ctaBrand">@nightflow.kr</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">9/9</span>
+</figure></div>
+
+</body></html>

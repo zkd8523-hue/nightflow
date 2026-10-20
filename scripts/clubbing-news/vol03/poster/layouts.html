@@ -1,0 +1,55 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;800;900&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+*{box-sizing:border-box;word-break:keep-all}
+html,body{margin:0;padding:0;background:#555}
+.p{position:relative;width:880px;height:1168px;overflow:hidden;
+   font-family:"Gothic A1","Apple SD Gothic Neo",sans-serif}
+.p img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.m{font-family:"IBM Plex Mono",monospace}
+
+/* ── 1안 : 하단 스크림 + 흰 글씨 ───────────────────────── */
+.s1 .scrim{position:absolute;left:0;right:0;bottom:0;height:46%;
+  background:linear-gradient(transparent,rgba(12,6,2,.72) 42%,rgba(12,6,2,.95) 100%)}
+.s1 .tx{position:absolute;left:56px;right:56px;bottom:56px;color:#FFF6EE}
+.s1 h1{margin:0;font-size:62px;font-weight:900;line-height:1.16;letter-spacing:-.035em}
+.s1 .sub{margin-top:18px;font-size:19px;letter-spacing:.02em;color:#FFD9C2;font-weight:700}
+
+/* ── 2안 : 위쪽 크림 여백에 검정 활자 (실제 인쇄 포스터) ── */
+.s2 .top{position:absolute;left:0;right:0;top:0;padding:46px 56px 30px;
+  background:linear-gradient(#F3EAD8 72%,rgba(243,234,216,0))}
+.s2 h1{margin:0;font-size:58px;font-weight:900;line-height:1.14;letter-spacing:-.035em;color:#17110B}
+.s2 .sub{margin-top:14px;font-size:18px;font-weight:700;letter-spacing:.02em;color:#C8360E}
+
+/* ── 3안 : 하단 주황 띠 (리소 2도 그대로) ───────────────── */
+.s3 .band{position:absolute;left:0;right:0;bottom:0;padding:40px 56px 46px;background:#E8431A}
+.s3 h1{margin:0;font-size:58px;font-weight:900;line-height:1.14;letter-spacing:-.035em;color:#FFF3E4}
+.s3 .sub{margin-top:14px;font-size:18px;font-weight:700;letter-spacing:.02em;color:#2A0E05}
+</style></head><body>
+
+<div class="p s1" id="s1">
+  <img src="base.png">
+  <span class="scrim"></span>
+  <div class="tx">
+    <h1>칸예 · 스캇 앨범<br>만든 DJ가 온다</h1>
+    <div class="sub m">10.23 FRI · CAKESHOP ITAEWON</div>
+  </div>
+</div>
+
+<div class="p s2" id="s2">
+  <img src="base.png">
+  <div class="top">
+    <h1>칸예 · 스캇 앨범<br>만든 DJ가 온다</h1>
+    <div class="sub m">10.23 FRI · CAKESHOP ITAEWON</div>
+  </div>
+</div>
+
+<div class="p s3" id="s3">
+  <img src="base.png">
+  <div class="band">
+    <h1>칸예 · 스캇 앨범<br>만든 DJ가 온다</h1>
+    <div class="sub m">10.23 FRI · CAKESHOP ITAEWON</div>
+  </div>
+</div>
+
+</body></html>

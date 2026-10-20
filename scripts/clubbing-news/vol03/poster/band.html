@@ -1,0 +1,80 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Archivo+Black&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;word-break:keep-all}
+html,body{background:#555}
+.p{position:relative;width:1080px;height:1350px;overflow:hidden;
+   font-family:"Black Han Sans","Apple SD Gothic Neo",sans-serif}
+.p>img.bg{position:absolute;top:0;left:0;width:100%;object-fit:cover}
+.m{font-family:"IBM Plex Mono",monospace;font-weight:700}
+.en{font-family:"Archivo Black",sans-serif}
+/* 포스터 원본 색 */
+:root{--ink:#17110B; --paper:#EFE5D0; --red:#E8431A;}
+
+/* ── B1 · 크림 띠 (인쇄 포스터 하단 크레딧) ── */
+.b1 .band{position:absolute;left:0;right:0;bottom:0;height:300px;background:var(--paper);
+  padding:34px 52px 0;display:flex;flex-direction:column}
+.b1 h1{font-size:76px;line-height:.98;letter-spacing:-.045em;color:var(--red)}
+.b1 h1 em{font-style:normal;color:var(--ink)}
+.b1 .row{margin-top:auto;padding:18px 0 26px;border-top:4px solid var(--ink);
+  display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+.b1 .nm{font-family:"Archivo Black",sans-serif;font-size:34px;color:var(--ink);letter-spacing:.01em;line-height:1}
+.b1 .dt{font-size:18px;color:var(--ink);text-align:right;line-height:1.65}
+
+/* ── B2 · 주황 띠 ── */
+.b2 .band{position:absolute;left:0;right:0;bottom:0;height:300px;background:var(--red);
+  padding:34px 52px 0;display:flex;flex-direction:column}
+.b2 h1{font-size:76px;line-height:.98;letter-spacing:-.045em;color:#FFF1DE}
+.b2 h1 em{font-style:normal;color:#43120A}
+.b2 .row{margin-top:auto;padding:18px 0 26px;border-top:4px solid #43120A;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+.b2 .nm{font-family:"Archivo Black",sans-serif;font-size:34px;color:#FFF1DE;line-height:1}
+.b2 .dt{font-size:18px;color:#43120A;text-align:right;line-height:1.65}
+
+/* ── B3 · 띠 없이 어두운 하단에 얹기 ── */
+.b3 .scrim{position:absolute;left:0;right:0;bottom:0;height:46%;
+  background:linear-gradient(transparent,rgba(14,6,2,.6) 38%,rgba(14,6,2,.95) 100%)}
+.b3 .tx{position:absolute;left:52px;right:52px;bottom:48px}
+.b3 h1{font-size:80px;line-height:.98;letter-spacing:-.045em;color:#FFF1DE}
+.b3 h1 em{font-style:normal;color:#FF7A45}
+.b3 .row{margin-top:24px;padding-top:18px;border-top:4px solid #E8431A;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+.b3 .nm{font-family:"Archivo Black",sans-serif;font-size:34px;color:#FFF1DE;line-height:1}
+.b3 .dt{font-size:18px;color:#F0A277;text-align:right;line-height:1.65}
+</style></head><body>
+
+<div class="p b1" id="b1">
+  <img class="bg" src="base.png" style="height:1050px;object-position:center 8%">
+  <div class="band">
+    <h1>칸예 · 스캇 앨범<br><em>만든 DJ가 온다</em></h1>
+    <div class="row">
+      <div class="nm">EVIAN CHRIST</div>
+      <div class="dt m">10.23 FRI · CAKESHOP ITAEWON<br>자정 전 25,000원 · 자정 후 30,000원</div>
+    </div>
+  </div>
+</div>
+
+<div class="p b2" id="b2">
+  <img class="bg" src="base.png" style="height:1050px;object-position:center 8%">
+  <div class="band">
+    <h1>칸예 · 스캇 앨범<br><em>만든 DJ가 온다</em></h1>
+    <div class="row">
+      <div class="nm">EVIAN CHRIST</div>
+      <div class="dt m">10.23 FRI · CAKESHOP ITAEWON<br>자정 전 25,000원 · 자정 후 30,000원</div>
+    </div>
+  </div>
+</div>
+
+<div class="p b3" id="b3">
+  <img class="bg" src="base.png" style="height:1350px;object-position:center 18%">
+  <span class="scrim"></span>
+  <div class="tx">
+    <h1>칸예 · 스캇 앨범<br><em>만든 DJ가 온다</em></h1>
+    <div class="row">
+      <div class="nm">EVIAN CHRIST</div>
+      <div class="dt m">10.23 FRI · CAKESHOP ITAEWON<br>자정 전 25,000원 · 자정 후 30,000원</div>
+    </div>
+  </div>
+</div>
+
+</body></html>

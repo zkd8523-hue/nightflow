@@ -1,0 +1,10 @@
+import { chromium } from "playwright";
+const url = process.argv[2] || "http://localhost:3000/weekly/2026-10-22";
+const out = process.argv[3] || "/tmp/vol03-full.png";
+const b = await chromium.launch();
+const p = await b.newPage({ viewport:{width:390,height:900}, deviceScaleFactor:2, colorScheme:"dark" });
+await p.goto(url, { waitUntil:"networkidle" });
+await p.waitForTimeout(3000);
+await p.screenshot({ path: out, fullPage:true });
+console.log("height", await p.evaluate(()=>document.body.scrollHeight));
+await b.close();

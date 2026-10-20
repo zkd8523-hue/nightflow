@@ -34,6 +34,23 @@ export function weekLabel(mondayISO: string): string {
  */
 export const WEEKLY_ISSUES: WeeklyIssueCard[] = [
   {
+    slug: "2026-10-22",
+    volume: "VOL.03",
+    period: weekLabel("2026-10-19"),
+    title: "칸예 · 스캇 앨범\n만든 DJ가 온다",
+    // 표지는 이 호를 위해 그린 일러스트. 세로 그림을 16:9 로 자르면 주인공이
+    // 통째로 날아가서(실측) 가로 구도로 따로 그렸다. 왼쪽을 비워 둔 건
+    // 카드가 제목을 거기에 얹기 때문이다(2호와 같은 방식).
+    // 그림 안에 제목을 박아 보기도 했는데, 호마다 카드 생김새가 달라져서 되돌렸다.
+    // ⚠️ 그림을 고칠 때는 같은 파일명에 덮어쓰지 말고 새 이름(-v2, -v3)으로 올려라.
+    //    URL 이 같으면 Next 이미지 캐시와 브라우저가 옛 그림을 계속 내보낸다.
+    coverUrl: "https://ihqztsakxczzsxfvdkpq.supabase.co/storage/v1/object/public/auction-images/weekly/2026-10-22/cover-v2.png",
+    meta: "공연 9 · 금·토·일",
+    // 발행 시각 — 이 값이 있어야 홈 카드에 24시간 NEW 리본이 붙는다.
+    // ⚠️ 푸시 직전에 실제 배포 시각으로 다시 맞춰라(손으로 적는 값이라 쉽게 어긋난다).
+    publishedAt: "2026-10-20T11:20:39Z",
+  },
+  {
     slug: "2026-10-15",
     volume: "VOL.02",
     period: weekLabel("2026-10-13"),

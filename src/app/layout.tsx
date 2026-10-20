@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Suspense } from "react";
 import { headers } from "next/headers";
-import { Geist, Geist_Mono, Nanum_Pen_Script, Do_Hyeon } from "next/font/google";
+import { Geist, Geist_Mono, Nanum_Pen_Script, Do_Hyeon, Nanum_Myeongjo } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
@@ -35,6 +35,16 @@ const nanumPen = Nanum_Pen_Script({
 const displayKr = Do_Hyeon({
   weight: "400",
   variable: "--font-display-kr",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+
+// 아티클(매거진) 제목 폰트 — 포스터 활자와 같은 명조로 맞춘다.
+// preload 하지 않는 이유: 아티클 카드가 있는 화면에서만 쓰인다.
+const serifKr = Nanum_Myeongjo({
+  weight: ["700", "800"],
+  variable: "--font-serif-kr",
   subsets: ["latin"],
   display: "swap",
   preload: false,
@@ -217,7 +227,7 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${nanumPen.variable} ${displayKr.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${nanumPen.variable} ${displayKr.variable} ${serifKr.variable} antialiased`}
       >
         {isKoreanTree && (
           <Script

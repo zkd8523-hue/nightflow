@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Play, Pause } from "lucide-react";
 import { NewsletterSignup } from "@/components/home/NewsletterSignup";
 import { WeeklyShareRow } from "@/components/weekly/WeeklyShareRow";
@@ -99,20 +99,101 @@ function Fact({ k, v }: { k: string; v: string }) {
  * 외부 플레이어를 띄우면 로딩·광고·추적이 따라오고, 정작 비교가 안 된다.
  * 킥·스네어·하이햇을 직접 합성해 16스텝 한 마디만 돌린다.
  */
+type Kit = "house" | "electro";
+
+const KITS: Record<Kit, { kick: number[]; snare: number[]; hat: number[] }> = {
+  house: { kick: [0, 4, 8, 12], snare: [4, 12], hat: [2, 6, 10, 14] },
+  electro: {
+    kick: [0, 3, 6, 10],
+    snare: [4, 12],
+    hat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+  },
+};
+
+/**
+ * 버튼 한 줄.
+ *
+ * ⚠️ 반드시 모듈 최상단에 둔다. RhythmPlayer 안에서 정의하면 cue 가 바뀔 때마다
+ * (100ms 주기) 새 컴포넌트 타입이 되어 React 가 버튼을 언마운트·리마운트하고,
+ * 그 틈에 누른 클릭이 삼켜진다. "정지가 안 눌린다"의 원인이었다.
+ */
+function RhythmRow({
+  kit, label, on, cue, onToggle,
+}: {
+  kit: Kit; label: string; on: boolean; cue: number; onToggle: (kit: Kit) => void;
+}) {
+  const hits = KITS[kit].kick;
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        aria-pressed={on}
+        onClick={() => onToggle(kit)}
+        className={`flex items-center gap-2 flex-none w-[116px] min-h-[44px] px-3 py-2.5
+                    text-[13px] font-black border-[1.5px] rounded-lg transition-colors
+                    ${on
+                      ? "bg-foreground text-background border-foreground"
+                      : "border-foreground text-foreground"}`}
+      >
+        {on ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+        {label}
+      </button>
+      <div className="flex gap-[3px] items-end h-9 flex-1 min-w-0">
+        {Array.from({ length: 16 }, (_, i) => {
+          const hit = hits.includes(i);
+          const lit = on && cue === i;
+          return (
+            <span
+              key={i}
+              className={`flex-1 rounded-[1px] ${
+                lit ? "bg-foreground" : hit ? "bg-[#DFFF00]" : "bg-border"
+              }`}
+              style={{ height: hit ? "100%" : "26%" }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 일렉트로와 하우스를 직접 들려준다.
+ *
+ * 사운드클라우드·유튜브 임베드를 쓰지 않는 이유: 한 마디 리듬 차이를 보여주려고
+ * 외부 플레이어를 띄우면 로딩·광고·추적이 따라오고, 정작 비교가 안 된다.
+ * 킥·스네어·하이햇을 직접 합성해 16스텝 한 마디만 돌린다.
+ *
+ * 끄는 쪽이 켜는 쪽보다 까다롭다. 스케줄러가 0.12초 앞까지 미리 예약해 두기
+ * 때문에 인터벌만 끊으면 소리가 남고, setCue 예약분이 남아 막대가 계속 뛴다.
+ * 그래서 (1) 모든 소리를 마스터 게인 하나로 모아 그걸 0으로 끊고,
+ * (2) 예약해 둔 setCue 타이머를 전부 취소한다.
+ */
 function RhythmPlayer() {
-  const [playing, setPlaying] = useState<"house" | "electro" | null>(null);
+  const [playing, setPlaying] = useState<Kit | null>(null);
   const [cue, setCue] = useState(-1);
   const ctxRef = useRef<AudioContext | null>(null);
+  const masterRef = useRef<GainNode | null>(null);
   const timerRef = useRef<number | null>(null);
+  const cueTimersRef = useRef<number[]>([]);
 
-  const KITS = {
-    house: { kick: [0, 4, 8, 12], snare: [4, 12], hat: [2, 6, 10, 14] },
-    electro: {
-      kick: [0, 3, 6, 10],
-      snare: [4, 12],
-      hat: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-    },
-  } as const;
+  const stop = useCallback(() => {
+    if (timerRef.current) { window.clearInterval(timerRef.current); timerRef.current = null; }
+    for (const t of cueTimersRef.current) window.clearTimeout(t);
+    cueTimersRef.current = [];
+    const m = masterRef.current;
+    if (m) {
+      // 이미 예약된 소리까지 즉시 끊는다. 뚝 끊으면 '틱' 소리가 나서 15ms 로 내린다.
+      const now = m.context.currentTime;
+      m.gain.cancelScheduledValues(now);
+      m.gain.setValueAtTime(m.gain.value, now);
+      m.gain.linearRampToValueAtTime(0, now + 0.015);
+      masterRef.current = null;
+      window.setTimeout(() => { try { m.disconnect(); } catch {} }, 120);
+    }
+    setPlaying(null);
+    setCue(-1);
+  }, []);
 
   // 언마운트·화면 이탈 시 소리가 남지 않게 한다
   useEffect(() => {
@@ -120,24 +201,22 @@ function RhythmPlayer() {
     document.addEventListener("visibilitychange", onHide);
     return () => {
       document.removeEventListener("visibilitychange", onHide);
-      if (timerRef.current) window.clearInterval(timerRef.current);
+      stop();
       ctxRef.current?.close().catch(() => {});
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [stop]);
 
-  function stop() {
-    if (timerRef.current) { window.clearInterval(timerRef.current); timerRef.current = null; }
-    setPlaying(null);
-    setCue(-1);
-  }
-
-  function start(kit: "house" | "electro") {
+  const start = useCallback((kit: Kit) => {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;                               // 미지원 브라우저는 조용히 둔다
     if (!ctxRef.current) ctxRef.current = new AC();
     const ctx = ctxRef.current;
     if (ctx.state === "suspended") void ctx.resume();
+
+    const master = ctx.createGain();
+    master.gain.value = 1;
+    master.connect(ctx.destination);
+    masterRef.current = master;
 
     const STEP = 60 / 130 / 4;                      // 130 BPM 16분음표
     let step = 0;
@@ -149,7 +228,7 @@ function RhythmPlayer() {
       o.frequency.exponentialRampToValueAtTime(47, t + 0.11);
       g.gain.setValueAtTime(0.9, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.18);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.18);
     };
     const noise = (t: number, dur: number, hz: number, type: BiquadFilterType, vol: number) => {
       const n = Math.floor(ctx.sampleRate * dur);
@@ -161,18 +240,22 @@ function RhythmPlayer() {
       const g = ctx.createGain();
       g.gain.setValueAtTime(vol, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-      s.connect(f); f.connect(g); g.connect(ctx.destination); s.start(t); s.stop(t + dur);
+      s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dur);
     };
 
     const pat = KITS[kit];
     const tick = () => {
       while (nextAt < ctx.currentTime + 0.12) {
-        if ((pat.kick as readonly number[]).includes(step)) kick(nextAt);
-        if ((pat.snare as readonly number[]).includes(step)) noise(nextAt, 0.13, 1900, "bandpass", 0.42);
-        if ((pat.hat as readonly number[]).includes(step)) noise(nextAt, 0.035, 8200, "highpass", 0.12);
+        if (pat.kick.includes(step)) kick(nextAt);
+        if (pat.snare.includes(step)) noise(nextAt, 0.13, 1900, "bandpass", 0.42);
+        if (pat.hat.includes(step)) noise(nextAt, 0.035, 8200, "highpass", 0.12);
         const s = step;
         const delay = Math.max(0, (nextAt - ctx.currentTime) * 1000);
-        window.setTimeout(() => setCue(s), delay);
+        const id = window.setTimeout(() => {
+          setCue(s);
+          cueTimersRef.current = cueTimersRef.current.filter((x) => x !== id);
+        }, delay);
+        cueTimersRef.current.push(id);
         step = (step + 1) % 16;
         nextAt += STEP;
       }
@@ -181,49 +264,20 @@ function RhythmPlayer() {
     setPlaying(kit);
     timerRef.current = window.setInterval(tick, 25);
     tick();
-  }
+  }, []);
 
-  const Row = ({ kit, label }: { kit: "house" | "electro"; label: string }) => {
-    const on = playing === kit;
-    const hits = KITS[kit].kick as readonly number[];
-    return (
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          aria-pressed={on}
-          onClick={() => { const was = on; stop(); if (!was) start(kit); }}
-          className={`flex items-center gap-2 flex-none w-[116px] min-h-[44px] px-3 py-2.5
-                      text-[13px] font-black border-[1.5px] rounded-lg transition-colors
-                      ${on
-                        ? "bg-foreground text-background border-foreground"
-                        : "border-foreground text-foreground"}`}
-        >
-          {on ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-          {label}
-        </button>
-        <div className="flex gap-[3px] items-end h-9 flex-1 min-w-0">
-          {Array.from({ length: 16 }, (_, i) => {
-            const hit = hits.includes(i);
-            const lit = on && cue === i;
-            return (
-              <span
-                key={i}
-                className={`flex-1 rounded-[1px] ${
-                  lit ? "bg-foreground" : hit ? "bg-[#DFFF00]" : "bg-border"
-                }`}
-                style={{ height: hit ? "100%" : "26%" }}
-              />
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+  const toggle = useCallback((kit: Kit) => {
+    setPlaying((cur) => {
+      stop();
+      if (cur !== kit) window.setTimeout(() => start(kit), 0);
+      return null;
+    });
+  }, [start, stop]);
 
   return (
     <div className="mt-5 p-5 bg-card border border-border rounded-xl space-y-4">
-      <Row kit="house" label="하우스" />
-      <Row kit="electro" label="일렉트로" />
+      <RhythmRow kit="house" label="하우스" on={playing === "house"} cue={cue} onToggle={toggle} />
+      <RhythmRow kit="electro" label="일렉트로" on={playing === "electro"} cue={cue} onToggle={toggle} />
       <p className="font-mono text-[10.5px] leading-[1.7] text-muted-foreground">
         130 BPM 한 마디를 합성해 반복한다. 장르의 일반 패턴이고 당일 세트의 실제 구성은 아니다.
       </p>

@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;word-break:keep-all}
+html,body{background:#555}
+/* 그림은 꽉 채우고, 헤드라인만 좌하단에 얹는다. 띠도 칸도 두지 않는다. */
+.p{position:relative;width:1080px;height:608px;overflow:hidden;background:#EFE5D0}
+.p img{width:100%;height:100%;object-fit:cover;object-position:62% center}
+.tx{position:absolute;left:46px;bottom:40px;z-index:2}
+.tx h1{font-family:"Nanum Myeongjo",serif;font-weight:800;font-size:50px;line-height:1.14;
+  letter-spacing:-.03em;color:#D93C13;
+  /* 좌하단이 종이색이라 그림자는 아주 옅게만 — 글자가 떠 보이지 않게 */
+  text-shadow:0 1px 0 rgba(239,229,208,.9)}
+.tx h1 em{font-style:normal;color:#17110B}
+</style></head><body>
+<div class="p" id="w">
+  <img src="wide.png">
+  <div class="tx"><h1>칸예 · 스캇 앨범<br><em>만든 DJ가 온다</em></h1></div>
+</div>
+</body></html>

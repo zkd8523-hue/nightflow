@@ -1,0 +1,93 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Archivo+Black&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;word-break:keep-all}
+html,body{background:#555}
+.p{position:relative;width:1080px;height:1350px;overflow:hidden;
+   font-family:"Black Han Sans","Apple SD Gothic Neo",sans-serif}
+.m{font-family:"IBM Plex Mono",monospace;font-weight:700}
+.en{font-family:"Archivo Black",sans-serif}
+
+/* ───── T1 · 3D 돌출 (POSTER 레퍼런스) ───── */
+.t1{background:#EDE4CF}
+.t1 .grid{position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,rgba(28,43,74,.13) 0 2px,transparent 2px 24px)}
+.t1 .stack{position:absolute;left:46px;right:46px;top:62px}
+.t1 .l{display:block;font-size:252px;line-height:.86;letter-spacing:-.055em;color:#E8431A;
+  text-shadow:3px 3px 0 #1C2B4A,6px 6px 0 #1C2B4A,9px 9px 0 #1C2B4A,12px 12px 0 #1C2B4A,
+    15px 15px 0 #1C2B4A,18px 18px 0 #1C2B4A,21px 21px 0 #1C2B4A,24px 24px 0 #1C2B4A,27px 27px 0 #1C2B4A}
+.t1 .mid{position:absolute;left:46px;right:46px;top:830px}
+.t1 .nm{font-family:"Archivo Black",sans-serif;font-size:96px;color:#1C2B4A;letter-spacing:-.02em;line-height:.95}
+.t1 .bar{margin-top:26px;background:#1C2B4A;color:#EDE4CF;display:inline-block;padding:16px 28px;font-size:34px}
+.t1 .foot{position:absolute;left:46px;right:46px;bottom:48px;border-top:6px solid #1C2B4A;padding-top:22px;
+  display:flex;justify-content:space-between;gap:24px;font-size:22px;color:#1C2B4A;line-height:1.7}
+.t1 .foot .r{text-align:right}
+
+/* ───── T2 · 검정 + 금 ($6 HAPPY HOUR 레퍼런스) ───── */
+.t2{background:#0A0A0A}
+.t2 .wrap{position:absolute;left:52px;right:52px;top:54px;bottom:48px}
+.t2 .big{display:block;font-size:258px;line-height:.86;letter-spacing:-.06em;
+  background:linear-gradient(176deg,#FFF3CC 3%,#EBB63B 36%,#8E5F0C 70%,#F6DE97 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.t2 .rule{height:5px;background:#E8B338;margin:40px 0 30px}
+.t2 .line{font-family:"Archivo Black",sans-serif;font-size:76px;color:#FFF;letter-spacing:.02em;line-height:1.08}
+.t2 .box{display:block;margin-top:28px;background:#E8B338;color:#0A0A0A;
+  font-size:34px;padding:18px 0;letter-spacing:.04em;text-align:center}
+.t2 .sm{margin-top:30px;font-size:26px;color:#CFC8B8;line-height:1.75;letter-spacing:.01em;text-align:center}
+.t2 .sm b{color:#E8B338}
+.t2 .tiny{position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:17px;color:#6E6960;letter-spacing:.12em}
+
+/* ───── T3 · 빛기둥 (MAD-NESS 레퍼런스) ───── */
+.t3{background:#09070A}
+.t3 .beam{position:absolute;left:50%;top:520px;width:700px;height:900px;
+  transform:translateX(-50%) perspective(1000px) rotateX(18deg);
+  background:linear-gradient(180deg,#FFE88C 0%,#F2801B 22%,#C8141F 56%,rgba(80,6,18,0) 100%);
+  filter:blur(2px)}
+.t3 .glow{position:absolute;left:50%;top:430px;width:1200px;height:760px;transform:translateX(-50%);
+  background:radial-gradient(closest-side,rgba(255,155,45,.42),transparent 70%)}
+.t3 .noise{position:absolute;inset:0;opacity:.28;
+  background-image:radial-gradient(rgba(255,255,255,.55) .6px,transparent .7px);background-size:4px 4px}
+.t3 .stack{position:absolute;left:46px;right:46px;top:56px;z-index:2}
+.t3 .l{display:block;font-size:250px;line-height:.86;letter-spacing:-.06em;color:#FFF7EC;
+  text-shadow:0 0 46px rgba(255,170,60,.7),0 10px 0 rgba(0,0,0,.5)}
+.t3 .foot{position:absolute;left:46px;right:46px;bottom:52px;z-index:2;text-align:center}
+.t3 .nm{font-family:"Archivo Black",sans-serif;font-size:72px;color:#FFF7EC;letter-spacing:.08em;line-height:1}
+.t3 .dt{margin-top:20px;font-size:26px;color:#FFCE93;letter-spacing:.07em;line-height:1.7}
+</style></head><body>
+
+<div class="p t1" id="t1">
+  <span class="grid"></span>
+  <div class="stack"><span class="l">칸예스캇</span><span class="l">앨범만든</span><span class="l">DJ가온다</span></div>
+  <div class="mid">
+    <div class="nm">EVIAN<br>CHRIST</div>
+    <div class="bar m">10.23 FRI · CAKESHOP ITAEWON</div>
+  </div>
+  <div class="foot m">
+    <div>자정 전 25,000원<br>자정 후 30,000원</div>
+    <div class="r">WINTER BACK · SIMO<br>PAOLA LAF · TABRIS</div>
+  </div>
+</div>
+
+<div class="p t2" id="t2">
+  <div class="wrap">
+    <span class="big">칸예스캇</span>
+    <span class="big">앨범만든</span>
+    <span class="big">DJ가온다</span>
+    <div class="rule"></div>
+    <div class="line en">EVIAN CHRIST</div>
+    <div class="box m">10.23 FRI · CAKESHOP ITAEWON</div>
+    <div class="sm m">자정 전 <b>25,000원</b> · 자정 후 <b>30,000원</b></div>
+    <div class="tiny m">WINTER BACK · SIMO · PAOLA LAF · TABRIS · MOON GO AMERICA</div>
+  </div>
+</div>
+
+<div class="p t3" id="t3">
+  <span class="glow"></span><span class="beam"></span><span class="noise"></span>
+  <div class="stack"><span class="l">칸예스캇</span><span class="l">앨범만든</span><span class="l">DJ가온다</span></div>
+  <div class="foot">
+    <div class="nm">EVIAN CHRIST</div>
+    <div class="dt m">10.23 FRI · CAKESHOP ITAEWON<br>자정 전 25,000원 · 자정 후 30,000원</div>
+  </div>
+</div>
+
+</body></html>

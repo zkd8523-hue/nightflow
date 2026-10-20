@@ -27,6 +27,12 @@ export interface WeeklyIssueCard {
    * 되고, 목요일 저녁에 올리면 반나절이 그냥 날아간다.
    */
   publishedAt?: string;
+  /**
+   * 표지 이미지 안에 이미 제목이 박혀 있는 호. 이때 카드가 제목을 또 그리면
+   * 같은 말이 두 번 보이고, 글자를 읽히게 하려고 깔던 어두운 막이 표지의
+   * 밝은 종이색을 회색으로 더럽힌다. 그래서 막과 제목을 둘 다 그리지 않는다.
+   */
+  coverHasTitle?: boolean;
 }
 
 const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -82,11 +88,46 @@ function useFreshSlugs(issues: WeeklyIssueCard[]): Set<string> {
   return fresh;
 }
 
-/** 우측 상단 대각선 NEW 리본. 광택이 주기적으로 지나간다(A안). */
+/**
+ * 우측 상단 대각선 NEW 리본.
+ *
+ * ⚠️ 전역 CSS 클래스를 쓰지 않고 인라인 스타일로 박는다. globals.css 에 넣었더니
+ * 규칙은 멀쩡한데 브라우저에 적용이 안 돼 `<i>NEW</i>` 가 기울임 글씨로 카드
+ * 왼쪽 아래에 그냥 흘러나왔다(캐시인지 레이어인지 특정 못 함). 인라인은 그런
+ * 경로가 없다. 광택 애니메이션만 keyframes 가 필요해 전역에 남긴다 —
+ * 그게 안 와도 리본 자체는 그대로 보인다.
+ */
 function NewRibbon() {
   return (
-    <span className="nf-rib" aria-label="새 호">
-      <i>NEW</i>
+    <span
+      aria-label="새 호"
+      style={{
+        position: "absolute", top: 0, right: 0, width: 124, height: 124,
+        overflow: "hidden", zIndex: 3, pointerEvents: "none",
+      }}
+    >
+      <span
+        style={{
+          position: "absolute", display: "block", width: 190, top: 30, right: -46,
+          padding: "8px 0", textAlign: "center", transform: "rotate(45deg)",
+          fontFamily: "ui-monospace, Menlo, monospace",
+          fontSize: 15, fontWeight: 700, fontStyle: "normal", letterSpacing: "0.22em",
+          color: "#fff", background: "#FF4A3D",
+          boxShadow: "0 3px 12px rgba(0,0,0,.45)", overflow: "hidden",
+        }}
+      >
+        NEW
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute", inset: 0,
+            background:
+              "linear-gradient(100deg,transparent 18%,rgba(255,255,255,.6) 50%,transparent 82%)",
+            transform: "translateX(-130%)",
+            animation: "nf-rib-sweep 2.8s cubic-bezier(.4,0,.2,1) infinite",
+          }}
+        />
+      </span>
     </span>
   );
 }
@@ -156,19 +197,28 @@ export function WeeklyNewsCarousel({
                   <span className="block w-full aspect-video bg-muted" />
                 )}
                 {fresh.has(issue.slug) && <NewRibbon />}
-                {/* 사진 위 글씨가 읽히려면 아래쪽을 확실히 덮어야 한다 */}
-                <span
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "linear-gradient(transparent 22%, rgba(8,8,10,.78) 60%, rgba(8,8,10,.97) 100%)",
-                  }}
-                />
-                <span className="absolute left-[13px] right-[13px] bottom-[11px]">
-                  <span className="block text-[19px] font-black leading-[1.2] tracking-[-0.028em] text-[#FAF9F7] whitespace-pre-line">
-                    {issue.title}
-                  </span>
-                </span>
+                {!issue.coverHasTitle && (
+                  <>
+                    {/* 사진 위 글씨가 읽히려면 아래쪽을 확실히 덮어야 한다 */}
+                    <span
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(transparent 22%, rgba(8,8,10,.78) 60%, rgba(8,8,10,.97) 100%)",
+                      }}
+                    />
+                    <span className="absolute left-[13px] right-[13px] bottom-[11px]">
+                      {/* 포스터 활자와 같은 명조로 간다 — 아티클은 매거진이고,
+                          카드 제목이 앱 UI 고딕이면 그 톤이 끊긴다 */}
+                      <span
+                        className="block text-[20px] leading-[1.26] tracking-[-0.022em] text-[#FAF9F7] whitespace-pre-line"
+                        style={{ fontFamily: "var(--font-serif-kr), serif", fontWeight: 800 }}
+                      >
+                        {issue.title}
+                      </span>
+                    </span>
+                  </>
+                )}
               </span>
               {/* VOL 배지는 /weekly 목록과 같은 자리·같은 모양으로 둔다 —
                   같은 호가 화면마다 다르게 생기면 매번 다시 읽어야 한다 */}

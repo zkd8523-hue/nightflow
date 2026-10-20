@@ -10,6 +10,7 @@ import { ClubPeekRow } from "@/components/weekly/ClubPeekRow";
 import { WeeklyVideoCard } from "@/components/weekly/WeeklyVideoCard";
 import { ClubSheetProvider } from "@/components/weekly/ClubSheetProvider";
 import { Issue20261015 } from "@/components/weekly/Issue20261015";
+import { Issue20261022 } from "@/components/weekly/Issue20261022";
 
 /**
  * 호 본문.
@@ -119,6 +120,7 @@ export function WeeklyIssueBody({
 }) {
   // 호마다 글이 다르다. 2호부터는 파일을 따로 두고 여기서 고른다 —
   // 한 파일에 전부 쌓으면 호가 늘수록 손댈 수 없어진다.
+  if (slug === "2026-10-22") return <Issue20261022 benefits={benefits} />;
   if (slug === "2026-10-15") return <Issue20261015 benefits={benefits} />;
   if (slug !== "2026-10-06") return null;
 

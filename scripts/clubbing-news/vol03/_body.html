@@ -1,0 +1,170 @@
+<style>
+/* ── VOL.03 전용 보정 ──────────────────────────────────────
+   이 호의 포스터는 전부 글자가 박혀 있다(vurt = 하단 DELTA FUNKTIONEN,
+   rosso = 상단 JADALAREIGN + 좌측 타임테이블, tamana = 중앙 TAMANA RAMEN).
+   그대로 배경으로 깔면 내 제목 뒤에 포스터 글자가 겹쳐 읽힌다.
+   → 배경으로 쓸 때는 (1) 글자가 없는 구역만 확대해 잡고 (2) 흐려서
+     남은 글자 흔적을 죽인다. 표지 포스터는 칩으로만 쓴다. */
+.card .bg{transform:scale(1.08)}
+.card.soft .bg{filter:blur(1.2px) saturate(1.06)}
+.card.very-soft .bg{filter:blur(5px) saturate(1.15) brightness(1.1)}
+
+/* 검정 바탕 + 하단 앰버 글로우 (포스터를 깔지 않는 카드) */
+.card.solid{background:#0A0A0A}
+.card.solid::before{content:"";position:absolute;inset:0;
+ background:radial-gradient(120% 70% at 50% 108%,rgba(251,191,36,.26),transparent 62%)}
+
+/* 표지 — evianchrist.jpg 상단에 "EVIAN CHRIST" 글자가 박혀 있어
+   전면 배경으로 깔 수 없다. 작고 선명한 칩으로만 넣는다. */
+.card.cover{padding:58px 22px 42px}
+/* 25px 면 "칸예 앨범 만들던 사람이" 가 세 줄로 쪼개진다 — 두 줄로 떨어지는 한계선 */
+.card.cover .htitle{font-size:21px;line-height:1.32;letter-spacing:-.032em}
+.coverShot{display:block;width:66%;margin:18px auto 0;border-radius:8px;overflow:hidden;
+ border:1px solid rgba(255,255,255,.18);box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.coverShot img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;object-position:center 15%}
+
+/* ── 카드별 보정 ────────────────────────────────────────── */
+/* 2번: 설명 두 줄이 길어 기본 .line 간격이면 아래가 뜬다 */
+.c2 .line{font-size:11px;line-height:1.9;margin-top:18px}
+
+/* 3번: facts 3줄 + line5 2줄 → 기본값이면 위아래로 넘친다 */
+.c3{padding:76px 26px 46px}
+.c3 .big2{font-size:21px}
+.c3 .facts{margin-top:20px}
+.c3 .facts .f{font-size:11px;line-height:1.95}
+.c3 .line5{margin-top:18px;font-size:10px}
+
+/* 4번: big 2줄 + line 3줄 + i 1줄 */
+.c4 .big{font-size:27px}
+.c4 .line{font-size:11px;line-height:1.9;margin-top:18px}
+
+/* 5번: 한글 롱라인 — 글자 크기를 줄여 두 줄로 묶는다 */
+.c5 .name{font-size:26px}
+.c5 .line{font-size:10.5px;line-height:1.95;margin-top:18px}
+
+/* 6번: 이름이 길다(JADALAREIGN) — 한 줄에 들어가게 줄인다 */
+.c6 .name{font-size:22px;letter-spacing:-.03em}
+.c6 .line{font-size:10.5px;line-height:1.95;margin-top:18px}
+
+/* 7번: 가격 두 개 + 배수 + 보조줄 */
+.c7{padding:78px 24px 46px}
+.c7 .big{font-size:27px}
+.c7 .line{font-size:10.5px;line-height:1.95;margin-top:18px}
+
+/* 8번: 세 줄짜리 설명 */
+.c8 .name{font-size:25px}
+.c8{padding:84px 26px 48px}
+.card.very-soft.c8 .bg{filter:blur(4.5px) saturate(1.7) brightness(1.3) contrast(1.05)}
+.c8 .line{font-size:10px;line-height:1.95;margin-top:18px}
+
+/* 9번: vol02 와 달리 하단에 NIGHTFLOW 워드마크를 넣어서 @nightflow.kr 가
+   워드마크와 맞붙는다 — 블록 간격을 줄여 전체를 위로 올린다 */
+.c9{padding:78px 34px 72px}
+.c9 .ctaBody{margin-top:18px}
+.c9 .ctaBtn{margin-top:16px;padding:11px 10px}
+.c9 .ctaHint{margin-top:10px}
+.c9 .ctaBrand{margin-top:9px}
+</style>
+
+<!-- 1 / 9 — 표지 -->
+<div class="nf-frame"><figure class="card cover solid c1">
+  <div class="in"><span class="eyebrow">아티클 · 10.23 금요일</span>
+  <span class="htitle">칸예 앨범 만들던 사람이<br><em>트랜스</em>를 들고 온다</span>
+  <span class="coverShot"><img alt="10.23 케이크샵 Evian Christ 포스터" src="img/evianchrist.jpg"></span>
+  <span class="hsub" style="margin-top:15px">금 케이크샵 · 토 vurt. 로쏘 루카 · 일 축제</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">1/9</span>
+</figure></div>
+
+<!-- 2 / 9 — Evian Christ -->
+<div class="nf-frame"><figure class="card who solid c2">
+  <div class="in"><span class="daytag">금요일 10.23</span>
+  <span class="name">Evian Christ</span>
+  <span class="role">프로듀서 · Warp Records</span>
+  <span class="line">칸예 『Yeezus』 <b>&lsquo;I&rsquo;m In It&rsquo;</b>을 만들었다<br>지금은 <b>트랜스</b>를 한다</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">2/9</span>
+</figure></div>
+
+<!-- 3 / 9 — 트랜스란 -->
+<div class="nf-frame"><figure class="card stat c3">
+  <div class="in"><span class="daytag">왜 트랜스인가</span>
+  <span class="big2">2013년에 차렸다</span>
+  <span class="facts">
+    <span class="f"><b>TranceParty</b> — 본인이 만든 클럽 나이트</span>
+    <span class="f">2023년 Warp 데뷔작 <b>『Revanchist』</b></span>
+    <span class="f">환희 너머 <b>숭고</b>까지 간다는 앨범</span>
+  </span>
+  <span class="line5">힙합 최전선에 있던 사람이<br><em>한 번 밀려났던 장르로 갔다</em></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">3/9</span>
+</figure></div>
+
+<!-- 4 / 9 — 가격 -->
+<div class="nf-frame"><figure class="card fact solid c4">
+  <div class="in"><span class="daytag">금요일 10.23</span>
+  <span class="big">자정 전에<br><em>5천 원 싸다</em></span>
+  <span class="line">자정 전 <b>25,000원</b> / 자정 후 <b>30,000원</b><br>케이크샵 · 이태원<br><i>DJ 7명 중 6명 미리듣기 가능</i></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">4/9</span>
+</figure></div>
+
+<!-- 5 / 9 — IMMEDIATE PROXIMITY (vurt.jpg)
+     포스터 하단에 DELTA FUNKTIONEN & NAPIRELLY 가 큰 흰 글자로 박혀 있고
+     우상단에 SAT 24 OCT 2026 이 있다. 가운데 보라색 추상 구간만 확대해 잡는다. -->
+<div class="nf-frame"><figure class="card who soft c5">
+  <img class="bg" src="img/vurt.jpg" style="transform:scale(2.5) translateY(15%)"><span class="scrim"></span>
+  <div class="in"><span class="daytag">토요일 10.24</span>
+  <span class="name">다섯 시간</span>
+  <span class="role">Delta Funktionen × Napirelly</span>
+  <span class="line">네덜란드와 조지아가 <b>새벽 1시부터 6시까지</b><br>따로 또 같이 돈다 · vurt. 홍대</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">5/9</span>
+</figure></div>
+
+<!-- 6 / 9 — JADALAREIGN (rosso.jpg)
+     상단 JADALAREIGN, 좌측 타임테이블, 하단 ROSSO 전부 글자다.
+     가운데 인물 얼굴만 확대해 잡고 약하게 흐린다. -->
+<div class="nf-frame"><figure class="card who soft c6">
+  <img class="bg" src="img/rosso.jpg" style="transform:scale(2.4) translate(-3%,-5%)"><span class="scrim"></span>
+  <div class="in"><span class="daytag">토요일 10.24</span>
+  <span class="name">JADALAREIGN</span>
+  <span class="role">뉴욕 · Nowadays 부커</span>
+  <span class="line">브루클린 클럽의 <b>금요일 라인업을 짜는 사람</b><br>그 사람이 직접 튼다 · 로쏘 이태원</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">6/9</span>
+</figure></div>
+
+<!-- 7 / 9 — BOTL 티켓 -->
+<div class="nf-frame"><figure class="card fact solid c7">
+  <div class="in"><span class="daytag">토요일 10.24</span>
+  <span class="big">티켓이<br><em>여섯 단계</em></span>
+  <span class="line"><b>15,000원</b>(거의 매진)<br>→ <b>38,000원</b>(자정 후 도어)<br>가장 싼 표와 가장 비싼 표가 <b>2.5배</b><br><i>루카 강남 · 밤 11시 ~ 아침 7시</i></span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">7/9</span>
+</figure></div>
+
+<!-- 8 / 9 — Tamanaramen (tamana.jpg)
+     포스터 전면이 글자투성이(TAMANA RAMEN / KIRIN / @festivalfestivalseoul).
+     형광 색감만 남기고 세게 흐린다. -->
+<div class="nf-frame"><figure class="card who very-soft c8">
+  <img class="bg" src="img/tamana.jpg" style="transform:scale(1.9) translateY(14%)"><span class="scrim"></span>
+  <div class="in"><span class="daytag">일요일 10.25</span>
+  <span class="name">Tamanaramen</span>
+  <span class="role">도쿄 + 런던 · 자매</span>
+  <span class="line">팀 이름은 동생이 고등학생 때<br><b>일본어 자판을 아무렇게나 두드려 나온 글자</b><br>축제 · 중구 · 저녁 7시 30분</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">8/9</span>
+</figure></div>
+
+<!-- 9 / 9 — CTA -->
+<div class="nf-frame"><figure class="card cta c9">
+  <div class="in"><span class="ctaEye">아티클</span>
+  <span class="ctaTitle"><span class="l1">가장 핫한 국내 소식</span><em>매주 정리해서</em> 보내드릴게요</span>
+  <span class="ctaBody">놓치지 않고 싶다면?</span>
+  <span class="ctaBtn">팔로잉 + 이메일 구독</span>
+  <span class="ctaHint">구독은 프로필 링크에서 가능해요</span>
+  <span class="ctaBrand">@nightflow.kr</span></div>
+  <span class="brand">NIGHTFLOW</span>
+  <span class="pg">9/9</span>
+</figure></div>

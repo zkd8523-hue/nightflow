@@ -1,0 +1,81 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Archivo+Black&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;word-break:keep-all}
+html,body{background:#555}
+.p{position:relative;width:1080px;height:1350px;overflow:hidden;
+   font-family:"Black Han Sans","Apple SD Gothic Neo",sans-serif}
+.p>img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.m{font-family:"IBM Plex Mono",monospace;font-weight:700}
+.en{font-family:"Archivo Black",sans-serif}
+
+/* ── O1 · 3D 돌출 활자를 그림 위에 ── */
+.o1 .scrim{position:absolute;left:0;right:0;bottom:0;height:62%;
+  background:linear-gradient(transparent,rgba(16,7,2,.55) 34%,rgba(16,7,2,.92) 100%)}
+.o1 .stack{position:absolute;left:44px;right:44px;bottom:230px}
+.o1 .l{display:block;font-size:208px;line-height:.86;letter-spacing:-.06em;color:#F5E7CF;
+  text-shadow:3px 3px 0 #8C1E06,6px 6px 0 #8C1E06,9px 9px 0 #8C1E06,12px 12px 0 #8C1E06,
+    15px 15px 0 #8C1E06,18px 18px 0 #8C1E06,21px 21px 0 #8C1E06}
+.o1 .foot{position:absolute;left:44px;right:44px;bottom:52px;border-top:5px solid #E8431A;padding-top:20px;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+.o1 .nm{font-family:"Archivo Black",sans-serif;font-size:52px;color:#F5E7CF;letter-spacing:-.01em;line-height:1}
+.o1 .dt{font-size:21px;color:#F0B693;text-align:right;line-height:1.7}
+
+/* ── O2 · 금색 활자 + 어두운 막 ── */
+.o2 .scrim{position:absolute;inset:0;background:rgba(10,5,2,.52)}
+.o2 .wrap{position:absolute;left:50px;right:50px;top:60px;bottom:52px;display:flex;flex-direction:column}
+.o2 .big{display:block;font-size:236px;line-height:.86;letter-spacing:-.06em;
+  background:linear-gradient(176deg,#FFF3CC 3%,#EBB63B 36%,#8E5F0C 70%,#F6DE97 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,.6))}
+.o2 .rule{height:5px;background:#E8B338;margin:auto 0 26px}
+.o2 .line{font-family:"Archivo Black",sans-serif;font-size:64px;color:#FFF;letter-spacing:.02em}
+.o2 .box{display:block;margin-top:22px;background:#E8B338;color:#0A0A0A;font-size:30px;
+  padding:16px 0;letter-spacing:.04em;text-align:center}
+.o2 .sm{margin-top:20px;font-size:23px;color:#E6DCC9;text-align:center;letter-spacing:.01em}
+.o2 .sm b{color:#E8B338}
+
+/* ── O3 · 활자를 그림에 섞는다 (블렌드) ── */
+.o3 .tint{position:absolute;inset:0;background:#120704;opacity:.3}
+.o3 .stack{position:absolute;left:38px;right:38px;top:54px;mix-blend-mode:hard-light}
+.o3 .l{display:block;font-size:252px;line-height:.84;letter-spacing:-.065em;color:#FFE9C9}
+.o3 .band{position:absolute;left:0;right:0;bottom:0;background:#0F0703;padding:30px 44px 36px;
+  display:flex;justify-content:space-between;align-items:center;gap:20px;
+  border-top:6px solid #E8431A}
+.o3 .nm{font-family:"Archivo Black",sans-serif;font-size:50px;color:#F7EADA;letter-spacing:.02em;line-height:1}
+.o3 .dt{font-size:21px;color:#F0A277;text-align:right;line-height:1.7}
+</style></head><body>
+
+<div class="p o1" id="o1">
+  <img class="bg" src="base.png">
+  <span class="scrim"></span>
+  <div class="stack"><span class="l">칸예스캇</span><span class="l">앨범만든</span><span class="l">DJ가온다</span></div>
+  <div class="foot">
+    <div class="nm">EVIAN CHRIST</div>
+    <div class="dt m">10.23 FRI · CAKESHOP<br>25,000 / 30,000</div>
+  </div>
+</div>
+
+<div class="p o2" id="o2">
+  <img class="bg" src="base.png">
+  <span class="scrim"></span>
+  <div class="wrap">
+    <span class="big">칸예스캇</span><span class="big">앨범만든</span><span class="big">DJ가온다</span>
+    <div class="rule"></div>
+    <div class="line en">EVIAN CHRIST</div>
+    <div class="box m">10.23 FRI · CAKESHOP ITAEWON</div>
+    <div class="sm m">자정 전 <b>25,000원</b> · 자정 후 <b>30,000원</b></div>
+  </div>
+</div>
+
+<div class="p o3" id="o3">
+  <img class="bg" src="base.png">
+  <span class="tint"></span>
+  <div class="stack"><span class="l">칸예스캇</span><span class="l">앨범만든</span><span class="l">DJ가온다</span></div>
+  <div class="band">
+    <div class="nm">EVIAN<br>CHRIST</div>
+    <div class="dt m">10.23 FRI · CAKESHOP ITAEWON<br>자정 전 25,000원 · 자정 후 30,000원</div>
+  </div>
+</div>
+
+</body></html>
