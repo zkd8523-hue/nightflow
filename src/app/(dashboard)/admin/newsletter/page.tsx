@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import dayjs from "dayjs";
 import { WEEKLY_ISSUES } from "@/lib/weekly/issues";
+import { WEEKLY_EMAIL_ISSUES } from "@/lib/email/weeklyIssue";
+import { NewsletterSendPanel } from "@/components/admin/NewsletterSendPanel";
 
 // 뉴스레터 구독자 현황 — Migration 689/690.
 //
@@ -200,7 +202,7 @@ export default async function AdminNewsletterPage() {
               아티클 구독자
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              아티클. 아직 한 호도 발행하지 않았고, 신청 확인 메일만 나간다.
+              아티클 구독자 현황과 호 발송. 발송은 아래에서 사람이 눌러야 나간다.
             </p>
           </div>
         </header>
@@ -246,6 +248,18 @@ export default async function AdminNewsletterPage() {
             icon={<MailWarning className="w-3.5 h-3.5" />}
           />
         </section>
+
+        {/* 호 발송 — 695(newsletter_sends) 가 적용돼 있어야 동작한다.
+            조판이 끝난 호만 고를 수 있다(WEEKLY_EMAIL_ISSUES). */}
+        {WEEKLY_EMAIL_ISSUES.length > 0 && (
+          <NewsletterSendPanel
+            issues={WEEKLY_EMAIL_ISSUES.map((i) => ({
+              slug: i.slug,
+              volume: i.volume,
+              subject: i.subject,
+            }))}
+          />
+        )}
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between gap-4">

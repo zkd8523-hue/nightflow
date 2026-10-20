@@ -1,4 +1,10 @@
 <style>
+/* 표지 — 이 호를 위해 그린 포스터를 통째로 쓴다. 포스터 하단 크림 띠가
+   제목을 이미 들고 있어 카드에서 글자를 또 얹지 않는다. */
+.card.poster{padding:0 !important;background:#EFE5D0}
+.card.poster .full{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pg.top{top:14px;bottom:auto !important;color:rgba(255,241,222,.75) !important}
+
 /* ── VOL.03 전용 보정 ──────────────────────────────────────
    이 호의 포스터는 전부 글자가 박혀 있다(vurt = 하단 DELTA FUNKTIONEN,
    rosso = 상단 JADALAREIGN + 좌측 타임테이블, tamana = 중앙 TAMANA RAMEN).
@@ -66,18 +72,16 @@
 .c9 .ctaBrand{margin-top:9px}
 </style>
 
-<!-- 1 / 9 — 표지 -->
-<div class="nf-frame"><figure class="card cover solid c1">
-  <div class="in"><span class="eyebrow">아티클 · 10.23 금요일</span>
-  <span class="htitle">칸예 앨범 만들던 사람이<br><em>트랜스</em>를 들고 온다</span>
-  <span class="coverShot"><img alt="10.23 케이크샵 Evian Christ 포스터" src="img/evianchrist.jpg"></span>
-  <span class="hsub" style="margin-top:15px">금 케이크샵 · 토 vurt. 로쏘 루카 · 일 축제</span></div>
-  <span class="brand">NIGHTFLOW</span>
-  <span class="pg">1/9</span>
+<!-- 1 / 9 — 표지. 이 호를 위해 그린 포스터를 통째로 쓴다. 포스터 하단
+     크림 띠에 제목이 이미 박혀 있어 카드에서 글자를 또 얹지 않는다. -->
+<div class="nf-frame"><figure class="card poster c1">
+  <img class="full" alt="칸예 · 스캇 앨범 만든 DJ가 온다" src="img/poster_4x5.png">
+  <span class="pg top">1/9</span>
 </figure></div>
 
 <!-- 2 / 9 — Evian Christ -->
-<div class="nf-frame"><figure class="card who solid c2">
+<div class="nf-frame"><figure class="card who c2">
+  <img class="bg" src="img/art_wide.png" style="object-position:center 30%"><span class="scrim"></span>
   <div class="in"><span class="daytag">금요일 10.23</span>
   <span class="name">Evian Christ</span>
   <span class="role">프로듀서 · Warp Records</span>
