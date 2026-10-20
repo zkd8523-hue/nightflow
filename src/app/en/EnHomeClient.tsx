@@ -24,7 +24,7 @@ import { recordRecentClub, useRecentClubs, removeRecentClub } from "@/lib/clubs/
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { trackForeignEvent } from "@/lib/analytics/events";
 import { ForeignSidebar, type ForeignNavKey } from "@/components/foreign/ForeignShell";
-import { HALLOWEEN_2026, isHalloweenWindow } from "@/lib/foreign/seasonal";
+import { HALLOWEEN_2026, CHRISTMAS_2026, NYE_2026, isHalloweenWindow, isChristmasWindow, isNyeWindow } from "@/lib/foreign/seasonal";
 import { UrgencyLine } from "@/components/foreign/UrgencyLine";
 import { PlanMemoryHomeSection } from "@/components/foreign/plan/PlanMemoryHomeSection";
 import { SiteTabs, SiteTabsInline } from "@/components/foreign/plan/SiteTabs";
@@ -565,6 +565,66 @@ function GuideIndex() {
           href: `/${lang}/${HALLOWEEN_2026.slug}`,
         }]
       : []),
+    // 할로윈 다음 시즌(2026-10-20) — 창은 seasonal.ts가 이어서 연다(11/1~12/26 크리스마스, ~1/1 신년).
+    ...(isChristmasWindow()
+      ? [{
+          cat: t("크리스마스", "CHRISTMAS 🎄", "クリスマス 🎄", "圣诞节 🎄", "聖誕節 🎄"),
+          title: t(
+            "12월 24일 목요일, 서울 클럽 테이블 잡을 수 있나요?",
+            "Christmas Eve in Seoul — can we book a club table?",
+            "12月24日(木)、ソウルのクラブでテーブル予約できる？",
+            "12 月 24 日周四，首尔夜店能订卡座吗?",
+            "12 月 24 日星期四，首爾夜店能訂包廂嗎?"
+          ),
+          desc: t(
+            "이브는 1년 중 가장 붐비는 밤 중 하나입니다. 25일(금)은 공휴일 — 목~일 4일간의 가격과 예약.",
+            "Christmas Eve is one of the busiest club nights of the year, and Dec 25 (Fri) is a holiday. Tables, prices and when to book.",
+            "イブは一年で最も混む夜のひとつ。25日(金)は祝日 — 木〜日の料金と予約。",
+            "平安夜是一年里最满的夜晚之一，25 日(周五)公休 — 周四到周日的价格和预订。",
+            "平安夜是一年裡最滿的晚上之一，25 日(週五)放假 — 週四到週日的低消和預訂。"
+          ),
+          href: `/${lang}/${CHRISTMAS_2026.slug}`,
+        }]
+      : []),
+    ...(isNyeWindow()
+      ? [{
+          cat: t("신년", "NEW YEAR'S EVE 🥂", "大晦日 🥂", "跨年 🥂", "跨年 🥂"),
+          title: t(
+            "12월 31일, 서울 클럽에서 카운트다운하려면?",
+            "Where to count down to 2027 in a Seoul club?",
+            "12月31日、ソウルのクラブでカウントダウンするには？",
+            "12 月 31 日，在首尔夜店倒数?",
+            "12 月 31 日，在首爾夜店倒數?"
+          ),
+          desc: t(
+            "23시~0시 줄이 가장 깁니다. 테이블 예약 되는 클럽, 가격, 0시 이후 귀가까지.",
+            "Queues peak between 23:00 and midnight. Which clubs take bookings, real prices, and getting home after.",
+            "23時〜0時が行列のピーク。予約できるクラブ、料金、0時以降の帰り方まで。",
+            "23 点到 0 点排队最长。能订卡座的夜店、价格、0 点后怎么回去。",
+            "23 點到 0 點排隊最長。能訂包廂的夜店、低消、0 點後怎麼回去。"
+          ),
+          href: `/${lang}/${NYE_2026.slug}`,
+        }]
+      : []),
+    {
+      // 상시 — 예약 요청 대부분이 4~10명 단체·생일이다(2026-10-20 실측).
+      cat: t("단체", "GROUPS", "グループ", "团体", "團體"),
+      title: t(
+        "생일·단체로 서울 클럽 가면 1인당 얼마예요?",
+        "Birthday or group night in Seoul — what does a table cost per person?",
+        "誕生日・グループでソウルのクラブ、1人いくら？",
+        "生日、团体去首尔夜店，每人多少钱?",
+        "生日、團體去首爾夜店，一人多少錢?"
+      ),
+      desc: t(
+        "테이블 최소 금액은 인당이 아니라 테이블당 — 8명이면 강남 약 12.5만, 이태원 약 6.25만 원.",
+        "The minimum is per table, not per person — about ₩125,000 each for 8 in Gangnam, ₩62,500 in Itaewon.",
+        "最低金額は1人ではなく1卓あたり — 江南8人で1人約12.5万、梨泰院なら約6.25万ウォン。",
+        "最低消费按桌不按人 — 江南 8 人每人约 12.5 万，梨泰院约 6.25 万韩元。",
+        "低消按桌不按人 — 江南 8 人一人約 12.5 萬，梨泰院約 6.25 萬韓元。"
+      ),
+      href: `/${lang}/group-table-seoul`,
+    },
     {
       // 유흥 인접 검색("booking club", "room salon")에서 온 사람에게 답하는 설명 페이지.
       cat: t("문화", "CULTURE", "文化", "文化", "文化"),

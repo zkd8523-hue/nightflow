@@ -1,0 +1,212 @@
+// 시즌·상황별 안내 페이지 공용 틀(2026-10-20). 할로윈 페이지(HalloweenSeoul2026)와 같은 구조 —
+// 헤더 → 지역 카드 → 진행 순서 → 실제 가격표 → FAQ → 예약 → 더 보기.
+// 크리스마스·신년·단체/생일처럼 "날짜나 상황이 정해진 단체 손님"을 예약으로 잇는 페이지들이 쓴다.
+// 문구는 src/lib/foreign/seasonGuides.ts에 페이지별로 둔다.
+//
+// 하지 않는 것(할로윈과 같은 원칙):
+//   - 클럽별 이벤트·라인업을 지어내지 않는다. 클럽이 인스타에 발표한다고만 적는다.
+//   - Event 구조화 데이터 없음(우리가 주최자가 아니다). WebPage + FAQ + 가격 ItemList만.
+
+import Link from "next/link";
+import type { Metadata } from "next";
+import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { RealTablePrices, fetchRealTablePrices, realTablePricesJsonLd } from "@/components/foreign/RealTablePrices";
+import type { SeoLang } from "@/lib/seo/clubBookingSeo";
+
+const BASE = "https://nightflow.kr";
+
+export type SeasonGuideCopy = {
+  title: string;
+  description: string;
+  ogTitle: string;
+  ogSub: string;
+  keywords: string[];
+  eyebrow: string;
+  h1: string;
+  intro: string;
+  areasH2: string;
+  areas: { name: string; tag: string; body: string; href: string }[];
+  stepsH2: string;
+  steps: { time: string; text: string }[];
+  pricesH2: string;
+  pricesNote: string;
+  faqH2: string;
+  faqs: { q: string; a: string }[];
+  ctaH2: string;
+  ctaBody: string;
+  cta: string;
+  moreH2: string;
+  more: { label: string; href: string }[];
+  back: string;
+  breadcrumb: string;
+};
+
+export type SeasonGuideConfig = {
+  slug: string;
+  /** schema.org WebPage.about 이름 */
+  about: string;
+  /** 날짜가 있는 시즌이면 "2026-12-24/2026-12-26" 같은 기간 */
+  temporalCoverage?: string;
+  /** 가격표 지역 순서(한국어 지역명) */
+  areaOrder: string[];
+  copy: Record<SeoLang, SeasonGuideCopy>;
+};
+
+const OG_LOCALE: Record<SeoLang, string> = { en: "en_US", ja: "ja_JP", zh: "zh_CN", "zh-tw": "zh_TW" };
+
+export function seasonGuideMetadata(cfg: SeasonGuideConfig, lang: SeoLang): Metadata {
+  const c = cfg.copy[lang];
+  const url = `${BASE}/${lang}/${cfg.slug}`;
+  const og = `${BASE}/api/og?title=${encodeURIComponent(c.ogTitle)}&sub=${encodeURIComponent(c.ogSub)}&lang=${lang}`;
+  return {
+    title: { absolute: c.title },
+    description: c.description,
+    keywords: c.keywords,
+    alternates: {
+      canonical: url,
+      languages: {
+        "en-US": `${BASE}/en/${cfg.slug}`,
+        "zh-CN": `${BASE}/zh/${cfg.slug}`,
+        "zh-TW": `${BASE}/zh-tw/${cfg.slug}`,
+        "ja-JP": `${BASE}/ja/${cfg.slug}`,
+        "x-default": `${BASE}/en/${cfg.slug}`,
+      },
+    },
+    openGraph: {
+      title: c.title,
+      description: c.description,
+      url,
+      locale: OG_LOCALE[lang],
+      type: "website",
+      images: [{ url: og, width: 1200, height: 630 }],
+    },
+  };
+}
+
+export async function SeasonGuide({ cfg, lang }: { cfg: SeasonGuideConfig; lang: SeoLang }) {
+  const c = cfg.copy[lang];
+  const url = `${BASE}/${lang}/${cfg.slug}`;
+  const rank = (a: string) => {
+    const i = cfg.areaOrder.indexOf(a);
+    return i === -1 ? cfg.areaOrder.length : i;
+  };
+  const rows = (await fetchRealTablePrices(lang)).sort((a, b) => rank(a.area) - rank(b.area));
+  const priceLd = realTablePricesJsonLd(rows, lang, url);
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${url}#page`,
+        url,
+        name: c.title,
+        description: c.description,
+        inLanguage: lang === "zh-tw" ? "zh-TW" : lang === "zh" ? "zh-CN" : lang,
+        about: { "@type": "Thing", name: cfg.about },
+        ...(cfg.temporalCoverage ? { temporalCoverage: cfg.temporalCoverage } : {}),
+      },
+      ...(priceLd ? [priceLd] : []),
+      {
+        "@type": "FAQPage",
+        mainEntity: c.faqs.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "NightFlow", item: `${BASE}/${lang}` },
+          { "@type": "ListItem", position: 2, name: c.breadcrumb, item: url },
+        ],
+      },
+    ],
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <ForeignPageTracker kind="info" lang={lang} meta={{ page: cfg.slug }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
+        <header className="space-y-4">
+          <Link href={`/${lang}`} className="text-[12px] text-muted-foreground hover:text-foreground">{c.back}</Link>
+          <p className="text-[12px] font-black tracking-wider text-brand-amber">{c.eyebrow}</p>
+          <h1 className="text-[32px] font-black tracking-tight leading-[1.15] break-keep">{c.h1}</h1>
+          <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">{c.intro}</p>
+          <Link rel="nofollow"
+            data-nf-track="book_cta"
+            href={`/flags/new?lang=${lang}`}
+            className="inline-block px-6 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors"
+          >
+            {c.cta}
+          </Link>
+        </header>
+
+        <section className="space-y-3">
+          <h2 className="text-[20px] font-black">{c.areasH2}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {c.areas.map((a) => (
+              <Link key={a.href} href={a.href} data-nf-track="area_card" className="rounded-2xl bg-card border border-border p-4 hover:border-amber-500/40 transition-colors flex flex-col">
+                <h3 className="text-[16px] font-black">{a.name}</h3>
+                <p className="text-[11px] font-bold text-brand-amber mt-0.5">{a.tag}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed break-keep mt-2 flex-1">{a.body}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-[20px] font-black">{c.stepsH2}</h2>
+          <ol className="rounded-2xl border border-border bg-card divide-y divide-border">
+            {c.steps.map((s) => (
+              <li key={s.time} className="grid grid-cols-[92px_1fr] gap-3 px-4 py-3">
+                <span className="text-[13px] font-black tabular-nums text-brand-amber">{s.time}</span>
+                <span className="text-[13px] text-muted-foreground leading-relaxed break-keep">{s.text}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-[20px] font-black">{c.pricesH2}</h2>
+          <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">{c.pricesNote}</p>
+          <RealTablePrices lang={lang} rows={rows} />
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-[20px] font-black">{c.faqH2}</h2>
+          {c.faqs.map((f) => (
+            <div key={f.q}>
+              <h3 className="text-[14px] font-bold text-foreground break-keep">{f.q}</h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed break-keep mt-0.5">{f.a}</p>
+            </div>
+          ))}
+        </section>
+
+        <section className="space-y-3 text-center">
+          <h2 className="text-[20px] font-black">{c.ctaH2}</h2>
+          <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">{c.ctaBody}</p>
+          <Link rel="nofollow"
+            data-nf-track="book_cta"
+            href={`/flags/new?lang=${lang}`}
+            className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
+          >
+            {c.cta}
+          </Link>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-[20px] font-black">{c.moreH2}</h2>
+          <ul className="space-y-2 text-[13px] text-muted-foreground">
+            {c.more.map((m) => (
+              <li key={m.href}><Link className="hover:text-foreground" href={m.href}>{m.label}</Link></li>
+            ))}
+          </ul>
+        </section>
+      </div>
+    </div>
+  );
+}

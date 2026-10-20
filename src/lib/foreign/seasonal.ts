@@ -14,3 +14,25 @@ export const HALLOWEEN_2026 = {
 export function isHalloweenWindow(now: number = Date.now()): boolean {
   return now >= HALLOWEEN_2026.showFrom && now < HALLOWEEN_2026.showUntil;
 }
+
+// 크리스마스(12/24 목·25 금 공휴일) → 신년(12/31 목·1/1 금 공휴일). 할로윈 창이 닫히는 순간 이어받는다.
+// 페이지 문구는 lib/foreign/seasonGuides.ts.
+export const CHRISTMAS_2026 = {
+  slug: "christmas-seoul-2026",
+  showFrom: HALLOWEEN_2026.showUntil,
+  showUntil: Date.parse("2026-12-26T06:00:00+09:00"),
+} as const;
+
+export const NYE_2026 = {
+  slug: "new-years-eve-seoul-2026",
+  showFrom: CHRISTMAS_2026.showUntil,
+  showUntil: Date.parse("2027-01-01T06:00:00+09:00"),
+} as const;
+
+export function isChristmasWindow(now: number = Date.now()): boolean {
+  return now >= CHRISTMAS_2026.showFrom && now < CHRISTMAS_2026.showUntil;
+}
+
+export function isNyeWindow(now: number = Date.now()): boolean {
+  return now >= NYE_2026.showFrom && now < NYE_2026.showUntil;
+}
