@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
-import {
-  fetchTablePricing, tableFrom, bookingFloor, formatWon, representativeItems,
-  type ClubPriceSummary, type MenuSetSummary,
-} from "@/lib/clubs/tablePricing";
+import { fetchTablePricing, tableFrom, bookingFloor, formatWon, representativeItems, type ClubPriceSummary, type MenuSetSummary, clubFloor } from "@/lib/clubs/tablePricing";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
 import { getKrwRates, krwTo, langToCurrency } from "@/lib/utils/currency";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
@@ -144,7 +141,7 @@ export async function fetchRealTablePrices(lang: SeoLang): Promise<PriceRow[]> {
   const rows: PriceRow[] = [];
   for (const c of bookables) {
     const p = pricing.get(c.id);
-    const from = tableFrom(c.area, p);
+    const from = tableFrom(c.area, p, c.id);
     if (from == null) continue;
     const areaSlug = canonicalAreaSlug(c.area);
     const nameEn = c.name_en!.trim();
@@ -258,7 +255,7 @@ export async function RealTablePrices({ lang, rows }: { lang: SeoLang; rows: Pri
                         {/* 지역·금액을 행 안에 둔다(AI 인용 단위). 화면에는 h3에 이미 있어
                             중복이므로 sr-only — 인용 가능성은 유지하고 모바일 밀도는 낮춘다. */}
                         <span className="sr-only" aria-hidden="true">
-                          · {r.areaLabel} · {r.from > bookingFloor(r.area) ? t.fromLabel : t.minSpend}{" "}
+                          · {r.areaLabel} · {r.from > clubFloor(r.id, r.area) ? t.fromLabel : t.minSpend}{" "}
                           {formatWon(r.from)}
                         </span>
                       </div>
@@ -328,7 +325,7 @@ export function realTablePricesJsonLd(rows: PriceRow[], lang: SeoLang, pageUrl: 
           // 화면 라벨과 같은 논리 — 클럽 최저세트가 지역 하한보다 비싸면 "최저소비"가 아니라
           // "이 클럽 시작가"다. 구조화 데이터에서만 다르게 말하면 AI가 모순을 인용한다(크리틱 4차).
           description: (() => {
-            const floor = bookingFloor(r.area);
+            const floor = clubFloor(r.id, r.area);
             const head =
               r.from > floor
                 ? `From ${formatWon(r.from)} per table (${r.areaLabel} minimum spend is ${formatWon(floor)}; this club's cheapest set is above it).`

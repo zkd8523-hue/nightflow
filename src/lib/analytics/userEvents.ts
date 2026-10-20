@@ -80,6 +80,21 @@ function detectDeviceType(): "mobile" | "desktop" | "tablet" {
   return "desktop";
 }
 
+// 크롤러는 기록하지 않는다(2026-10-11). 라인업 페이지가 생긴 9/27부터 검색엔진 렌더러가
+// JS를 실행하며 referrer 없는 1이벤트 세션을 주 1,000건 넘게 남겨, 주간 유입이 실제보다
+// 크게 부풀어 보였다(24시간 고른 분포·지난 날짜 라인업에 균등 진입). 사람 UA는 걸리지 않게
+// 봇 서명만 본다. 이미 쌓인 기록은 human_sessions 뷰(Migration 693)에서 거른다.
+const BOT_UA_RE = /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|prerender|facebookexternalhit|bingpreview|yeti|daumoa|bytespider|petalbot|google-inspectiontool|adsbot|mediapartners|apis-google|chrome-lighthouse/i;
+function isLikelyBot(): boolean {
+  if (typeof navigator === "undefined") return true;
+  try {
+    if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return true;
+    return BOT_UA_RE.test(navigator.userAgent || "");
+  } catch {
+    return false;
+  }
+}
+
 function detectLang(): string {
   if (typeof window === "undefined") return "ko";
   const path = window.location.pathname;
@@ -227,6 +242,7 @@ export function trackUserEventBeacon(
 ): void {
   try {
     if (typeof window === "undefined" || !navigator.sendBeacon) return;
+    if (isLikelyBot()) return;
 
     const anonId = getOrCreateAnonId();
     const session = getOrRotateSession(anonId);
@@ -295,6 +311,7 @@ export async function trackUserEvent(
   properties: Record<string, unknown> = {},
 ): Promise<void> {
   if (typeof window === "undefined") return; // SSR 스킵
+  if (isLikelyBot()) return;
 
   try {
     // 방어 1: event_name 길이 (서버 트리거와 대칭)

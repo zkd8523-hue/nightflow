@@ -63,7 +63,7 @@ export function AreaTablePrices({
 }: { lang: SeoLang; areaLabel: string; rows: AreaPriceRow[]; rates?: KrwRates }) {
   const t = T[lang];
   const list = rows
-    .map((r) => ({ ...r, from: tableFrom(r.areaKo, r.pricing) }))
+    .map((r) => ({ ...r, from: tableFrom(r.areaKo, r.pricing, r.id) }))
     .filter((r): r is typeof r & { from: number } => r.from != null)
     // 최저소비가 같으면(지역 하한이 대부분) 리뷰 수가 많은 순 — 별점 5.0/리뷰 1건이 위로 오지 않게
     .sort((a, b) => a.from - b.from || (b.reviewCount ?? 0) - (a.reviewCount ?? 0) || (b.rating ?? 0) - (a.rating ?? 0));

@@ -228,6 +228,8 @@ export const trackForeignEvent = (
     | 'foreign_pick_drinks_myself'
     // chat_click: WhatsApp·인스타·이메일 바로 문의. params: channel(whatsapp·instagram·email), source(form·home), step
     | 'foreign_chat_click'
+    | 'foreign_menu_closed'
+    | 'foreign_menu_done'
     // next_open_night_click: 그날 여는 곳이 없을 때 '가까운 여는 날' 버튼. params: from, to, count, area
     | 'foreign_next_open_night_click'
     // 한국인 예약 폼 제출(KoreanBookingForm). ai_referral_sources.booking_count가 이걸 센다.

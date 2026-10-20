@@ -24,7 +24,7 @@
 // itemsToReachFloor로 계산해 3개 이하일 때만 그 문장을 쓴다.
 
 import type { ClubPriceSummary } from "@/lib/clubs/tablePricing";
-import { tableFrom, formatWon, wonCompact, bookingFloor, itemsToReachFloor } from "@/lib/clubs/tablePricing";
+import { tableFrom, formatWon, wonCompact, clubFloor, itemsToReachFloor } from "@/lib/clubs/tablePricing";
 
 export type SeoLang = "en" | "ja" | "zh" | "zh-tw";
 
@@ -156,12 +156,14 @@ export type BookingSeoInput = {
   areaKo: string;
   bookable: boolean;
   pricing: ClubPriceSummary | null | undefined;
+  /** 클럽 단위 최저소비 예외(clubFloor) 조회용 */
+  clubId?: string;
 };
 
 /** title·description·keywords·CTA에 쓸 계산값 한 벌 */
 export function bookingSeoBits(input: BookingSeoInput) {
   const c = COPY[input.lang];
-  const from = input.bookable ? tableFrom(input.areaKo, input.pricing) : null;
+  const from = input.bookable ? tableFrom(input.areaKo, input.pricing, input.clubId) : null;
   const fromCompact = from != null ? wonCompact(from, input.lang) : null;
   return {
     from,
@@ -180,13 +182,13 @@ export function bookingSeoBits(input: BookingSeoInput) {
 
 /** FAQPage에 추가할 예약 Q&A — 예약 가능 + 가격 있을 때만 */
 export function bookingFaqs(input: BookingSeoInput): { q: string; a: string }[] {
-  const from = input.bookable ? tableFrom(input.areaKo, input.pricing) : null;
+  const from = input.bookable ? tableFrom(input.areaKo, input.pricing, input.clubId) : null;
   if (from == null) return [];
   const c = COPY[input.lang];
   const lowestBase = input.pricing?.lowestSet ?? input.pricing?.lowestItem ?? null;
   const lowest = lowestBase != null ? formatWon(lowestBase) : null;
   return [
-    { q: c.faqPriceQ(input.name), a: c.faqPriceA(input.name, formatWon(from), input.areaLabel, lowest, itemsToReachFloor(input.areaKo, input.pricing)) },
+    { q: c.faqPriceQ(input.name), a: c.faqPriceA(input.name, formatWon(from), input.areaLabel, lowest, itemsToReachFloor(input.areaKo, input.pricing, input.clubId)) },
     { q: c.faqHowQ(input.name), a: c.faqHowA(input.name) },
   ];
 }
@@ -207,7 +209,7 @@ export function bookingJsonLdFragment(args: {
   if (typeof latitude === "number" && typeof longitude === "number") {
     frag.geo = { "@type": "GeoCoordinates", latitude, longitude };
   }
-  const from = input.bookable ? tableFrom(input.areaKo, input.pricing) : null;
+  const from = input.bookable ? tableFrom(input.areaKo, input.pricing, input.clubId) : null;
   if (from == null) return frag;
 
   const high = input.pricing?.highest && input.pricing.highest > from ? input.pricing.highest : from;
@@ -240,7 +242,7 @@ export function bookingJsonLdFragment(args: {
   frag.additionalProperty = [{
     "@type": "PropertyValue",
     name: "Minimum table spend",
-    value: bookingFloor(input.areaKo),
+    value: clubFloor(input.clubId, input.areaKo),
     unitCode: "KRW",
   }];
   return frag;

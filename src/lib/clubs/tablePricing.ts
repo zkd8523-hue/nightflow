@@ -24,6 +24,19 @@ export function bookingFloor(area: string | null | undefined): number {
   return (area && FOREIGN_TABLE_FLOOR[area]) || FOREIGN_TABLE_FLOOR_FALLBACK;
 }
 
+// 클럽 단위 최저소비 예외 — La Rosa(홍대)만 15만원(사용자 요청 2026-09-30).
+// 2026-10-20 여기로 모았다: ClubBookingSection 안에만 있어서 La Rosa 자기 페이지는 15만원인데
+// 다른 클럽 페이지의 대안 카드·지역 가격표·검색 구조화 데이터에는 50만원으로 나갔다.
+// ⚠️ 폼의 CLUB_BUDGET_TIERS_OVERRIDE(ForeignRequestForm.tsx) 첫 값과 같아야 한다.
+export const CLUB_MIN_SPEND_OVERRIDE: Record<string, number> = {
+  "4004d7b6-b3d2-4ec4-8c42-32d82405ded0": 150_000, // La Rosa
+};
+
+/** 그 클럽의 1탁 최저소비 — 클럽 예외가 있으면 그것, 없으면 지역 하한. */
+export function clubFloor(clubId: string | null | undefined, area: string | null | undefined): number {
+  return (clubId && CLUB_MIN_SPEND_OVERRIDE[clubId]) || bookingFloor(area);
+}
+
 export type MenuSetSummary = {
   /** 항목 이름(영문). 없으면 한글명 */
   name: string;
@@ -173,11 +186,11 @@ export function representativeItems(
 }
 
 /** 폼 카드와 같은 숫자 — "이 클럽 예약이 실제로 시작하는 금액". 메뉴가 없으면 null. */
-export function tableFrom(area: string | null | undefined, s: ClubPriceSummary | null | undefined): number | null {
+export function tableFrom(area: string | null | undefined, s: ClubPriceSummary | null | undefined, clubId?: string | null): number | null {
   if (!s) return null;
   const base = s.lowestSet ?? s.lowestItem;
   if (base == null) return null;
-  return Math.max(bookingFloor(area), base);
+  return Math.max(clubFloor(clubId, area), base);
 }
 
 /**
@@ -185,10 +198,10 @@ export function tableFrom(area: string | null | undefined, s: ClubPriceSummary |
  * 데이터로 검증하기 위한 값 — Dawn처럼 ₩40,000 세트가 있는 클럽에서 그 문장은 거짓이었다
  * (크리틱 2차). 기준 항목이 없으면 null.
  */
-export function itemsToReachFloor(area: string | null | undefined, s: ClubPriceSummary | null | undefined): number | null {
+export function itemsToReachFloor(area: string | null | undefined, s: ClubPriceSummary | null | undefined, clubId?: string | null): number | null {
   const base = s?.lowestSet ?? s?.lowestItem ?? null;
   if (base == null || base <= 0) return null;
-  return Math.max(1, Math.ceil(bookingFloor(area) / base));
+  return Math.max(1, Math.ceil(clubFloor(clubId, area) / base));
 }
 
 /** ₩500,000 */

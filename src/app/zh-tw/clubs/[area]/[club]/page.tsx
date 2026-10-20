@@ -39,7 +39,7 @@ const SELECT =
   "google_rating, google_review_count, google_reviews, instagram, dresscode, tags, drink_menu_url, " +
   // 예약 SEO(2026-09-10): 좌표(geo)·테이블 차지·메뉴 갱신일 — ClubBookingSection/JSON-LD Offer용
   "latitude, longitude, table_charge_weekday, table_charge_weekend, drink_menu_updated_at, " +
-  "foreign_booking_agreed, area_pick, partners:club_partners(md_id)";
+  "foreign_booking_agreed, area_pick, open_dows, partners:club_partners(md_id)";
 
 type ClubRow = {
   id: string;
@@ -55,6 +55,8 @@ type ClubRow = {
   thumbnail_url: string | null;
   operating_hours: string | null;
   entry_fee_detail: string | null;
+  /** 영업 요일(0=일) — 예약 블록 요약 문장용(2026-10-20) */
+  open_dows?: number[] | null;
   google_rating: number | null;
   google_review_count: number | null;
   google_reviews: { author_name: string | null; rating: number | null; text: string | null; relative_time: string | null }[] | null;
@@ -124,10 +126,10 @@ const findClub = cache(async (areaSlug: string, clubParam: string) => {
   ]);
   // "예약 가능" = 메뉴 등록 && 활성 항목에 실제 가격이 있음. 항목이 전부 비활성인 클럽이
   // 스티키바에선 "Book"·본문에선 "isn't bookable yet"로 갈리던 문제를 여기서 한 번에 막는다.
-  const bookable = bookableRaw && tableFrom(club.area, pricing.get(club.id)) != null;
-  const siblings = siblingsRaw.map((sib) => ({ ...sib, bookable: sib.bookable && tableFrom(sib.area, pricing.get(sib.id)) != null }));
+  const bookable = bookableRaw && tableFrom(club.area, pricing.get(club.id), club.id) != null;
+  const siblings = siblingsRaw.map((sib) => ({ ...sib, bookable: sib.bookable && tableFrom(sib.area, pricing.get(sib.id), sib.id) != null }));
   // 첫 화면 안내("이 지역 N곳은 예약 가능")용 — 8곳 컷 전 전체에서, 페이지와 같은 규칙(메뉴+가격)으로 센다.
-  const bookableSiblingCount = siblingsAll.filter((sib) => sib.bookable && tableFrom(sib.area, pricing.get(sib.id)) != null).length;
+  const bookableSiblingCount = siblingsAll.filter((sib) => sib.bookable && tableFrom(sib.area, pricing.get(sib.id), sib.id) != null).length;
 
   return { club, siblings, bookable, pricing, bookableSiblingCount };
 });
@@ -149,7 +151,7 @@ export async function generateMetadata({
 
   const url = `https://nightflow.kr/zh-tw/clubs/${area}/${clubParam}`;
   // 예약 가능 + 가격이 있으면 title이 "Book a Table from ₩X"로 바뀐다(예약 의도 검색어 CTR).
-  const seo = bookingSeoBits({ lang: "zh-tw", name, areaLabel: areaZh, areaKo: club.area, bookable, pricing: pricing.get(club.id) });
+  const seo = bookingSeoBits({ lang: "zh-tw", name, areaLabel: areaZh, areaKo: club.area, bookable, pricing: pricing.get(club.id), clubId: club.id });
 
   const descBits = [
     `${name}是${area === "busan" ? "" : "首爾"}${areaZh}的一家夜店。`,
@@ -245,7 +247,7 @@ export default async function ZhTwClubDetailPage({
   const bookHref = `/flags/new?lang=zh-tw&area=${encodeURIComponent(club.area)}&club=${club.id}`;
 
   // ── 예약 SEO(2026-09-10): 실가격·Offer·대안 카드. 숫자는 폼 카드와 같은 규칙(tablePricing). ──
-  const seoInput = { lang: "zh-tw" as const, name, areaLabel: areaZh, areaKo: club.area, bookable, pricing: pricing.get(club.id) };
+  const seoInput = { lang: "zh-tw" as const, name, areaLabel: areaZh, areaKo: club.area, bookable, pricing: pricing.get(club.id), clubId: club.id };
   const seoBits = bookingSeoBits(seoInput);
   // 데스크톱은 하단 바를 숨기고 사이드바 버튼이 이 페이지의 예약 버튼이 된다. 가격은 뺀다(폭 207px에서 두 줄).
   const listHref = bookableListHref("zh-tw", club.area);
@@ -263,7 +265,7 @@ export default async function ZhTwClubDetailPage({
     bookHref: `/flags/new?lang=zh-tw&area=${encodeURIComponent(s.area)}&club=${s.id}`,
     rating: s.google_rating,
     reviewCount: s.google_review_count,
-    from: tableFrom(s.area, pricing.get(s.id)),
+    from: tableFrom(s.area, pricing.get(s.id), s.id),
   }));
 
   const faqs = [
@@ -476,6 +478,8 @@ export default async function ZhTwClubDetailPage({
         <ClubBookingSection
           lang="zh-tw"
           clubId={club.id}
+          hours={hours}
+          openDows={club.open_dows ?? null}
           name={name}
           areaLabel={areaZh}
           areaKo={club.area}

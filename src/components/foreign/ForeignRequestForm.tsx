@@ -1267,14 +1267,24 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   }, [formStep, shortlistKey]);
   // 바로 문의 문장 — 운영자가 "무엇을 도와드릴까요"부터 묻지 않게 지금까지 고른 걸 담는다.
   const chatMessage = (() => {
-    const where = area ? areaLabel(area, lang) : t("서울", "Seoul", "ソウル", "首尔", "首爾");
-    const club = stagedClub ? displayClubName(stagedClub) : null;
+    // 이미 고른 클럽이 우선 — 2단계 추천 목록의 미리 선택(stagedClub)은 고르기 전 상태일 뿐이다.
+    const clubObj = (selectedClubId ? clubById[selectedClubId] ?? null : null) ?? stagedClub;
+    const whereArea = area || clubObj?.area || "";
+    const where = whereArea ? areaLabel(whereArea, lang) : t("서울", "Seoul", "ソウル", "首尔", "首爾");
+    const club = clubObj ? displayClubName(clubObj) : null;
+    // 3단계에서 대화로 넘어오는 손님(2026-10-20)은 날짜·예산까지 이미 골랐다 — 다시 묻지 않게 같이 싣는다.
+    const date = eventDate ? formatEventDate(eventDate, lang) : null;
+    const budget = picked?.total ? `₩${picked.total.toLocaleString("en-US")}` : null;
+    const extra = [
+      date ? t(`날짜: ${date}`, `Date: ${date}`, `日程：${date}`, `日期：${date}`, `日期：${date}`) : null,
+      budget ? t(`예산: ${budget}`, `Budget: ${budget}`, `予算：${budget}`, `预算：${budget}`, `預算：${budget}`) : null,
+    ].filter(Boolean).join("\n");
     return t(
-      `안녕하세요! ${groupSize}명이 ${where}에서 테이블을 잡고 싶어요.${club ? `\n${club} 보고 있어요.` : ""} 도와주실 수 있나요?`,
-      `Hi! ${groupSize} of us want a table in ${where}.${club ? `\nLooking at ${club}.` : ""} Can you help?`,
-      `こんにちは！${groupSize}名で${where}のテーブルを予約したいです。${club ? `\n${club}を検討中です。` : ""}お願いできますか？`,
-      `你好！我们 ${groupSize} 个人想在${where}订卡座。${club ? `\n在看 ${club}。` : ""}可以帮忙吗？`,
-      `你好！我們 ${groupSize} 個人想在${where}訂包廂。${club ? `\n在看 ${club}。` : ""}可以幫忙嗎？`
+      `안녕하세요! ${groupSize}명이 ${where}에서 테이블을 잡고 싶어요.${club ? `\n${club} 보고 있어요.` : ""}${extra ? `\n${extra}` : ""}\n도와주실 수 있나요?`,
+      `Hi! ${groupSize} of us want a table in ${where}.${club ? `\nLooking at ${club}.` : ""}${extra ? `\n${extra}` : ""}\nCan you help?`,
+      `こんにちは！${groupSize}名で${where}のテーブルを予約したいです。${club ? `\n${club}を検討中です。` : ""}${extra ? `\n${extra}` : ""}\nお願いできますか？`,
+      `你好！我们 ${groupSize} 个人想在${where}订卡座。${club ? `\n在看 ${club}。` : ""}${extra ? `\n${extra}` : ""}\n可以帮忙吗？`,
+      `你好！我們 ${groupSize} 個人想在${where}訂包廂。${club ? `\n在看 ${club}。` : ""}${extra ? `\n${extra}` : ""}\n可以幫忙嗎？`
     );
   })();
   // wonWithLocal("₩500k (≈ US$371)")은 지역 카드·티어 버튼 가격 줄에서 쓰였는데 둘 다
@@ -2982,6 +2992,19 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       <p className="text-center text-[12px] text-muted-foreground -mt-3">
         {t("대부분 하루 안에 회신 · 보증금 없음 · 현장 결제", "Most requests get a reply within a day · No deposit · Pay at the club", "多くは1日以内に返信 · デポジット不要 · 現地払い", "大多数一天内回复 · 无需订金 · 到店付款", "大多數一天內回覆 · 無需訂金 · 到店付款")}
       </p>
+
+      {/* 폼 대신 대화(2026-10-20). 10/3~10/20 실측: 예산까지 고른 20명 중 이 단계에서 14명이 이름도
+          안 쓰고 나갔다 — 이름·연락처·예비 이메일·확정 체크를 한 번에 요구하는 게 벽. 고른 내용
+          (클럽·날짜·인원·예산)이 담긴 문장으로 바로 대화를 열 수 있게 출구를 둔다. */}
+      <section className="rounded-2xl bg-card border border-border p-4 space-y-3">
+        <div className="space-y-0.5">
+          <h2 className="text-[15px] font-black">{t("폼 대신 대화로 할래요", "Rather just chat?", "フォームよりチャットで", "不想填表？直接聊", "不想填表？直接聊")}</h2>
+          <p className="text-[12px] text-muted-foreground leading-snug break-keep">
+            {t("지금까지 고른 내용이 담긴 메시지로 열려요", "Opens with what you picked so far", "ここまでの内容が入ったメッセージで開きます", "会带上你目前选的内容", "會帶上你目前選的內容")}
+          </p>
+        </div>
+        <ContactButtons lang={lang} message={chatMessage} source="form_step3" step={formStep} />
+      </section>
       </>
       )}
 
@@ -3327,7 +3350,15 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       {/* 술 메뉴 시트 — 담기를 끝내면 picked에 스냅샷과 총액이 들어온다.
           h-[92vh]로 거의 전체를 덮는다: 카테고리 탭 + 목록 + 하단 합계가 한 화면에
           들어와야 "지금 얼마인지" 보면서 고를 수 있다. */}
-      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+      <Sheet
+        open={menuOpen}
+        onOpenChange={(open) => {
+          // 메뉴판을 열고 그냥 닫는 손님이 얼마나 되는지(2026-10-20) — "직접 고를래요" 10명 중
+          // 5명이 그 뒤 아무 기록 없이 나갔는데 시트 안 행동은 계측이 없어 원인을 못 봤다.
+          if (!open && menuOpen) trackForeignEvent("foreign_menu_closed", { lang, club_id: selectedClubId, draft_total: menuDraft?.total ?? 0 });
+          setMenuOpen(open);
+        }}
+      >
         <SheetContent
           side="bottom"
           /* sheet.tsx의 side="bottom" 기본값엔 데스크탑 폭 제한이 없지만, 이 시트는
@@ -3363,6 +3394,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             topSlot={!picked || picked.snapshot.md_recommend ? <MdRecommendBox compact /> : undefined}
             onDraftChange={(snapshot, total) => setMenuDraft({ snapshot, total })}
             onDone={(snapshot, total) => {
+              trackForeignEvent("foreign_menu_done", { lang, club_id: selectedClubId, total, items: snapshot.items.length });
               setPicked({ snapshot, total });
               setMenuDraft({ snapshot, total });
               setMenuOpen(false);

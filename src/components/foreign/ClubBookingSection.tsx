@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 import type { ClubPriceSummary } from "@/lib/clubs/tablePricing";
-import { formatWon, bookingFloor, itemsToReachFloor, representativeItems } from "@/lib/clubs/tablePricing";
+import { formatWon, clubFloor, CLUB_MIN_SPEND_OVERRIDE, itemsToReachFloor, representativeItems } from "@/lib/clubs/tablePricing";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 import { krwTo, langToCurrency, type KrwRates } from "@/lib/utils/currency";
 
@@ -44,13 +44,12 @@ type Props = {
   bookHref: string;
   alternatives: AltClub[];
   rates?: KrwRates;
+  /** 그 언어로 옮긴 영업시간 문구(translateClubMeta) — 요약 문장용 */
+  hours?: string | null;
+  /** 영업 요일(0=일). hours가 없을 때만 요약 문장에 쓴다 */
+  openDows?: number[] | null;
 };
 
-// La Rosa(홍대)만 최저소비 15만원 — 사용자 요청(2026-09-30), 클럽 단위 예외.
-// 지역 하한(bookingFloor)은 20곳 넘는 자리에서 쓰이는 공통 함수라 여기서만 override한다.
-const CLUB_MIN_SPEND_OVERRIDE: Record<string, number> = {
-  "4004d7b6-b3d2-4ec4-8c42-32d82405ded0": 150_000, // La Rosa
-};
 
 const T = {
   en: {
@@ -78,6 +77,12 @@ const T = {
     altDetails: "Details",
     reviews: "reviews",
     seeAll: (a: string) => `Compare all ${a} table prices`,
+    summary: (n: string, a: string, price: string, when: string | null) =>
+      `${n} is a club in ${a}. Tables start at ${price} per table, filled from the club's printed menu.${when ? ` ${when}.` : ""} Foreign visitors can book it in English through NightFlow: send your date and group size, get the final price in writing before the night, no deposit — pay the club on the night.`,
+    hoursLine: (h: string) => `Hours: ${h}`,
+    daysLine: (d: string) => `Open ${d}`,
+    dows: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    daily: "daily",
   },
   ja: {
     h2: (n: string) => `${n}のテーブル予約`,
@@ -104,6 +109,12 @@ const T = {
     altDetails: "詳細",
     reviews: "件",
     seeAll: (a: string) => `${a}のテーブル料金をすべて比較`,
+    summary: (n: string, a: string, price: string, when: string | null) =>
+      `${n}は${a}のクラブです。テーブルは1卓${price}から、クラブの実際のメニューで組みます。${when ? `${when}。` : ""}NightFlowなら日本語で予約できます — 日程と人数を送ると、当日前に最終金額を文面でお知らせ。デポジット不要、当日クラブでお支払い。`,
+    hoursLine: (h: string) => `営業時間：${h}`,
+    daysLine: (d: string) => `営業日：${d}`,
+    dows: ["日", "月", "火", "水", "木", "金", "土"],
+    daily: "毎日",
   },
   zh: {
     h2: (n: string) => `预订${n}的卡座`,
@@ -130,6 +141,12 @@ const T = {
     altDetails: "详情",
     reviews: "条评价",
     seeAll: (a: string) => `比较${a}全部卡座价格`,
+    summary: (n: string, a: string, price: string, when: string | null) =>
+      `${n}是${a}的夜店。卡座每桌${price}起，按夜店实际酒单组合。${when ? `${when}。` : ""}通过NightFlow可以用中文预订：发来日期和人数，到店前以书面确认最终价格，无需订金，当晚在夜店付款。`,
+    hoursLine: (h: string) => `营业时间：${h}`,
+    daysLine: (d: string) => `营业日：${d}`,
+    dows: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+    daily: "每天",
   },
   "zh-tw": {
     h2: (n: string) => `在${n}訂包廂`,
@@ -157,6 +174,12 @@ const T = {
     altDetails: "詳情",
     reviews: "則評論",
     seeAll: (a: string) => `比較${a}全部包廂價格`,
+    summary: (n: string, a: string, price: string, when: string | null) =>
+      `${n}是${a}的夜店。包廂每桌${price}起，依夜店實際酒單組合。${when ? `${when}。` : ""}透過NightFlow可以用中文訂位：傳來日期和人數，到店前以書面確認最終價格，不用訂金，當晚在夜店付款。`,
+    hoursLine: (h: string) => `營業時間：${h}`,
+    daysLine: (d: string) => `營業日：${d}`,
+    dows: ["週日", "週一", "週二", "週三", "週四", "週五", "週六"],
+    daily: "每天",
   },
 } as const;
 
@@ -204,11 +227,11 @@ function AltCards({ alts, lang, rates }: { alts: AltClub[]; lang: SeoLang; rates
 
 export function ClubBookingSection({
   lang, clubId, name, areaLabel, areaKo, areaSlug, bookable, pricing, tableChargeWeekday, tableChargeWeekend,
-  bookHref, alternatives, rates,
+  bookHref, alternatives, rates, hours, openDows,
 }: Props) {
   const t = T[lang];
   const floorOverride = clubId ? CLUB_MIN_SPEND_OVERRIDE[clubId] : undefined;
-  const floor = floorOverride ?? bookingFloor(areaKo);
+  const floor = clubFloor(clubId, areaKo);
   const lowestBaseForFrom = pricing?.lowestSet ?? pricing?.lowestItem ?? null;
   const from = bookable ? (lowestBaseForFrom != null ? Math.max(floor, lowestBaseForFrom) : null) : null;
   const alts = alternatives.filter((a) => a.from != null).slice(0, 4);
@@ -218,7 +241,7 @@ export function ClubBookingSection({
     const lowestBase = pricing?.lowestSet ?? pricing?.lowestItem ?? null;
     // 최저 항목이 하한보다 싸면 "최저소비"로, 아니면 그냥 "테이블 가격"으로 부른다.
     const anchoredByFloor = lowestBase != null && lowestBase < floor;
-    const reach = lowestBase != null && lowestBase > 0 ? Math.max(1, Math.ceil(floor / lowestBase)) : itemsToReachFloor(areaKo, pricing);
+    const reach = lowestBase != null && lowestBase > 0 ? Math.max(1, Math.ceil(floor / lowestBase)) : itemsToReachFloor(areaKo, pricing, clubId);
     // 하한의 20% 미만 저가 항목은 테이블 예약 대표가가 아니라 제외(2026-09-10).
     // 3개까지만 — 이건 요약이고 전체 메뉴는 폼에서 본다.
     const repMin = floor * 0.2;
@@ -232,6 +255,10 @@ export function ClubBookingSection({
     ).slice(0, 3);
     const rows = repSets.length ? repSets : repItems;
     const rowsTitle = repSets.length ? t.setsTitle : t.itemsTitle;
+    const dowsText = openDows && openDows.length
+      ? openDows.length === 7 ? t.daily : [...openDows].sort((a, b) => a - b).map((d) => t.dows[d]).join("·")
+      : null;
+    const whenLine = hours ? t.hoursLine(hours) : dowsText ? t.daysLine(dowsText) : null;
     const chargeText = [
       tableChargeWeekday ? `${t.chargeWd} ${formatWon(tableChargeWeekday)}` : null,
       tableChargeWeekend ? `${t.chargeWe} ${formatWon(tableChargeWeekend)}` : null,
@@ -241,6 +268,12 @@ export function ClubBookingSection({
       <section className="rounded-2xl bg-card border border-border p-5 space-y-4">
         <div>
           <h2 className="text-[18px] font-black">{t.h2(name)}</h2>
+          {/* 한 문장 요약(2026-10-20) — 외국인 예약 전환 1위 경로가 ChatGPT(세션당 0.9%)이고, 연결해 준
+              페이지가 예약 가능 클럽 상세였다. AI는 숫자·표보다 "이름+지역+가격+영업+예약 방법"이 한
+              문장에 다 든 걸 인용한다. 가격은 아래 큰 숫자와 같은 값(from)이라 어긋나지 않는다. */}
+          <p className="text-[13px] text-foreground leading-relaxed break-keep mt-2">
+            {t.summary(name, areaLabel, won(from, lang, rates), whenLine)}
+          </p>
           <p className="text-[12px] font-bold text-muted-foreground mt-2">
             {anchoredByFloor ? t.minSpend(areaLabel) : t.tablesFrom}
           </p>
