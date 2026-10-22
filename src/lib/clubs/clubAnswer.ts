@@ -29,6 +29,13 @@ export type ClubAnswerInput = {
   reviewCount: number | null;
   /** 세트(category=set, VVIP 제외) 최저가(평일). 없으면 null → 가격 줄 생략 */
   lowestSet: number | null;
+  /**
+   * 세트가 없는 클럽(강남 병 단위 메뉴)의 싼 순 단품(VVIP 제외, 평일가). 2026-10-22 추가 —
+   * 라이언처럼 메뉴가 49개나 있어도 세트가 0개면 가격 줄·FAQ가 통째로 빠져, 구글에
+   * "라이온 서울 가격표"로 검색해도 이 페이지에 가격 문장이 하나도 없었다.
+   * "테이블 N원"이라고 단정하지 않고 "병 N원부터"로만 쓴다(단품 = 테이블 가격 오인 방지).
+   */
+  topItems?: { name: string; price: number }[];
   bookable: boolean;
   /** 같은 지역의 다른 예약 가능 클럽 수(isBookable). 예약 불가일 때 "이태원 3곳은 바로 예약돼요"로 갈 곳을 알린다. */
   areaBookableCount?: number;
@@ -88,6 +95,10 @@ export function buildClubAnswer(i: ClubAnswerInput): ClubAnswer {
   const entryFeeText = i.entryFee ? (/^[\d,]+$/.test(i.entryFee.trim()) ? `${i.entryFee.trim()}원` : i.entryFee) : null;
   const entryPlain = !!entryFeeText && isPlainEntryFee(entryFeeText);
   const priceLine = i.lowestSet ? `테이블 세트 ${wonKo(i.lowestSet)}부터` : null;
+  const bottles = !i.lowestSet ? (i.topItems ?? []).filter((x) => x.price > 0).slice(0, 3) : [];
+  const bottleLine = bottles.length
+    ? `병 ${wonKo(bottles[0].price)}부터 (${bottles.map((b) => `${b.name} ${wonKo(b.price)}`).join(", ")})`
+    : null;
   const ig = i.instagram ? i.instagram.replace(/^@/, "").trim() : null;
 
   // 주소·인스타도 이 표 하나로 모은다 — 화면에 따로 아이콘 줄을 또 두면 정보가
@@ -97,6 +108,7 @@ export function buildClubAnswer(i: ClubAnswerInput): ClubAnswer {
   if (entryFeeText) rows.push({ label: entryPlain ? "입장료" : "입장", value: entryFeeText });
   if (hoursRow) rows.push({ label: "영업", value: hoursRow });
   if (priceLine) rows.push({ label: "테이블", value: `${priceLine} · 평일 메뉴 기준` });
+  else if (bottleLine) rows.push({ label: "주대", value: `${bottleLine} · 평일 메뉴 기준` });
   if (i.dresscode) rows.push({ label: "드레스코드", value: i.dresscode });
   if (i.address) rows.push({ label: "주소", value: i.address });
   // 표본 10개 미만이거나 3.0 미만은 안 낸다 — 파트너 클럽 페이지가 "구글 평점 2.4"를 인용시키면 양쪽 다 손해.
@@ -125,7 +137,8 @@ export function buildClubAnswer(i: ClubAnswerInput): ClubAnswer {
   const faqs: { q: string; a: string }[] = [];
   if (entryFeeText && entryPlain) faqs.push({ q: `${n} 입장료는 얼마인가요?`, a: `${n} 입장료는 ${entryFeeText}입니다 (${i.asOf} 기준). 이벤트·요일에 따라 달라질 수 있습니다.` });
   if (i.operatingHours) faqs.push({ q: `${n} 영업시간은 언제인가요?`, a: `${n} 영업시간은 ${i.operatingHours}입니다${dows && !hoursHasDow ? ` (${dows} 영업)` : ""} (${i.asOf} 기준).` });
-  if (i.lowestSet) faqs.push({ q: `${n} 테이블(주대) 가격은 얼마인가요?`, a: `${n} 테이블은 세트 ${wonKo(i.lowestSet)}부터입니다 (평일 메뉴, ${i.asOf} 기준). 주말·이벤트에는 달라질 수 있고, 나플 예약 화면에서 메뉴 항목별 실가격을 볼 수 있습니다.` });
+  if (!i.lowestSet && bottleLine) faqs.push({ q: `${n} 주대(가격표)는 얼마인가요?`, a: `${n}은(는) 세트 없이 병 단위로 주문하며, 가장 싼 병이 ${wonKo(bottles[0].price)}부터입니다 — ${bottles.map((b) => `${b.name} ${wonKo(b.price)}`).join(", ")} (평일 메뉴, ${i.asOf} 기준). 테이블은 여러 병을 골라 잡고, 주말·이벤트에는 달라질 수 있습니다. 나플 예약 화면에서 메뉴 항목별 실가격을 볼 수 있습니다.` });
+  if (i.lowestSet) faqs.push({ q: `${n} 테이블(주대) 가격표·가격은 얼마인가요?`, a: `${n} 테이블은 세트 ${wonKo(i.lowestSet)}부터입니다 (평일 메뉴, ${i.asOf} 기준). 주말·이벤트에는 달라질 수 있고, 나플 예약 화면에서 메뉴 항목별 실가격을 볼 수 있습니다.` });
   if (i.dresscode) faqs.push({ q: `${n} 드레스코드가 있나요?`, a: `${n} 드레스코드: ${i.dresscode}.` });
 
   return { name: i.name, area: i.area, rows, faqs, lowestSet: i.lowestSet, bookable: i.bookable, asOf: i.asOf };

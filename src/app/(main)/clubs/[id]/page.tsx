@@ -353,6 +353,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     rating: club.google_rating != null ? Number(club.google_rating) : null,
     reviewCount: club.google_review_count != null ? Number(club.google_review_count) : null,
     lowestSet: pricingForAnswer?.lowestSet ?? null,
+    topItems: (pricingForAnswer?.topItems ?? []).map((x) => ({ name: x.name, price: x.price })),
     bookable,
     areaBookableCount,
     otherBookableCount,
