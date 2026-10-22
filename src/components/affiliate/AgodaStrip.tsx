@@ -139,7 +139,6 @@ export function AgodaStrip({ lang, placement, area, title, subtitle, stay = {}, 
         <div className="flex min-h-[44px] items-center justify-between gap-2 pr-3">
           <div className="flex min-w-0 items-center gap-1.5">
             <span className="text-[15px] font-extrabold leading-snug text-foreground">{title ?? stayHeadline(lang, listArea, angle)}</span>
-            <AdBadge label={AD_LABEL[lang]} />
           </div>
         </div>
         {subtitle && <p className="-mt-1 mb-2 pr-3 text-[12.5px] text-muted-foreground">{subtitle}</p>}
@@ -228,7 +227,11 @@ export function AgodaStrip({ lang, placement, area, title, subtitle, stay = {}, 
             </div>
             </div>
       </div>
-      <p className="mt-1.5 truncate text-[9.5px] text-muted-foreground/80">{AGODA_DISCLOSURE[lang]}</p>
+      {/* Ad 배지는 제목 옆이 아니라 고지 문구 옆에 작게(2026-10-22 운영자) */}
+      <p className="mt-1.5 flex items-center gap-1.5 text-[9.5px] text-muted-foreground/80">
+        <span className="truncate">{AGODA_DISCLOSURE[lang]}</span>
+        <AdBadge label={AD_LABEL[lang]} small />
+      </p>
     </div>
   );
 }

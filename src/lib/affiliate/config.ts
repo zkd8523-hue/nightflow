@@ -14,7 +14,7 @@ export const COUPANG_DISCLOSURE =
 export type AffLang = "ko" | "en" | "ja" | "zh" | "zh-tw";
 
 export const AGODA_DISCLOSURE: Record<AffLang, string> = {
-  ko: "아고다 제휴 링크예요. 예약하시면 나플이 수수료를 받을 수 있고, 가격은 똑같아요.",
+  ko: "이 포스팅은 아고다 파트너스 활동의 일환으로, 구매 시 이에 따른 일정액의 수수료를 제공받습니다.",
   en: "Partner links via Agoda — we may earn a commission. Your price stays the same.",
   ja: "Agodaの提携リンクです。予約されると手数料を受け取る場合がありますが、料金は変わりません。",
   zh: "Agoda 合作链接——我们可能获得佣金，您的价格不变。",

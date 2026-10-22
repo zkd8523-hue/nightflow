@@ -30,9 +30,9 @@ function addSeen(ids: string[]) {
   } catch {}
 }
 
-export function AdBadge({ label = "Ad" }: { label?: string }) {
+export function AdBadge({ label = "Ad", small = false }: { label?: string; small?: boolean }) {
   return (
-    <span className="shrink-0 rounded border border-white/20 px-1.5 text-[10.5px] font-bold leading-[17px] text-neutral-300">
+    <span className={`shrink-0 rounded border border-white/20 font-bold text-neutral-300 ${small ? "px-1 text-[9px] leading-[13px]" : "px-1.5 text-[10.5px] leading-[17px]"}`}>
       {label}
     </span>
   );
