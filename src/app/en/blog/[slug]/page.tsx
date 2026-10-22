@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
@@ -170,6 +171,8 @@ export default async function EnBlogPostPage({ params }: { params: Promise<{ slu
             />
           </div>
         ))}
+
+        <AgodaStrip lang="en" placement="foreign_blog_post" area={post.area === "Busan" ? "busan" : "hongdae"} />
 
         {post.hasAffiliate && (
           <p className="text-[12px] text-muted-foreground">

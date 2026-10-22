@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 import { krwToAll, getKrwRates } from "@/lib/utils/currency";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
@@ -157,6 +158,8 @@ export default async function ZhTwGuidePage() {
             ))}
           </div>
         </section>
+
+        <AgodaStrip lang="zh-tw" placement="foreign_guide" area={null} />
 
         {/* 信任 — VIP、公平價格 */}
         <section className="space-y-4 text-center">

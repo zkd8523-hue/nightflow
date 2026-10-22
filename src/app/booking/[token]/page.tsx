@@ -53,7 +53,7 @@ export default async function BookingPage({
   const { data: club } = clubId
     ? await sb
         .from("clubs")
-        .select("name, name_en, address, latitude, longitude, operating_hours")
+        .select("name, name_en, area, address, latitude, longitude, operating_hours")
         .eq("id", clubId)
         .maybeSingle()
     : { data: null };
@@ -111,6 +111,7 @@ export default async function BookingPage({
             ? club?.name || club?.name_en || null
             : club?.name_en || club?.name || null
         }
+        area={club?.area ?? null}
         address={club?.address ?? null}
         lat={club?.latitude ?? null}
         lng={club?.longitude ?? null}

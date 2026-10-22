@@ -14,6 +14,7 @@ import { NewsletterSignup } from "@/components/home/NewsletterSignup";
 import { EventCommentSection } from "@/components/events/EventCommentSection";
 import { ArtistNameWithHeart } from "@/components/artists/ArtistNameWithHeart";
 import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
+import { AffiliateSlot } from "@/components/affiliate/AffiliateSlot";
 
 // 공연 상세 — "SENSI SOUND", "팔로알토 공연" 류 고유명사 검색의 착지점.
 // 없는 조합은 notFound() → force-dynamic 필수. 없으면 Suspense 경계가 200을 먼저
@@ -94,7 +95,7 @@ async function fetchEvent(date: string, slugParam: string) {
   const { data } = await supabase
     .from("club_events")
     .select(
-      `id, event_date, title, club_id, club_name_raw, venue_area, lineup, source_url, source_account, ticket_url,
+      `id, event_date, event_date_end, venue_type, title, club_id, club_name_raw, venue_area, lineup, source_url, source_account, ticket_url,
        clubs(id, name, area, address, thumbnail_url, tags, operating_hours, instagram, is_test, status, deleted_at),
        venues(id, name, slug, area, address, is_test, deleted_at),
        club_event_performers(raw_name, sort_order, artists(id, display_name, instagram, slug, artist_aliases(alias)))`
@@ -106,6 +107,8 @@ async function fetchEvent(date: string, slugParam: string) {
   type RawRow = {
     id: string;
     event_date: string;
+    event_date_end: string | null;
+    venue_type: string | null;
     title: string | null;
     club_id: string | null;
     club_name_raw: string;
@@ -508,6 +511,17 @@ export default async function EventDetailPage({ params }: PageProps) {
 
         {/* 원문 캡션은 싣지 않는다 — 클럽·프로모터 저작물이고, 인스타와 중복 콘텐츠가 된다.
             사실 정보만 위에 재구성하고 원문은 링크로 보낸다. */}
+        {/* 제휴 광고 — 공연 정보를 다 본 직후, 외부 링크로 나가기 전. 페스티벌/지방이면 아고다로 바뀐다 */}
+        <AffiliateSlot
+          placement="event_detail"
+          area={area}
+          event={{ date: row.event_date, dateEnd: row.event_date_end, title: row.title, venueType: row.venue_type }}
+          coupangVariant="rail"
+          coupangTitle={`${club?.name ?? row.club_name_raw ?? "공연"} 가기 전 필수템!`}
+          agodaTitle={/페스티벌|페스타|festival/i.test(row.title ?? "") ? "페스티벌 가는 날, 잘 데 정했어?" : undefined}
+          agodaSubtitle={`${area || "공연장 근처"} · ${dateLabel} 체크인`}
+        />
+
         <div className="rounded-2xl bg-card border border-border overflow-hidden">
           {row.source_url && (
             <a

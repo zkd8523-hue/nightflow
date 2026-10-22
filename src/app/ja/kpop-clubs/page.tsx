@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
@@ -66,6 +67,8 @@ export default function JaKpopClubsPage() {
           <p className="text-[13px] text-muted-foreground leading-relaxed">ほとんどのK-POP観光客は弘大NB2に直行。可能ですが、週末は90分待ちもあります。入場保証とテーブル予約を希望する場合、NightFlowで予約すれば弘大K-POPクラブに直接連絡し、日本語で席を確保します。</p>
           <Link rel="nofollow" data-nf-track="book_cta" href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
         </section>
+        <AgodaStrip lang="ja" placement="foreign_kpop" area={null} />
+
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">関連ガイド</h2>
           <ul className="space-y-1 text-[13px] text-muted-foreground">

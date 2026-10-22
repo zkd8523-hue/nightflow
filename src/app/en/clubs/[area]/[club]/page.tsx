@@ -20,6 +20,7 @@ import { BookingComingSoon } from "@/components/foreign/BookingComingSoon";
 import { fetchTablePricing, tableFrom, trimAtSentence } from "@/lib/clubs/tablePricing";
 import { bookingSeoBits, bookingFaqs, bookingJsonLdFragment } from "@/lib/seo/clubBookingSeo";
 import { ClubBookingSection } from "@/components/foreign/ClubBookingSection";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { getKrwRates } from "@/lib/utils/currency";
 
 // 클럽 개별 페이지 — 외국인 롱테일 SEO의 핵심.
@@ -479,6 +480,9 @@ export default async function EnClubDetailPage({
           </section>
         )}
 
+        {/* 숙소 — 리뷰 위. 예약 블록 아래(스크롤 74%)에선 아무도 못 봤다(2026-10-22 운영자 결정). 예약은 하단 고정 바가 계속 맡는다. */}
+        <AgodaStrip lang="en" placement="foreign_club" area={club.area} />
+
         {reviews.length > 0 && (
           <section>
             <h2 className="text-[18px] font-black mb-2">What people say about {name}</h2>
@@ -518,6 +522,7 @@ export default async function EnClubDetailPage({
           alternatives={altClubs}
           rates={fxRates}
         />
+
 
         {/* FAQ — 화면에도 보여준다. JSON-LD만 있고 본문에 없으면 구글이 신뢰하지 않음. */}
         {faqs.length > 0 && (

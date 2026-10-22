@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { createClient } from "@/lib/supabase/server";
@@ -207,6 +208,8 @@ export async function ClubHoursPage({ lang }: { lang: Lang }) {
             );
           })}
         </section>
+
+        <AgodaStrip lang={lang} placement="foreign_hours" area={null} />
 
         <section className="space-y-4">
           <h2 className="text-[20px] font-black tracking-tight">

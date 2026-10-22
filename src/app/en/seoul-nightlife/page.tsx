@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 
 export const metadata: Metadata = {
   title: {
@@ -108,6 +109,9 @@ export default function EnSeoulNightlifePage() {
             ))}
           </div>
         </section>
+
+        {/* 숙소 — Costs 위(2026-10-22 운영자 결정: 본문 맨 끝은 아무도 못 본다) */}
+        <AgodaStrip lang="en" placement="foreign_info" />
 
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">What a Seoul Night Out Costs</h2>

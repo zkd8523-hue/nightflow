@@ -139,6 +139,7 @@ export default async function ZhVipTablesPage() {
             <li><Link className="hover:text-foreground" href="/zh/clubs/itaewon">梨泰院国际化夜店 →</Link></li>
           </ul>
         </section>
+
         <section className="text-center pt-4">
           <Link href="/zh/faq" className="text-[12px] text-blue-400 hover:underline">查看 FAQ →</Link>
         </section>

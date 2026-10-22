@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { listEnBlogPosts, type EnBlogPost } from "@/lib/enBlog";
@@ -60,6 +61,8 @@ export default async function EnBlogIndexPage({ searchParams }: { searchParams: 
             ))}
           </nav>
         </header>
+
+        <AgodaStrip lang="en" placement="foreign_blog_index" />
 
         {kinds.map((k) => {
           const list = posts.filter((p) => p.kind === k);

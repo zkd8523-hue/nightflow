@@ -8,14 +8,19 @@ const DOW = ["일", "월", "화", "수", "목", "금", "토"];
  * 라인업 계열 화면만이라도 하나로 모아 표기가 갈라지지 않게 한다 — 다른 계열은
  * 포맷이 미묘하게 달라 건드리면 회귀 위험이 있어 그대로 둔다.
  *
- * KST 고정: 문자열에 +09:00을 붙여 파싱하므로 서버/클라이언트 어디서 호출해도
- * 같은 요일이 나온다(서버가 UTC여도 안전).
+ * 요일은 날짜 문자열 자체의 달력 요일이다 — 시간대와 무관해야 한다.
+ * 예전엔 `T00:00:00+09:00`으로 파싱한 뒤 getDay()를 썼는데, getDay()는 실행 환경의
+ * 로컬 시간대를 따르므로 UTC 서버(Vercel)에선 전날 15:00이 되어 요일이 하루 밀렸다
+ * (2026-10-24 토 → "(금)", 2026-10-22 발견). UTC 정오로 만들고 getUTCDay()로 읽는다.
  */
+function dowOf(dateISO: string): string {
+  return DOW[new Date(`${dateISO}T12:00:00Z`).getUTCDay()];
+}
+
 export function formatLineupDate(dateISO: string): string {
-  const d = new Date(`${dateISO}T00:00:00+09:00`);
   const m = dateISO.slice(5, 7).replace(/^0/, "");
   const day = dateISO.slice(8, 10).replace(/^0/, "");
-  return `${m}월 ${day}일(${DOW[d.getDay()]})`;
+  return `${m}월 ${day}일(${dowOf(dateISO)})`;
 }
 
 /**
@@ -24,10 +29,9 @@ export function formatLineupDate(dateISO: string): string {
  * (formatLineupDate는 "8월 28일(금)"처럼 붙여서 주므로 쪼갤 수 없다).
  */
 export function splitLineupDate(dateISO: string): { label: string; dow: string } {
-  const d = new Date(`${dateISO}T00:00:00+09:00`);
   const m = dateISO.slice(5, 7).replace(/^0/, "");
   const day = dateISO.slice(8, 10).replace(/^0/, "");
-  return { label: `${m}월 ${day}일`, dow: DOW[d.getDay()] };
+  return { label: `${m}월 ${day}일`, dow: dowOf(dateISO) };
 }
 
 /** 그 날짜가 KST 기준 오늘인지. 날짜 헤더의 "오늘" 배지 판정용. */

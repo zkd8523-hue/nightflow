@@ -379,7 +379,7 @@ export default async function JaClubsAreaPage({
       </div>
       {/* 시즌 진입점(할로윈 등) — 노출 창 밖이면 null */}
       <SeasonalBanner lang="ja" areaSlug={area} />
-      <ClubsClient clubs={clubList} lang="ja" areaProfile={<AreaProfile slug={area} lang="ja" />} areaName={config.ja} />
+      <ClubsClient clubs={clubList} lang="ja" areaProfile={<AreaProfile slug={area} lang="ja" />} areaSlug={area} areaName={config.ja} />
 
       {/* 지역 단위 가격 비교 — "itaewon bottle service price"류 클럽명 없는 가격 검색의 랜딩.
           숫자는 클럽 상세·폼과 같은 tablePricing 규칙. */}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
@@ -177,6 +178,8 @@ export default function EnHiphopClubsPage() {
             🍾 Book Korean Clubs
           </Link>
         </section>
+
+        <AgodaStrip lang="en" placement="foreign_hiphop" area="hongdae" />
 
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">Related Guides</h2>

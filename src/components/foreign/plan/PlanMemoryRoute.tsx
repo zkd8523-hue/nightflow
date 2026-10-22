@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { ActivitiesTopBar } from "./SiteTabs";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
@@ -125,6 +126,8 @@ export async function PlanMemoryRoute({ route }: { route: Route }) {
             </Link>
           </>
         )}
+
+        <AgodaStrip lang="en" placement="foreign_activities_sub" area={route.slug === "busan-night" ? "busan" : "hongdae"} />
 
         {clubs.length > 0 && (
           <section id="clubs" className="space-y-2.5 scroll-mt-20">

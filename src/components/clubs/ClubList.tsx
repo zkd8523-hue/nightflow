@@ -20,6 +20,7 @@ import { benefitLabel } from "@/lib/utils/hotdeal";
 import { pinnedRank } from "@/lib/clubs/pinnedClubs";
 import { distanceKm } from "@/lib/chat/areas";
 import { getCurrentCoords } from "@/lib/geo/currentCoords";
+import { CoupangSlot } from "@/components/affiliate/CoupangSlot";
 
 /** 3km 이내면 표시 */
 const NEAR_KM_THRESHOLD = 3;
@@ -360,6 +361,19 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
         {/* 세부 필터(클럽/장르)는 토글로 펼침 */}
         {filtersOpen && <ClubFilterChips value={filters} onChange={setFilters} />}
       </div>
+      )}
+
+      {/* 제휴 광고 — 리스트 보기에서만(지도는 전체화면 UI). 지역이 하나 선택됐을 때만 지역 전달 */}
+      {view === "list" && (
+        <div className="mt-3">
+          <CoupangSlot
+            variant="band"
+            placement="clubs_guide"
+            area={filters.areas.length === 1 ? filters.areas[0] : null}
+            title="너만 빼고 다 챙긴 필수품"
+            subtitle="숙취 · 충전 · 향 · 머리 · 입냄새"
+          />
+        </div>
       )}
 
       {view === "map" ? (

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { CoupangSlot } from "@/components/affiliate/CoupangSlot";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Disc3, ThumbsUp, Heart, Search, X, CalendarDays, ChevronRight, Play } from "lucide-react";
 import { formatBusinessMin } from "@/lib/lineups/time";
@@ -576,6 +577,17 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
         )}
 
         <div id="lineup-list" className="scroll-mt-4" />
+
+        {/* 제휴 광고 — 필터·토글 아래, 첫 날짜 목록 위. 결과가 있을 때만 */}
+        {groupCount > 0 && (
+          <CoupangSlot
+            variant="band"
+            placement="lineups"
+            title="나가기 전 이거 챙겼어?"
+            subtitle="숙취 · 향 · 충전 — 잘놀러들의 핫템 TOP5"
+            refreshKey={tab}
+          />
+        )}
 
         {groupCount === 0 ? (
           <div className="bg-[#1C1C1E] rounded-2xl px-4 py-10 text-center space-y-3">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { type Lang, makeT } from "@/lib/i18n";
 
 // "한국 클럽 나이 제한 / 여권 필요한가 / 외국인 입장되나" 검색 대응.
@@ -196,6 +197,9 @@ export function ClubEntryRulesPage({ lang }: { lang: Lang }) {
             </div>
           ))}
         </section>
+
+        {/* 본문 마지막 섹션 위 — 입장 규칙을 읽은 사람의 다음 고민이 숙소 */}
+        <AgodaStrip lang={lang} placement="foreign_info" area={null} />
 
         <section className="rounded-2xl bg-card border border-border p-5 space-y-2">
           <h2 className="text-[17px] font-black">

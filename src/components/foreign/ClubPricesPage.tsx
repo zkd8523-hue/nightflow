@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { createClient } from "@/lib/supabase/server";
 import { type Lang, makeT } from "@/lib/i18n";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
@@ -278,6 +279,9 @@ export async function ClubPricesPage({ lang }: { lang: Lang }) {
             </div>
           ))}
         </section>
+
+        {/* 본문 마지막 섹션 위 — 가격을 본 뒤 숙소 비교 */}
+        <AgodaStrip lang={lang} placement="foreign_info" area={null} />
 
         <section className="rounded-2xl bg-card border border-border p-5 space-y-3">
           <h2 className="text-[17px] font-black">

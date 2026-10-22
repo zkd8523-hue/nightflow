@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -95,6 +96,8 @@ export default function ZhTwGuestsPage() {
             <li>• 每週更新 — 每週一上新</li>
           </ul>
         </section>
+        <AgodaStrip lang="zh-tw" placement="foreign_guests" area={null} />
+
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">如何使用首爾 Guest List</h2>
           <ol className="space-y-2 text-[13px] text-foreground/80 list-decimal pl-5">

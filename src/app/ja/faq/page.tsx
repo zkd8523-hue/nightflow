@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
@@ -103,6 +104,8 @@ export default function JaFaqPage() {
             </details>
           ))}
         </section>
+        <AgodaStrip lang="ja" placement="foreign_faq" area={null} />
+
         <section className="space-y-3 pt-4 text-center">
           <Link rel="nofollow" data-nf-track="book_cta" href="/flags/new?lang=ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 NightFlowで予約する

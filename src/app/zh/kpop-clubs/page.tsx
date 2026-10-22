@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
@@ -118,6 +119,8 @@ export default function ZhKpopClubsPage() {
             🍾 通过 NightFlow 预订
           </Link>
         </section>
+        <AgodaStrip lang="zh" placement="foreign_kpop" area={null} />
+
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">相关指南</h2>
           <ul className="space-y-1 text-[13px] text-muted-foreground">

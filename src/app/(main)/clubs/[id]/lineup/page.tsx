@@ -12,6 +12,7 @@ import type { Metadata } from "next";
 import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 import { NewsletterSignup } from "@/components/home/NewsletterSignup";
 import { CollapsiblePastLineups } from "@/components/lineups/CollapsiblePastLineups";
+import { AffiliateSlot } from "@/components/affiliate/AffiliateSlot";
 
 // 클럽별 라인업 허브 — 날짜별 라인업(/clubs/[id]/lineup/[date], 148개)의 부모.
 // 부모가 없으면 크롤러가 날짜 페이지에서 한 단계 올라왔을 때 404를 맞는다
@@ -276,6 +277,14 @@ export default async function ClubLineupHubPage({ params }: PageProps) {
               ))}
             </CollapsiblePastLineups>
           )}
+
+          {/* 제휴 광고 — 라인업 목록을 다 훑은 직후 */}
+          <AffiliateSlot
+            placement="club_lineup"
+            area={club.area}
+            coupangVariant="rail"
+            coupangTitle={`${club.name} 가기 전 필수템!`}
+          />
 
           {club.area && (
             <Link

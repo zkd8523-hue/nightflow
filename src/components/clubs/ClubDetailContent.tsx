@@ -35,6 +35,7 @@ import { ClubProfileEditor } from "./ClubProfileEditor";
 import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
 import { WordCloudSection } from "./WordCloudSection";
 import { NewsletterSignup } from "@/components/home/NewsletterSignup";
+import { AffiliateSlot } from "@/components/affiliate/AffiliateSlot";
 import { FlagExplainerSheet } from "./FlagExplainerSheet";
 import { ClubSharePuzzles } from "./ClubSharePuzzles";
 import { trackEvent } from "@/lib/analytics/events";
@@ -823,6 +824,18 @@ export function ClubDetailContent({
           그쪽은 upcomingEvents 가 있는 클럽에만 떠서 앵커로 못 쓴다
           (2026-10-10 실측: 클럽 상세 조회 2,579 중 공연 있는 클럽은 일부).
           워드클라우드는 조건 없이 항상 렌더되므로 그 바로 위에 둔다. */}
+      {/* 제휴 광고 — 정보를 다 읽고 "갈까" 정한 직후 가기 전 필수템. 임베드(iframe)에선 숨김 */}
+      {!isEmbedded && (
+        <div className="px-4 pt-2">
+          <AffiliateSlot
+            placement="club_detail"
+            area={club.area}
+            coupangVariant="rail"
+            coupangTitle={`${(clubAliases.find((a) => /[가-힣]/.test(a)) ?? clubName)} 가기 전 필수템!`}
+          />
+        </div>
+      )}
+
       <div className="px-4 pt-2 pb-1">
         <NewsletterSignup
           source="club_detail"

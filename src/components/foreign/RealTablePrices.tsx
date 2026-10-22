@@ -1,4 +1,6 @@
+import { Fragment } from "react";
 import Link from "next/link";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { createClient } from "@/lib/supabase/server";
 import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 import { fetchTablePricing, tableFrom, bookingFloor, formatWon, representativeItems, type ClubPriceSummary, type MenuSetSummary, clubFloor } from "@/lib/clubs/tablePricing";
@@ -39,6 +41,13 @@ type PriceRow = {
   tableChargeWeekend: number | null;
   rating: number | null;
   reviewCount: number | null;
+};
+
+const STAY_TITLE: Record<SeoLang, (area: string) => string> = {
+  en: (a) => `Stay near ${a}`,
+  ja: (a) => `${a}周辺に泊まる`,
+  zh: (a) => `住在${a}附近`,
+  "zh-tw": (a) => `住在${a}附近`,
 };
 
 const AREA_LABEL: Record<SeoLang, Record<string, string>> = {
@@ -186,7 +195,8 @@ function groupByArea(rows: PriceRow[]) {
   return m;
 }
 
-export async function RealTablePrices({ lang, rows }: { lang: SeoLang; rows: PriceRow[] }) {
+/** midAd=false: 같은 페이지에 이미 날짜 지정 숙소 줄이 있을 때(할로윈·연말) 중복을 피한다 */
+export async function RealTablePrices({ lang, rows, midAd = true }: { lang: SeoLang; rows: PriceRow[]; midAd?: boolean }) {
   const t = T[lang];
   if (rows.length === 0) return null;
   const rates = (await getKrwRates()).rates;
@@ -210,11 +220,12 @@ export async function RealTablePrices({ lang, rows }: { lang: SeoLang; rows: Pri
         ))}
       </nav>
 
-      {[...byArea.entries()].map(([area, list]) => {
+      {[...byArea.entries()].map(([area, list], gi) => {
         const floor = bookingFloor(area);
         const fx = local(floor);
         return (
-          <div key={area} id={`tp-${canonicalAreaSlug(area) ?? area}`} className="space-y-1.5 scroll-mt-20">
+          <Fragment key={area}>
+          <div id={`tp-${canonicalAreaSlug(area) ?? area}`} className="space-y-1.5 scroll-mt-20">
             <h3 className="text-[14px] font-black text-foreground pt-2">
               {AREA_LABEL[lang][area] ?? area}
               <span className="ml-2 text-[11px] font-medium text-muted-foreground">
@@ -287,6 +298,16 @@ export async function RealTablePrices({ lang, rows }: { lang: SeoLang; rows: Pri
               })}
             </ul>
           </div>
+          {/* 중간 광고 — 첫 지역(강남)과 둘째 지역(홍대) 사이. 페이지 맨 아래에 두면 스크롤 끝이라 아무도
+              못 봤다(2026-10-22 운영자 결정). 방금 본 지역 근처 숙소를 보여준다. */}
+          {midAd && gi === 0 && byArea.size > 1 && (
+            <AgodaStrip angle="value"
+              lang={lang}
+              placement="foreign_price_mid"
+              area={area}
+            />
+          )}
+          </Fragment>
         );
       })}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { eventSlug } from "@/lib/events/slug";
 import Image from "next/image";
@@ -18,6 +18,7 @@ import { useSearchMissLogger } from "@/lib/search/logMiss";
 import { performerMatchesQuery } from "@/lib/search/performerMatch";
 import { EventMonthCalendar } from "@/components/events/EventMonthCalendar";
 import { useArtistFavoritesContext } from "@/components/providers";
+import { CoupangSlot } from "@/components/affiliate/CoupangSlot";
 
 export interface EventPerformer {
   id: string;
@@ -384,15 +385,28 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
               </section>
             )}
 
+            {/* 제휴 광고 — 목록 맨 위, 첫 날짜("오늘") 제목 바로 위. 중간에 끼우면
+                오늘 공연 수에 따라 위치가 들쭉날쭉해 애매했다(2026-10-22 운영자 결정). */}
+            {groups.length > 0 && (
+              <CoupangSlot
+                variant="band"
+                placement="events"
+                title="공연 날 이거 챙겼어?"
+                subtitle="폰 배터리 · 향 · 입냄새 — 너만 빼고 다 챙김"
+              />
+            )}
+
             {groups.map(([date, list]) => (
-              <section key={date} className="space-y-2">
-                <DateHeader date={date} />
-                <div className="space-y-2">
-                  {list.map((r) => (
-                    <EventCard key={r.id} row={r} like={getLike(r.id)} />
-                  ))}
-                </div>
-              </section>
+              <Fragment key={date}>
+                <section className="space-y-2">
+                  <DateHeader date={date} />
+                  <div className="space-y-2">
+                    {list.map((r) => (
+                      <EventCard key={r.id} row={r} like={getLike(r.id)} />
+                    ))}
+                  </div>
+                </section>
+              </Fragment>
             ))}
           </div>
         )}

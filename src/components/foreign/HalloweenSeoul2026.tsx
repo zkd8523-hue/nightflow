@@ -10,6 +10,7 @@
 // 가격표는 vip-tables의 RealTablePrices를 그대로 쓰되 이태원→홍대→강남 순(할로윈 수요 순).
 
 import Link from "next/link";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import type { Metadata } from "next";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { RealTablePrices, fetchRealTablePrices, realTablePricesJsonLd } from "@/components/foreign/RealTablePrices";
@@ -397,11 +398,14 @@ export async function HalloweenSeoul2026({ lang }: { lang: SeoLang }) {
           </ol>
         </section>
 
+        {/* 지역 소개 아래, 가격표 위 */}
+        <AgodaStrip angle="early" lang={lang} placement="foreign_info" area={null} stay={{ checkIn: "2026-10-31", nights: 1, adults: 2 }} />
+
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">{c.pricesH2}</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">{c.pricesNote}</p>
           {/* 이 안에 자체 h2("What a table actually costs")가 하나 더 있다 — 가격표 섹션의 제목이라 그대로 둔다 */}
-          <RealTablePrices lang={lang} rows={rows} />
+          <RealTablePrices lang={lang} rows={rows} midAd={false} />
         </section>
 
         <section className="space-y-3">

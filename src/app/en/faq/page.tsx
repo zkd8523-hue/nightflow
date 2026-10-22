@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
@@ -167,6 +168,8 @@ export default function EnFaqPage() {
         </section>
 
         {/* CTA */}
+        <AgodaStrip lang="en" placement="foreign_faq" area={null} />
+
         <section className="space-y-3 pt-4 text-center">
           <Link rel="nofollow"
             data-nf-track="book_cta" href="/flags/new?lang=en"

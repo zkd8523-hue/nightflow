@@ -20,6 +20,7 @@ import { BookingComingSoon } from "@/components/foreign/BookingComingSoon";
 import { fetchTablePricing, tableFrom, trimAtSentence } from "@/lib/clubs/tablePricing";
 import { bookingSeoBits, bookingFaqs, bookingJsonLdFragment } from "@/lib/seo/clubBookingSeo";
 import { ClubBookingSection } from "@/components/foreign/ClubBookingSection";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { getKrwRates } from "@/lib/utils/currency";
 
 // 일본어판 클럽 개별 페이지 — /en/clubs/[area]/[club] 과 완전히 동일한 구조를 복제.
@@ -461,6 +462,9 @@ export default async function JaClubDetailPage({
           </section>
         )}
 
+        {/* 숙소 — 리뷰 위. 예약 블록 아래(스크롤 74%)에선 아무도 못 봤다(2026-10-22 운영자 결정). 예약은 하단 고정 바가 계속 맡는다. */}
+        <AgodaStrip lang="ja" placement="foreign_club" area={club.area} />
+
         {reviews.length > 0 && (
           <section>
             <h2 className="text-[18px] font-black mb-2">{name}の口コミ</h2>
@@ -500,6 +504,7 @@ export default async function JaClubDetailPage({
           alternatives={altClubs}
           rates={fxRates}
         />
+
 
         {faqs.length > 0 && (
           <section>

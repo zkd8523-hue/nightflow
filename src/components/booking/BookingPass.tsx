@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { MapPin, Check, Star, Instagram, MessageCircle, ChevronLeft } from "lucide-react";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { GUEST_CANCEL_REASONS, type GuestCancelReason } from "@/lib/booking/cancelReasons";
 
 type Props = {
@@ -18,6 +19,8 @@ type Props = {
   groupSize: number | string;
   cancelled: boolean;
   clubName: string | null;
+  /** 클럽 지역(한글) — 아고다 숙소 스트립용. */
+  area?: string | null;
   address: string | null;
   lat: number | null;
   lng: number | null;
@@ -453,6 +456,16 @@ export function BookingPass(p: Props) {
                 )}
               </div>
             )}
+
+            {/* 확정 정보 바로 아래, 도착 안내 위 — 날짜가 확정된 지금이 숙소를 정하는 순간 */}
+            <AgodaStrip
+              lang={ko ? "ko" : "en"}
+              placement="booking_pass"
+              area={p.area ?? null}
+              title={ko ? `${fmtDate(p.eventDate, true)} 묵을 곳 정했어?` : `Need a place to stay on ${fmtDate(p.eventDate, false)}?`}
+              stay={{ checkIn: p.eventDate, nights: 1, adults: Number(p.groupSize) || 2 }}
+              className="mt-4 pt-3 border-t border-border"
+            />
 
             {p.address && (
               <div className="mt-4 pt-3 border-t border-border">

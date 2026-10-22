@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import type { Metadata } from "next";
 import { krwToAll, getKrwRates } from "@/lib/utils/currency";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
@@ -399,6 +400,8 @@ export default async function EnglishLanding() {
             ))}
           </div>
         </section>
+
+        <AgodaStrip lang="en" placement="foreign_guide" area={null} />
 
         {/* Trust — VIP, fair prices */}
         <section className="space-y-4 text-center">

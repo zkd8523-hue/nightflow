@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
@@ -73,6 +74,8 @@ export default function ZhTwSeoulNightlifePage() {
           <p className="text-[13px] text-muted-foreground leading-relaxed">選好想去的夜店(或者只告訴我們喜好),填寫日期、人數和預算。NightFlow 直接聯絡夜店,用中文為您鎖定桌位。到場後直接入場。</p>
           <Link rel="nofollow" data-nf-track="book_cta" href="/flags/new?lang=zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">🍾 透過 NightFlow 預訂</Link>
         </section>
+        <AgodaStrip lang="zh-tw" placement="foreign_nightlife" area={null} />
+
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">更多指南</h2>
           <ul className="space-y-1 text-[13px] text-muted-foreground">

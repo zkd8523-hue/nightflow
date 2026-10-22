@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { createClient } from "@/lib/supabase/server";
 import { type Lang, makeT } from "@/lib/i18n";
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
@@ -241,6 +242,9 @@ export async function DressCodePage({ lang }: { lang: Lang }) {
             </p>
           </section>
         )}
+
+        {/* 본문 마지막(FAQ) 섹션 위 */}
+        <AgodaStrip lang={lang} placement="foreign_info" area={null} />
 
         <section className="space-y-4">
           <h2 className="text-[20px] font-black tracking-tight">

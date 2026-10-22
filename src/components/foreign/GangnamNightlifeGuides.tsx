@@ -15,6 +15,7 @@
 
 import Link from "next/link";
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 import { bookingFloor, formatWon, wonCompact } from "@/lib/clubs/tablePricing";
@@ -635,6 +636,12 @@ export function GangnamGuide({ guide, lang }: { guide: GuideKey; lang: SeoLang }
             </div>
           </section>
         )}
+
+        <AgodaStrip
+          lang={lang}
+          placement={guide === "booking" ? "foreign_gangnam" : "foreign_roomsalon"}
+          area="gangnam"
+        />
 
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">{c.priceH2}</h2>

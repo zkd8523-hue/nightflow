@@ -5,6 +5,8 @@ import { ROUTES, TOURS, PLAN_BASE, img, tourHref } from "@/lib/planMemory/conten
 import { PlanJsonLd } from "./PlanJsonLd";
 import { TourRegionFilter } from "./TourRegionFilter";
 import { ActivitiesTopBar } from "./SiteTabs";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
+import { ActivitiesStay } from "./ActivitiesStay";
 import { TourCards, ViatorNote, Tabs, Crumb } from "./PlanMemoryParts";
 
 // 허브 = 투어가 기본(2026-10-01 사용자 결정: 밤 코스는 결국 클럽 예약 — 이 섹션의 주인공은 투어).
@@ -17,9 +19,13 @@ export function PlanMemoryHub() {
       <PlanJsonLd path={PLAN_BASE} headline="Korea Night Tours 2026 — Seoul, Busan & More Things to Do" description="22 evening tours in Korea — Han River night cruises, Seoul and Busan night views, Suwon Hwaseong and Gyeongju after dark. Prices shown before you book." image={img(TOURS.hanCruise.image, 1200)} crumbs={[{ name: "NightFlow", path: "/en" }, { name: "Night Activities", path: PLAN_BASE }]} />
       <div className="max-w-lg lg:max-w-[1100px] mx-auto px-5 lg:px-8 pt-4 lg:pt-6 pb-24 space-y-3">
         <h1 className="text-[26px] lg:text-[30px] font-black leading-[1.1] tracking-tight">Night Activities in Korea</h1>
+        {/* 숙소 — 제목 바로 아래(2026-10-22 운영자 결정). 투어 보러 온 여행자 = 숙소 수요. 홍대를 밤 거점으로 */}
+        <ActivitiesStay />
         <Tabs active="tours" />
         <TourRegionFilter tours={tours} />
         <ViatorNote />
+        {/* 숙소 — 맨 아래(2026-10-22 운영자 결정, Night routes) */}
+        <AgodaStrip lang="en" placement="foreign_activities_routes" showFilters={false} />
       </div>
     </ForeignShell>
   );
@@ -129,6 +135,8 @@ export function PlanMemoryGettingAround() {
             </Link>
           ))}
         </div>
+        {/* 숙소 — 맨 아래(2026-10-22 운영자 결정, Getting around) */}
+        <AgodaStrip lang="en" placement="foreign_activities_getting" showFilters={false} />
       </div>
     </ForeignShell>
   );

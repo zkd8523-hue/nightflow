@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 
 export const metadata: Metadata = {
   title: {
@@ -168,6 +169,9 @@ export default function EnKpopClubsPage() {
             🍾 Book Korean Clubs
           </Link>
         </section>
+
+        {/* 본문 마지막 섹션 위 */}
+        <AgodaStrip lang="en" placement="foreign_info" area={null} />
 
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">Related Guides</h2>

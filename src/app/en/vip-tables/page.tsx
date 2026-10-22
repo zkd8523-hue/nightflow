@@ -173,6 +173,7 @@ export default async function EnVipTablesPage() {
           </ul>
         </section>
 
+
         <section className="text-center pt-4">
           <Link href="/en/faq" className="text-[12px] text-blue-400 hover:underline">
             See FAQ for prices, dress codes, broker problems →

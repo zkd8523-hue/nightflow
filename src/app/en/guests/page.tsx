@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -125,6 +126,8 @@ export default function EnGuestsPage() {
             <li>• Weekly updates — fresh deals every Monday</li>
           </ul>
         </section>
+
+        <AgodaStrip lang="en" placement="foreign_guests" area={null} />
 
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">How to Use Seoul Guest List</h2>

@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { trackForeignEvent } from "@/lib/analytics/events";
 import { ForeignSidebar, type ForeignNavKey } from "@/components/foreign/ForeignShell";
 import { HALLOWEEN_2026, CHRISTMAS_2026, NYE_2026, isHalloweenWindow, isChristmasWindow, isNyeWindow } from "@/lib/foreign/seasonal";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { UrgencyLine } from "@/components/foreign/UrgencyLine";
 import { PlanMemoryHomeSection } from "@/components/foreign/plan/PlanMemoryHomeSection";
 import { SiteTabs, SiteTabsInline } from "@/components/foreign/plan/SiteTabs";
@@ -1527,6 +1528,7 @@ function FlagsTab({
           안 누르고 나갔고, 첫 CTA는 클럽 브라우저를 다 지나야 나왔다. */}
       <HeroSection clubCount={clubs.length} openRequestCount={openRequestCount} recentBookings={recentBookings} bookCtaRef={bookCtaRef} />
 
+
       {/* 지역 섹션 (강남/홍대 소개 + 클럽 리스트 + 지역 버튼 + 한국인 소셜프루프 캐러셀) */}
       {clubs.length > 0 && <RegionSection clubs={clubs} flags={flags} />}
 
@@ -1566,6 +1568,17 @@ function FlagsTab({
           </details>
         ))}
         </div>
+      </div>
+
+      {/* 숙소 — "Know before you go"(How to protect yourself) 바로 아래(2026-10-22 운영자 결정).
+          지역 미지정이면 검색 카드 한 장뿐이라, 밤 거점인 홍대 큐레이션 숙소를 보여준다. */}
+      <div className="px-4 pb-5">
+        <AgodaStrip
+          lang={lang}
+          placement="foreign_home"
+          
+          showFilters={false}
+        />
       </div>
 
       {/* 가이드 인덱스 — 외국인이 실제로 불안해하는 것들(비용·복장·입장거부·혼자오기)에

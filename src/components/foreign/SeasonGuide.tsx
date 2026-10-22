@@ -8,6 +8,7 @@
 //   - Event 구조화 데이터 없음(우리가 주최자가 아니다). WebPage + FAQ + 가격 ItemList만.
 
 import Link from "next/link";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import type { Metadata } from "next";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { RealTablePrices, fetchRealTablePrices, realTablePricesJsonLd } from "@/components/foreign/RealTablePrices";
@@ -170,10 +171,13 @@ export async function SeasonGuide({ cfg, lang }: { cfg: SeasonGuideConfig; lang:
           </ol>
         </section>
 
+        {/* 일정 아래, 가격표 위. 체크인은 시즌 시작일 */}
+        <AgodaStrip angle="early" lang={lang} placement="foreign_info" area={null} stay={cfg.temporalCoverage ? { checkIn: cfg.temporalCoverage.split("/")[0], nights: 1, adults: 2 } : undefined} />
+
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">{c.pricesH2}</h2>
           <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">{c.pricesNote}</p>
-          <RealTablePrices lang={lang} rows={rows} />
+          <RealTablePrices lang={lang} rows={rows} midAd={false} />
         </section>
 
         <section className="space-y-3">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -51,6 +52,8 @@ export default function JaGuestsPage() {
             <li>• 週次更新 — 毎週月曜新着</li>
           </ul>
         </section>
+        <AgodaStrip lang="ja" placement="foreign_guests" area={null} />
+
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">ソウル ゲストリストの使い方</h2>
           <ol className="space-y-2 text-[13px] text-foreground/80 list-decimal pl-5">

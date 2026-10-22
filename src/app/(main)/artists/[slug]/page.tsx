@@ -11,6 +11,8 @@ import { SHOW_TEST_DATA } from "@/lib/utils/testData";
 import type { Metadata } from "next";
 import { LineupPageTracker } from "@/components/analytics/LineupPageTracker";
 import { NewsletterSignup } from "@/components/home/NewsletterSignup";
+import { AffiliateSlot } from "@/components/affiliate/AffiliateSlot";
+import { CoupangSlot } from "@/components/affiliate/CoupangSlot";
 
 // 없는 slug는 notFound() — force-dynamic 필수. 없으면 Soft 404가 되어 색인이
 // 오염된다(/dj/[slug]·/venues/[slug]와 동일 이유).
@@ -64,6 +66,7 @@ interface EventRow {
   ticket_url: string | null;
   locationLabel: string;
   locationHref: string | null;
+  area: string | null;
   withNames: { id: string | null; name: string; slug: string | null }[];
 }
 
@@ -197,6 +200,7 @@ async function fetchArtist(slug: string) {
       ticket_url: row.ticket_url,
       locationLabel,
       locationHref,
+      area: club?.area ?? venue?.area ?? row.venue_area ?? null,
       withNames,
     };
   });
@@ -340,6 +344,20 @@ export default async function ArtistPage({ params }: PageProps) {
           )}
 
           {upcoming.length > 0 && <EventSection title="예정 공연" events={upcoming} />}
+
+          {/* 제휴 광고 — 예정 공연 직후(가기로 마음먹은 자리). 다음 공연이 있으면 지역·날짜 문맥으로 쿠팡/아고다 선택 */}
+          {next ? (
+            <AffiliateSlot
+              placement="artist"
+              area={next.area}
+              event={{ date: next.event_date, title: next.title }}
+              coupangVariant="rail"
+              coupangTitle={`${artist.display_name} 공연 가기 전 필수템!`}
+              agodaTitle={`${artist.display_name} 보러 ${next.area ?? "공연장"} 가? 숙소는?`}
+            />
+          ) : (
+            <CoupangSlot variant="rail" placement="artist" area={null} title={`${artist.display_name} 공연 가기 전 필수템!`} />
+          )}
 
           {past.length > 0 && <EventSection title="지난 공연" events={past} />}
 

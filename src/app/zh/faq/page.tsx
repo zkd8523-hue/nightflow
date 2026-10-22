@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 
@@ -158,6 +159,8 @@ export default function ZhFaqPage() {
             </details>
           ))}
         </section>
+
+        <AgodaStrip lang="zh" placement="foreign_faq" area={null} />
 
         <section className="space-y-3 pt-4 text-center">
           <Link rel="nofollow"

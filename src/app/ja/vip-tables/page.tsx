@@ -92,6 +92,7 @@ export default async function JaVipTablesPage() {
             <li><Link className="hover:text-foreground" href="/ja/clubs/itaewon">梨泰院国際クラブ →</Link></li>
           </ul>
         </section>
+
         <section className="text-center pt-4"><Link href="/ja/faq" className="text-[12px] text-blue-400 hover:underline">FAQを見る →</Link></section>
       </div>
     </div>

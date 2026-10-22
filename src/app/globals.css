@@ -678,3 +678,9 @@ video::-webkit-media-controls-play-button {
 @media (prefers-reduced-motion: reduce) {
   [style*="nf-rib-sweep"] { animation: none !important; }
 }
+
+/* 제휴 상품 가로 줄 — 넘길 수 있다는 신호로 한 칸 살짝 밀었다 돌아온다(자동 슬라이드 아님). */
+@keyframes aff-nudge {
+  0%, 62%, 100% { transform: translateX(0); }
+  74%, 86% { transform: translateX(-56px); }
+}

@@ -17,6 +17,7 @@ import { trackForeignEvent } from "@/lib/analytics/events";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { SeeBookableSheetButton, bookableListHref } from "@/components/foreign/SeeBookableCta";
 import { canonicalAreaSlug } from "@/lib/clubs/slug";
+import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 
 type Club = {
   id: string;
@@ -85,11 +86,14 @@ export function ClubsClient({
   /** 지역 페이지(/clubs/[area])에서만 넘어오는 지역 표시명(예: "Itaewon"). 있으면 제목을
       "Find your club" 대신 지역명으로 — 이미 그 지역에 들어왔는데 "찾아보라"는 문구가 어색했다. */
   areaName,
+  /** 숙소 스트립용 지역 슬러그(URL 파라미터). 지역 페이지에서만 넘어온다 */
+  areaSlug,
 }: {
   clubs: Club[];
   lang?: Lang;
   areaProfile?: React.ReactNode;
   areaName?: string;
+  areaSlug?: string;
 }) {
   // 클럽 상세 시트 — 어느 지역 캐러셀에서 열었는지(detailList)를 같이 기억해서
   // 상세 안에서 ←/→ 로 같은 캐러셀의 옆 클럽으로 바로 넘어갈 수 있게 함.
@@ -325,6 +329,15 @@ export function ClubsClient({
           </div>
 
           {areaProfile}
+
+          {/* 숙소 — 지역 소개 아래, 클럽 카드 위(첫 화면 안) */}
+          {lang !== "ko" && (
+            <AgodaStrip
+              lang={lang}
+              placement={areaSlug ? "foreign_area_list" : "foreign_club_list"}
+              area={areaSlug ?? "hongdae"}
+            />
+          )}
 
           {/* How it works — /en 홈과 동일한 3단계 안내. 검색으로 처음 들어온 사람이
               목록만 보고 이탈하지 않도록, 접힌 상태로 두되 원하면 펼쳐볼 수 있게. */}

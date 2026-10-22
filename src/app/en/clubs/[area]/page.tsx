@@ -447,7 +447,7 @@ export default async function EnClubsAreaPage({
       </div>
       {/* 시즌 진입점(할로윈 등) — 노출 창 밖이면 null */}
       <SeasonalBanner lang="en" areaSlug={area} />
-      <ClubsClient clubs={clubList} lang="en" areaProfile={<AreaProfile slug={area} lang="en" />} areaName={config.en} />
+      <ClubsClient clubs={clubList} lang="en" areaProfile={<AreaProfile slug={area} lang="en" />} areaSlug={area} areaName={config.en} />
 
       {/* 지역 단위 가격 비교 — "itaewon bottle service price"류 클럽명 없는 가격 검색의 랜딩.
           숫자는 클럽 상세·폼과 같은 tablePricing 규칙. */}
