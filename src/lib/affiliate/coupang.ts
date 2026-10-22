@@ -48,20 +48,25 @@ export const COUPANG_PRODUCTS: CoupangProduct[] = [
   { id: "coolwater", name: "쿨워터 맨 EDT 125ml, 1개", shortName: "쿨워터 맨 125ml", category: "perfume", price: 31260, rocket: false, gender: "m", link: "https://link.coupang.com/a/h3x8UL9gGb", image: "https://t5c.coupangcdn.com/thumbnails/remote/492x492ex/image/vendor_inventory/beb0/239af00311034f79a905a7395c0ac942ac6d0b54f11a0aa632185f5d6c2a.jpg" },
   { id: "gypsy_hand", name: "(백화점정품)바이레도베티버 핸드크림, 1개, 50ml", shortName: "바이레도 핸드크림", category: "perfume", price: 65900, rocket: false, gender: "u", link: "https://link.coupang.com/a/h3ygrUdogS", image: "https://t1c.coupangcdn.com/thumbnails/remote/492x492ex/image/vendor_inventory/7d96/9d01e635b4f48ed8d6defd81549a73a086bad5d09cd27181d3908faa9b57.png" },
   { id: "arcteryx", name: "아크테릭스 맨티스 2 웨이스트백", shortName: "아크테릭스 웨이스트백", category: "bag", price: 109000, priceFrom: true, rocket: false, gender: "u", link: "", image: "" },
+  // 만 원 미만 미끼 — 클릭률용(2026-10-22 운영자: 줄마다 1개 이상, 맨 앞)
+  { id: "gagarin", name: "가그린 후레쉬 브레스 구강스프레이, 15ml, 1개", shortName: "가그린 구강스프레이", category: "oral", price: 6350, rocket: true, gender: "u", link: "https://link.coupang.com/a/h3BF2SEJi0", image: "https://thumbnail3.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/2023/05/31/14/5/7581202d-c4ab-4d79-9702-fe20fe46aa58.jpg" },
+  { id: "artepolis_one", name: "아르테폴리스 구강항균 그린프로폴리스 스프레이, 1개, 30ml", shortName: "프로폴리스 스프레이", category: "oral", price: 6900, rocket: false, gender: "u", link: "https://link.coupang.com/a/h3BGKCpiRU", image: "https://thumbnail4.coupangcdn.com/thumbnails/remote/492x492ex/image/vendor_inventory/image_audit/prod/8c0edcf4-6895-4bce-a6c4-4dbb44f8884e_fixing_v2.png" },
+  { id: "camille", name: "카밀 핸드크림 클래식 미니, 2개, 30ml", shortName: "카밀 미니 핸드크림", category: "perfume", price: 5200, rocket: true, gender: "u", link: "https://link.coupang.com/a/h3BHr32mRg", image: "https://thumbnail12.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/14712791476911-32b37d32-7f0a-4f91-8f37-0c0ef96f861d.jpg" },
+  { id: "niveaRoll", name: "니베아 맨 데오드란트 롤온 쿨킥 50ML & 온더바디 생크림 폼 3ML, 1개", shortName: "니베아맨 롤온", category: "deo", price: 9990, rocket: false, gender: "m", link: "https://link.coupang.com/a/h3BH9IBiwK", image: "https://thumbnail5.coupangcdn.com/thumbnails/remote/492x492ex/image/vendor_inventory/4197/aae631a80c4ea9334fbcc12a34fc47e03667ff0285002fc6f69b2d188038.jpg" },
 ];
 
 /** 생활용품 묶음(1~2칸) / 향수 묶음(가운데) / 기타 묶음 — 지역별 후보. */
 interface AreaPools { daily: string[]; perfume: string[]; extra: string[] }
 
 const POOLS: Record<Exclude<AffArea, "other" | "seoul">, AreaPools> = {
-  hongdae: { daily: ["sangkwae", "pocketmaster", "listerine", "artepolis"], perfume: ["coolwater", "cleancotton"], extra: ["dashu", "romand"] },
-  itaewon: { daily: ["sangkwae", "pocketmaster", "listerine", "soonpi"], perfume: ["gypsy_hand"], extra: ["dashu", "3ce", "allnighter"] },
+  hongdae: { daily: ["sangkwae", "pocketmaster", "listerine", "artepolis", "gagarin", "camille"], perfume: ["coolwater", "cleancotton"], extra: ["dashu", "romand"] },
+  itaewon: { daily: ["sangkwae", "pocketmaster", "listerine", "soonpi", "gagarin", "niveaRoll"], perfume: ["gypsy_hand"], extra: ["dashu", "3ce", "allnighter"] },
   // 강남·부산은 한국어도 기본이 아고다지만, 쿠팡이 필요한 자리(목록 띠 등)를 위해 둔다.
-  gangnam: { daily: ["readyq", "condition", "anker", "listerine"], perfume: ["eros"], extra: ["grafen", "allnighter"] },
-  busan: { daily: ["sangkwae", "pocketmaster", "listerine", "artepolis"], perfume: ["coolwater"], extra: ["gatsby", "romand"] },
+  gangnam: { daily: ["readyq", "condition", "anker", "listerine", "gagarin", "camille"], perfume: ["eros"], extra: ["grafen", "allnighter"] },
+  busan: { daily: ["sangkwae", "pocketmaster", "listerine", "artepolis", "gagarin", "camille"], perfume: ["coolwater"], extra: ["gatsby", "romand"] },
 };
 const DEFAULT_POOL: AreaPools = {
-  daily: ["sangkwae", "pocketmaster", "listerine", "artepolis", "soonpi"],
+  daily: ["sangkwae", "pocketmaster", "listerine", "artepolis", "soonpi", "gagarin", "camille"],
   perfume: ["coolwater", "cleancotton"],
   extra: ["dashu", "romand"],
 };
@@ -109,12 +114,17 @@ export function pickCoupangSet(opts: {
   if (count >= 2) take(daily);
   if (count >= 3 && perfume.length) take(perfume);
   while (out.length < count && (extra.length || daily.length)) take(extra.length ? extra : daily);
-  // 칸이 3개 이상이면 향수를 가운데로
-  const pIdx = out.findIndex((p) => p.category === "perfume");
-  if (pIdx >= 0 && count >= 3) {
-    const [p] = out.splice(pIdx, 1);
-    out.splice(Math.floor(out.length / 2), 0, p);
+  // 만 원 미만 상품을 줄마다 최소 1개 — 부담 없는 가격이 클릭률을 올린다(2026-10-22 운영자)
+  const CHEAP = 10000;
+  if (!out.some((p) => (p.price ?? Infinity) < CHEAP)) {
+    const cheap = shuffle(
+      COUPANG_PRODUCTS.filter((p) => (p.price ?? Infinity) < CHEAP && fits(p) && !out.some((o) => o.id === p.id)),
+      rand,
+    )[0];
+    if (cheap) { if (out.length >= count) out.pop(); out.push(cheap); }
   }
+  // 맨 앞에 제일 싼 것부터(가격 없는 상품은 뒤로) — 이게 향수를 가운데 두던 규칙보다 우선한다
+  out.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
   return out.slice(0, count);
 }
 

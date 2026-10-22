@@ -391,8 +391,8 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
               <CoupangSlot
                 variant="band"
                 placement="events"
-                title="공연 날 이거 챙겼어?"
-                subtitle="폰 배터리 · 향 · 입냄새 — 너만 빼고 다 챙김"
+                title="너 빼고 다 챙긴 필수템"
+                subtitle="폰 배터리 · 향 · 입냄새 · 숙취"
               />
             )}
 
