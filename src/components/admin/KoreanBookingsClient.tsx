@@ -20,6 +20,10 @@ export type KoreanBookingReq = {
   guest_name: string;
   contact_type: KoreanBookingContactType;
   contact_value: string;
+  /** 비회원 + 인스타·오픈채팅 신청 시 확정 문자용 번호(Migration 697) */
+  backup_phone?: string | null;
+  /** NULL이면 로그인 없이 신청한 비회원(Migration 696) */
+  user_id?: string | null;
   notes: string | null;
   status: KoreanBookingStatus;
   created_at: string;
@@ -339,6 +343,12 @@ export function KoreanBookingsClient({
               )}
               <button onClick={() => copyContact(r)} className="shrink-0 text-muted-foreground hover:text-foreground p-2 -m-1"><Copy className="w-4 h-4" /></button>
             </div>
+            {/* 비회원 요청(2026-10-22) — 앱 푸시·내 예약이 없어 확정서는 문자로만 간다. */}
+            {!r.user_id && (
+              <p className="text-[12px] text-muted-foreground px-1">
+                비회원 신청 · 확정 문자 → {r.contact_type === "phone" ? r.contact_value : r.backup_phone ?? "번호 없음(직접 연락)"}
+              </p>
+            )}
 
             {/* 제안서·MD응답·확정서 — 외국인 요청과 공용(ProposalSection.tsx, 2026-09-06). */}
             <ProposalCard req={toProposalReq(r)} allMds={allMds} onAssignMd={(mdId) => assignMd(r.id, mdId)} />

@@ -236,6 +236,12 @@ export const trackForeignEvent = (
     | 'booking_request_submitted'
     // 한국인 폼에서 술 담기 대신 '클럽 추천 세트'(예산만)를 고름(2026-09-26). params: club_id, budget
     | 'booking_md_recommend'
+    // 한국인 예약 폼 단계 계측(2026-10-22). params: club_id, logged_in (+ date / reason / md_recommend)
+    | 'booking_form_open'
+    | 'booking_date_selected'
+    | 'booking_menu_open'
+    | 'booking_step2_view'
+    | 'booking_submit_blocked'
     // 한국 클럽 상세 예약 불가 → "예약 가능한 클럽 보기" 클릭(2026-09-26). params: club_id, club_name, area
     | 'club_detail_see_bookable_click'
     // 라인업·공연 계측(2026-09-27) — 인스타 라인업 자동 수집(Apify)을 계속 돌릴지 판단 근거.

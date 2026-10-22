@@ -956,11 +956,9 @@ export function ClubDetailContent({
               disabled={!bookable}
               onClick={() => {
                 if (!bookable) return;
-                if (!user) {
-                  router.push(`/login?redirect=${encodeURIComponent(`/clubs/${club.id}`)}`);
-                  return;
-                }
-                trackEvent("club_detail_book_click", { club_id: club.id, club_name: club.name, area: club.area });
+                // 로그인 없이 바로 폼을 연다(2026-10-22, Migration 696) — 로그인 화면에서 몇 명이
+                // 빠지는지 기록조차 없었고, 외국인 폼은 처음부터 연락처만 받았다.
+                trackEvent("club_detail_book_click", { club_id: club.id, club_name: club.name, area: club.area, logged_in: !!user });
                 setIsBookingOpen(true);
               }}
               className={`w-full h-12 rounded-full font-black text-[15px] shadow-lg shadow-black/40 transition-colors active:scale-[0.98] ${
@@ -976,14 +974,14 @@ export function ClubDetailContent({
         </div>
       )}
 
-      {bookable && user && (
+      {bookable && (
         <KoreanBookingForm
           open={isBookingOpen}
           onOpenChange={setIsBookingOpen}
           clubId={club.id}
           clubName={clubName}
           clubThumbnailUrl={thumbnailUrl}
-          userId={user.id}
+          userId={user?.id ?? null}
         />
       )}
     </div>

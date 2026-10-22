@@ -54,13 +54,23 @@ export function KoreanBookingForm({
   clubId: string;
   clubName: string;
   clubThumbnailUrl: string | null;
-  userId: string;
+  /** 로그인 안 한 손님은 null — 연락처만으로 요청을 받는다(Migration 696, 2026-10-22) */
+  userId: string | null;
 }) {
   const router = useRouter();
   // 예약 완료 화면 앱 설치 유도 — 확정서 알림은 앱 푸시로 가는데, 앱이 없는 손님은
   // 확정서를 못 받고 놓쳤다(2026-10-01). 모바일 웹은 스토어 버튼, PC는 QR(nightflow.kr/app).
   // 앱 안에서는 둘 다 false라 안 보인다.
   const { eligible: appCtaEligible, isDesktop, storeUrl } = useAppDownloadCta();
+
+  // 단계별 계측(2026-10-22). 그동안 폼 안에서 남는 건 "예산 고름"·"제출" 둘뿐이라, 폼을 연 76명 중
+  // 59명이 1단계에서 나간 걸 알면서도 어디서 막혔는지 볼 수 없었다. 외국인 폼과 같은 결로 단계마다 남긴다.
+  const trackStep = (name: string, props: Record<string, unknown> = {}) =>
+    trackEvent(name as Parameters<typeof trackEvent>[0], { club_id: clubId, logged_in: !!userId, ...props });
+  useEffect(() => {
+    if (open) trackStep("booking_form_open");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const [eventDate, setEventDate] = useState("");
   // 네이티브 <input type="date">로는 휴무 요일을 회색 처리할 방법이 없다 —
@@ -138,6 +148,9 @@ export function KoreanBookingForm({
   const [guestName, setGuestName] = useState("");
   const [contactType, setContactType] = useState<KoreanBookingContactType>("phone");
   const [contactValue, setContactValue] = useState("");
+  // 비회원 + 인스타·오픈채팅이면 확정 문자 받을 번호를 하나 더 받는다(Migration 697).
+  const [backupPhone, setBackupPhone] = useState("");
+  const needsBackupPhone = !userId && contactType !== "phone";
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -205,6 +218,7 @@ export function KoreanBookingForm({
     setGuestName("");
     setContactType("phone");
     setContactValue("");
+    setBackupPhone("");
     setNotes("");
     setShowConfirm(false);
     setResumePrompt(null);
@@ -225,6 +239,7 @@ export function KoreanBookingForm({
 
   const handleSubmit = () => {
     if (!eventDate) {
+      trackStep("booking_submit_blocked", { reason: "no_date" });
       toast.error("날짜를 골라주세요");
       openDatePicker();
       return;
@@ -237,12 +252,17 @@ export function KoreanBookingForm({
       return;
     }
     if (menuLoading) return toast.error("메뉴를 불러오는 중이에요");
-    if (!picked) return toast.error("술을 고르거나 추천 예산을 골라주세요");
-    if (!guestName.trim()) return toast.error("예약자 이름을 입력해주세요");
-    if (!contactValue.trim()) return toast.error("연락처를 입력해주세요");
+    if (!picked) { trackStep("booking_submit_blocked", { reason: "no_menu" }); return toast.error("술을 고르거나 추천 예산을 골라주세요"); }
+    if (!guestName.trim()) { trackStep("booking_submit_blocked", { reason: "no_name" }); return toast.error("예약자 이름을 입력해주세요"); }
+    if (!contactValue.trim()) { trackStep("booking_submit_blocked", { reason: "no_contact" }); return toast.error("연락처를 입력해주세요"); }
 
     const contactErr = validateContact(contactType, contactValue);
-    if (contactErr) return toast.error(contactErr);
+    if (contactErr) { trackStep("booking_submit_blocked", { reason: "contact_invalid", contact_type: contactType }); return toast.error(contactErr); }
+    if (needsBackupPhone) {
+      if (!backupPhone.trim()) { trackStep("booking_submit_blocked", { reason: "no_backup_phone" }); return toast.error("확정 문자 받을 휴대폰 번호를 입력해주세요"); }
+      const phoneErr = validateContact("phone", backupPhone);
+      if (phoneErr) { trackStep("booking_submit_blocked", { reason: "backup_phone_invalid" }); return toast.error(phoneErr); }
+    }
 
     setShowConfirm(true);
   };
@@ -261,6 +281,7 @@ export function KoreanBookingForm({
         guest_name: guestName.trim(),
         contact_type: contactType,
         contact_value: contactValue.trim(),
+        ...(needsBackupPhone ? { backup_phone: backupPhone.trim() } : {}),
         notes: notes.trim() || null,
       });
       if (error) throw error;
@@ -273,6 +294,7 @@ export function KoreanBookingForm({
         item_count: picked?.snapshot?.items?.length ?? 0,
         total_krw: picked?.total ?? null,
         md_recommend: !!picked?.snapshot?.md_recommend,
+        logged_in: !!userId,
       });
 
       clearFormDraft(draftKey);
@@ -298,6 +320,11 @@ export function KoreanBookingForm({
   // 스냅샷(DB 저장용, image_url 없음)에는 item_id만 있다 — 요약 카드에서
   // "담은 항목" 시트와 같은 수준(이미지 포함)으로 보여주려면 로드해둔
   // menuItems에서 같은 id를 찾아 이미지를 붙여야 한다(2026-09-06).
+  useEffect(() => {
+    if (open && step === 2) trackStep("booking_step2_view", { md_recommend: !!picked?.snapshot.md_recommend });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, step]);
+
   const imageOf = (itemId: string) => menuItems.find((m) => m.id === itemId)?.image_url ?? null;
 
   // "클럽 추천 세트" 우회 — 외국인 폼(ForeignRequestForm handleMdRecommend)을 그대로 옮겼다(2026-09-26).
@@ -306,6 +333,7 @@ export function KoreanBookingForm({
   // md_recommend를 보고 "MD 추천 요청 · 예산"으로 표시한다.
   const handleMdRecommend = (budget: number) => {
     if (!eventDate) {
+      trackStep("booking_submit_blocked", { reason: "no_date_budget" });
       setMenuOpen(false);
       toast.error("날짜를 골라주세요");
       openDatePicker();
@@ -337,10 +365,10 @@ export function KoreanBookingForm({
 
   // 메뉴 시트 맨 위에만 둔다 — 외국인 폼은 날짜 화면에도 두지만, 한국 폼 1단계는 "주류 선택" 버튼
   // 바로 아래라 두 출구가 겹쳐 보인다(사용자 결정 2026-09-26). 술을 보다가 막힌 순간에 보이면 충분하다.
-  const mdRecommendBox = () => (
+  const mdRecommendBox = (variant: "first" | "menu" = "menu") => (
     <section className="rounded-xl border border-border bg-background px-3.5 py-3 space-y-2.5">
       <div>
-        <p className="text-[13px] font-extrabold">술 고르기 어려우세요?</p>
+        <p className="text-[13px] font-extrabold">{variant === "first" ? "예산을 골라주세요" : "술 고르기 어려우세요?"}</p>
         <p className="text-[12px] text-muted-foreground leading-snug break-keep">예산만 고르면 클럽이 가장 맞는 세트를 제안해요.</p>
       </div>
       <div className="grid grid-cols-3 gap-2">
@@ -358,7 +386,7 @@ export function KoreanBookingForm({
       <div className="flex items-center gap-2">
         <div className="relative flex-1 min-w-0">
           <input
-            id="md-budget-custom"
+            id={`md-budget-custom-${variant}`}
             value={customBudgetMan}
             onChange={(e) => setCustomBudgetMan(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
             inputMode="numeric"
@@ -450,6 +478,7 @@ export function KoreanBookingForm({
                       onSelect={(d) => {
                         setEventDate(d);
                         setDateOpen(false);
+                        trackStep("booking_date_selected", { date: d });
                       }}
                     />
                   </div>
@@ -522,20 +551,28 @@ export function KoreanBookingForm({
                     <p className="text-[11px] text-muted-foreground mt-2.5">변경하려면 다시 탭</p>
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!eventDate) {
-                        toast.error("날짜를 골라주세요");
-                        openDatePicker();
-                        return;
-                      }
-                      setMenuOpen(true);
-                    }}
-                    className="w-full h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.99] transition-all flex items-center justify-center"
-                  >
-                    주류 선택
-                  </button>
+                  // 예산 먼저(2026-10-22) — 외국인 폼에서 검증한 구조. 폼을 연 76명 중 59명이 "주류 선택"
+                  // 버튼이 있던 1단계에서 나갔다. 날짜·인원 다음엔 예산 3개를 바로 보여주고,
+                  // 병 단위로 직접 고르기는 아래 "술을 직접 고를래요"로 뒤에 둔다.
+                  <div className="space-y-2">
+                    {mdRecommendBox("first")}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!eventDate) {
+                          trackStep("booking_submit_blocked", { reason: "no_date_menu" });
+                          toast.error("날짜를 골라주세요");
+                          openDatePicker();
+                          return;
+                        }
+                        trackStep("booking_menu_open");
+                        setMenuOpen(true);
+                      }}
+                      className="w-full py-2.5 text-[13px] font-bold text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                    >
+                      술을 직접 고를래요
+                    </button>
+                  </div>
                 )}
               </section>
 
@@ -636,6 +673,21 @@ export function KoreanBookingForm({
                   placeholder={CONTACT_PLACEHOLDER[contactType]}
                   className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
                 />
+                {needsBackupPhone && (
+                  <div className="mt-3 space-y-1.5">
+                    <p className="text-[13px] font-bold text-foreground">확정 문자 받을 휴대폰 번호*</p>
+                    <input
+                      value={backupPhone}
+                      onChange={(e) => setBackupPhone(formatBookingContact("phone", e.target.value))}
+                      inputMode="numeric"
+                      placeholder={CONTACT_PLACEHOLDER.phone}
+                      className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
+                    />
+                    <p className="text-[12px] text-muted-foreground leading-snug break-keep">
+                      로그인 없이 신청하셔서, 예약이 확정되면 이 번호로 확정서를 보내드려요.
+                    </p>
+                  </div>
+                )}
               </section>
 
               {/* 요청사항 */}
@@ -667,7 +719,9 @@ export function KoreanBookingForm({
               <div className="space-y-2">
                 <h2 className="text-[20px] font-black text-foreground tracking-tight break-keep">요청이 접수됐어요</h2>
                 <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">
-                  24시간 안에 연락드릴게요.
+                  {userId
+                    ? "24시간 안에 연락드릴게요."
+                    : "24시간 안에 연락드릴게요. 확정되면 남겨주신 휴대폰 번호로 확정서를 문자로 보내드려요."}
                 </p>
               </div>
 
@@ -697,7 +751,7 @@ export function KoreanBookingForm({
                 )}
               </div>
 
-              {appCtaEligible && (
+              {userId && appCtaEligible && (
                 <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-4 text-left space-y-3">
                   <div className="flex items-start gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -720,7 +774,7 @@ export function KoreanBookingForm({
                   </a>
                 </div>
               )}
-              {isDesktop && (
+              {userId && isDesktop && (
                 <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-4 text-left space-y-3">
                   <div className="space-y-0.5">
                     <p className="text-[14px] font-black text-foreground break-keep">확정서는 앱 알림으로 보내드려요</p>
@@ -732,6 +786,8 @@ export function KoreanBookingForm({
                 </div>
               )}
 
+              {/* 비회원 요청은 "내 예약"에 안 보인다(본인 행 조회가 user_id 기준) — 회원일 때만. */}
+              {userId && (
               <button
                 type="button"
                 onClick={() => {
@@ -742,6 +798,7 @@ export function KoreanBookingForm({
               >
                 내 예약 보기
               </button>
+              )}
               <button
                 type="button"
                 onClick={() => {

@@ -1931,7 +1931,7 @@ export type KoreanBookingStatus = "new" | "contacted" | "done" | "cancelled";
 
 export interface KoreanBookingRequest {
   id: string;
-  user_id: string;
+  user_id: string | null;  // NULL = 비회원 요청(Migration 696)
   club_id: string;
   event_date: string;
   group_size: number;

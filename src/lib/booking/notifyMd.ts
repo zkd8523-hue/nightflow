@@ -55,7 +55,7 @@ export async function notifyAssignedMd(
     .from(table)
     .select(
       `id, user_id, guest_name, event_date, group_size, status, assigned_md_id, proposal_token, selected_menu_total, contact_type, contact_value, ${
-        requestType === "korean" ? "club_id" : "club_ids, budget"
+        requestType === "korean" ? "club_id, backup_phone" : "club_ids, budget"
       }`
     )
     .eq("id", requestId)
@@ -63,7 +63,7 @@ export async function notifyAssignedMd(
   if (!rawReq) return { ok: false, error: "not_found", status: 404 };
   const r = rawReq as unknown as {
     id: string;
-    user_id: string;
+    user_id: string | null;
     guest_name: string | null;
     event_date: string;
     group_size: number;
@@ -73,6 +73,8 @@ export async function notifyAssignedMd(
     selected_menu_total: number | null;
     contact_type: string | null;
     contact_value: string | null;
+    /** 한국어 비회원 + 인스타·오픈채팅 신청 시 확정 문자용 번호(Migration 697) */
+    backup_phone?: string | null;
     budget?: number | null;
     club_id?: string | null;
     club_ids?: string[] | null;
@@ -177,13 +179,16 @@ export async function notifyAssignedMd(
       const guestPath = `/booking/${conf.public_token}`;
       const guestTitle = "✅ 예약이 확정됐어요";
       const guestText = `${parts.join(" · ")} — ${conf.ref_no ?? ""} 확정서를 확인해 주세요`;
-      await insertInApp(sb, r.user_id, "korean_booking_confirmed", guestTitle, guestText, guestPath);
+      // 비회원 요청(user_id NULL, Migration 696)은 인앱·푸시 대상이 없다 — 바로 문자로 간다.
+      if (r.user_id) await insertInApp(sb, r.user_id, "korean_booking_confirmed", guestTitle, guestText, guestPath);
 
-      const { count: guestTokenCount } = await sb
-        .from("push_tokens")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", r.user_id);
-      if ((guestTokenCount ?? 0) > 0) {
+      const { count: guestTokenCount } = r.user_id
+        ? await sb
+            .from("push_tokens")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", r.user_id)
+        : { count: 0 };
+      if (r.user_id && (guestTokenCount ?? 0) > 0) {
         const { error: guestPushErr } = await sb.rpc("notify_user_push", {
           p_user_id: r.user_id,
           p_title: guestTitle,
@@ -196,7 +201,7 @@ export async function notifyAssignedMd(
         else guestChannel = "push";
       }
 
-      const guestPhone = r.contact_type === "phone" ? (r.contact_value ?? "").replace(/[^0-9]/g, "") : "";
+      const guestPhone = (r.contact_type === "phone" ? r.contact_value ?? "" : r.backup_phone ?? "").replace(/[^0-9]/g, "");
       if (guestChannel === "none" && /^01\d{8,9}$/.test(guestPhone)) {
         try {
           await sendSms(

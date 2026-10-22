@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const sb = createAdminClient();
   const { data: r } = await sb
     .from("korean_booking_requests")
-    .select("id, user_id, status, md_response, contact_type, contact_value")
+    .select("id, user_id, status, md_response, contact_type, contact_value, backup_phone")
     .eq("id", body.request_id)
     .maybeSingle();
   if (!r) return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -53,11 +53,14 @@ export async function POST(req: NextRequest) {
     .eq("id", r.id);
   if (upErr) return NextResponse.json({ error: "update_failed" }, { status: 500 });
 
-  const { count } = await sb
-    .from("push_tokens")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", r.user_id);
-  if ((count ?? 0) > 0) {
+  // 비회원 요청(user_id NULL, Migration 696)은 푸시 대상이 없다 — 문자로 간다.
+  const { count } = r.user_id
+    ? await sb
+        .from("push_tokens")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", r.user_id)
+    : { count: 0 };
+  if (r.user_id && (count ?? 0) > 0) {
     const { error } = await sb.rpc("notify_user_push", {
       p_user_id: r.user_id,
       p_title: "📋 예약 답변이 도착했어요",
@@ -70,11 +73,14 @@ export async function POST(req: NextRequest) {
     console.error("[guest-notice] push 실패", r.user_id, error);
   }
 
-  if (r.contact_type === "phone" && r.contact_value) {
+  const smsTo = r.contact_type === "phone" ? r.contact_value : r.backup_phone;
+  if (smsTo) {
     try {
       await sendSms(
-        r.contact_value,
-        `[나이트플로우] ${message}\n내 예약에서 바로 다시 주문할 수 있어요: ${SITE}/my-bookings`
+        smsTo,
+        r.user_id
+          ? `[나이트플로우] ${message}\n내 예약에서 바로 다시 주문할 수 있어요: ${SITE}/my-bookings`
+          : `[나이트플로우] ${message}`
       );
       return NextResponse.json({ ok: true, channel: "sms", guest_notice_at: sentAt });
     } catch (e) {
