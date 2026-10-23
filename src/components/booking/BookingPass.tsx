@@ -457,16 +457,6 @@ export function BookingPass(p: Props) {
               </div>
             )}
 
-            {/* 확정 정보 바로 아래, 도착 안내 위 — 날짜가 확정된 지금이 숙소를 정하는 순간 */}
-            <AgodaStrip
-              lang={ko ? "ko" : "en"}
-              placement="booking_pass"
-              area={p.area ?? null}
-              title={ko ? `${fmtDate(p.eventDate, true)} 묵을 곳 정했어?` : `Need a place to stay on ${fmtDate(p.eventDate, false)}?`}
-              stay={{ checkIn: p.eventDate, nights: 1, adults: Number(p.groupSize) || 2 }}
-              className="mt-4 pt-3 border-t border-border"
-            />
-
             {p.address && (
               <div className="mt-4 pt-3 border-t border-border">
                 <div className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted-foreground mb-1.5">
@@ -697,6 +687,16 @@ export function BookingPass(p: Props) {
                 )}
               </div>
             )}
+
+            {/* 취소 섹션(혹은 취소 불가 시 그 자리) 맨 아래 — 예약 취소/확정 플로우 위에는 광고를 두지 않는다 */}
+            <AgodaStrip
+              lang={ko ? "ko" : "en"}
+              placement="booking_pass"
+              area={p.area ?? null}
+              title={ko ? `${fmtDate(p.eventDate, true)} 묵을 곳 정했어?` : `Need a place to stay on ${fmtDate(p.eventDate, false)}?`}
+              stay={{ checkIn: p.eventDate, nights: 1, adults: Number(p.groupSize) || 2 }}
+              className="mt-4 pt-3 border-t border-border"
+            />
           </div>
         </div>
       </div>
