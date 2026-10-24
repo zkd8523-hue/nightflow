@@ -90,6 +90,8 @@ export default async function JaVipTablesPage() {
             <li><Link className="hover:text-foreground" href="/ja/clubs/apgujeong">狎鴎亭 &amp; 清潭VIPラウンジ →</Link></li>
             <li><Link className="hover:text-foreground" href="/ja/clubs/hongdae">弘大VIP &amp; ウォークインルーム →</Link></li>
             <li><Link className="hover:text-foreground" href="/ja/clubs/itaewon">梨泰院国際クラブ →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/gangnam-table-budget">江南クラブ 予算別に頼めるもの →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/bottle-prices/armand-de-brignac">アルマンド・ドンペリの値段 →</Link></li>
           </ul>
         </section>
 

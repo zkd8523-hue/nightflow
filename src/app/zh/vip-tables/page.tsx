@@ -137,6 +137,8 @@ export default async function ZhVipTablesPage() {
             <li><Link className="hover:text-foreground" href="/zh/clubs/apgujeong">狎鸥亭 &amp; 清潭 VIP 卡座 →</Link></li>
             <li><Link className="hover:text-foreground" href="/zh/clubs/hongdae">弘大 VIP &amp; walk-in 卡座 →</Link></li>
             <li><Link className="hover:text-foreground" href="/zh/clubs/itaewon">梨泰院国际化夜店 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh/gangnam-table-budget">江南夜店 预算更高能点什么 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh/bottle-prices/armand-de-brignac">黑桃A、香槟王价格 →</Link></li>
           </ul>
         </section>
 

@@ -170,6 +170,8 @@ export default async function EnVipTablesPage() {
             <li><Link className="hover:text-foreground" href="/en/clubs/apgujeong">Apgujeong &amp; Cheongdam VIP lounges →</Link></li>
             <li><Link className="hover:text-foreground" href="/en/clubs/hongdae">Hongdae VIP &amp; walk-in tables →</Link></li>
             <li><Link className="hover:text-foreground" href="/en/clubs/itaewon">Itaewon international clubs →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/gangnam-table-budget">What bigger budgets buy in Gangnam →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/bottle-prices/armand-de-brignac">Champagne &amp; cognac bottle prices →</Link></li>
           </ul>
         </section>
 

@@ -693,6 +693,30 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     trackedFieldsRef.current.add(field);
     trackEvent("foreign_form_field_completed", { lang: preferredLang, field });
   };
+  // 3단계(연락처) 계측(2026-10-24). 예산까지 고른 약 40명 중 입력을 시작한 건 8명인데(그중 7명 제출),
+  // 3단계 진입 이벤트가 없어 몇 명이 봤는지도, 어느 칸 앞에서 멈췄는지도, 맨 아래(여행 확정 체크·보내기)까지
+  // 내려가 보기는 했는지도 몰랐다. 진입·칸별 첫 포커스·보내기 버튼 노출을 각각 한 번씩만 남긴다.
+  const trackedOnceRef = useRef<Set<string>>(new Set());
+  const trackOnce = (event: string, params: Record<string, unknown> = {}) => {
+    const key = `${event}:${JSON.stringify(params)}`;
+    if (trackedOnceRef.current.has(key)) return;
+    trackedOnceRef.current.add(key);
+    trackEvent(event, { lang: preferredLang, ...params });
+  };
+  const focusOnce = (field: string) => () => trackOnce("foreign_form_field_focus", { field });
+  const sendButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (formStep !== 3) return;
+    trackOnce("foreign_contact_step_view");
+    const el = sendButtonRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { trackOnce("foreign_contact_step_bottom"); io.disconnect(); }
+    });
+    io.observe(el);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formStep]);
   useEffect(() => { if (eventDate) trackFieldOnce("date"); }, [eventDate]);
   useEffect(() => {
     if (selectedClubIds.length === 0) return;
@@ -3066,15 +3090,18 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
 
       {/* 예약자 이름 — 입구에서 확인하는 이름. 확인서 발행에 필수. */}
       <section>
-        {label(<UserRound className="w-4 h-4 text-money" />, t("예약자 이름", "Name for the booking", "予約者名", "预订人姓名"))}
+        {label(<UserRound className="w-4 h-4 text-money" />, t("예약자 이름", "Name for the booking", "予約者名", "预订人姓名", "預訂人姓名"))}
         <input
           value={guestName}
           onChange={(e) => setGuestName(e.target.value)}
-          placeholder={t("여권에 있는 이름", "As shown on your passport", "パスポートの表記", "护照上的姓名")}
+          onFocus={focusOnce("name")}
+          autoComplete="name"
+          // "여권 표기" 문구는 출입국 서류처럼 무거웠다 — 아고다도 "Full name"만 받는다(운영자 2026-10-24).
+          placeholder={t("이름(성+이름)", "Full name", "お名前（フルネーム）", "姓名（全名）", "姓名（全名）")}
           className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
         />
         <p className="text-[12px] text-muted-foreground mt-1.5">
-          {t("입구에서 이 이름으로 확인해요", "The door checks this name", "入口でこの名前を確認します", "入场时以此姓名核对")}
+          {t("이 이름으로 입구 명단에 올려요", "We'll put this name on the guest list", "このお名前で入口のリストに登録します", "我们会用这个名字登记入场名单", "我們會用這個名字登記入場名單")}
         </p>
       </section>
 
@@ -3096,6 +3123,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         <input
           value={contactValue}
           onChange={(e) => setContactValue(e.target.value)}
+          onFocus={focusOnce("contact")}
           placeholder={contactPlaceholder[contactType]}
           className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
         />
@@ -3116,6 +3144,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               autoComplete="email"
               value={backupEmail}
               onChange={(e) => setBackupEmail(e.target.value)}
+              onFocus={focusOnce("email")}
               placeholder="you@example.com"
               className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
             />
@@ -3180,6 +3209,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          onFocus={focusOnce("notes")}
           rows={2}
           placeholder={t("예) 생일 파티예요", "e.g. It's a birthday", "例) 誕生日です", "例) 生日派对")}
           className="w-full px-4 py-3 rounded-xl bg-card border border-border text-foreground text-[14px] focus:border-amber-500 outline-none resize-none"
@@ -3246,6 +3276,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       </section>
 
       <button
+        ref={sendButtonRef}
         type="button"
         onClick={handleSubmit}
         disabled={loading}

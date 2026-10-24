@@ -11,7 +11,6 @@ import { clubFeatureLabels } from "@/lib/clubs/tagLabelsI18n";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { SaveClubButton } from "@/components/clubs/SaveClubButton";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
-import { UrgencyLine } from "@/components/foreign/UrgencyLine";
 import { ForeignShell, type ForeignSidebarCta } from "@/components/foreign/ForeignShell";
 import { SeeBookableStickyButton, bookableListHref, seeBookableLabels } from "@/components/foreign/SeeBookableCta";
 import { localizeReviews } from "@/lib/clubs/reviewI18n";
@@ -20,7 +19,6 @@ import { BookingComingSoon } from "@/components/foreign/BookingComingSoon";
 import { fetchTablePricing, tableFrom, trimAtSentence } from "@/lib/clubs/tablePricing";
 import { bookingSeoBits, bookingFaqs, bookingJsonLdFragment } from "@/lib/seo/clubBookingSeo";
 import { ClubBookingSection } from "@/components/foreign/ClubBookingSection";
-import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { getKrwRates } from "@/lib/utils/currency";
 
 // 클럽 개별 페이지 — 외국인 롱테일 SEO의 핵심.
@@ -271,7 +269,7 @@ export default async function EnClubDetailPage({
   const listHref = bookableListHref("en", club.area);
   const saveClub = { id: club.id, name: club.name, name_en: club.name_en, area: club.area, thumbnail_url: club.thumbnail_url };
   const sidebarCta: ForeignSidebarCta = bookable
-    ? { href: bookHref, label: seoBits.ctaShort, kind: "club_book", above: <UrgencyLine lang="en" />, below: <SaveClubButton variant="sidebar" club={saveClub} lang="en" /> }
+    ? { href: bookHref, label: seoBits.ctaShort, kind: "club_book", below: <SaveClubButton variant="sidebar" club={saveClub} lang="en" /> }
     : bookableSiblingCount > 0
       ? { href: listHref, label: seeBookableLabels("en").main, kind: "see_bookable", below: <SaveClubButton variant="sidebar" club={saveClub} lang="en" nameInLabel={name} /> }
       : { kind: "default", below: <SaveClubButton variant="sidebar" club={saveClub} lang="en" /> };
@@ -480,9 +478,6 @@ export default async function EnClubDetailPage({
           </section>
         )}
 
-        {/* 숙소 — 리뷰 위. 예약 블록 아래(스크롤 74%)에선 아무도 못 봤다(2026-10-22 운영자 결정). 예약은 하단 고정 바가 계속 맡는다. */}
-        <AgodaStrip lang="en" placement="foreign_club" area={club.area} />
-
         {reviews.length > 0 && (
           <section>
             <h2 className="text-[18px] font-black mb-2">What people say about {name}</h2>
@@ -543,14 +538,12 @@ export default async function EnClubDetailPage({
 
       {/* 예약(8) : 찜(2) — ForeignClubDetailPanel의 하단 sticky CTA와 같은 패턴·비율. 모바일 전용(lg는 사이드바). */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border">
-        {/* 조기 마감 한 줄 — 예약 가능할 때만. 대안 CTA(다른 클럽)에는 안 붙인다. */}
-        {bookable && <UrgencyLine lang="en" align="left" className="w-full max-w-lg lg:max-w-[900px] mx-auto mb-2 px-0.5" />}
         <div className="flex items-stretch gap-2 w-full max-w-lg lg:max-w-[900px] mx-auto">
           {bookable ? (
             <Link rel="nofollow" href={bookHref}
               data-nf-track="book_cta"
               className="flex-[8] min-w-0 flex items-center justify-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
-              {seoBits.cta}
+              {seoBits.ctaShort}
             </Link>
           ) : bookableSiblingCount > 0 ? (
             // 비예약 — 특정 클럽 이름 대신 이 지역 예약 가능 목록으로(목록 기본 탭이 Bookable).
