@@ -215,10 +215,15 @@
      시트 자신이 곧 스크롤 컨테이너이므로 시트 자신과 자손을 **둘 다** 빼야 한다.
      시트가 필요로 하는 오버스크롤 차단은 SheetContent에 직접 붙은
      overscroll-contain 유틸리티가 이미 담당한다. */
-  [lang="en"] *:not([data-slot="sheet-content"], [data-slot="sheet-content"] *),
-  [lang="ja"] *:not([data-slot="sheet-content"], [data-slot="sheet-content"] *),
-  [lang="zh"] *:not([data-slot="sheet-content"], [data-slot="sheet-content"] *),
-  [lang="zh-TW"] *:not([data-slot="sheet-content"], [data-slot="sheet-content"] *) {
+  /* ⚠️ 2026-10-25: `*`(모든 요소)에서 "실제 세로 스크롤 영역"으로 좁혔다.
+     크롬은 overflow:hidden 요소(둥근 카드의 overflow-hidden 등)도 스크롤 체인에 넣는데, 거기에
+     overscroll-behavior:none이 걸리면 그 카드 위에서 시작한 휠·트랙패드 스크롤이 바깥으로 안 넘어간다.
+     실측: /en/night-activities 투어 이미지 위 세로 휠 0px(빈 곳에선 500px), 홈 Night Activities
+     카드 줄 위 가로 휠 0px. pull-to-refresh는 위 html 규칙이 루트에서 막는다. */
+  [lang="en"] :is(.overflow-y-auto, .overflow-auto, .overflow-y-scroll, .overflow-scroll):not([data-slot="sheet-content"], [data-slot="sheet-content"] *),
+  [lang="ja"] :is(.overflow-y-auto, .overflow-auto, .overflow-y-scroll, .overflow-scroll):not([data-slot="sheet-content"], [data-slot="sheet-content"] *),
+  [lang="zh"] :is(.overflow-y-auto, .overflow-auto, .overflow-y-scroll, .overflow-scroll):not([data-slot="sheet-content"], [data-slot="sheet-content"] *),
+  [lang="zh-TW"] :is(.overflow-y-auto, .overflow-auto, .overflow-y-scroll, .overflow-scroll):not([data-slot="sheet-content"], [data-slot="sheet-content"] *) {
     overscroll-behavior: none;
   }
 

@@ -135,16 +135,19 @@ export function AgodaStrip({ lang, placement, area, title, subtitle, stay = {}, 
 
   return (
     <div ref={ref} className={className}>
-      <div className="rounded-2xl border border-border bg-card pb-3.5 pl-3.5 pt-0.5">
-        <div className="flex min-h-[44px] items-center justify-between gap-2 pr-3">
+      {/* 2026-10-25: 이미지 줄(scroller)은 카드 테두리에 바로 붙인다(운영자: "이미지는 왼쪽 테두리랑 간격 0") —
+          아래 투어 카드들도 이미지가 카드 테두리까지 꽉 차서, 여기만 pl-3.5로 안쪽에 떠 있으면 줄이 안 맞아 보였다.
+          제목·부제·필터 칩은 그대로 pl-3.5로 안쪽 여백 유지. */}
+      <div className="rounded-2xl border border-border bg-card pb-3.5 pt-0.5">
+        <div className="flex min-h-[44px] items-center justify-between gap-2 pl-3.5 pr-3">
           <div className="flex min-w-0 items-center gap-1.5">
             <span className="text-[15px] font-extrabold leading-snug text-foreground">{title ?? stayHeadline(lang, listArea, angle)}</span>
           </div>
         </div>
-        {subtitle && <p className="-mt-1 mb-2 pr-3 text-[12.5px] text-muted-foreground">{subtitle}</p>}
+        {subtitle && <p className="-mt-1 mb-2 pl-3.5 pr-3 text-[12.5px] text-muted-foreground">{subtitle}</p>}
 
             {showFilters && (
-            <div className="mb-2.5 flex gap-1.5 pr-3">
+            <div className="mb-2.5 flex gap-1.5 pl-3.5 pr-3">
               {FILTERS.filter((f) => f.key === "all" || all.some((h) => f.tiers.includes(h.tier))).map((f) => (
                 <button
                   key={f.key}
@@ -170,6 +173,8 @@ export function AgodaStrip({ lang, placement, area, title, subtitle, stay = {}, 
               <ChevronRight className="h-5 w-5" aria-hidden="true" />
             </button>
             <div ref={scroller} className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto pr-3.5 scrollbar-hide">
+              {/* 첫 카드만 image 폭 계산에서 pl 손실분(14px) 보정 없이 그대로 두면 카드가 전부 살짝
+                  좁아 보여서, w-[calc(...)] 공식은 그대로 두고 스크롤 패딩만 뺐다(이미지 크기는 불변). */}
               {shown.map((h, i) => (
                 <a
                   key={h.hid ?? h.name.en}

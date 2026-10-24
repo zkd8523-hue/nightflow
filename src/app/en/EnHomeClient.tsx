@@ -1128,12 +1128,9 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
         );
       })}
 
-      {/* 하단 sticky "Book Korean Clubs" 버튼(showStickyCta) 높이만큼 여백을 확보한다.
-          이게 없으면 마지막 지역(주로 Busan) 클럽 스트립이 화면에 보이는 스크롤 위치에서
-          원본 CTA(이 아래 914행)는 아직 화면 밖이라 sticky CTA가 뜨는데, 그 버튼이 z-20으로
-          스트립 이미지와 같은 화면 좌표에 겹쳐 떠서 스와이프/탭을 가로챈다(2026-09-07 실측:
-          부산 스트립만 유독 스크롤 안 됨 — 실은 sticky 버튼이 터치를 받아간 것). */}
-      <div className="h-16" aria-hidden />
+      {/* (2026-10-25) 여기 있던 h-16 빈 칸 삭제 — 하단 sticky 버튼이 마지막(부산) 스트립을 가리지 않게
+          두던 여백인데, 바로 아래로 Contact us 카드가 올라와 그 역할을 한다. 부산 줄과 카드 사이가
+          100px 넘게 비어 보였다(운영자 지적). */}
 
       {hasFilter &&
         visibleRegions.every((r) => clubs.filter((c) => c.area === r.ko && matchesFilters(c)).length === 0) && (
@@ -1266,6 +1263,10 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
           )}
         </SheetContent>
       </Sheet>
+
+      {/* 문의하기(2026-10-02, 운영자 요청) — 예약 폼 2단계와 같은 WhatsApp·Instagram·Email 아이콘 버튼.
+          2026-10-25 운영자 요청으로 Night Activities 바로 위로 올림(전 언어 같은 자리). */}
+      <ContactCard lang={lang} />
 
       {/* Plan your Memory(2026-10-01) — 부산 클럽 줄 바로 아래(사용자 지정). 영어판만 있어 en에서만. */}
       {lang === "en" && <PlanMemoryHomeSection />}
@@ -1599,9 +1600,6 @@ function FlagsTab({
           </Link>
         </div>
       )}
-
-      {/* 문의하기(2026-10-02, 운영자 요청) — 예약 폼 2단계와 같은 WhatsApp·Instagram·Email 아이콘 버튼. */}
-      <ContactCard lang={lang} />
 
       {/* 앱 다운로드 CTA (플랫폼 자동 감지: iPhone→App Store / Android→Play) */}
       <ForeignAppCta lang={lang} />
