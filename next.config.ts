@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  // 빌드 중 타입 검사 끔(2026-10-25 운영자 결정, B안). Vercel Standard(8GB)에서 "Running TypeScript"
+  // 단계가 메모리 초과(SIGKILL)로 연달아 죽었다(8df46941·1324dcac). Elastic 빌드 머신은 유료라 대신
+  // 타입 검사를 빌드에서 빼고, 푸시 전에 로컬에서 `npx tsc --noEmit`로 확인한다.
+  // ⚠️ 이제 Vercel은 타입 오류를 막아 주지 않는다 — 푸시 전 tsc 필수.
+  typescript: { ignoreBuildErrors: true },
   async redirects() {
     return [
       { source: "/puzzles/:path*", destination: "/flags/:path*", permanent: true },
