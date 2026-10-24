@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { MapPin, Check, Star, Instagram, MessageCircle, ChevronLeft } from "lucide-react";
-import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
+import { ContactButtons } from "@/components/foreign/ContactButtons";
 import { GUEST_CANCEL_REASONS, type GuestCancelReason } from "@/lib/booking/cancelReasons";
 
 type Props = {
@@ -19,8 +19,6 @@ type Props = {
   groupSize: number | string;
   cancelled: boolean;
   clubName: string | null;
-  /** 클럽 지역(한글) — 아고다 숙소 스트립용. */
-  area?: string | null;
   address: string | null;
   lat: number | null;
   lng: number | null;
@@ -70,7 +68,7 @@ const TEXT = {
     open: (time: string) => `Open ${time}`,
     party: "Party",
     guests: (n: number | string) => `${n} guests`,
-    name: "Name",
+    name: "Name at the door",
     seating: "Seating",
     included: "Included",
     total: "Total",
@@ -396,6 +394,18 @@ export function BookingPass(p: Props) {
                 )}
               </div>
             )}
+            {/* 외국인 확정서엔 MD 직통 대신 NightFlow 운영 채널을 둔다 — 컨시어지라 MD 연락처는 넘기지 않는데,
+                그 대신 닿을 곳도 없어 당일 전 질문을 받을 길이 없었다(2026-10-24). */}
+            {!ko && !isCancelled && (
+              <div className="mt-3 space-y-1.5">
+                <p className="text-[12px] font-bold text-muted-foreground">Questions before your night?</p>
+                <ContactButtons
+                  lang="en"
+                  message={`Hi! About my booking ${p.refNo}${p.clubName ? ` at ${p.clubName}` : ""} on ${fmtDate(p.eventDate, false)}.`}
+                  source="booking_pass"
+                />
+              </div>
+            )}
           </div>
 
           <div className="px-5 py-4">
@@ -687,16 +697,6 @@ export function BookingPass(p: Props) {
                 )}
               </div>
             )}
-
-            {/* 취소 섹션(혹은 취소 불가 시 그 자리) 맨 아래 — 예약 취소/확정 플로우 위에는 광고를 두지 않는다 */}
-            <AgodaStrip
-              lang={ko ? "ko" : "en"}
-              placement="booking_pass"
-              area={p.area ?? null}
-              title={ko ? `${fmtDate(p.eventDate, true)} 묵을 곳 정했어?` : `Need a place to stay on ${fmtDate(p.eventDate, false)}?`}
-              stay={{ checkIn: p.eventDate, nights: 1, adults: Number(p.groupSize) || 2 }}
-              className="mt-4 pt-3 border-t border-border"
-            />
           </div>
         </div>
       </div>

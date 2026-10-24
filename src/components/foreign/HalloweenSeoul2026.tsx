@@ -102,7 +102,7 @@ const COPY: Record<SeoLang, Copy> = {
       { q: "Do I need to book, or can I just walk in?", a: "Walk-in is possible, but on a Saturday Halloween expect 1h+ queues after 23:00 and doors that stop admitting when full. A booked table is the only thing that guarantees entry, and it comes with seating and bottles for the group." },
       { q: "When should I book a Halloween table?", a: "By October 20. Tables at the popular clubs sell out the week before, and clubs announce their Halloween nights on Instagram about two weeks out — we update this page as they do." },
       { q: "Is Itaewon safe on Halloween?", a: "The district runs heavy crowd management on Halloween night — controlled streets, police presence and early venue caps. The practical advice: arrive early, stay inside the venue rather than in the crowd on the street, and avoid narrow alleys when they get busy. Hongdae and Gangnam are less congested alternatives." },
-      { q: "How much does a Halloween table cost?", a: "The same minimum spend as any weekend: ₩500,000 per table in Itaewon and Hongdae, ₩1,000,000 in Gangnam, filled from the club's own menu. Some clubs add a weekend table charge or a special Halloween minimum; we tell you the final number before you commit. No deposit, no broker fee, pay the club on the night." },
+      { q: "How much does a Halloween table cost?", a: "The same minimum spend as any weekend: ₩500,000 per table in Itaewon and Hongdae, ₩1,400,000 in Gangnam, filled from the club's own menu. Some clubs add a weekend table charge or a special Halloween minimum; we tell you the final number before you commit. No deposit, no broker fee, pay the club on the night." },
     ],
     ctaH2: "Book a Halloween table",
     ctaBody: "Pick a club (or tell us the district and group size). We confirm with the club in Korean, send you the final price in writing, and you walk in on the night. Free to request, no deposit.",
@@ -137,7 +137,7 @@ const COPY: Record<SeoLang, Copy> = {
     areas: [
       { name: "梨泰院", tag: "外国人が最多 · 仮装が最多", body: "ソウルの国際的なハロウィンの中心。メイン通りは厳しい人流管理、店は早い時間から入場制限。通りではなくクラブを目的に、22時前に店内へ。テーブル50万ウォン〜。", href: "/ja/clubs/itaewon" },
       { name: "弘大", tag: "人出が最大 · 学生の熱気", body: "今やソウル最大のハロウィンの人出。無料入場の店は23時以降1時間以上の行列、満員で入場停止も多い。仮装とヒップホップだらけ。テーブル50万ウォン〜なら全部飛ばせます。", href: "/ja/clubs/hongdae" },
-      { name: "江南", tag: "大型EDM · 入口が最も厳しい", body: "大型クラブがハロウィンナイトを開催、仮装客で満員、入口の審査は市内で最も厳しい。テーブルなしでは入口で全員と競うことに。テーブル100万ウォン〜。", href: "/ja/clubs/gangnam" },
+      { name: "江南", tag: "大型EDM · 入口が最も厳しい", body: "大型クラブがハロウィンナイトを開催、仮装客で満員、入口の審査は市内で最も厳しい。テーブルなしでは入口で全員と競うことに。テーブル140万ウォン〜。", href: "/ja/clubs/gangnam" },
     ],
     timelineH2: "当日の実際の流れ",
     timeline: [
@@ -155,7 +155,7 @@ const COPY: Record<SeoLang, Copy> = {
       { q: "予約は必要？当日行けば入れる？", a: "当日入場も可能ですが、土曜日のハロウィンは23時以降1時間以上の行列と満員での入場停止が前提です。入場を保証できるのはテーブル予約だけで、席とボトルも付きます。" },
       { q: "いつまでに予約すべき？", a: "10月20日まで。人気店のテーブルは前の週に埋まります。各クラブのハロウィンナイトはInstagramで2週間前ごろに発表され、それに合わせてこのページも更新します。" },
       { q: "ハロウィンの梨泰院は安全？", a: "当夜は厳しい人流管理が行われます — 通りの規制、警察の配置、店の早期入場制限。実際的な助言は、早く到着する、通りの人混みではなく店内にいる、混雑した細い路地を避ける、です。弘大・江南は混雑が比較的少ない選択肢です。" },
-      { q: "ハロウィンのテーブルはいくら？", a: "通常の週末と同じ最低予約金額です：梨泰院・弘大は1卓50万ウォン、江南は100万ウォン、クラブのメニューから選んで埋めます。週末テーブルチャージやハロウィン特別最低額を設ける店もあり、確定前に最終金額をお伝えします。デポジットなし、仲介手数料なし、当日クラブで支払い。" },
+      { q: "ハロウィンのテーブルはいくら？", a: "通常の週末と同じ最低予約金額です：梨泰院・弘大は1卓50万ウォン、江南は140万ウォン、クラブのメニューから選んで埋めます。週末テーブルチャージやハロウィン特別最低額を設ける店もあり、確定前に最終金額をお伝えします。デポジットなし、仲介手数料なし、当日クラブで支払い。" },
     ],
     ctaH2: "ハロウィンのテーブルを予約",
     ctaBody: "クラブを選ぶ(またはエリアと人数だけ伝える)。私たちが韓国語でクラブに確認し、最終価格を書面で送ります。当日はそのまま入場。リクエスト無料、デポジットなし。",

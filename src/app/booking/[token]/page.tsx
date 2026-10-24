@@ -111,7 +111,6 @@ export default async function BookingPage({
             ? club?.name || club?.name_en || null
             : club?.name_en || club?.name || null
         }
-        area={club?.area ?? null}
         address={club?.address ?? null}
         lat={club?.latitude ?? null}
         lng={club?.longitude ?? null}

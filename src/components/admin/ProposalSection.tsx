@@ -292,8 +292,11 @@ function SendToMdButton({
       // MD 성공 토스트만 보고 손님도 받은 줄 알았다(2026-10-01).
       if (j.guest_channel === "push") toast.success("손님에게 앱 푸시를 보냈어요");
       else if (j.guest_channel === "sms") toast.success("손님은 앱이 없어 문자로 링크를 보냈어요");
-      else if (j.guest_channel === "none")
+      else if (j.guest_channel === "none" && !j.guest_email)
         toast.error("손님은 앱이 없어 알림이 안 갔어요 — 손님 링크를 복사해 직접 보내주세요", { duration: 8000 });
+      // 외국인 손님 확정 메일(2026-10-24) — 메일은 기록용이라 메신저 링크 전달은 여전히 운영자가 한다.
+      if (j.guest_email)
+        toast.success("손님 이메일로 확정 메일을 보냈어요 — 메신저로도 링크를 보내주세요", { duration: 8000 });
       onSent?.(j.guest_channel ?? null);
       setSentAt(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
     } finally {

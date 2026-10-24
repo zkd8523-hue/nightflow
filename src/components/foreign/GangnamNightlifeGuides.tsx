@@ -1,6 +1,6 @@
 // 유흥 인접 검색어("korean room salon", "江南 ルームサロン 日本人", "booking club gangnam")를
 // 클럽 테이블 예약으로 잇는 설명 페이지 2개. 검색자는 하룻밤 50만~200만 쓰는 층이라 강남
-// 하한(₩1M)이 부담이 아닌 유일한 검색층인데, 구글 광고는 성인 서비스 정책상 불가라 SEO 본문으로만 잡는다.
+// 하한(₩1.4M)이 부담이 아닌 유일한 검색층인데, 구글 광고는 성인 서비스 정책상 불가라 SEO 본문으로만 잡는다.
 //
 // 브랜드 안전(절대):
 //   - 성적 표현 0. "여자 보장"류 약속 없음. 불법 서비스 서술·안내 없음.
@@ -51,7 +51,7 @@ const won = (n: number, lang: SeoLang) => `${formatWon(n)}（≈ ${wonCompact(n,
 const BOOKING: Record<SeoLang, Copy> = {
   en: {
     title: "Booking Clubs in Gangnam: Meaning, Prices, How to Join",
-    description: "What a Korean 'booking club' actually is: staff introduce guests between tables, either side can decline, and the table is your ticket in. Gangnam table prices from ₩1,000,000, etiquette, and how foreigners book one.",
+    description: "What a Korean 'booking club' actually is: staff introduce guests between tables, either side can decline, and the table is your ticket in. Gangnam table prices from ₩1,400,000, etiquette, and how foreigners book one.",
     ogTitle: "Korean Booking Clubs, Explained", ogSub: "Gangnam booking culture · prices · how to join",
     keywords: ["Korean booking club", "booking club Gangnam", "booking club Korea", "Korean club booking culture", "Korean nightclub booking meaning", "Gangnam club table price"],
     eyebrow: "GANGNAM NIGHTLIFE · CULTURE", headerCta: true,
@@ -75,7 +75,7 @@ const BOOKING: Record<SeoLang, Copy> = {
     ],
     priceH2: "What it costs",
     priceBullets: [
-      `Gangnam table: minimum spend ${won(GANGNAM, "en")} per table, filled from the club's printed menu — for the whole group, not per person. Four people ≈ ₩250,000 each.`,
+      `Gangnam table: minimum spend ${won(GANGNAM, "en")} per table, filled from the club's printed menu — for the whole group, not per person. Four people ≈ ₩350,000 each.`,
       "Some clubs add a table charge on weekends (₩30,000–₩50,000) and entry (₩20,000–₩50,000). We tell you the final number in writing before you commit.",
       `Hongdae and Itaewon tables start at ${won(HONGDAE, "en")}, but booking culture is a Gangnam thing.`,
       "No deposit, no broker fee. You pay the club on the night.",
@@ -102,7 +102,7 @@ const BOOKING: Record<SeoLang, Copy> = {
 
   ja: {
     title: "韓国ブッキングクラブとは｜江南の料金と参加方法",
-    description: "韓国クラブの「ブッキング（부킹）」は予約のことではなく、スタッフが席同士を紹介する江南の文化。断るのも自由。参加にはテーブルが必要。江南テーブル100万ウォン〜、マナー、日本語での予約方法。",
+    description: "韓国クラブの「ブッキング（부킹）」は予約のことではなく、スタッフが席同士を紹介する江南の文化。断るのも自由。参加にはテーブルが必要。江南テーブル140万ウォン〜、マナー、日本語での予約方法。",
     ogTitle: "韓国のブッキングクラブとは", ogSub: "江南のブッキング文化・料金・参加方法",
     keywords: ["韓国 ブッキングクラブ", "江南 ブッキング", "韓国 クラブ ブッキング とは", "江南 クラブ 日本人", "江南 クラブ テーブル 料金"],
     eyebrow: "江南のナイトライフ · 文化", headerCta: true,
@@ -126,7 +126,7 @@ const BOOKING: Record<SeoLang, Copy> = {
     ],
     priceH2: "料金",
     priceBullets: [
-      `江南のテーブル：1卓 ${won(GANGNAM, "ja")} の最低予約金額を店のメニューから埋める形。人数ではなくテーブル単位なので、4人なら一人約25万ウォン。`,
+      `江南のテーブル：1卓 ${won(GANGNAM, "ja")} の最低予約金額を店のメニューから埋める形。人数ではなくテーブル単位なので、4人なら一人約35万ウォン。`,
       "週末はテーブルチャージ（3〜5万ウォン）と入場料（2〜5万ウォン）がかかる店もあります。確定前に最終金額を書面でお伝えします。",
       `弘大・梨泰院は ${won(HONGDAE, "ja")} からですが、ブッキング文化は江南のものです。`,
       "デポジットなし、仲介手数料なし。当日クラブで支払い。",
@@ -177,7 +177,7 @@ const BOOKING: Record<SeoLang, Copy> = {
     ],
     priceH2: "多少钱",
     priceBullets: [
-      `江南卡座：每桌最低消费 ${won(GANGNAM, "zh")}，从夜店印刷酒单里选酒凑满 — 按整桌算，不是每人。4 个人一人约 25 万韩元。`,
+      `江南卡座：每桌最低消费 ${won(GANGNAM, "zh")}，从夜店印刷酒单里选酒凑满 — 按整桌算，不是每人。4 个人一人约 35 万韩元。`,
       "部分夜店周末加收台费（3〜5 万韩元）和入场费（2〜5 万韩元）。确认前我们会书面告知最终价格。",
       `弘大、梨泰院卡座 ${won(HONGDAE, "zh")} 起，但 booking 文化是江南的东西。`,
       "无押金、无中介费。当晚在夜店付款。",
@@ -296,7 +296,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
     },
     priceH2: "How the money compares",
     priceBullets: [
-      `A Gangnam table is ${won(GANGNAM, "en")} minimum spend for the whole group, filled from the club's own menu. Four people ≈ ₩250,000 each — comparable to or below a single room-salon quote for one person.`,
+      `A Gangnam table is ${won(GANGNAM, "en")} minimum spend for the whole group, filled from the club's own menu. Four people ≈ ₩350,000 each — comparable to or below a single room-salon quote for one person.`,
       "Entry ₩20,000–₩50,000 and sometimes a weekend table charge. We put the final number in writing before you commit.",
       "No deposit, no broker fee. Pay the club on the night. Your total is confirmed in writing before the night.",
     ],
@@ -420,7 +420,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
     },
     priceH2: "钱怎么比",
     priceBullets: [
-      `江南卡座是每桌 ${won(GANGNAM, "zh")} 的最低消费，整组一起从夜店酒单凑满。4 个人一人约 25 万韩元 — 和房间沙龙一个人的报价相当或更低。`,
+      `江南卡座是每桌 ${won(GANGNAM, "zh")} 的最低消费，整组一起从夜店酒单凑满。4 个人一人约 35 万韩元 — 和房间沙龙一个人的报价相当或更低。`,
       "入场费 2〜5 万韩元，周末有时有台费。确认前我们把最终数字写给你。",
       "无押金、无中介费。当晚在夜店付款。总价会在当晚之前以书面确认。",
     ],

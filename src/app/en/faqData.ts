@@ -97,7 +97,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "night-total",
     category: "cost",
     q: "What does a full night out realistically cost?",
-    a: "Budget night in Hongdae/Itaewon (pre-drinks + one cover + a few drinks + shared taxi): about ₩40,000–90,000. VIP night in Gangnam is the table — ₩500,000–1,000,000+ total, which split among a group of 6–10 is roughly ₩70,000–170,000 each.",
+    a: "Budget night in Hongdae/Itaewon (pre-drinks + one cover + a few drinks + shared taxi): about ₩40,000–90,000. VIP night in Gangnam is the table — from ₩1,400,000 total, which split among a group of 6–10 is roughly ₩140,000–230,000 each.",
   },
   {
     id: "hidden-fees",

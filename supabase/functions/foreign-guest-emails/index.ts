@@ -1,4 +1,5 @@
 // Deno Edge Function: 외국인 손님 이메일 2종 (Resend)
+// (예약 확정 메일은 여기가 아니라 Next.js의 src/lib/email/foreignConfirmed.ts — 운영자 "확정서 보내기" 시점)
 //
 //   { mode: "received", request_id }  — foreign_requests INSERT 트리거(Migration 691)가 호출.
 //                                        이메일 또는 backup_email이 있는 손님에게 접수 확인 메일.
@@ -91,7 +92,8 @@ const RECEIVED: Record<Lang, {
   viaEmail: string;
   next: string[];
   cta: string; secondary: string;
-  date: string; club: string; people: string; total: string;
+  // total = 술을 직접 고른 합계, budget = 예산만 고른 요청(md_recommend)의 금액.
+  date: string; club: string; people: string; total: string; budget: string;
 }> = {
   en: {
     subject: (ref) => `Got your request ${ref} — the club is checking now`,
@@ -101,7 +103,7 @@ const RECEIVED: Record<Lang, {
     viaEmail: "We'll write back at this address the moment your table is confirmed.",
     next: ["Club confirms your table and checks the price against its menu.", "You get a booking pass to show at the door with your passport (19+).", "You pay the club directly — nothing to NightFlow."],
     cta: "Check my booking", secondary: "See Seoul clubs",
-    date: "Date", club: "Club", people: "Group", total: "Your drinks",
+    date: "Date", club: "Club", people: "Group", total: "Your drinks", budget: "Budget",
   },
   ja: {
     subject: (ref) => `リクエスト ${ref} を受け付けました — クラブが確認中です`,
@@ -111,7 +113,7 @@ const RECEIVED: Record<Lang, {
     viaEmail: "テーブルが確定したらすぐこのアドレスにお知らせします。",
     next: ["クラブがテーブルを確認し、価格をメニューと照合します。", "入口でパスポートと一緒に見せる予約パスをお送りします（19歳以上）。", "お支払いはクラブに直接。NightFlow への支払いはありません。"],
     cta: "予約を照会する", secondary: "ソウルのクラブを見る",
-    date: "日付", club: "クラブ", people: "人数", total: "ドリンク",
+    date: "日付", club: "クラブ", people: "人数", total: "ドリンク", budget: "ご予算",
   },
   zh: {
     subject: (ref) => `已收到请求 ${ref} — 夜店正在确认`,
@@ -121,7 +123,7 @@ const RECEIVED: Record<Lang, {
     viaEmail: "桌位一确认，我们会立即发到这个邮箱。",
     next: ["夜店确认桌位，并按酒单核对价格。", "你会收到入场凭证，入口出示护照即可（19岁以上）。", "费用直接付给夜店，不经 NightFlow。"],
     cta: "查询我的预订", secondary: "浏览首尔夜店",
-    date: "日期", club: "夜店", people: "人数", total: "酒水",
+    date: "日期", club: "夜店", people: "人数", total: "酒水", budget: "预算",
   },
   "zh-tw": {
     subject: (ref) => `已收到請求 ${ref} — 夜店正在確認`,
@@ -131,7 +133,7 @@ const RECEIVED: Record<Lang, {
     viaEmail: "包廂一確認，我們會立即寄到這個信箱。",
     next: ["夜店確認包廂，並依酒單核對價格。", "你會收到入場憑證，入口出示護照即可（19歲以上）。", "費用直接付給夜店，不經 NightFlow。"],
     cta: "查詢我的預訂", secondary: "瀏覽首爾夜店",
-    date: "日期", club: "夜店", people: "人數", total: "酒水",
+    date: "日期", club: "夜店", people: "人數", total: "酒水", budget: "預算",
   },
 };
 
@@ -144,7 +146,7 @@ const CHANNEL: Record<string, string> = {
 async function sendReceived(sb: ReturnType<typeof createClient>, requestId: string) {
   const { data: fr, error } = await sb
     .from("foreign_requests")
-    .select("id, ref_code, lang, event_date, group_size, club_ids, contact_type, contact_value, backup_email, selected_menu_total, guest_email_sent_at")
+    .select("id, ref_code, lang, event_date, group_size, club_ids, contact_type, contact_value, backup_email, selected_menu, selected_menu_total, guest_email_sent_at")
     .eq("id", requestId)
     .maybeSingle();
   if (error || !fr) throw new Error(`request not found: ${error?.message ?? requestId}`);
@@ -167,6 +169,10 @@ async function sendReceived(sb: ReturnType<typeof createClient>, requestId: stri
   const refCode = (fr.ref_code as string | null) ?? `NF-${String(fr.id).slice(0, 6).toUpperCase()}`;
   const ref = `#${refCode}`;
   const total = fr.selected_menu_total ? `₩${Number(fr.selected_menu_total).toLocaleString("en-US")}` : "";
+  // 예산만 고른 요청은 술을 고른 게 아니라 "Your drinks"가 사실과 다르다 — "Budget"으로 적는다.
+  const budgetOnly = Boolean((fr.selected_menu as { md_recommend?: unknown } | null)?.md_recommend);
+  // 300만 원 이상 신청 직후 "다른 클럽 둘러보기"로 보내면 산만하다 — 고액은 예약조회 버튼 하나만(2026-10-24).
+  const highValue = Number(fr.selected_menu_total ?? 0) >= 3_000_000;
   // 어디로 연락이 가는지 — 메신저면 그 채널, 이메일이면 이 주소.
   const channel = CHANNEL[String(fr.contact_type)] ?? String(fr.contact_type);
   const via = fr.contact_type === "email"
@@ -179,7 +185,7 @@ async function sendReceived(sb: ReturnType<typeof createClient>, requestId: stri
 ${row(c.date, esc(fmtDate(fr.event_date, lang)))}
 ${clubName ? row(c.club, `${esc(clubName)} · ${esc(areaLabel(area, lang))}`) : ""}
 ${row(c.people, String(fr.group_size))}
-${total ? row(c.total, total, GREEN) : ""}
+${total ? row(budgetOnly ? c.budget : c.total, total, GREEN) : ""}
 </table>
 <p style="margin:0 0 6px;font-size:12px;color:${MUTED};">${ref}</p>
 <ol style="margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:#fff;">${c.next.map((n) => `<li>${n}</li>`).join("")}</ol>`;
@@ -190,7 +196,7 @@ ${total ? row(c.total, total, GREEN) : ""}
   const html = layout(lang, {
     preheader: c.intro, heading: c.heading, body, cta: c.cta,
     url: lookupUrl, ctaColor: AMBER,
-    secondary: { label: c.secondary, url: `${SITE}/${lang}/clubs` },
+    secondary: highValue ? undefined : { label: c.secondary, url: `${SITE}/${lang}/clubs` },
   });
   await resendSend({ to, subject: c.subject(ref), html });
   // 성공한 뒤에만 찍는다 — 실패했는데 발송됨으로 기록되면 손님이 영영 못 받는다.

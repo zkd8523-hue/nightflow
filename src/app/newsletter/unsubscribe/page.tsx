@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, AlertCircle } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import { CONTACT_EMAIL } from "@/lib/foreign/contact";
 
 // 뉴스레터 수신거부 — 메일 안 링크로만 들어온다.
 //
@@ -85,9 +86,10 @@ export default async function NewsletterUnsubscribePage({
 
           {!done && (
             <p className="text-[13px] text-muted-foreground leading-relaxed pt-2 border-t border-border">
+              {/* team@nightflow.kr은 발신 전용(수신 MX 없음)이라 여기로 보내면 반송된다 — 운영 메일로 받는다. */}
               직접 처리를 원하시면{" "}
-              <a href="mailto:team@nightflow.kr" className="text-foreground underline underline-offset-2">
-                team@nightflow.kr
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-foreground underline underline-offset-2">
+                {CONTACT_EMAIL}
               </a>{" "}
               로 수신거부를 원하는 주소를 보내주세요.
             </p>

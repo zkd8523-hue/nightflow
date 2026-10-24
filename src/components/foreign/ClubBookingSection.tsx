@@ -61,13 +61,13 @@ const T = {
       reach != null && reach <= 3
         ? `Bottles and sets on the menu start at ${s} — most groups reach the minimum with 2–3 items.`
         : `Bottles and sets on the menu start at ${s} — combine a few to reach the minimum.`,
-    setsTitle: "Cheapest sets on the menu",
-    itemsTitle: "Cheapest bottles on the menu",
+    setsTitle: "Starting sets",
+    itemsTitle: "Starting bottles",
     charge: "Table charge",
     chargeWd: "weekday",
     chargeWe: "weekend",
-    steps: ["Pick your date, group size and bottles from the real menu.", "We confirm with the club in Korean — most requests get a reply within a day.", "You get the final price in writing. No deposit. Pay the club on the night."],
-    trust: ["Real menu prices — the total you see is what you pay", "No broker fee, no deposit", "Your total is confirmed in writing before the night"],
+    steps: ["Pick your date, group size and bottles from the real menu.", "We confirm with the club in Korean — most requests get a reply within a day.", "You get the final price in writing. Pay the club on the night."],
+    trust: ["Your total is confirmed in writing before the night", "Real menu prices — the total you see is what you pay", "No broker fee, no deposit"],
     cta: (n: string) => `Book ${n}`,
     moreH3: (a: string) => `Other ${a} clubs you can book`,
     notH2: (n: string) => `${n} isn't bookable yet`,
@@ -93,13 +93,13 @@ const T = {
       reach != null && reach <= 3
         ? `メニューのボトル・セットは${s}〜 — 多くのグループは2〜3品で最低金額に達します。`
         : `メニューのボトル・セットは${s}〜 — 複数を組み合わせて最低金額に達します。`,
-    setsTitle: "メニュー最安のセット",
-    itemsTitle: "メニュー最安のボトル",
+    setsTitle: "メニューのセット",
+    itemsTitle: "メニューのボトル",
     charge: "テーブルチャージ",
     chargeWd: "平日",
     chargeWe: "週末",
-    steps: ["日程・人数を選び、実際のメニューからボトルを選択。", "NightFlowがクラブに韓国語で確認 — 多くの場合1日以内にご返信。", "最終金額を文面でお知らせ。デポジット不要、当日クラブでお支払い。"],
-    trust: ["実際のメニュー価格 — 表示合計＝お支払い額", "仲介手数料なし・デポジットなし", "合計金額は当日前に書面で確定"],
+    steps: ["日程・人数を選び、実際のメニューからボトルを選択。", "NightFlowがクラブに韓国語で確認 — 多くの場合1日以内にご返信。", "最終金額を文面でお知らせ。当日クラブでお支払い。"],
+    trust: ["合計金額は当日前に書面で確定", "実際のメニュー価格 — 表示合計＝お支払い額", "仲介手数料なし・デポジットなし"],
     cta: (n: string) => `${n}を予約`,
     moreH3: (a: string) => `${a}で予約できる他のクラブ`,
     notH2: (n: string) => `${n}はまだ予約できません`,
@@ -125,13 +125,13 @@ const T = {
       reach != null && reach <= 3
         ? `酒单上的酒水和套餐从${s}起 — 多数人点2〜3项即可达到最低消费。`
         : `酒单上的酒水和套餐从${s}起 — 组合几项即可达到最低消费。`,
-    setsTitle: "酒单上最便宜的套餐",
-    itemsTitle: "酒单上最便宜的酒水",
+    setsTitle: "入门套餐",
+    itemsTitle: "入门酒水",
     charge: "台费",
     chargeWd: "平日",
     chargeWe: "周末",
-    steps: ["选择日期、人数，从真实酒单选酒。", "我们用韩语向夜店确认 — 多数请求一天内回复。", "书面告知最终价格。无需押金，当晚在夜店付款。"],
-    trust: ["真实酒单价格 — 看到的总额就是支付额", "无中介费，无需押金", "当晚之前就书面确认总价"],
+    steps: ["选择日期、人数，从真实酒单选酒。", "我们用韩语向夜店确认 — 多数请求一天内回复。", "书面告知最终价格。当晚在夜店付款。"],
+    trust: ["当晚之前就书面确认总价", "真实酒单价格 — 看到的总额就是支付额", "无中介费，无需押金"],
     cta: (n: string) => `预订 ${n}`,
     moreH3: (a: string) => `${a}其他可预订的夜店`,
     notH2: (n: string) => `${n}暂时无法预订`,
@@ -158,13 +158,13 @@ const T = {
       reach != null && reach <= 3
         ? `酒單上的酒水和套餐從${s}起 — 多數人點2〜3項即可達到低消。`
         : `酒單上的酒水和套餐從${s}起 — 組合幾項即可達到低消。`,
-    setsTitle: "酒單上最便宜的套餐",
-    itemsTitle: "酒單上最便宜的酒水",
+    setsTitle: "入門套餐",
+    itemsTitle: "入門酒水",
     charge: "包廂費",
     chargeWd: "平日",
     chargeWe: "週末",
-    steps: ["選擇日期、人數,從真實酒單選酒。", "我們用韓語向夜店確認 — 多數請求一天內回覆。", "書面告知最終價格。免訂金,當晚在夜店付款。"],
-    trust: ["真實酒單價格 — 看到的總額就是支付額", "無中介費,免訂金", "當晚之前就用書面把總價講好"],
+    steps: ["選擇日期、人數,從真實酒單選酒。", "我們用韓語向夜店確認 — 多數請求一天內回覆。", "書面告知最終價格。當晚在夜店付款。"],
+    trust: ["當晚之前就用書面把總價講好", "真實酒單價格 — 看到的總額就是支付額", "無中介費,免訂金"],
     cta: (n: string) => `訂包廂 ${n}`,
     moreH3: (a: string) => `${a}其他可訂包廂的夜店`,
     notH2: (n: string) => `${n}暫時無法訂包廂`,
@@ -322,8 +322,9 @@ export function ClubBookingSection({
         </ol>
 
         <ul className="flex flex-wrap gap-x-4 gap-y-1">
-          {t.trust.map((s) => (
-            <li key={s} className="text-[12px] text-muted-foreground before:content-['✓'] before:text-brand-amber before:mr-1">{s}</li>
+          {/* 첫 줄(서면 확정)이 고액 손님에게 가장 큰 안심이라 앞에 두고 조금 진하게(2026-10-24). */}
+          {t.trust.map((s, i) => (
+            <li key={s} className={`text-[12px] before:content-['✓'] before:text-brand-amber before:mr-1 ${i === 0 ? "font-bold text-foreground" : "text-muted-foreground"}`}>{s}</li>
           ))}
         </ul>
 

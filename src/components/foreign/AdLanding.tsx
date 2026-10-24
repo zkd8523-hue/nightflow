@@ -134,10 +134,10 @@ const COPY: Record<SeoLang, Copy> = {
     priceH2: "Table price",
     priceRows: [
       { label: "Hongdae / Itaewon", value: "from ₩500,000" },
-      { label: "Gangnam", value: "from ₩1,000,000" },
+      { label: "Gangnam", value: "from ₩1,400,000" },
     ],
     priceNote:
-      "Per table, not per person — 4 people ≈ ₩125,000–250,000 each. Entry is often included for table guests; carry ₩30,000 cash just in case.",
+      "Per table, not per person — 4 people ≈ ₩125,000–350,000 each. Entry is often included for table guests; carry ₩30,000 cash just in case.",
     navHome: "Home",
     navFaq: "FAQ",
     navTerms: "Terms",
@@ -206,10 +206,10 @@ const COPY: Record<SeoLang, Copy> = {
     priceH2: "テーブル料金",
     priceRows: [
       { label: "弘大 / 梨泰院", value: "₩500,000〜" },
-      { label: "江南", value: "₩1,000,000〜" },
+      { label: "江南", value: "₩1,400,000〜" },
     ],
     priceNote:
-      "1卓あたり（1人あたりではありません） — 4人なら1人約12.5〜25万ウォン。テーブル客は入場料込みのことが多いですが、念のため現金3万ウォンをお持ちください。",
+      "1卓あたり（1人あたりではありません） — 4人なら1人約12.5〜35万ウォン。テーブル客は入場料込みのことが多いですが、念のため現金3万ウォンをお持ちください。",
     navHome: "ホーム",
     navFaq: "よくある質問",
     navTerms: "利用規約",
@@ -278,10 +278,10 @@ const COPY: Record<SeoLang, Copy> = {
     priceH2: "卡座价格",
     priceRows: [
       { label: "弘大 / 梨泰院", value: "₩500,000 起" },
-      { label: "江南", value: "₩1,000,000 起" },
+      { label: "江南", value: "₩1,400,000 起" },
     ],
     priceNote:
-      "按桌算不按人算 — 4个人一人约 12.5–25 万韩元。订卡座的客人通常含门票，但建议带 3 万韩元现金备用。",
+      "按桌算不按人算 — 4个人一人约 12.5–35 万韩元。订卡座的客人通常含门票，但建议带 3 万韩元现金备用。",
     navHome: "首页",
     navFaq: "常见问题",
     navTerms: "服务条款",
@@ -350,10 +350,10 @@ const COPY: Record<SeoLang, Copy> = {
     priceH2: "包廂價格",
     priceRows: [
       { label: "弘大 / 梨泰院", value: "₩500,000 起" },
-      { label: "江南", value: "₩1,000,000 起" },
+      { label: "江南", value: "₩1,400,000 起" },
     ],
     priceNote:
-      "按桌計不按人計 — 4個人一人約 12.5–25 萬韓元。訂包廂的客人通常含入場費，但建議帶 3 萬韓元現金備用。",
+      "按桌計不按人計 — 4個人一人約 12.5–35 萬韓元。訂包廂的客人通常含入場費，但建議帶 3 萬韓元現金備用。",
     navHome: "首頁",
     navFaq: "常見問題",
     navTerms: "服務條款",

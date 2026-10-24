@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getWeeklyEmailIssue } from "@/lib/email/weeklyIssue";
+import { CONTACT_EMAIL } from "@/lib/foreign/contact";
 
 // 아티클 한 호를 구독자에게 보낸다. **사람이 버튼을 눌러야만** 돈다.
 //
@@ -44,7 +45,8 @@ const BATCH_GAP_MS = 600;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const from = () => process.env.RESEND_FROM || "NightFlow <team@nightflow.kr>";
-const replyTo = () => process.env.RESEND_REPLY_TO || "team@nightflow.kr";
+// nightflow.kr엔 수신(MX)이 없어 team@으로 온 답장은 사라진다 — 답장은 운영 메일로 받는다.
+const replyTo = () => process.env.RESEND_REPLY_TO || CONTACT_EMAIL;
 
 const unsubUrl = (token: string) =>
   `${SITE}/newsletter/unsubscribe?t=${encodeURIComponent(token)}`;

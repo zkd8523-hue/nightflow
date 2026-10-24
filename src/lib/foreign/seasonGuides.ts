@@ -8,7 +8,7 @@
 //
 // 사실 규칙:
 //   - 날짜·요일은 확인값: 2026-12-24 목, 12-25 금(공휴일), 12-31 목, 2027-01-01 금(공휴일).
-//   - 가격은 외국인 예약 하한(tablePricing.FOREIGN_TABLE_FLOOR): 강남 100만, 홍대·이태원 50만.
+//   - 가격은 외국인 예약 하한(tablePricing.FOREIGN_TABLE_FLOOR): 강남 140만, 홍대·이태원 50만.
 //     홍대 일부(La Rosa)는 15만 — "일부 클럽은 더 낮다"로만 쓴다. 하한이 바뀌면 여기 숫자도 바꾼다.
 //   - 클럽별 시즌 이벤트·특별 가격은 모른다 → "클럽이 따로 정할 수 있고, 확정 전에 알려드린다".
 //   - 대만·홍콩 표현(project_tw_community_vocab): 包廂·低消·公關·被卡.
@@ -40,7 +40,7 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
         "In Korea, Christmas Eve is a going-out night, not a family night — the clubs in Gangnam, Hongdae and Itaewon are some of the busiest of the year. In 2026 Christmas Eve is a Thursday and Christmas Day (Friday) is a public holiday, so the busy stretch runs Thursday to Sunday. If you're coming as a group, a booked table is what gets everyone in together and gives you somewhere to sit. Here's how the nights run, what a table costs, and which clubs we can book.",
       areasH2: "Where to go over Christmas",
       areas: [
-        { name: "Gangnam", tag: "Big rooms · strictest door", body: "Large EDM clubs and the strictest door policy in Seoul. On Christmas Eve the entrance is where groups get split up or turned away — a table avoids that. Tables from ₩1,000,000.", href: "/en/clubs/gangnam" },
+        { name: "Gangnam", tag: "Big rooms · strictest door", body: "Large EDM clubs and the strictest door policy in Seoul. On Christmas Eve the entrance is where groups get split up or turned away — a table avoids that. Tables from ₩1,400,000.", href: "/en/clubs/gangnam" },
         { name: "Hongdae", tag: "Biggest crowd · hip-hop", body: "The most clubs in one area and the youngest crowd. Free-entry clubs fill early on Christmas Eve. Tables from ₩500,000, some clubs lower.", href: "/en/clubs/hongdae" },
         { name: "Itaewon", tag: "International crowd", body: "Seoul's most international nightlife — easiest place to go out in English. Tables from ₩500,000.", href: "/en/clubs/itaewon" },
       ],
@@ -59,7 +59,7 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
         { q: "Is Christmas a public holiday in Korea?", a: "Yes. December 25 is a public holiday in South Korea. In 2026 it falls on a Friday, so Christmas Eve (Thursday) through Sunday is one long weekend for going out." },
         { q: "Is Christmas a big night for clubs in Seoul?", a: "Yes. In Korea Christmas Eve is a night out with friends or a date, so clubs in Gangnam, Hongdae and Itaewon are among their busiest of the year. In 2026 Christmas Eve is a Thursday and Christmas Day is a Friday public holiday, so expect busy nights from Thursday through Sunday." },
         { q: "Do I need to book a table for Christmas Eve?", a: "You can walk in, but on Christmas Eve popular clubs fill early and the door can stop admitting or split up large groups. A booked table means the group goes in together — as long as everyone meets the age, passport and dress rules — with seating and bottles for the night." },
-        { q: "How much is a club table on Christmas in Seoul?", a: "The minimum spend is ₩1,000,000 per table in Gangnam and ₩500,000 in Hongdae and Itaewon (a few Hongdae clubs are lower), filled from the club's own menu. A table is shared, so for a group of 8 in Gangnam that's about ₩125,000 each. No deposit, no broker fee — you pay the club on the night." },
+        { q: "How much is a club table on Christmas in Seoul?", a: "The minimum spend is ₩1,400,000 per table in Gangnam and ₩500,000 in Hongdae and Itaewon (a few Hongdae clubs are lower), filled from the club's own menu. A table is shared, so for a group of 8 in Gangnam that's about ₩175,000 each. No deposit, no broker fee — you pay the club on the night." },
         { q: "When should I book?", a: "Two to three weeks ahead for Christmas Eve, earlier for groups of 8 or more. Clubs post their Christmas line-ups on Instagram closer to the date." },
         { q: "Can foreigners get in? What do I need?", a: "Yes. Clubs are 19+ (in 2026: born 2007 or earlier) and foreigners must show a physical passport at the door. Gangnam has the strictest dress code — no shorts, tank tops or slides." },
       ],
@@ -92,7 +92,7 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
         "韓国のクリスマスイブは家族ではなく友人や恋人と出かける夜。江南・弘大・梨泰院のクラブは一年で最も混む夜のひとつです。2026年はイブが木曜日、クリスマス当日(金)が祝日なので、木曜から日曜まで混雑が続きます。グループで行くなら、全員一緒に入れて座る場所も確保できるのがテーブル予約です。",
       areasH2: "クリスマスはどこに行く？",
       areas: [
-        { name: "江南", tag: "大型クラブ · 入口が最も厳しい", body: "大型EDMクラブと市内で最も厳しい入口審査。イブは入口でグループが分かれたり断られたりしやすい夜。テーブルならその心配がありません。1卓100万ウォン〜。", href: "/ja/clubs/gangnam" },
+        { name: "江南", tag: "大型クラブ · 入口が最も厳しい", body: "大型EDMクラブと市内で最も厳しい入口審査。イブは入口でグループが分かれたり断られたりしやすい夜。テーブルならその心配がありません。1卓140万ウォン〜。", href: "/ja/clubs/gangnam" },
         { name: "弘大", tag: "人出が最大 · ヒップホップ", body: "クラブの数が最も多く、客層も若いエリア。無料入場の店はイブは早くに満員。1卓50万ウォン〜、さらに安い店も。", href: "/ja/clubs/hongdae" },
         { name: "梨泰院", tag: "外国人が多い", body: "ソウルで最も国際的なエリア。英語でも遊びやすい。1卓50万ウォン〜。", href: "/ja/clubs/itaewon" },
       ],
@@ -111,7 +111,7 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
         { q: "韓国ではクリスマスは祝日ですか？", a: "はい。12月25日は韓国の祝日です。2026年は金曜日なので、イブ(木)から日曜までが遊びに出かける長い週末になります。" },
         { q: "ソウルのクリスマスはクラブが混みますか？", a: "はい。韓国ではクリスマスイブは友人や恋人と出かける夜なので、江南・弘大・梨泰院のクラブは一年で最も混む夜のひとつです。2026年はイブが木曜、25日(金)が祝日のため、木曜から日曜まで混雑します。" },
         { q: "イブはテーブル予約が必要ですか？", a: "当日入場もできますが、イブは人気店が早くに満員になり、入口で入場が止まったり大人数のグループが分けられたりします。テーブル予約ならグループ全員で一緒に入れて（年齢・パスポート・服装の条件を満たしていれば）、席とボトルも確保できます。" },
-        { q: "クリスマスのテーブル料金はいくら？", a: "1卓あたり江南100万ウォン、弘大・梨泰院50万ウォン（弘大の一部はさらに安い）から、クラブ自身のメニューで組みます。テーブルはグループで割るので、江南で8人なら1人あたり約12.5万ウォン。デポジット・仲介手数料なし、当日クラブでお支払い。" },
+        { q: "クリスマスのテーブル料金はいくら？", a: "1卓あたり江南140万ウォン、弘大・梨泰院50万ウォン（弘大の一部はさらに安い）から、クラブ自身のメニューで組みます。テーブルはグループで割るので、江南で8人なら1人あたり約17.5万ウォン。デポジット・仲介手数料なし、当日クラブでお支払い。" },
         { q: "いつまでに予約すべき？", a: "イブは2〜3週間前、8人以上のグループはもっと早めに。各クラブのクリスマスのラインナップは日が近づくとインスタで発表されます。" },
         { q: "外国人も入れますか？必要なものは？", a: "入れます。クラブは19歳以上（2026年は2007年以前生まれ）で、外国人はパスポート原本が必要です。江南は服装が最も厳しく、短パン・タンクトップ・サンダルは不可。" },
       ],
@@ -260,7 +260,7 @@ export const NYE_2026: SeasonGuideConfig = {
         "New Year's Eve falls on a Thursday this year, and January 1 (Friday) is a public holiday — so the night runs late and the weekend follows straight after. Seoul's clubs count down at midnight and keep going until morning. If you want to be inside, together, when the clock hits 00:00, the safest way is a booked table: no queue at 23:30 and a place for the whole group. Here's how the night runs, what it costs, and which clubs we can book.",
       areasH2: "Where to count down",
       areas: [
-        { name: "Gangnam", tag: "Big countdown rooms", body: "The large EDM clubs make the countdown the peak of the night — and have the strictest door. Get in well before midnight or book a table. Tables from ₩1,000,000.", href: "/en/clubs/gangnam" },
+        { name: "Gangnam", tag: "Big countdown rooms", body: "The large EDM clubs make the countdown the peak of the night — and have the strictest door. Get in well before midnight or book a table. Tables from ₩1,400,000.", href: "/en/clubs/gangnam" },
         { name: "Hongdae", tag: "Most clubs · hip-hop", body: "The most clubs in one area, the youngest crowd, and queues that build fast before midnight. Tables from ₩500,000, some clubs lower.", href: "/en/clubs/hongdae" },
         { name: "Itaewon", tag: "International crowd", body: "The easiest place to count down in English, with a mixed international crowd. Tables from ₩500,000.", href: "/en/clubs/itaewon" },
       ],
@@ -278,7 +278,7 @@ export const NYE_2026: SeasonGuideConfig = {
       faqs: [
         { q: "Do Seoul clubs do a New Year's countdown?", a: "Most do. Clubs in Gangnam, Hongdae and Itaewon generally count down at midnight and keep the party going until 05:00–06:00. Line-ups are announced on each club's Instagram closer to the date." },
         { q: "Should I book a table for New Year's Eve?", a: "If you want to be inside at midnight, yes. Queues build quickly between 23:00 and midnight and the door can stop admitting when full. A table means no queue and seating for the group." },
-        { q: "How much is a New Year's Eve table in Seoul?", a: "From ₩1,000,000 per table in Gangnam and ₩500,000 in Hongdae and Itaewon (a few Hongdae clubs lower), filled from the club's menu. Split across a group of 8 in Gangnam that's about ₩125,000 each. Some clubs set a special minimum for this night — we confirm the final price in writing first. No deposit, pay the club on the night." },
+        { q: "How much is a New Year's Eve table in Seoul?", a: "From ₩1,400,000 per table in Gangnam and ₩500,000 in Hongdae and Itaewon (a few Hongdae clubs lower), filled from the club's menu. Split across a group of 8 in Gangnam that's about ₩175,000 each. Some clubs set a special minimum for this night — we confirm the final price in writing first. No deposit, pay the club on the night." },
         { q: "How do I get home after midnight?", a: "Plan for it. Taxis are very hard to get right after midnight on New Year's Eve. Most groups either stay until the first subway (around 05:30) or wait until 03:00–04:00 when taxis free up." },
         { q: "When should I book?", a: "At least three weeks ahead, earlier for groups of 8 or more — New Year's Eve tables go early." },
       ],
@@ -311,7 +311,7 @@ export const NYE_2026: SeasonGuideConfig = {
         "今年の大晦日は木曜日、1月1日(金)は祝日なので、夜は遅くまで続きそのまま週末に入ります。ソウルのクラブは0時にカウントダウンして朝まで営業。0時の瞬間にグループ全員で店内にいたいなら、23時半の行列に並ばずに入れるテーブル予約が一番確実です。",
       areasH2: "どこでカウントダウンする？",
       areas: [
-        { name: "江南", tag: "大型カウントダウン", body: "大型EDMクラブはカウントダウンが一番の盛り上がり。入口は市内で最も厳しいので、0時のかなり前に入るかテーブル予約を。1卓100万ウォン〜。", href: "/ja/clubs/gangnam" },
+        { name: "江南", tag: "大型カウントダウン", body: "大型EDMクラブはカウントダウンが一番の盛り上がり。入口は市内で最も厳しいので、0時のかなり前に入るかテーブル予約を。1卓140万ウォン〜。", href: "/ja/clubs/gangnam" },
         { name: "弘大", tag: "クラブ最多 · ヒップホップ", body: "クラブの数が最も多く、0時前は行列が一気に伸びます。1卓50万ウォン〜、さらに安い店も。", href: "/ja/clubs/hongdae" },
         { name: "梨泰院", tag: "外国人が多い", body: "英語でもカウントダウンしやすい国際的なエリア。1卓50万ウォン〜。", href: "/ja/clubs/itaewon" },
       ],
@@ -329,7 +329,7 @@ export const NYE_2026: SeasonGuideConfig = {
       faqs: [
         { q: "ソウルのクラブはカウントダウンをしますか？", a: "多くのクラブがします。江南・弘大・梨泰院のクラブは一般的に0時にカウントダウンし、5〜6時まで営業します。ラインナップは日が近づくと各クラブのインスタで発表されます。" },
         { q: "大晦日はテーブル予約したほうがいい？", a: "0時に店内にいたいなら予約がおすすめです。23時〜0時の間に行列が一気に伸び、満員になると入場が止まります。テーブルなら並ばずに入れて、グループの席もあります。" },
-        { q: "大晦日のテーブルはいくら？", a: "1卓あたり江南100万ウォン〜、弘大・梨泰院50万ウォン〜（弘大の一部はさらに安い）で、クラブのメニューで組みます。江南で8人なら1人あたり約12.5万ウォン。この夜だけ特別な最低金額を設定する店もあるので、先に最終金額を書面（メッセージ）で確認します。デポジット不要、当日クラブでお支払い。" },
+        { q: "大晦日のテーブルはいくら？", a: "1卓あたり江南140万ウォン〜、弘大・梨泰院50万ウォン〜（弘大の一部はさらに安い）で、クラブのメニューで組みます。江南で8人なら1人あたり約17.5万ウォン。この夜だけ特別な最低金額を設定する店もあるので、先に最終金額を書面（メッセージ）で確認します。デポジット不要、当日クラブでお支払い。" },
         { q: "0時以降どうやって帰る？", a: "事前に考えておきましょう。大晦日の0時直後はタクシーが非常につかまりにくいです。多くのグループは始発（5時半ごろ）まで残るか、タクシーが空き始める3〜4時まで待ちます。" },
         { q: "いつまでに予約すべき？", a: "少なくとも3週間前、8人以上ならもっと早めに。大晦日のテーブルは早めに埋まります。" },
       ],
@@ -462,7 +462,7 @@ export const GROUP_TABLE: SeasonGuideConfig = {
     en: {
       title: "Birthday, Bachelor & Group Club Tables in Seoul — Prices per Person (2026)",
       description:
-        "Booking a Seoul club for a birthday, bachelor or bachelorette party, or a work trip? How group tables work, what it costs per person (around ₩60,000–125,000 each for a group of 8), and how to book in English with no deposit.",
+        "Booking a Seoul club for a birthday, bachelor or bachelorette party, or a work trip? How group tables work, what it costs per person (around ₩60,000–175,000 each for a group of 8), and how to book in English with no deposit.",
       ogTitle: "Group & birthday tables in Seoul",
       ogSub: "Birthdays, bachelor parties, work trips — price per person",
       keywords: [
@@ -475,7 +475,7 @@ export const GROUP_TABLE: SeasonGuideConfig = {
         "Most of the table requests we handle are groups of 4 to 10 — birthdays, bachelor and bachelorette parties, friends on a trip, teams on a work trip. For a group, a table isn't a luxury: it's how everyone gets in together, has somewhere to sit and put their things, and doesn't spend the night at the bar. A table has one minimum spend that the whole group shares, so the bigger the group, the less each person pays.",
       areasH2: "Which area suits your group",
       areas: [
-        { name: "Gangnam", tag: "Big night · strict door", body: "Large EDM clubs, the most 'big night out' feel, and the strictest door — exactly where a table helps a group most. ₩1,000,000 per table: about ₩125,000 each for 8 people.", href: "/en/clubs/gangnam" },
+        { name: "Gangnam", tag: "Big night · strict door", body: "Large EDM clubs, the most 'big night out' feel, and the strictest door — exactly where a table helps a group most. ₩1,400,000 per table: about ₩175,000 each for 8 people.", href: "/en/clubs/gangnam" },
         { name: "Hongdae", tag: "Young crowd · hip-hop", body: "Lots of clubs close together and a relaxed crowd. ₩500,000 per table (some clubs lower): about ₩83,000 each for 6 people.", href: "/en/clubs/hongdae" },
         { name: "Itaewon", tag: "International · English", body: "The easiest area to go out in English, with a mixed international crowd. ₩500,000 per table: about ₩62,500 each for 8 people.", href: "/en/clubs/itaewon" },
       ],
@@ -490,7 +490,7 @@ export const GROUP_TABLE: SeasonGuideConfig = {
         "These are the clubs' printed menus. The minimum spend is per table, not per person — split it across your group. Very large groups may need a bigger table or two tables; we confirm the total before you commit.",
       faqH2: "Group & birthday tables — questions people ask",
       faqs: [
-        { q: "How much does a club table cost per person in Seoul?", a: "The minimum spend is per table and shared by the group: ₩1,000,000 in Gangnam and ₩500,000 in Hongdae and Itaewon (a few Hongdae clubs are lower), filled from the club's own menu. For 8 people that's about ₩125,000 each in Gangnam or ₩62,500 each in Itaewon." },
+        { q: "How much does a club table cost per person in Seoul?", a: "The minimum spend is per table and shared by the group: ₩1,400,000 in Gangnam and ₩500,000 in Hongdae and Itaewon (a few Hongdae clubs are lower), filled from the club's own menu. For 8 people that's about ₩175,000 each in Gangnam or ₩62,500 each in Itaewon." },
         { q: "Can a Seoul club do something for a birthday?", a: "Tell us it's a birthday when you request. We ask the club what they can do — for example a birthday bottle presentation — and confirm it with the price before the night. What's possible depends on the club." },
         { q: "How many people fit at one table?", a: "It depends on the club and the table. Tell us your group size and we ask the club which table fits; for big groups (10+) that can mean a larger table or two, and we confirm the total first." },
         { q: "Is it OK for a bachelor or bachelorette party?", a: "Yes — groups celebrating are a normal sight in Seoul clubs. Everyone needs to be 19+ (in 2026: born 2007 or earlier) and bring a physical passport. Gangnam doors are strict on dress: no shorts, tank tops or slides." },
@@ -512,7 +512,7 @@ export const GROUP_TABLE: SeasonGuideConfig = {
     ja: {
       title: "ソウル クラブ 誕生日・グループのテーブル予約 — 1人あたりの料金 (2026)",
       description:
-        "誕生日、独身最後のパーティー、社員旅行でソウルのクラブへ。グループのテーブルの仕組み、1人あたりの料金（8人なら約6万〜12.5万ウォン）、日本語フォームからデポジットなしで予約する方法。",
+        "誕生日、独身最後のパーティー、社員旅行でソウルのクラブへ。グループのテーブルの仕組み、1人あたりの料金（8人なら約6万〜17.5万ウォン）、日本語フォームからデポジットなしで予約する方法。",
       ogTitle: "ソウル 誕生日・グループのテーブル",
       ogSub: "誕生日・パーティー・社員旅行 — 1人あたりの料金",
       keywords: [
@@ -525,7 +525,7 @@ export const GROUP_TABLE: SeasonGuideConfig = {
         "私たちが受けるテーブル予約の多くは4〜10人のグループです — 誕生日、独身最後のパーティー、友人旅行、社員旅行。グループにとってテーブルは贅沢ではなく、全員一緒に入れて、座る場所と荷物を置く場所があり、一晩中バーに並ばなくていい方法です。最低予約金額は1卓ごとでグループで割るので、人数が多いほど1人あたりは安くなります。",
       areasH2: "グループに合うエリア",
       areas: [
-        { name: "江南", tag: "派手な夜 · 入口が厳しい", body: "大型EDMクラブで一番「特別な夜」らしい雰囲気。入口が最も厳しいので、テーブルが一番役立つエリア。1卓100万ウォン：8人なら1人約12.5万ウォン。", href: "/ja/clubs/gangnam" },
+        { name: "江南", tag: "派手な夜 · 入口が厳しい", body: "大型EDMクラブで一番「特別な夜」らしい雰囲気。入口が最も厳しいので、テーブルが一番役立つエリア。1卓140万ウォン：8人なら1人約17.5万ウォン。", href: "/ja/clubs/gangnam" },
         { name: "弘大", tag: "若い客層 · ヒップホップ", body: "クラブが密集し、気軽な雰囲気。1卓50万ウォン（さらに安い店も）：6人なら1人約8.3万ウォン。", href: "/ja/clubs/hongdae" },
         { name: "梨泰院", tag: "国際的 · 英語OK", body: "外国人が多く、英語でも遊びやすいエリア。1卓50万ウォン：8人なら1人約6.25万ウォン。", href: "/ja/clubs/itaewon" },
       ],
@@ -540,7 +540,7 @@ export const GROUP_TABLE: SeasonGuideConfig = {
         "クラブの実際のメニューです。最低予約金額は1人ではなく1卓あたり — グループで割ってください。大人数の場合は大きいテーブルや2卓になることもあり、確定前に合計をお知らせします。",
       faqH2: "誕生日・グループのテーブル — よくある質問",
       faqs: [
-        { q: "ソウルのクラブのテーブルは1人いくら？", a: "最低予約金額は1卓あたりでグループで割ります：江南100万ウォン、弘大・梨泰院50万ウォン（弘大の一部はさらに安い）、クラブのメニューで組みます。8人なら江南で1人約12.5万ウォン、梨泰院なら約6.25万ウォン。" },
+        { q: "ソウルのクラブのテーブルは1人いくら？", a: "最低予約金額は1卓あたりでグループで割ります：江南140万ウォン、弘大・梨泰院50万ウォン（弘大の一部はさらに安い）、クラブのメニューで組みます。8人なら江南で1人約17.5万ウォン、梨泰院なら約6.25万ウォン。" },
         { q: "誕生日に何かしてもらえますか？", a: "申し込み時に誕生日だと伝えてください。クラブに何ができるか（例：誕生日のボトル演出）を確認し、料金と一緒に事前にお知らせします。内容はクラブによって異なります。" },
         { q: "1卓に何人座れますか？", a: "クラブとテーブルによります。人数を伝えていただければ合うテーブルをクラブに確認します。10人以上なら大きいテーブルや2卓になることもあり、先に合計を確定します。" },
         { q: "独身最後のパーティーでも大丈夫？", a: "大丈夫です。お祝いのグループはソウルのクラブでは普通の光景です。全員19歳以上（2026年は2007年以前生まれ）でパスポート原本が必要。江南は服装が厳しく、短パン・タンクトップ・サンダルは不可。" },

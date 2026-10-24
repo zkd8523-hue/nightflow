@@ -13,7 +13,7 @@ export const metadata: Metadata = {
       "Seoul Club Table Prices 2026 — Real Menus from 23 Clubs (from ₩500,000)",
   },
   description:
-    "What a Seoul club table actually costs: minimum spend ₩500,000 in Itaewon and Hongdae, ₩1,000,000 in Gangnam, filled from each club's own menu. Real set prices and what's in them. No broker fee.",
+    "What a Seoul club table actually costs: minimum spend ₩500,000 in Itaewon and Hongdae, ₩1,400,000 in Gangnam, filled from each club's own menu. Real set prices and what's in them. No broker fee.",
   keywords: [
     // Seoul + VIP
     "Seoul VIP table",
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Seoul Club Table Prices 2026 — Real Menus from 23 Clubs (from ₩500,000)",
     description:
-      "What a Seoul club table actually costs: minimum spend ₩500,000 in Itaewon and Hongdae, ₩1,000,000 in Gangnam, filled from each club's own menu. Real set prices and what's in them. No broker fee.",
+      "What a Seoul club table actually costs: minimum spend ₩500,000 in Itaewon and Hongdae, ₩1,400,000 in Gangnam, filled from each club's own menu. Real set prices and what's in them. No broker fee.",
     url: "https://nightflow.kr/en/vip-tables",
     locale: "en_US",
     type: "website",

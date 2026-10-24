@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef, useCallback, forwardRef, useImper
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Search, Check, MapPin, Users, UserRound, Calendar, MessageCircle, Languages, ChevronRight, ChevronLeft, Heart, Plus, Sparkles, Music2, ShieldCheck, Mail, Star, CalendarPlus, Instagram, AlertTriangle } from "lucide-react";
+import { Search, Check, MapPin, Users, UserRound, Calendar, MessageCircle, Languages, ChevronRight, ChevronLeft, Heart, Plus, Sparkles, Music2, ShieldCheck, Mail, Star, CalendarPlus, Instagram, AlertTriangle, Wine } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -12,7 +12,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { ForeignClubDetailPanel, displayClubName, type ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
-import { formatAsOfLocale, formatAsOfDateTimeLocale, resolveCurrency, krwTo, currencyToKrw, currencySymbol, isCurrencyCode } from "@/lib/utils/currency";
+import { formatAsOfLocale, formatAsOfDateTimeLocale, resolveCurrency, krwTo, convertKrw, currencyToKrw, currencySymbol, isCurrencyCode } from "@/lib/utils/currency";
 import { useKrwRates } from "@/lib/utils/useKrwRates";
 import { pinFeatured } from "@/lib/clubs/foreignSort";
 import { clubTagline } from "@/lib/clubs/bookable";
@@ -26,7 +26,7 @@ import { ContactButtons } from "@/components/foreign/ContactButtons";
 import { CONTACT_INSTAGRAM } from "@/lib/foreign/contact";
 import { saveFormDraft, loadFormDraft, clearFormDraft, FOREIGN_BOOKING_DRAFT_KEY } from "@/lib/utils/formDraft";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
-import type { ClubMenuItem, ClubMenuCombo, SelectedMenuSnapshot } from "@/types/database";
+import type { ClubMenuItem, ClubMenuCombo, ClubMenuVariant, SelectedMenuSnapshot } from "@/types/database";
 
 // 폼 Step 1의 "Where?" 카드에 붙는 지역 한 줄 설명 — 홈(EnHomeClient REGIONS)과 같은 문장.
 // 외국인은 지역 이름만으로는 못 고른다(2026-09-09). 이름 대신 "어떤 밤인지"로 고르게 한다.
@@ -97,7 +97,7 @@ const ITAEWON_RECOMMEND_CURATED = ["Dawn", "BADASS", "Day&night"];
 //   이태원 n=15 중앙 50만 / 최고 100만 — 표본이 적어 홍대 기준으로 통일한다.
 // 마지막 단은 "+"로 표기해 상한이 아니라 하한임을 드러낸다(더 큰 금액은 직접 입력).
 const AREA_BUDGET_TIERS: Record<string, number[]> = {
-  "강남": [1000000, 2000000, 3000000],
+  "강남": [1400000, 3000000, 10000000],
   "이태원": [500000, 800000, 1500000],
   "홍대": [500000, 800000, 1500000],
 };
@@ -108,6 +108,99 @@ const FALLBACK_BUDGET_TIERS = [500000, 800000, 1500000];
 const CLUB_BUDGET_TIERS_OVERRIDE: Record<string, number[]> = {
   "4004d7b6-b3d2-4ec4-8c42-32d82405ded0": [150000, 300000, 500000], // La Rosa
 };
+
+// 강남은 버튼 3개를 공식(하한·1.5배·2배) 대신 AREA_BUDGET_TIERS 값 그대로 쓰고 맨 위를 VVIP로 부른다
+// — 사용자 결정(2026-10-24): 140만 / 300만 / 1,000만.
+const AREA_EXPLICIT_TIER_AREAS = new Set(["강남"]);
+// 강남 VVIP(1,000만) 위의 큰 금액 칩. 렌더마다 새 배열이면 예시 useMemo가 매번 다시 돌아서 상수로 둔다.
+const BIG_BUDGETS = [30_000_000, 50_000_000, 100_000_000];
+const NO_BIG_BUDGETS: number[] = [];
+
+// 예산 버튼마다 "이 금액이면 이 정도" 예시를 그 클럽 메뉴판에서 뽑는다(2026-10-24).
+// 단품, 메뉴에 이름이 있는 묶음, 같은 술 최대 5병만 쓴다 — "세트 ×4"처럼 세트를 곱한 조합이나
+// 이름 없는 묶음(가격만 있는 것), 입장 시간 등 조건이 붙은 품목은 예시로 어색해서 뺀다.
+// 예산을 넘는 조합도 빼고(손님이 그 금액을 고른 거라) 85% 아래로 떨어지는 것도 뺀다.
+const EXAMPLE_CATEGORY_RANK: Record<string, number> = { champagne: 0, set: 1, cognac: 2, whisky: 3, tequila: 4, vodka: 5 };
+function budgetExamples(items: ClubMenuItem[], budget: number, weekend: boolean, ko: boolean, max = 2): string[] {
+  type Cand = { price: number; label: string; rank: number; n: number; id: string };
+  const cands: Cand[] = [];
+  for (const it of items) {
+    if (it.condition_note || it.condition_note_en) continue;
+    const vs = [...(it.variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+    if (vs.length === 0) continue;
+    const name = (ko ? it.name_ko : null) || it.name_en;
+    const rank = EXAMPLE_CATEGORY_RANK[it.category] ?? 9;
+    const priceOf = (v: ClubMenuVariant) => (weekend ? (v.price_weekend ?? v.price) : v.price);
+    const baseLabel = (vs[0].label_en ?? "").trim();
+    const multipliable = it.category !== "set" && (!baseLabel || /^1\b/.test(baseLabel));
+    for (let n = 1; n <= (multipliable ? 5 : 1); n++) {
+      cands.push({ price: priceOf(vs[0]) * n, label: n > 1 ? `${name} ×${n}` : name, rank, n, id: it.id });
+    }
+    for (const v of vs.slice(1)) {
+      const vl = ((ko ? v.label_ko : null) || v.label_en || "").trim();
+      if (vl) cands.push({ price: priceOf(v), label: `${name} · ${vl}`, rank, n: 1, id: it.id });
+    }
+  }
+  // 샴페인 먼저, 그다음 병 수가 적은 조합, 그다음 예산에 가까운 순 — 금액만 맞춘 "싼 샴페인 ×4"보다
+  // "좋은 술 적게"가 고액 등급에 맞는다. 같은 브랜드(이름 첫 단어)는 한 번만 — "Armand 로제·드미섹"처럼
+  // 같은 집 술 두 개가 예시로 나오면 성의 없어 보였다(2026-10-24).
+  const fit = cands
+    .filter((c) => c.price <= budget && c.price >= budget * 0.85)
+    .sort((a, b) => a.rank - b.rank || a.n - b.n || b.price - a.price);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const c of fit) {
+    const brand = brandOf(c.label);
+    if (seen.has(c.id) || seen.has(brand)) continue;
+    seen.add(c.id);
+    seen.add(brand);
+    out.push(c.label);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+const brandOf = (label: string) => label.toLowerCase().replace(/^the\s+/, "").split(/\s+/)[0];
+
+// 3천만 원 이상 칩의 예시. 큰 테이블은 같은 샴페인을 수십 병 까는 게 보통이라 "Dom Pérignon ×25" 같은
+// 물량 예시를 먼저 두고, 그다음 위 규칙의 한두 병짜리 최고급(루이 13세 등)을 붙인다 — "Louis XIII ×2"만
+// 있으니 5천만 원이 두 병으로 보였다(2026-10-24, 사용자 지적). 돔페리뇽이 없으면 100만 원 이상 샴페인 중
+// 비싼 것으로 대신하고, 그것도 없으면 위 규칙만 쓴다.
+const DOM_PERIGNON = /dom\s*-?\s*p[ée]rignon|돔\s*페리뇽/i;
+function bigBudgetExamples(items: ClubMenuItem[], budget: number, weekend: boolean, ko: boolean): string[] {
+  type Bottle = { name: string; unit: number; dp: boolean };
+  const bottles: Bottle[] = [];
+  for (const it of items) {
+    if (it.category !== "champagne" || it.condition_note || it.condition_note_en) continue;
+    const vs = [...(it.variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+    if (vs.length === 0) continue;
+    const baseLabel = (vs[0].label_en ?? "").trim();
+    if (baseLabel && !/^1\b/.test(baseLabel)) continue;
+    const unit = weekend ? (vs[0].price_weekend ?? vs[0].price) : vs[0].price;
+    const dp = DOM_PERIGNON.test(`${it.name_en} ${it.name_ko ?? ""}`);
+    if (!Number.isFinite(unit) || unit <= 0 || (!dp && unit < 1_000_000)) continue;
+    bottles.push({ name: (ko ? it.name_ko : null) || it.name_en, unit, dp });
+  }
+  // 돔페리뇽끼리는 싼 것(병 수가 많이 나오는 기본 라인) 먼저, 나머지는 비싼 것 먼저.
+  bottles.sort((a, b) => Number(b.dp) - Number(a.dp) || (a.dp ? a.unit - b.unit : b.unit - a.unit));
+  // 병 수는 5병 단위로 맞춘다("×21" → "×20") — 단, 그러다 예산의 85% 아래로 떨어지면 원래 수 그대로.
+  const countFor = (unit: number) => {
+    const n = Math.floor(budget / unit);
+    const round5 = n - (n % 5);
+    return round5 >= 6 && round5 * unit >= budget * 0.85 ? round5 : n;
+  };
+  // 100병을 넘으면("×150") 현실감이 없어 다음 후보(더 비싼 라인)로 넘긴다.
+  const volume = bottles.find((b) => {
+    const n = countFor(b.unit);
+    return n >= 6 && n <= 100 && n * b.unit >= budget * 0.85;
+  });
+  const out = volume ? [`${volume.name} ×${countFor(volume.unit)}`] : [];
+  for (const ex of budgetExamples(items, budget, weekend, ko, 3)) {
+    if (out.length >= 2) break;
+    if (volume && brandOf(ex) === brandOf(volume.name)) continue;
+    out.push(ex);
+  }
+  return out;
+}
 
 const AREA_MIN_BUDGET: Record<string, number> = Object.fromEntries(
   Object.entries(AREA_BUDGET_TIERS).map(([area, tiers]) => [area, tiers[0]])
@@ -137,9 +230,12 @@ const COMMON_DOMAIN_TYPOS: Record<string, string> = {
   "icloud.con": "icloud.com", "iclould.com": "icloud.com",
   "qq.con": "qq.com", "163.con": "163.com",
 };
+// 번체(zh-tw)가 빠져 있어서 /zh-tw 손님은 아무 칩도 선택 안 된 채로 보였고, "中文"을 누르면
+// 간체로 바뀌어 접수·확정 메일까지 간체로 갔다(2026-10-24). 간체·번체를 나눠 둔다.
 const LANGS: { code: Lang; label: string }[] = [
   { code: "en", label: "English" },
-  { code: "zh", label: "中文" },
+  { code: "zh", label: "简体中文" },
+  { code: "zh-tw", label: "繁體中文" },
   { code: "ja", label: "日本語" },
   { code: "ko", label: "한국어" },
 ];
@@ -280,16 +376,32 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     if (d.length === 7) return lang2 === "ja" ? "毎日" : "每天";
     return d.map((x) => (lang2 === "ja" ? L[x] : `周${L[x]}`)).join("·");
   };
-  // 매일 여는 클럽(7일)엔 "그 외 요일은 선택 불가"가 말이 안 되므로 줄 자체를 뺀다.
-  const closedNotice = selectedClubOpenDows?.length && selectedClubOpenDows.length < 7
-    ? t(
-        `${formatOpenDows(selectedClubOpenDows)} 영업 · 그 외 요일은 선택할 수 없어요 (공휴일·공휴일 전날은 가능)`,
-        `Open ${formatOpenDowsEn(selectedClubOpenDows)} · other days can't be selected (holidays and their eves are open)`,
-        `${dowsIn("ja", selectedClubOpenDows)} 営業 · 他の曜日は選択できません（祝日・祝日前日は可）`,
-        `${dowsIn("zh", selectedClubOpenDows)} 营业 · 其他日期无法选择（节假日及前一天可选）`,
-        `${dowsIn("zh", selectedClubOpenDows).replace("周", "週")} 營業 · 其他日期無法選擇（假日及前一天可選）`
-      )
-    : null;
+  // 매일 여는 클럽(7일)엔 안내할 게 없으므로 줄 자체를 뺀다.
+  // 쉬는 요일이 적으면 "월요일 휴무"처럼 쉬는 날을, 많으면 "금·토만 영업"처럼 여는 날을 말한다 —
+  // 여는 요일 여섯 개를 늘어놓고 "그 외는 선택 불가"를 붙인 문장은 길어서 읽히지 않았다(2026-10-24).
+  const closedNotice = (() => {
+    const open = selectedClubOpenDows;
+    if (!open?.length || open.length >= 7) return null;
+    const closed = [0, 1, 2, 3, 4, 5, 6].filter((d) => !open.includes(d));
+    if (closed.length <= 3) {
+      const DAY_KO = ["일", "월", "화", "수", "목", "금", "토"];
+      const DAY_EN = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+      return t(
+        `${closed.length === 1 ? `${DAY_KO[closed[0]]}요일` : formatOpenDows(closed)} 휴무 · 공휴일·공휴일 전날은 영업`,
+        `Closed ${closed.length === 1 ? DAY_EN[closed[0]] : formatOpenDowsEn(closed)} · open on holidays and their eves`,
+        `${dowsIn("ja", closed)}曜定休 · 祝日・祝日前日は営業`,
+        `${dowsIn("zh", closed)}休息 · 节假日及前一天营业`,
+        `${dowsIn("zh", closed).replace(/周/g, "週")}公休 · 假日及前一天營業`
+      );
+    }
+    return t(
+      `${formatOpenDows(open)}만 영업 · 공휴일·공휴일 전날도 영업`,
+      `Open ${formatOpenDowsEn(open)} only · also open on holidays and their eves`,
+      `${dowsIn("ja", open)}のみ営業 · 祝日・祝日前日も営業`,
+      `仅${dowsIn("zh", open)}营业 · 节假日及前一天也营业`,
+      `僅${dowsIn("zh", open).replace(/周/g, "週")}營業 · 假日及前一天也營業`
+    );
+  })();
   // Step 2 추천 카드용 — 짧은 한 줄. 데이터 없으면 null(카드에서 생략).
   const openDowsLine = (dows: number[] | null | undefined): string | null => {
     if (!dows || dows.length === 0 || dows.length === 7) {
@@ -406,7 +518,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   const minBudget = budgetFloor.amount;
   // 버튼에 쓸 3단 값 — 하한을 만든 지역 기준.
 
-  // "Gangnam VIP starts at ₩1,000,000" — 지역을 모르면 지역명 없이 표현.
+  // "Gangnam VIP starts at ₩1,400,000" — 지역을 모르면 지역명 없이 표현.
   const minBudgetNotice = (() => {
     const won = `₩${minBudget.toLocaleString("en-US")}`;
     if (!budgetFloor.area) {
@@ -1121,9 +1233,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
 
   // 추천 쇼트리스트 3곳 — 폼에 오는 clubs는 전부 isBookable(MD + 주대)이라 여기서 추가로
   // 예약 가능 여부를 볼 필요는 없다. 지역·그날 영업·장르(소프트)로 거르고 리뷰순.
-  // VIP 티어면 강남(최소 ₩1M)이 위로 온다.
+  // VIP 티어면 강남(최소 ₩1.4M)이 위로 온다.
   const shortlist = useMemo(() => {
-    // VIP(₩1M~)인데 지역이 "어디든"이면 강남만 — VIP 하한을 채우는 메뉴가 강남에 몰려 있다.
+    // VIP(₩1.4M~)인데 지역이 "어디든"이면 강남만 — VIP 하한을 채우는 메뉴가 강남에 몰려 있다.
     const pool = area
       ? clubs.filter((c) => c.area === area)
       : clubs.filter((c) => (tier === "vip" ? c.area === "강남" : SEOUL_AREAS.includes(c.area)));
@@ -1224,11 +1336,20 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // ── 가격 표시(2026-10-02) — 현지 통화를 앞에, 원화는 뒤에 작게, 1인당 금액을 아래 줄에.
   // "₩1M"은 ₩를 모르는 손님에겐 단위 없는 백만으로 읽히고, 테이블 총액이 혼자 내는 돈처럼 보였다.
   const localOf = (won: number) => (menuCurrency ? krwTo(won, menuCurrency, fxRates) : null);
-  const priceFromLabel = (won: number, kind: "set" | "item") => {
+  const wonText = (won: number) => `₩${won.toLocaleString("en-US")}`;
+  // 강남(고액 등급)은 원화를 크게, 외화는 반올림한 참고값만 작게 — US$7,490보다 ≈ US$7,500이
+  // 계산기 숫자처럼 안 보인다(2026-10-24, 목업 B). 다른 지역은 위 10/2 결정대로 현지 통화가 먼저다.
+  const approxLocal = (won: number) => {
+    if (!isCurrencyCode(menuCurrency)) return null;
+    const v = convertKrw(won, menuCurrency, fxRates);
+    if (!Number.isFinite(v)) return null;
+    const step = v >= 100_000 ? 5_000 : v >= 10_000 ? 500 : 50;
+    return `≈ ${currencySymbol(menuCurrency)}${(Math.round(v / step) * step).toLocaleString("en-US")}`;
+  };
+  // 세트 유무와 상관없이 숫자는 그 클럽의 테이블 시작가라 표기를 하나로 통일했다(2026-10-24).
+  const priceFromLabel = (won: number) => {
     const m = localOf(won) ?? `₩${won.toLocaleString("en-US")}`;
-    return kind === "set"
-      ? t(`테이블 ${m}~`, `From ${m} a table`, `テーブル ${m}〜`, `卡座 ${m} 起`, `包廂 ${m} 起`)
-      : t(`메뉴 ${m}~`, `Menu from ${m}`, `メニュー ${m}〜`, `酒单 ${m} 起`, `酒單 ${m} 起`);
+    return t(`테이블 ${m}~`, `From ${m} a table`, `テーブル ${m}〜`, `卡座 ${m} 起`, `包廂 ${m} 起`);
   };
   const perPersonLabel = (won: number) => {
     if (groupSize < 2) return null;
@@ -1238,15 +1359,14 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   };
   // 환산 고지 — 기준 시각까지. 원화로만 보는 손님(통화 없음)에겐 환산이 없으니 띄우지 않는다.
   const rateNote = menuCurrency ? (
-    <p className="text-[11px] text-muted-foreground leading-snug break-keep">
+    <p className="text-[12px] font-bold text-foreground/80 leading-snug break-keep">
       {t(
-        // "원화로 결제"만 쓰면 현금만 받는 걸로 읽힌다(2026-10-02, 사용자 지적) — 카드·현금 둘 다 된다는 걸
-        // 넣고, 달라지는 건 "청구액"이라고 써서 카드 결제가 기본처럼 읽히게 한다.
-        `${fxAsOfFull} 환율 기준 환산이에요. 현장에서 원화(₩) 금액을 카드나 현금으로 결제해서, 실제 청구액은 조금 달라질 수 있어요.`,
-        `Converted at the rate of ${fxAsOfFull}. You pay the won (₩) price at the club by card or cash, so the amount on your statement may differ slightly.`,
-        `${fxAsOfFull} 時点の為替レートで換算。クラブでウォン（₩）建てでお支払い（カード・現金どちらも可）のため、実際のご請求額は多少変わることがあります。`,
-        `按 ${fxAsOfFull} 汇率换算。到店按韩元（₩）金额付款，刷卡或现金均可，实际扣款金额可能略有差异。`,
-        `依 ${fxAsOfFull} 匯率換算。到店以韓元（₩）金額付款，刷卡或現金皆可，實際扣款金額可能略有差異。`
+        // "원화로 결제"만 쓰면 현금만 받는 걸로 읽힌다(2026-10-02) — 카드·현금 둘 다 된다는 건 남긴다.
+        `${fxAsOfFull} 환율 기준. 현장에서 원화(₩)로 결제 · 카드·현금 OK`,
+        `Rate as of ${fxAsOfFull}. Pay in won (₩) at the club · card or cash.`,
+        `${fxAsOfFull} 時点のレート。クラブでウォン（₩）払い · カード・現金OK`,
+        `按 ${fxAsOfFull} 汇率。到店付韩元（₩）· 刷卡或现金`,
+        `依 ${fxAsOfFull} 匯率。到店付韓元（₩）· 刷卡或現金`
       )}
     </p>
   ) : null;
@@ -1423,11 +1543,70 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     setBudgetOpen(false);
     setFormStep(3);
   };
+  const explicitTierArea = !clubTiersOverride && budgetFloor.area && AREA_EXPLICIT_TIER_AREAS.has(budgetFloor.area)
+    ? budgetFloor.area
+    : null;
+  // 강남 금액은 원화 먼저(approxLocal 참고) — 예산 시트와 3단계 요약 카드가 같이 쓴다.
+  const wonFirst = !!explicitTierArea;
   const mdBudgetOptions = useMemo(() => {
     if (clubTiersOverride) return clubTiersOverride;
+    if (explicitTierArea) return AREA_BUDGET_TIERS[explicitTierArea];
     const base = minBudget > 0 ? minBudget : 500_000;
     return [base, Math.round((base * 1.5) / 50_000) * 50_000, base * 2];
-  }, [minBudget, clubTiersOverride]);
+  }, [minBudget, clubTiersOverride, explicitTierArea]);
+  // 버튼 등급 이름(2026-09-30). 첫 버튼에 "최소"를 달면 싸구려로 읽혀 "가성비"로 바꿨다.
+  // 강남은 고액 손님 톤으로 클래식·시그니처·VVIP(2026-10-24). 이름은 금액 등급일 뿐 좌석 약속이
+  // 아니다 — 140만이면 바 테이블일 수도 있어서, 예산에 맞는 좌석 중에서 고르게 해준다는 안내를 버튼 위에 같이 둔다.
+  const budgetTierLabels = explicitTierArea
+    ? [
+        t("클래식", "Classic", "クラシック", "经典", "經典"),
+        t("시그니처", "Signature", "シグネチャー", "招牌", "招牌"),
+        "VVIP",
+      ]
+    : [
+        t("가성비", "Value", "コスパ", "性价比", "CP值"),
+        t("인기", "Popular", "人気", "热门", "熱門"),
+        t("프리미엄", "Premium", "プレミアム", "高端", "頂級"),
+      ];
+  // 메뉴판이 있는(= 예약 가능한) 클럽을 골랐을 때만 예시를 만든다. 못 만들면 그 버튼은 금액만.
+  const tierExamples = useMemo(
+    () => (selectedClubId && menuLoadedFor === selectedClubId && menuItems.length > 0
+      ? mdBudgetOptions.map((b) => budgetExamples(menuItems, b, isWeekend, lang === "ko"))
+      : []),
+    [selectedClubId, menuLoadedFor, menuItems, mdBudgetOptions, isWeekend, lang]
+  );
+  // 강남은 VVIP(1,000만) 위로 쓰는 손님도 있어 직접 입력 대신 큰 금액 칩을 둔다(2026-10-24).
+  const bigBudgets = explicitTierArea ? BIG_BUDGETS : NO_BIG_BUDGETS;
+  // 칩도 예시를 보여준다 — 가장 큰 금액인데 뭘 받는지가 비어 있으면 고를 근거가 없다(2026-10-24, 사용자 지적).
+  const bigExamples = useMemo(
+    () => (selectedClubId && menuLoadedFor === selectedClubId && menuItems.length > 0
+      ? bigBudgets.map((b) => bigBudgetExamples(menuItems, b, isWeekend, lang === "ko"))
+      : []),
+    [selectedClubId, menuLoadedFor, menuItems, bigBudgets, isWeekend, lang]
+  );
+  // 예시 칸 — 고른 등급 카드 안과 큰 금액 칩 아래가 같이 쓴다.
+  const renderExampleLines = (examples: string[]) => (
+    <>
+      <span className="block text-[11px] font-extrabold uppercase tracking-wider text-brand-amber">
+        {t("예시", "For example", "例", "例如", "例如")}
+      </span>
+      {examples.map((ex) => (
+        <span key={ex} className="flex items-start gap-2 text-[14px] font-bold leading-snug break-keep">
+          <Wine className="w-4 h-4 mt-0.5 shrink-0 text-brand-amber" aria-hidden />
+          {ex}
+        </span>
+      ))}
+      <span className="block text-[12px] text-muted-foreground leading-snug break-keep whitespace-pre-line">
+        {t(
+          "다른 술을 원하시면\n방문 전에 바꿔드려요.",
+          "Prefer other bottles?\nWe’ll swap them before the night.",
+          "他のボトルがよければ\n来店前に変更できます。",
+          "想换别的酒？\n到店前可以帮你换。",
+          "想換別的酒？\n到店前可以幫你換。"
+        )}
+      </span>
+    </>
+  );
 
   // 메뉴 시트 맨 위(topSlot)에 끼우는 박스. 예전엔 날짜 화면에도 뒀다가 뺐다(2026-09-26, 아래 Step 1 주석).
   // compact 분기는 시트 배경색용으로 남겨 둔다.
@@ -1453,13 +1632,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         : (localCode ? (() => { const l = krwTo(customNum, localCode, rates); return l ? `≈ ${l}` : null; })() : null)
       : null;
     const minBudget = mdBudgetOptions[0];
-    // 버튼 등급 이름(2026-09-30). 첫 버튼에 "최소"를 달면 싸구려로 읽혀 "가성비"로 바꿨다.
-    // VIP/VVIP는 클럽의 실제 테이블 구역명이라 "이 예산 = VVIP 자리"로 읽힐 수 있어 쓰지 않는다.
-    const budgetTierLabels = [
-      t("가성비", "Value", "コスパ", "性价比", "CP值"),
-      t("인기", "Popular", "人気", "热门", "熱門"),
-      t("프리미엄", "Premium", "プレミアム", "高端", "頂級"),
-    ];
     const submitCustom = () => {
       if (!Number.isFinite(customKrw) || customKrw < minBudget) {
         const localMin = localCode ? krwTo(minBudget, localCode, rates) : null;
@@ -1561,7 +1733,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   const renderBudgetChooser = () => {
     const rates = fxRates;
     const localCode = isCurrencyCode(menuCurrency) ? menuCurrency : null;
-    const sel = Math.min(budgetSel, mdBudgetOptions.length - 1);
+    // 인덱스 0~2는 등급 버튼, 3~는 큰 금액 칩.
+    const allOptions = [...mdBudgetOptions, ...bigBudgets];
+    const sel = Math.min(budgetSel, allOptions.length - 1);
     const setSel = setBudgetSel;
     const custom = budgetCustom;
     const setCustom = setBudgetCustom;
@@ -1570,12 +1744,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     const customNum = Number(custom || 0);
     const customKrw = localCode ? currencyToKrw(customNum, localCode, rates) : customNum;
     const floor = mdBudgetOptions[0];
-    const tierLabels = [
-      t("가성비", "Value", "コスパ", "性价比", "CP值"),
-      t("인기", "Popular", "人気", "热门", "熱門"),
-      t("프리미엄", "Premium", "プレミアム", "高端", "頂級"),
-    ];
-    const chosen = customNum > 0 ? customKrw : mdBudgetOptions[sel];
+    const tierLabels = budgetTierLabels;
+    const chosen = customNum > 0 ? customKrw : allOptions[sel];
     const money = (won: number) => localOf(won) ?? `₩${won.toLocaleString("en-US")}`;
     // 직접 입력은 손님이 친 숫자 그대로 보여준다 — 원화로 바꿨다 되돌리면 1만 원 반올림 때문에
     // 5,000달러가 "US$4,997"로 찍혔다(2026-10-02, 사용자 지적). 신청 금액(chosen)은 원화 그대로.
@@ -1585,7 +1755,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     const typedPerPerson = customNum > 0 && groupSize > 1
       ? `${localCode ? currencySymbol(localCode) : "₩"}${Math.round(customNum / groupSize).toLocaleString("en-US")}`
       : null;
-    const ctaMoney = typedLabel ?? money(chosen);
+    const ctaMoney = typedLabel ?? (wonFirst ? wonText(chosen) : money(chosen));
     const go = () => {
       if (customNum > 0 && (!Number.isFinite(customKrw) || customKrw < floor)) {
         const lm = localOf(floor);
@@ -1625,35 +1795,60 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             {t("예산이 어느 정도세요?", "What’s your budget?", "ご予算は？", "预算多少？", "預算多少？")}
           </SheetTitle>
           <p className="text-[13px] text-muted-foreground leading-snug break-keep">
-            {/* 인원 나누기는 각 버튼("2명 기준")에 있어 설명에서는 뺐다(중복 점검, 2026-10-02). */}
-            {t(
-              "클럽이 술·믹서·테이블을 한 가격으로 맞춰드려요.",
-              "The club builds the table for you — bottles, mixers and the table, all in one price.",
-              "ボトル・ミキサー・テーブル込みの1つの価格で、クラブがご用意します。",
-              "夜店会按一个总价为你准备酒水、配饮和卡座。",
-              "夜店會以一個總價為你準備酒水、調飲和包廂。"
-            )}
+            {/* 인원 나누기는 각 버튼("2명 기준")에 있어 설명에서는 뺐다(중복 점검, 2026-10-02).
+                강남은 등급 이름(클래식·VVIP)이 좌석 약속으로 읽히지 않게, 예산에 맞는 좌석 중에서 손님이
+                고른다는 걸 이 자리에 쓴다 — 140만이면 바 테이블일 수도 있다. "클럽이 정한다"는 클럽이
+                갑처럼 읽혀 "고르게 해드린다"로 바꿨다(2026-10-24, 사용자 결정). */}
+            {wonFirst
+              ? t(
+                  "예산에 맞는 좌석(바·테이블·부스) 중에서 고르실 수 있게 해드리고, 방문 전에 글로 확정해 드려요.",
+                  "Pick your seat — bar, table or booth — from what fits your budget. We confirm it in writing before the night.",
+                  "ご予算に合うお席（バー・テーブル・ブース）からお選びいただけます。来店前に文面で確定します。",
+                  "可以在预算范围内选择座位（吧台或卡座），到店前书面确认。",
+                  "可以在預算範圍內選擇座位（吧台或包廂），到店前用書面確認。"
+                )
+              : t(
+                  "클럽이 술·믹서·테이블을 한 가격으로 맞춰드려요.",
+                  "The club builds the table for you — bottles, mixers and the table, all in one price.",
+                  "ボトル・ミキサー・テーブル込みの1つの価格で、クラブがご用意します。",
+                  "夜店会按一个总价为你准备酒水、配饮和卡座。",
+                  "夜店會以一個總價為你準備酒水、調飲和包廂。"
+                )}
           </p>
         </div>
         <div className="space-y-2">
           {mdBudgetOptions.map((b, i) => {
             const on = customNum === 0 && sel === i;
             const local = localOf(b);
-            const pp = groupSize > 1 ? money(Math.round(b / groupSize)) : null;
+            // 강남은 1인당 금액을 뺀다 — 고액 테이블에서 나눠 내는 계산은 손님이 찾는 정보가 아니다(목업 B).
+            const pp = groupSize > 1 && !wonFirst ? money(Math.round(b / groupSize)) : null;
+            const mainPrice = wonFirst ? wonText(b) : (local ?? wonText(b));
+            const subPrice = wonFirst ? approxLocal(b) : (local ? wonText(b) : null);
+            const examples = tierExamples[i] ?? [];
             return (
               <button
                 key={b}
                 type="button"
                 aria-pressed={on}
                 onClick={() => { setSel(i); setCustom(""); setErr(null); }}
-                className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border-2 text-left transition-colors ${on ? "border-amber-500 bg-amber-500/[0.06]" : "border-border bg-card"}`}
+                /* 2열 격자 — 체크(와 1인당 금액)는 등급 이름 높이에 붙이고, 고른 등급의 예시 칸은 아래에서
+                   카드 전체 폭을 쓴다. 예전엔 가로 flex라 체크가 카드 세로 가운데로 내려가고, 예시 위 구분선이
+                   글자 폭까지만 그어져 끊겨 보였다(2026-10-24). */
+                className={`w-full grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 px-4 py-3.5 rounded-2xl border-2 text-left transition-colors ${on ? "border-amber-500 bg-amber-500/[0.06]" : "border-border bg-card"}`}
               >
                 <span className="min-w-0">
                   <span className={`block text-[12px] font-bold ${on ? "text-brand-amber" : "text-muted-foreground"}`}>{tierLabels[i]}</span>
-                  <span className="block text-[18px] font-black tabular-nums">
-                    {local ?? `₩${b.toLocaleString("en-US")}`}
-                    {local && <span className="ml-1.5 text-[12px] font-semibold text-muted-foreground">₩{b.toLocaleString("en-US")}</span>}
+                  <span className={`block font-black tabular-nums ${wonFirst && on ? "text-[22px]" : "text-[18px]"}`}>
+                    {mainPrice}
+                    {subPrice && <span className="ml-1.5 text-[12px] font-semibold text-muted-foreground">{subPrice}</span>}
                   </span>
+                  {/* 고르지 않은 등급은 예시 한 줄. 예시엔 가격을 안 붙인다 — 버튼 금액과 숫자가 두 개가 돼
+                      헷갈렸다(2026-10-24, 사용자 지적). */}
+                  {examples.length > 0 && !on && (
+                    <span className="block mt-0.5 text-[12px] text-muted-foreground truncate">
+                      {t(`예: ${examples[0]}`, `e.g. ${examples[0]}`, `例：${examples[0]}`, `例如：${examples[0]}`, `例如：${examples[0]}`)}
+                    </span>
+                  )}
                 </span>
                 <span className="flex items-center gap-2.5 shrink-0">
                   {pp && (
@@ -1671,11 +1866,58 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                     {on && <Check className="w-3 h-3 text-black" strokeWidth={3} />}
                   </span>
                 </span>
+                {/* 고른 등급만 예시 2개 + 바꿀 수 있다는 안내. */}
+                {examples.length > 0 && on && (
+                  <span className="col-span-2 block mt-2.5 pt-2.5 border-t border-amber-500/20 space-y-1.5">
+                    {renderExampleLines(examples)}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
         {rateNote}
+        {bigBudgets.length > 0 ? (
+        <div className="space-y-1.5">
+          <p className="text-[12px] font-bold text-muted-foreground">
+            {t("이 이상의 예산을 잡고 있다면?", "Planning a bigger night?", "もっと大きなご予算なら？", "预算更高？", "預算更高？")}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {bigBudgets.map((b, j) => {
+              const idx = mdBudgetOptions.length + j;
+              const on = customNum === 0 && sel === idx;
+              const approx = approxLocal(b);
+              const short = t(
+                b >= 100_000_000 ? `${b / 100_000_000}억 원` : `${b / 10_000_000}천만 원`,
+                `₩${b / 1_000_000}M`, `₩${b / 1_000_000}M`, `₩${b / 1_000_000}M`, `₩${b / 1_000_000}M`
+              );
+              return (
+                <button
+                  key={b}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => { setSel(idx); setCustom(""); setErr(null); }}
+                  className={`h-14 rounded-xl border-2 flex flex-col items-center justify-center transition-colors ${on ? "border-amber-500 bg-amber-500/[0.06]" : "border-border bg-card"}`}
+                >
+                  {/* 위 등급 버튼과 같이 원화가 먼저, 외화는 반올림 참고값(목업 B). */}
+                  <span className="text-[14px] font-black tabular-nums">{short}</span>
+                  {approx && <span className="text-[11px] font-semibold text-muted-foreground tabular-nums">{approx}</span>}
+                </button>
+              );
+            })}
+          </div>
+          {/* 고른 칩의 예시 — 칩이 좁아 안에 못 넣으니 줄 아래에 등급 카드와 같은 모양으로. */}
+          {(() => {
+            const j = sel - mdBudgetOptions.length;
+            const ex = customNum === 0 && j >= 0 ? (bigExamples[j] ?? []) : [];
+            return ex.length > 0 ? (
+              <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/[0.06] px-4 py-3 space-y-1.5">
+                {renderExampleLines(ex)}
+              </div>
+            ) : null;
+          })()}
+        </div>
+        ) : (
         <div className="space-y-1.5">
           <label htmlFor="budget-custom" className="block text-[12px] font-bold text-muted-foreground">
             {t(
@@ -1707,6 +1949,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             </p>
           ) : null}
         </div>
+        )}
         <div className="space-y-1">
           <button
             type="button"
@@ -1796,8 +2039,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       ))}
     </div>
   );
+  // 좁은 화면에서 제목 옆에 붙으면 "Step 1 / of 3"으로 꺾였다 — 한 줄로 고정한다.
   const stepChip = (n: number) => (
-    <span className="text-[12px] font-bold text-muted-foreground">
+    <span className="shrink-0 whitespace-nowrap text-[12px] font-bold text-muted-foreground">
       {t(`${n} / 3 단계`, `Step ${n} of 3`, `ステップ ${n} / 3`, `第 ${n} 步 / 共 3 步`, `第 ${n} 步 / 共 3 步`)}
     </span>
   );
@@ -1848,7 +2092,15 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             {t("어떻게 놀고 싶으세요?", "Tell us your night", "どんな夜にしたい？", "想怎么玩？", "想怎麼玩？")}
           </h1>
           <p className="text-[13px] text-muted-foreground">
-            {t("문의는 무료. 보증금도 카드도 없어요.", "Free to ask. No deposit, no card.", "相談無料。デポジットもカードも不要。", "免费咨询。无需订金，无需信用卡。", "免費諮詢。無需訂金，無需信用卡。")}
+            {/* 무료·보증금 없음을 첫 줄에 세우면 고액 손님에겐 가볍게 읽힌다(2026-10-24). 결제 안내는
+                3단계 보내기 버튼 아래("현장 결제")에 남아 있다. */}
+            {t(
+              "클럽과 테이블을 맞추고, 확정 내용을 글로 보내드려요.",
+              "We set up your table with the club and confirm it in writing.",
+              "クラブとテーブルを手配し、確定内容を文面でお送りします。",
+              "我们帮你和夜店定好卡座，并书面确认。",
+              "我們幫你和夜店訂好包廂，並用書面確認。"
+            )}
           </p>
         </div>
         {stepChip(1)}
@@ -1864,12 +2116,13 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         {/* 안내 문구는 제목 줄 오른쪽에(2026-10-02, 운영자 결정) — 지역 칸의 "Not sure? Leave it on
             Anywhere"와 같은 자리. 인원은 나중에 바뀌기 쉬워서 확정을 요구하면 입력이 멈춘다 — 대략이면
             된다고 풀어준다(금액은 반대로 오퍼 기준이라 정확해야 하므로 그쪽엔 이 문구를 쓰지 않는다). */}
-        <div className="flex items-center justify-between gap-3 mb-2">
+        {/* 좁은 화면에선 라벨 아래 줄로 내린다 — 오른쪽에 두면 문장이 눌려 여러 줄로 꺾였다(2026-10-24). */}
+        <div className="flex flex-col items-start mb-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           {label(<Users className="w-4 h-4 text-money" />, t("인원", "Group size", "人数", "人数"))}
-          <span className="text-[12px] text-muted-foreground text-right break-keep">
+          <span className="-mt-1 pl-6 text-[12px] text-muted-foreground break-keep sm:mt-0 sm:pl-0 sm:text-right">
             {t(
               "대략이면 돼요 · 나중에 바꿀 수 있어요",
-              "Rough number is fine — able to change it",
+              "A rough number is fine — you can change it later.",
               "だいたいでOK · あとで変更可",
               "写个大概就行 · 之后可改",
               "寫個大概就行 · 之後可改"
@@ -2332,7 +2585,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               const tl = clubTagline(c, lang) || (AREA_TAGLINE[c.area] ? t(...AREA_TAGLINE[c.area]) : "");
               const on = stagedClubId === c.id;
               const f = menuFloorByClub[c.id];
-              const pp = f ? perPersonLabel(f.amount) : null;
+              // 강남 카드는 1인당 금액을 뺀다 — 고액 테이블에서 나눠 내는 계산은 손님이 찾는 정보가 아니다(2026-10-24).
+              const pp = f && !AREA_EXPLICIT_TIER_AREAS.has(c.area) ? perPersonLabel(f.amount) : null;
               return (
                 <div
                   key={c.id}
@@ -2377,7 +2631,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                       )}
                       {f && (
                         <p className="text-[13px] font-extrabold text-money truncate tabular-nums">
-                          {priceFromLabel(f.amount, f.kind)}
+                          {priceFromLabel(f.amount)}
                           {localOf(f.amount) && (
                             <span className="font-semibold text-muted-foreground"> · ₩{f.amount.toLocaleString("en-US")}</span>
                           )}
@@ -2712,17 +2966,24 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
           onClick={() => openBudget(selectedClubId)}
           className="w-full rounded-xl border border-amber-500/60 bg-card px-4 py-3 text-left transition-colors"
         >
-          {/* 요약 줄에서 금액을 뺀 뒤로 금액은 여기 하나 — 다른 화면과 같이 현지 통화를 앞에, 원화는 뒤에 작게. */}
+          {/* 요약 줄에서 금액을 뺀 뒤로 금액은 여기 하나 — 다른 화면과 같이 현지 통화를 앞에, 원화는 뒤에 작게.
+              강남은 예산 시트와 같이 원화를 앞에, 반올림한 외화를 뒤에(2026-10-24). */}
           <span className="block text-[13px] font-bold text-foreground">
             {picked.snapshot.md_recommend.club_pick
               ? t("클럽·세트 추천", "Club & set picked for you", "クラブ・セットおまかせ", "夜店和套餐由我们推荐", "夜店和套餐由我們推薦")
               : t("클럽 추천 세트", "Club-suggested set", "クラブおすすめセット", "夜店推荐套餐", "夜店推薦套餐")}
           </span>
           <span className="block mt-0.5 text-[17px] font-black text-money tabular-nums">
-            {localOf(picked.total) ?? `₩${picked.total.toLocaleString("en-US")}`}
-            {localOf(picked.total) && (
-              <span className="ml-1.5 text-[12px] font-semibold text-muted-foreground">₩{picked.total.toLocaleString("en-US")}</span>
-            )}
+            {(() => {
+              const main = wonFirst ? wonText(picked.total) : (localOf(picked.total) ?? wonText(picked.total));
+              const sub = wonFirst ? approxLocal(picked.total) : (localOf(picked.total) ? wonText(picked.total) : null);
+              return (
+                <>
+                  {main}
+                  {sub && <span className="ml-1.5 text-[12px] font-semibold text-muted-foreground">{sub}</span>}
+                </>
+              );
+            })()}
           </span>
           <span className="block text-[12px] text-muted-foreground mt-1">
             {t("예산을 바꾸려면 탭", "Tap to change the budget", "予算を変えるならタップ", "点按更改预算", "點按更改預算")}
@@ -2987,10 +3248,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         disabled={loading}
         className="w-full h-14 rounded-full bg-amber-500 text-black font-black text-[16px] hover:bg-amber-400 active:scale-[0.99] transition-all disabled:opacity-50"
       >
-        {loading ? t("전송 중…", "Sending…", "送信中…", "提交中…", "提交中…") : t("요청 보내기 — 무료", "Send request — free", "リクエスト送信 — 無料", "提交请求 — 免费", "提交請求 — 免費")}
+        {loading ? t("전송 중…", "Sending…", "送信中…", "提交中…", "提交中…") : t("요청 보내기", "Send request", "リクエスト送信", "提交请求", "提交請求")}
       </button>
       <p className="text-center text-[12px] text-muted-foreground -mt-3">
-        {t("대부분 하루 안에 회신 · 보증금 없음 · 현장 결제", "Most requests get a reply within a day · No deposit · Pay at the club", "多くは1日以内に返信 · デポジット不要 · 現地払い", "大多数一天内回复 · 无需订金 · 到店付款", "大多數一天內回覆 · 無需訂金 · 到店付款")}
+        {t("대부분 하루 안에 회신 · 당일 클럽에서 결제", "Most requests get a reply within a day · Pay the club on the night", "多くは1日以内に返信 · 当日クラブでお支払い", "大多数一天内回复 · 当晚在夜店付款", "大多數一天內回覆 · 當晚在夜店付款")}
       </p>
 
       {/* 폼 대신 대화(2026-10-20). 10/3~10/20 실측: 예산까지 고른 20명 중 이 단계에서 14명이 이름도
@@ -3098,12 +3359,18 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                 <span className="text-muted-foreground">{t("인원", "Group", "人数", "人数", "人數")}</span>
                 <span className="font-bold text-foreground">{t(`${groupSize}명`, `${groupSize} ${groupSize > 1 ? "people" : "person"}`, `${groupSize}名`, `${groupSize}人`, `${groupSize}人`)}</span>
               </div>
-              {picked && (
+              {/* 예산만 고른 요청(md_recommend)은 술을 고른 게 아니다 — "your drinks"로 적으면 사실과 다르다. */}
+              {picked && (picked.snapshot.md_recommend ? (
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="text-muted-foreground">{t("예산", "Budget", "ご予算", "预算", "預算")}</span>
+                  <span className="font-black text-money tabular-nums">₩{picked.total.toLocaleString("en-US")}</span>
+                </div>
+              ) : (
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="text-muted-foreground">{t("총액", "Total", "合計", "总额", "總額")}</span>
                   <span className="font-black text-money tabular-nums">₩{picked.total.toLocaleString("en-US")} · {t("내가 고른 술", "your drinks", "選んだドリンク", "你选的酒", "你選的酒")}</span>
                 </div>
-              )}
+              ))}
               <div className="flex items-center justify-between text-[13px]">
                 <span className="text-muted-foreground">{t("회신", "Reply to", "返信先", "回复到", "回覆到")}</span>
                 <span className="font-bold text-foreground break-all text-right">{CONTACT_LABEL[contactType]} {contactValue.trim()}</span>
@@ -3342,7 +3609,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
 
       {/* 예산 시트 — 날짜 다음 기본(2026-10-02). 메뉴판은 이 안의 링크로만 연다. */}
       <Sheet open={budgetOpen} onOpenChange={setBudgetOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl bg-background border-border max-h-[92vh] overflow-y-auto overscroll-contain p-0">
+        {/* 넓은 화면에선 가운데 560px — 화면 가로 전체로 펼치면 카드가 1,200px 넘게 늘어나 체크가 금액에서
+            멀리 떨어졌다(2026-10-24). */}
+        <SheetContent side="bottom" className="rounded-t-3xl bg-background border-border max-h-[92vh] overflow-y-auto overscroll-contain p-0 sm:max-w-[560px] sm:mx-auto">
           {budgetOpen && renderBudgetChooser()}
         </SheetContent>
       </Sheet>

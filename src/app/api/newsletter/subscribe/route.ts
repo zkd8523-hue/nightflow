@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NEWSLETTER_SUBJECT, newsletterWelcomeHtml } from "@/lib/email/newsletterWelcome";
+import { CONTACT_EMAIL } from "@/lib/foreign/contact";
 
 // 뉴스레터 구독 접수 + 신청 확인 메일 1통.
 //
@@ -35,7 +36,8 @@ async function resendSend(opts: { to: string; subject: string; html: string }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY 미설정");
   const from = process.env.RESEND_FROM || "NightFlow <team@nightflow.kr>";
-  const replyTo = process.env.RESEND_REPLY_TO || "team@nightflow.kr";
+  // nightflow.kr엔 수신(MX)이 없어 team@으로 온 답장은 사라진다 — 답장은 운영 메일로 받는다.
+  const replyTo = process.env.RESEND_REPLY_TO || CONTACT_EMAIL;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

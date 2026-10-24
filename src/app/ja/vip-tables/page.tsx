@@ -9,7 +9,7 @@ import { MarketFaq, marketFaqs } from "@/components/foreign/MarketFaq";
 
 export const metadata: Metadata = {
   title: { absolute: "ソウル クラブ テーブル料金 2026 — 実メニュー23軒（50万ウォン〜）" },
-  description: "ソウルのクラブでテーブルは実際いくらか：最低金額は梨泰院・弘大50万ウォン、江南100万ウォン。各クラブの実際のメニューから選んで埋めます。セット実価格と内容つき、仲介手数料なし。",
+  description: "ソウルのクラブでテーブルは実際いくらか：最低金額は梨泰院・弘大50万ウォン、江南140万ウォン。各クラブの実際のメニューから選んで埋めます。セット実価格と内容つき、仲介手数料なし。",
   keywords: ["ソウルVIPルーム","ソウルVIP予約","ソウルボトルサービス","ソウルVIPクラブ","韓国VIPルーム","韓国VIP予約","韓国ボトルサービス","韓国VIPクラブ","江南VIPルーム","江南VIP予約","江南ボトルサービス","江南VIPクラブ","狎鴎亭VIP","狎鴎亭ラウンジ","清潭VIP","清潭ラウンジ","韓国クラブテーブル","ソウルクラブテーブル","ソウルナイトクラブVIP"],
   alternates: {
     canonical: "https://nightflow.kr/ja/vip-tables",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
         "x-default": "https://nightflow.kr/en/vip-tables",
     },
   },
-  openGraph: { title: "ソウルVIPルーム予約 — 韓国クラブボトルサービスガイド", description: "ソウルのクラブでテーブルは実際いくらか：最低金額は梨泰院・弘大50万ウォン、江南100万ウォン。各クラブの実際のメニューから選んで埋めます。セット実価格と内容つき、仲介手数料なし。", url: "https://nightflow.kr/ja/vip-tables", locale: "ja_JP", type: "website", images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }] },
+  openGraph: { title: "ソウルVIPルーム予約 — 韓国クラブボトルサービスガイド", description: "ソウルのクラブでテーブルは実際いくらか：最低金額は梨泰院・弘大50万ウォン、江南140万ウォン。各クラブの実際のメニューから選んで埋めます。セット実価格と内容つき、仲介手数料なし。", url: "https://nightflow.kr/ja/vip-tables", locale: "ja_JP", type: "website", images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }] },
 };
 
 

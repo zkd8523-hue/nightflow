@@ -160,7 +160,9 @@ export default async function PuzzleNewPage({
     // 사이드바 예약 버튼은 숨김 — 이 폼 자기 자신으로 가는 링크라 누르면 폼이 초기화될 뿐이다.
     <ForeignShell lang={lang} sidebarCta={null}>
     <div className="min-h-screen bg-background pb-20">
-      <div className="max-w-lg lg:max-w-[900px] mx-auto px-4 lg:px-8 py-6 lg:py-10">
+      {/* 외국인 예약 폼은 데스크톱에서도 한 줄 폭(본문 520px) — 900px로 펼치면 달력·입력칸·버튼이 가로로
+          늘어나 빈 공간만 커졌다(2026-10-24). 한국어 깃발 폼(PuzzleForm)은 그대로 둔다. */}
+      <div className={`max-w-lg mx-auto px-4 lg:px-8 py-6 lg:py-10 ${isForeigner ? "lg:max-w-[584px]" : "lg:max-w-[900px]"}`}>
         {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 외국인 홈(/en, /ja, /zh) 복귀 링크 제공.
             BackButton과 ForeignRequestForm은 ForeignBookingScreen 안에서 ref로 묶여, 상단
             "返回"가 먼저 폼 내부 화면 전환(클럽 재선택·주류 수정)을 처리할 수 있으면 처리하고,

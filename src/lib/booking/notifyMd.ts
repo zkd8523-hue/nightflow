@@ -10,6 +10,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendSms } from "@/lib/notifications/alimtalk";
+import { sendForeignConfirmedEmail } from "@/lib/email/foreignConfirmed";
 
 // SMS 링크는 운영 도메인으로 고정한다 — 로컬에서 보내도 받는 사람 링크는 열려야 한다.
 const SITE = "https://nightflow.kr";
@@ -35,7 +36,7 @@ async function insertInApp(
 export type GuestChannel = "push" | "sms" | "none";
 
 export type NotifyMdResult =
-  | { ok: true; channel: "push" | "sms"; guestChannel?: GuestChannel }
+  | { ok: true; channel: "push" | "sms"; guestChannel?: GuestChannel; guestEmail?: boolean }
   | { ok: false; error: "not_found" | "cancelled" | "md_required" | "no_confirmation" | "no_channel"; status: number };
 
 export async function notifyAssignedMd(
@@ -55,7 +56,7 @@ export async function notifyAssignedMd(
     .from(table)
     .select(
       `id, user_id, guest_name, event_date, group_size, status, assigned_md_id, proposal_token, selected_menu_total, contact_type, contact_value, ${
-        requestType === "korean" ? "club_id, backup_phone" : "club_ids, budget"
+        requestType === "korean" ? "club_id, backup_phone" : "club_ids, budget, lang, backup_email"
       }`
     )
     .eq("id", requestId)
@@ -78,6 +79,9 @@ export async function notifyAssignedMd(
     budget?: number | null;
     club_id?: string | null;
     club_ids?: string[] | null;
+    /** 외국인 요청만 — 확정 메일 언어와 받는 주소(메신저로 접수한 손님은 예비 이메일) */
+    lang?: string | null;
+    backup_email?: string | null;
   };
   if (r.status === "cancelled") return { ok: false, error: "cancelled", status: 409 };
   if (!r.assigned_md_id) return { ok: false, error: "md_required", status: 400 };
@@ -101,7 +105,7 @@ export async function notifyAssignedMd(
   // 알림 문구 — 잠금화면에서 열지 않고도 무슨 건인지 알 수 있게 클럽·날짜·인원·금액을 담는다.
   const clubId = conf?.club_id ?? (requestType === "korean" ? r.club_id : r.club_ids?.[0]) ?? null;
   const { data: club } = clubId
-    ? await sb.from("clubs").select("name").eq("id", clubId).maybeSingle()
+    ? await sb.from("clubs").select("name, name_en, area").eq("id", clubId).maybeSingle()
     : { data: null };
   const d = new Date(r.event_date + "T00:00:00");
   const dateText = `${d.getMonth() + 1}/${d.getDate()}(${DOW[d.getDay()]})`;
@@ -217,6 +221,35 @@ export async function notifyAssignedMd(
       console.error("[notifyAssignedMd] 손님 알림 실패", e);
     }
 
+    // 외국인 손님은 앱 푸시도 한국 휴대폰도 없어 위 채널로는 아무것도 못 받는다 — 접수 때 남긴
+    // 이메일(메신저 손님은 예비 이메일)로 확정 메일을 보낸다(2026-10-24). 메신저로 링크를 보내는 건
+    // 운영자 몫으로 그대로 두고, 이건 손님 메일함에 남는 기록 한 통이다. guest_notify_channel은
+    // 건드리지 않는다(CHECK가 push·sms·none만 받는다) — 결과는 응답의 guestEmail로만 알린다.
+    let guestEmail = false;
+    const guestEmailTo = requestType === "foreign"
+      ? (r.contact_type === "email" ? r.contact_value : r.backup_email)?.trim()
+      : null;
+    if (guestEmailTo) {
+      try {
+        const { data: host } = await sb.from("users").select("display_name").eq("id", mdId).maybeSingle();
+        await sendForeignConfirmedEmail(guestEmailTo, {
+          lang: r.lang ?? null,
+          refNo: conf.ref_no ?? "",
+          passUrl: `${SITE}/booking/${conf.public_token}`,
+          clubName: club?.name_en || club?.name || null,
+          area: club?.area ?? null,
+          eventDate: r.event_date,
+          groupSize: (conf.confirmed_group_size ?? String(r.group_size)).trim(),
+          guestName: r.guest_name,
+          hostName: host?.display_name ?? null,
+          totalPrice: conf.total_price ?? null,
+        });
+        guestEmail = true;
+      } catch (e) {
+        console.error("[notifyAssignedMd] 손님 확정 메일 실패", e);
+      }
+    }
+
     // 컬럼은 Migration 680 — 미적용이어도 에러만 반환되고 발송은 이미 끝났다.
     const { error: recErr } = await sb
       .from("booking_confirmations")
@@ -225,7 +258,7 @@ export async function notifyAssignedMd(
       .eq("request_id", r.id);
     if (recErr) console.error("[notifyAssignedMd] 손님 전달 기록 실패", recErr);
 
-    return mdResult.ok ? { ...mdResult, guestChannel } : mdResult;
+    return mdResult.ok ? { ...mdResult, guestChannel, guestEmail } : mdResult;
   }
 
   return mdResult;

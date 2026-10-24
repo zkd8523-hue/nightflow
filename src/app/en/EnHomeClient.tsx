@@ -618,11 +618,11 @@ function GuideIndex() {
         "生日、團體去首爾夜店，一人多少錢?"
       ),
       desc: t(
-        "테이블 최소 금액은 인당이 아니라 테이블당 — 8명이면 강남 약 12.5만, 이태원 약 6.25만 원.",
-        "The minimum is per table, not per person — about ₩125,000 each for 8 in Gangnam, ₩62,500 in Itaewon.",
-        "最低金額は1人ではなく1卓あたり — 江南8人で1人約12.5万、梨泰院なら約6.25万ウォン。",
-        "最低消费按桌不按人 — 江南 8 人每人约 12.5 万，梨泰院约 6.25 万韩元。",
-        "低消按桌不按人 — 江南 8 人一人約 12.5 萬，梨泰院約 6.25 萬韓元。"
+        "테이블 최소 금액은 인당이 아니라 테이블당 — 8명이면 강남 약 17.5만, 이태원 약 6.25만 원.",
+        "The minimum is per table, not per person — about ₩175,000 each for 8 in Gangnam, ₩62,500 in Itaewon.",
+        "最低金額は1人ではなく1卓あたり — 江南8人で1人約17.5万、梨泰院なら約6.25万ウォン。",
+        "最低消费按桌不按人 — 江南 8 人每人约 17.5 万，梨泰院约 6.25 万韩元。",
+        "低消按桌不按人 — 江南 8 人一人約 17.5 萬，梨泰院約 6.25 萬韓元。"
       ),
       href: `/${lang}/group-table-seoul`,
     },
@@ -918,7 +918,7 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
   const detailTouchStartXRef = useRef<number | null>(null);
 
   const bookAtClubLabel = (name: string) =>
-    t(`🍾 ${name} 예약하기`, `🍾 Book ${name}`, `🍾 ${name}を予約`, `🍾 预订 ${name}`);
+    t(`${name} 예약하기`, `Book ${name}`, `${name}を予約`, `预订 ${name}`);
 
   // 필터(지역·음악·추천) — 데스크톱 전용. 모바일은 지금처럼 전 지역을 세로로 훑는 흐름을 유지한다
   // (좁은 화면에서 칩 줄이 늘면 첫 화면에서 클럽이 밀려난다).
@@ -1331,7 +1331,7 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
 }
 
 // ── 히어로 (외국인 홈 첫 화면) ──────────────────────────────────────────────
-// 가격 앵커는 사이트가 이미 공개한 값(가이드·FAQ): 홍대·이태원 ₩500k, 강남 ₩1M.
+// 가격 앵커는 사이트가 이미 공개한 값(가이드·FAQ): 홍대·이태원 ₩500k, 강남 ₩1.4M.
 // 환산은 useKrwRates(주간 스냅샷) — 언어별 기본 통화(resolveCurrency).
 // Entry(입장만)는 뺐다(2026-09-09 사용자 결정) — 나플이 잡아주는 건 테이블이다.
 //
@@ -1341,7 +1341,7 @@ function RegionSection({ clubs, flags, bookCtaRef }: { clubs: ClubItem[]; flags:
 // 인당 환산은 시도했다가 뺐다(2026-09-15) — 인원수 가정 근거를 화면에 못 적어 노이즈였다.
 const PRICE_ANCHORS = [
   { key: "hongdae", won: 500000 },
-  { key: "gangnam", won: 1000000 },
+  { key: "gangnam", won: 1400000 },
 ] as const;
 
 function timeAgo(iso: string, t: ReturnType<typeof makeT>): string {
@@ -1375,7 +1375,7 @@ function HeroSection({
   // 제목 = 지역, 부제 = 원화 + 보틀 포함. 둘 다 VIP 테이블이라 공통 라벨은 카드 밖 상단에 한 번만.
   const anchorLabel: Record<(typeof PRICE_ANCHORS)[number]["key"], { title: string; sub: string }> = {
     hongdae: { title: t("홍대 · 이태원", "Hongdae · Itaewon", "弘大・梨泰院", "弘大·梨泰院", "弘大·梨泰院"), sub: t("₩500k · 보틀 포함", "₩500k · bottle included", "₩500k · ボトル込み", "₩500k · 含酒", "₩500k · 含酒") },
-    gangnam: { title: t("강남", "Gangnam", "江南", "江南", "江南"), sub: t("₩1M · 보틀 포함", "₩1M · bottle included", "₩1M · ボトル込み", "₩1M · 含酒", "₩1M · 含酒") },
+    gangnam: { title: t("강남", "Gangnam", "江南", "江南", "江南"), sub: t("₩1.4M · 보틀 포함", "₩1.4M · bottle included", "₩1.4M · ボトル込み", "₩1.4M · 含酒", "₩1.4M · 含酒") },
   };
 
   return (

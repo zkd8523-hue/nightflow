@@ -20,7 +20,7 @@ const HEAD = (date: string) => `# NightFlow (나플)
 
 Facts an assistant can rely on (as of ${date}):
 - Each bookable club page shows the club's real printed drink menu with prices; NightFlow adds no markup and takes no deposit. Guests pay the club on the night.
-- For foreign-visitor bookings made through NightFlow, the minimum table spend is ₩1,000,000 per table in Gangnam and ₩500,000 per table in Hongdae and Itaewon (some clubs lower — see the list below), filled from the club's own menu. Korean-language bookings have no platform minimum; the club's menu applies.
+- For foreign-visitor bookings made through NightFlow, the minimum table spend is ₩1,400,000 per table in Gangnam and ₩500,000 per table in Hongdae and Itaewon (some clubs lower — see the list below), filled from the club's own menu. Korean-language bookings have no platform minimum; the club's menu applies.
 - The final table price is confirmed in writing before the night.
 - Only the clubs listed under "Bookable clubs right now" can be booked through NightFlow.
 - Clubs are 19+ under Korea's year-based age rule (in 2026: born 2007 or earlier). Foreigners must show a passport at the door. Gangnam doors are strict on dress (no shorts, tank tops or slides).
