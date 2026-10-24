@@ -17,6 +17,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
+import { StickyBookBar } from "@/components/foreign/StickyReveal";
+import { getKrwRates } from "@/lib/utils/currency";
+import { approxLocal } from "@/lib/foreign/premiumMenu";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 import { bookingFloor, formatWon, wonCompact } from "@/lib/clubs/tablePricing";
 
@@ -35,7 +38,7 @@ type Copy = {
   sections: Section[];
   compareH2?: string;
   compare?: Compare;
-  /** 헤더 CTA. 룸살롱 페이지는 설명 전에 CTA를 내밀면 미끼로 읽혀서 뺀다(크리틱 1차). */
+  /** (2026-10-24부터 안 씀) 헤더 CTA 여부 — 첫 화면 "짧은 답" 카드(ANSWER)로 두 페이지 모두 대체. */
   headerCta?: boolean;
   priceH2: string; priceBullets: string[];
   faqH2: string; faqs: { q: string; a: string }[];
@@ -89,7 +92,7 @@ const BOOKING: Record<SeoLang, Copy> = {
       { q: "What if we're a mixed group or just want to dance?", a: "Say so in the request notes. Booking is optional — plenty of tables in the same room just drink and dance. The MD will read your group and won't bring people over if you'd rather not." },
     ],
     ctaH2: "Book a Gangnam table", ctaBody: "Date, group size, what kind of night you want. We confirm with the club in Korean, send you the final price in writing, and you walk in. Free to request, no deposit.",
-    cta: "🍾 Book a Gangnam table",
+    cta: "Book a Gangnam table",
     moreH2: "Related",
     more: [
       { label: "Room salon vs club table — what foreigners can actually book →", href: "/en/room-salon-vs-club" },
@@ -140,7 +143,7 @@ const BOOKING: Record<SeoLang, Copy> = {
       { q: "男女混合グループや、ただ踊りたいだけの場合は？", a: "備考にそう書いてください。ブッキングは任意で、同じフロアで飲んで踊るだけのテーブルもたくさんあります。MDがグループの雰囲気を読み、望まなければ人を連れてきません。" },
     ],
     ctaH2: "江南のテーブルを予約", ctaBody: "日程・人数・どんな夜にしたいか。私たちが韓国語でクラブに確認し、最終価格を書面で送ります。当日はそのまま入場。リクエスト無料、デポジットなし。",
-    cta: "🍾 江南のテーブルを予約",
+    cta: "江南のテーブルを予約",
     moreH2: "関連",
     more: [
       { label: "ルームサロンとクラブのテーブルの違い — 日本人が実際に予約できるのは →", href: "/ja/room-salon-vs-club" },
@@ -191,7 +194,7 @@ const BOOKING: Record<SeoLang, Copy> = {
       { q: "我们是男女混合，或者只想跳舞怎么办？", a: "在申请备注里写明。Booking 是可选的 — 同一个场子里很多桌只是喝酒跳舞。MD 会看你们这组的氛围，你们不想要就不会带人过来。" },
     ],
     ctaH2: "预订江南卡座", ctaBody: "日期、人数、想要什么样的夜晚。我们用韩语向夜店确认，把最终价格书面发给你，当晚直接进场。免费申请，无押金。",
-    cta: "🍾 预订江南卡座",
+    cta: "预订江南卡座",
     moreH2: "相关",
     more: [
       { label: "房间沙龙 vs 夜店卡座 — 外国人实际能订的是什么 →", href: "/zh/room-salon-vs-club" },
@@ -242,7 +245,7 @@ const BOOKING: Record<SeoLang, Copy> = {
       { q: "我們是男女混合，或者只想跳舞怎麼辦？", a: "在申請備註裡寫明。Booking 是可選的 — 同一個場子裡很多桌只是喝酒跳舞。MD 會看你們這組的氣氛，你們不想要就不會帶人過來。" },
     ],
     ctaH2: "訂江南桌位", ctaBody: "日期、人數、想要什麼樣的夜晚。我們用韓語向夜店確認，把最終價格書面傳給你，當晚直接進場。免費申請，免訂金。",
-    cta: "🍾 訂江南桌位",
+    cta: "訂江南桌位",
     moreH2: "相關",
     more: [
       { label: "酒店 vs 夜店桌位 — 外國人實際能訂的是什麼 →", href: "/zh-tw/room-salon-vs-club" },
@@ -308,7 +311,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
       { q: "Are there hostesses or paid companions at a club table?", a: "No, and nobody should promise you that. Gangnam clubs have a booking culture — staff introduce guests who are there by choice, and either side can decline. It's social, not a service. If you want a paid-companion venue, we are not the right platform." },
     ],
     ctaH2: "Book a Gangnam table instead", ctaBody: "Printed prices, English-speaking host, no deposit. We confirm with the club in Korean and send you the final number in writing before you commit.",
-    cta: "🍾 Book a Gangnam table",
+    cta: "Book a Gangnam table",
     moreH2: "Related",
     more: [
       { label: "Korean booking clubs — what 'booking' means →", href: "/en/gangnam-booking-club" },
@@ -370,7 +373,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
       { q: "クラブのテーブルにホステスや有償の同席者はいますか？", a: "いません。そう約束する人がいたら疑ってください。江南のクラブにはブッキング文化があり、自分の意思で来ているお客さん同士をスタッフが紹介し、どちらも断れます。社交であってサービスではありません。有償の同席を伴う店を探しているなら、私たちは適した窓口ではありません。" },
     ],
     ctaH2: "代わりに江南のテーブルを予約", ctaBody: "印刷メニューの料金、英語対応のホスト、デポジットなし。私たちが韓国語でクラブに確認し、確定前に最終金額を書面でお送りします。",
-    cta: "🍾 江南のテーブルを予約",
+    cta: "江南のテーブルを予約",
     moreH2: "関連",
     more: [
       { label: "韓国のブッキングクラブ — 「ブッキング」の意味 →", href: "/ja/gangnam-booking-club" },
@@ -432,7 +435,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
       { q: "夜店卡座有陪酒或付费陪伴吗？", a: "没有，也没有人应该向你承诺这个。江南夜店有 booking 文化 — 店员介绍自愿在场的客人，双方都可以拒绝。这是社交，不是服务。如果你要的是付费陪伴的场所，我们不是合适的平台。" },
     ],
     ctaH2: "改订江南卡座", ctaBody: "印刷酒单价格、会英语的 MD、无押金。我们用韩语向夜店确认，在你决定前把最终数字书面发给你。",
-    cta: "🍾 预订江南卡座",
+    cta: "预订江南卡座",
     moreH2: "相关",
     more: [
       { label: "韩国 booking 夜店 — 「booking」是什么 →", href: "/zh/gangnam-booking-club" },
@@ -494,7 +497,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
       { q: "夜店桌位有陪坐或付費陪伴嗎？", a: "沒有，也沒有人應該向你承諾這個。江南夜店有 booking 文化 — 店員介紹自願在場的客人，雙方都可以拒絕。這是社交，不是服務。如果你要的是付費陪伴的場所，我們不是合適的平台。" },
     ],
     ctaH2: "改訂江南桌位", ctaBody: "印好的酒單價格、會英語的 MD、免訂金。我們用韓語向夜店確認，在你決定前把最終數字書面傳給你。",
-    cta: "🍾 訂江南桌位",
+    cta: "訂江南桌位",
     moreH2: "相關",
     more: [
       { label: "韓國 booking 夜店 — 「booking」是什麼 →", href: "/zh-tw/gangnam-booking-club" },
@@ -535,9 +538,29 @@ export function gangnamGuideMetadata(key: GuideKey, lang: SeoLang): Metadata {
   };
 }
 
-export function GangnamGuide({ guide, lang }: { guide: GuideKey; lang: SeoLang }) {
+// 첫 화면 "짧은 답" 카드(2026-10-24). 검색 유입 대부분이 첫 화면만 보고 나간다(나갈 때 스크롤 중앙값
+// 룸살롱 44%) — 그런데 룸살롱 페이지는 예약 버튼이 두 번째 화면(37%)에야 있었다. 크리틱 1차의
+// "설명 전에 CTA를 내밀면 미끼로 읽힌다"는 지적은 지킨다: 큰 버튼이 아니라 검색 질문에 대한 답 한 줄
+// + 보조 버튼. 금액은 손님 통화 먼저.
+const ANSWER: Record<GuideKey, Record<SeoLang, (local: string) => string>> = {
+  booking: {
+    en: (l) => `You take part from a table. A Gangnam table is ${l} for the whole group, from the club's printed menu.`,
+    ja: (l) => `参加はテーブルから。江南のテーブルはグループ全体で${l}〜、クラブのメニュー価格です。`,
+    zh: (l) => `要有卡座才能参与。江南卡座全团${l}起，按夜店酒单价格。`,
+    "zh-tw": (l) => `要有桌位才能參與。江南桌位全團${l}起，依夜店酒單價格。`,
+  },
+  roomSalon: {
+    en: (l) => `Short answer: most room salons won't take a visitor, and none publish prices. What we book instead is a Gangnam club table — ${l} per table, printed menu, English-speaking host.`,
+    ja: (l) => `結論：ほとんどのルームサロンは一見の旅行者を受け入れず、料金も非公開です。私たちが代わりに手配するのは江南クラブのテーブル — 1卓${l}〜、メニュー価格、英語対応。`,
+    zh: (l) => `简单说：大多数房间沙龙不接待游客，也不公开价格。我们改为预订江南夜店卡座 — 每桌${l}起，印刷酒单价格，会英语的 MD。`,
+    "zh-tw": (l) => `簡單說：大多數酒店不接待遊客，也不公開價格。我們改訂江南夜店桌位 — 每桌${l}起，印好的酒單價格，會英語的 MD。`,
+  },
+};
+
+export async function GangnamGuide({ guide, lang }: { guide: GuideKey; lang: SeoLang }) {
   const c = COPIES[guide][lang];
   const slug = GUIDE_SLUGS[guide];
+  const rates = (await getKrwRates()).rates;
   const url = `${BASE}/${lang}/${slug}`;
   const bookHref = `/flags/new?lang=${lang}&area=${encodeURIComponent("강남")}`;
   const og = `${BASE}/api/og?title=${encodeURIComponent(c.ogTitle)}&sub=${encodeURIComponent(c.ogSub)}&lang=${lang}`;
@@ -586,14 +609,16 @@ export function GangnamGuide({ guide, lang }: { guide: GuideKey; lang: SeoLang }
           <h1 className="text-[30px] font-black tracking-tight leading-[1.15] break-keep">{c.h1}</h1>
           <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">{c.intro}</p>
           <p className="text-[11px] text-muted-foreground">{c.updated}</p>
-          {c.headerCta && (
-            <Link rel="nofollow" data-nf-track="book_cta" href={bookHref} className="inline-block px-6 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors">
-              {c.cta}
-            </Link>
-          )}
         </header>
 
-        {c.sections.map((s, idx) => (
+        <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+          <p className="text-[14px] text-foreground leading-relaxed break-keep">{ANSWER[guide][lang](approxLocal(GANGNAM, lang, rates))}</p>
+          <Link id="book-cta" rel="nofollow" data-nf-track="book_cta" href={bookHref} className="inline-block px-5 py-2.5 rounded-full border border-amber-500/70 text-brand-amber font-black text-[14px] hover:bg-amber-500/10 transition-colors">
+            {c.cta}
+          </Link>
+        </div>
+
+        {c.sections.map((s) => (
           <section key={s.h2} className="space-y-3">
             <h2 className="text-[20px] font-black break-keep">{s.h2}</h2>
             {s.paras?.map((p, i) => <p key={i} className="text-[14px] text-muted-foreground leading-relaxed break-keep">{p}</p>)}
@@ -603,12 +628,6 @@ export function GangnamGuide({ guide, lang }: { guide: GuideKey; lang: SeoLang }
                   <li key={i} className="flex gap-2 text-[14px] text-muted-foreground leading-relaxed break-keep"><span className="text-brand-amber shrink-0">•</span><span>{b}</span></li>
                 ))}
               </ul>
-            )}
-            {/* 헤더 CTA가 없는 페이지(룸살롱)는 "대신 이걸 예약한다" 설명이 끝난 직후가 첫 CTA 자리. */}
-            {!c.headerCta && idx === c.sections.length - 1 && (
-              <Link rel="nofollow" data-nf-track="book_cta" href={bookHref} className="inline-block px-6 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors">
-                {c.cta}
-              </Link>
             )}
           </section>
         ))}
@@ -675,6 +694,7 @@ export function GangnamGuide({ guide, lang }: { guide: GuideKey; lang: SeoLang }
           </ul>
         </section>
       </article>
+      <StickyBookBar href={bookHref} label={c.cta} />
     </div>
   );
 }

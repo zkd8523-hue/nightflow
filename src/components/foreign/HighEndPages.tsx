@@ -11,7 +11,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
-import { StickyReveal } from "@/components/foreign/StickyReveal";
+import { StickyBookBar } from "@/components/foreign/StickyReveal";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 import { formatWon, bookingFloor } from "@/lib/clubs/tablePricing";
 import { getKrwRates, formatAsOfLocale, type KrwRates } from "@/lib/utils/currency";
@@ -35,22 +35,6 @@ function alternates(path: string) {
 }
 
 // ── 공통 UI ──────────────────────────────────────────────────────────────
-
-/** 하단 고정 예약 버튼 — 어디까지 내려도 예약이 한 번에 닿게. */
-function StickyCta({ href, label }: { href: string; label: string }) {
-  return (
-    <StickyReveal watchId="book-cta">
-      <div className="border-t border-border bg-background/95 backdrop-blur px-4 py-3">
-        <div className="max-w-2xl mx-auto">
-          <Link rel="nofollow" href={href} data-nf-track="book_cta_sticky"
-            className="block w-full text-center py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400">
-            {label}
-          </Link>
-        </div>
-      </div>
-    </StickyReveal>
-  );
-}
 
 function PriceRowLine({ r, lang, rates }: { r: PremiumRow; lang: SeoLang; rates: KrwRates }) {
   const body = (
@@ -291,7 +275,7 @@ export async function BottlePricePage({ brand, lang }: { brand: BottleBrand; lan
 
         {faqs.length > 0 && <FaqFold title={c.faqH2} faqs={faqs} />}
       </div>
-      <StickyCta href={bookHref} label={c.cta} />
+      <StickyBookBar href={bookHref} label={c.cta} />
     </div>
   );
 }
@@ -465,7 +449,7 @@ export async function GangnamTableBudgetPage({ lang }: { lang: SeoLang }) {
 
         <FaqFold title={c.faqH2} faqs={faqs} />
       </div>
-      <StickyCta href={bookHref} label={c.cta} />
+      <StickyBookBar href={bookHref} label={c.cta} />
     </div>
   );
 }

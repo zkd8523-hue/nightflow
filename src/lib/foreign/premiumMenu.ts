@@ -96,6 +96,41 @@ export function displayLabel(label: string | null, lang: string): string | null 
   return (LABEL_WORD[lang] ?? LABEL_WORD.en)(n);
 }
 
+export type NamedClub = { id: string; name: string; area: string; href: string | null; bookable: boolean };
+
+/**
+ * 정보성 글(K-pop 클럽 등)에 이름으로 실린 클럽을 실제 클럽 페이지·예약 가능 여부와 잇는다(2026-10-24).
+ * 손으로 적은 목록이라 예약 가능 여부를 글에 박아 두면 MD 계약이 바뀔 때 거짓이 된다 — 매번 DB로 판정.
+ * names는 clubs.name_en과 대소문자 무시 비교.
+ */
+export async function fetchClubsByName(lang: string, names: string[]): Promise<Map<string, NamedClub>> {
+  const supabase = await createClient();
+  const [clubsRes, menuIds] = await Promise.all([
+    supabase
+      .from("clubs")
+      .select("id, name, name_en, area, foreign_booking_agreed, partners:club_partners(md_id)")
+      .is("deleted_at", null)
+      .eq("status", "approved")
+      .eq("is_test", false)
+      .in("name_en", names),
+    fetchMenuClubIds(supabase),
+  ]);
+  const out = new Map<string, NamedClub>();
+  for (const c of clubsRes.data ?? []) {
+    const en = c.name_en?.trim();
+    if (!en) continue;
+    const areaSlug = canonicalAreaSlug(c.area);
+    out.set(en.toLowerCase(), {
+      id: c.id,
+      name: en,
+      area: c.area,
+      href: areaSlug ? `/${lang}/clubs/${areaSlug}/${clubSlug(en)}` : null,
+      bookable: isBookable({ name: c.name, has_md: (c.partners?.length ?? 0) > 0, agreed: !!c.foreign_booking_agreed, has_menu: menuIds.has(c.id) }),
+    });
+  }
+  return out;
+}
+
 export async function fetchPremiumMenu(lang: string, areas: string[] = ["강남", "홍대", "이태원"]): Promise<PremiumRow[]> {
   const supabase = await createClient();
   const [clubsRes, menuIds] = await Promise.all([

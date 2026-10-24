@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
+import { StickyBookBar } from "@/components/foreign/StickyReveal";
 import { type Lang, makeT } from "@/lib/i18n";
 
 // "한국 클럽 나이 제한 / 여권 필요한가 / 외국인 입장되나" 검색 대응.
@@ -184,6 +185,22 @@ export function ClubEntryRulesPage({ lang }: { lang: Lang }) {
               </li>
             ))}
           </ul>
+          {/* 다음 행동 한 줄(2026-10-24) — 나갈 때 스크롤 중앙값 0%(첫 화면만 보고 나감)인데 본문에 예약 버튼이
+              없었다. 아래 "문 앞이 걱정된다면" 박스를 여기로 올렸다. */}
+          <div className="pt-3 mt-1 border-t border-border space-y-2.5">
+            <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
+              {t(
+                "테이블을 예약하면 도착 전에 클럽이 이름을 받아둡니다. 입장 여부는 저희가 미리 확인해요.",
+                "Booking a table? The club has your name before you arrive — we confirm the door with them first.",
+                "テーブルを予約すれば、到着前にクラブがお名前を受け取ります。入場可否は私たちが事前に確認します。",
+                "预订卡座的话，夜店会在你到之前拿到名字，能不能进由我们先确认。",
+                "訂包廂的話，夜店會在你到之前拿到名字，能不能進由我們先確認。"
+              )}
+            </p>
+            <Link id="book-cta" rel="nofollow" data-nf-track="book_cta" href={`/flags/new?lang=${lang}`} className="inline-block px-5 py-2.5 rounded-full border border-amber-500/70 text-brand-amber font-black text-[14px] hover:bg-amber-500/10 transition-colors">
+              {t("테이블 예약하기", "Book a table", "テーブルを予約", "预订卡座", "訂包廂")}
+            </Link>
+          </div>
         </section>
 
         <section className="space-y-4">
@@ -201,21 +218,6 @@ export function ClubEntryRulesPage({ lang }: { lang: Lang }) {
         {/* 본문 마지막 섹션 위 — 입장 규칙을 읽은 사람의 다음 고민이 숙소 */}
         <AgodaStrip lang={lang} placement="foreign_info" area={null} />
 
-        <section className="rounded-2xl bg-card border border-border p-5 space-y-2">
-          <h2 className="text-[17px] font-black">
-            {t("문 앞에서 막히는 게 걱정된다면", "Worried about the door?", "入口が心配なら", "担心进不去?", "擔心進不去?")}
-          </h2>
-          <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
-            {t(
-              "테이블을 미리 잡아두면 입장 여부를 걱정할 일이 없습니다. 저희가 클럽에 직접 확인해드립니다.",
-              "A table booked in advance takes the door question off the table entirely. We confirm it with the club for you.",
-              "テーブルを事前に押さえておけば入場を心配する必要はありません。私たちがクラブに直接確認します。",
-              "提前订好卡座就不用担心能不能进。我们会直接向夜店确认。",
-              "提前訂好包廂就不用擔心能不能進。我們會直接向夜店確認。"
-            )}
-          </p>
-        </section>
-
         <nav className="flex flex-wrap gap-2">
           <Link data-nf-track="guide_dress_code" href={`/${lang}/dress-code`} className="px-3 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold hover:text-brand-amber">
             {t("드레스코드", "Dress code", "ドレスコード", "着装要求", "服裝規定")}
@@ -232,11 +234,7 @@ export function ClubEntryRulesPage({ lang }: { lang: Lang }) {
         </nav>
       </div>
 
-      <div className="fixed bottom-0 inset-x-0 z-10 px-4 pt-3 pb-4 pb-safe bg-card/95 backdrop-blur-sm border-t border-border lg:hidden">
-        <Link rel="nofollow" data-nf-track="book_cta" href={`/flags/new?lang=${lang}`} className="flex items-center justify-center w-full max-w-lg mx-auto py-3.5 rounded-2xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors">
-          🍾 {t("한국 클럽 예약하기", "Book Korean Clubs", "韓国のクラブを予約", "预订韩国夜店", "預訂韓國夜店")}
-        </Link>
-      </div>
+      <StickyBookBar className="lg:hidden" href={`/flags/new?lang=${lang}`} label={t("테이블 예약하기", "Book a table", "テーブルを予約", "预订卡座", "訂包廂")} />
     </div>
     </ForeignShell>
   );

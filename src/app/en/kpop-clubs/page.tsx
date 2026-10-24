@@ -2,6 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
+import { StickyBookBar } from "@/components/foreign/StickyReveal";
+import { fetchClubsByName, approxLocal } from "@/lib/foreign/premiumMenu";
+import { clubFloor } from "@/lib/clubs/tablePricing";
+import { getKrwRates } from "@/lib/utils/currency";
+
+// 예약 가능 여부·시작가가 DB에서 오므로 하루 한 번 다시 만든다.
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: {
@@ -59,31 +66,45 @@ export const metadata: Metadata = {
 const KPOP_VENUES = [
   {
     name: "NB2 (Noise Basement 2)",
+    dbName: "NB2",
     district: "Hongdae",
     vibe: "Iconic K-pop nightclub. YG-owned, hip-hop + K-pop bangers all night. Highest international tourist concentration in Seoul.",
     bestFor: "First-time K-pop fan tourists",
   },
   {
     name: "Club Purple",
+    dbName: "Purple",
     district: "Hongdae",
     vibe: "Hip-hop heavy but plenty of K-pop drops. Beginner-friendly, no strict door policy.",
     bestFor: "Casual K-pop + hip-hop night",
   },
   {
     name: "Club ACE",
+    dbName: "Club Ace",
     district: "Gangnam",
     vibe: "Large EDM club with K-pop floor on busy nights. Polished crowd, dress code applies.",
     bestFor: "EDM + K-pop combined night",
   },
   {
     name: "Club Dokkaebi",
+    dbName: "Dokkebi",
     district: "Hongdae",
     vibe: "Hip-hop focused but spins K-pop hits regularly. Premium production, lively crowd.",
     bestFor: "K-pop fans who also like hip-hop",
   },
 ];
 
-export default function EnKpopClubsPage() {
+export default async function EnKpopClubsPage() {
+  // 카드 → 클럽 페이지 링크, 예약 가능한 곳엔 Book 버튼(2026-10-24). 유입 1위 정보성 글인데 카드를 눌러도
+  // 아무 데도 안 갔고(클럽 링크 0개), 예약 버튼은 63% 지점에 하나뿐이었다 — 나갈 때 스크롤 중앙값 0%.
+  const [clubs, fx] = await Promise.all([fetchClubsByName("en", KPOP_VENUES.map((v) => v.dbName)), getKrwRates()]);
+  const venues = KPOP_VENUES.map((v) => ({ ...v, club: clubs.get(v.dbName.toLowerCase()) }));
+  const bookable = venues.filter((v) => v.club?.bookable);
+  const fromOf = (v: (typeof venues)[number]) => approxLocal(clubFloor(v.club!.id, v.club!.area), "en", fx.rates);
+  const fromMin = bookable.length
+    ? approxLocal(Math.min(...bookable.map((v) => clubFloor(v.club!.id, v.club!.area))), "en", fx.rates)
+    : null;
+  const bookHref = "/flags/new?lang=en";
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -135,20 +156,43 @@ export default function EnKpopClubsPage() {
           </p>
         </header>
 
+        {bookable.length > 0 && (
+          <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+            <p className="text-[14px] text-foreground leading-relaxed">
+              Want a table on a K-pop night? We book {bookable.map((v) => v.name).join(" and ")} in English — from {fromMin} per table, real menu prices.
+            </p>
+            <Link id="book-cta" rel="nofollow" data-nf-track="book_cta" href={bookHref}
+              className="inline-block px-5 py-2.5 rounded-full border border-amber-500/70 text-brand-amber font-black text-[14px] hover:bg-amber-500/10 transition-colors">
+              Book a table
+            </Link>
+          </div>
+        )}
+
         <section className="space-y-4">
           <h2 className="text-[20px] font-black">Top K-Pop Clubs in Seoul</h2>
           <div className="space-y-3">
-            {KPOP_VENUES.map((v) => (
+            {venues.map((v) => (
               <div
                 key={v.name}
                 className="p-5 rounded-2xl bg-card border border-border space-y-2"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-bold text-[15px] text-foreground">{v.name}</p>
+                  {v.club?.href ? (
+                    <Link href={v.club.href} data-nf-track="info_club_link" className="font-bold text-[15px] text-foreground hover:text-brand-amber">{v.name} →</Link>
+                  ) : (
+                    <p className="font-bold text-[15px] text-foreground">{v.name}</p>
+                  )}
                   <p className="text-[12px] text-muted-foreground">{v.district}</p>
                 </div>
                 <p className="text-[13px] text-muted-foreground leading-relaxed">{v.vibe}</p>
                 <p className="text-[12px] text-brand-amber">Best for: {v.bestFor}</p>
+                {v.club?.bookable && (
+                  <Link rel="nofollow" data-nf-track="info_club_book"
+                    href={`/flags/new?lang=en&area=${encodeURIComponent(v.club.area)}&club=${v.club.id}`}
+                    className="inline-flex items-center gap-2 mt-1 px-4 py-2 rounded-full border border-amber-500/70 text-brand-amber text-[13px] font-black hover:bg-amber-500/10">
+                    Book · from {fromOf(v)}
+                  </Link>
+                )}
               </div>
             ))}
           </div>
@@ -163,10 +207,10 @@ export default function EnKpopClubsPage() {
             directly for you, in English.
           </p>
           <Link rel="nofollow"
-            data-nf-track="book_cta" href="/flags/new?lang=en"
+            data-nf-track="book_cta" href={bookHref}
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
-            🍾 Book Korean Clubs
+            Book a table
           </Link>
         </section>
 
@@ -184,6 +228,7 @@ export default function EnKpopClubsPage() {
           </ul>
         </section>
       </div>
+      <StickyBookBar href={bookHref} label="Book a table" />
     </div>
   );
 }
