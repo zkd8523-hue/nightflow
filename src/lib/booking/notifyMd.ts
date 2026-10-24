@@ -88,7 +88,7 @@ export async function notifyAssignedMd(
 
   const { data: conf } = await sb
     .from("booking_confirmations")
-    .select("ref_no, md_token, public_token, club_id, total_price, confirmed_group_size")
+    .select("ref_no, md_token, public_token, club_id, total_price, confirmed_group_size, guest_notified_at")
     .eq("request_type", requestType)
     .eq("request_id", r.id)
     .maybeSingle();
@@ -225,8 +225,10 @@ export async function notifyAssignedMd(
     // 이메일(메신저 손님은 예비 이메일)로 확정 메일을 보낸다(2026-10-24). 메신저로 링크를 보내는 건
     // 운영자 몫으로 그대로 두고, 이건 손님 메일함에 남는 기록 한 통이다. guest_notify_channel은
     // 건드리지 않는다(CHECK가 push·sms·none만 받는다) — 결과는 응답의 guestEmail로만 알린다.
+    // "확정서 보내기"는 MD 재촉용으로 여러 번 누르기도 한다 — 손님 메일은 처음 보낼 때(guest_notified_at
+    // 비어 있을 때) 한 번만. 다시 누를 때마다 "Confirmed" 메일이 쌓이면 손님이 헷갈린다.
     let guestEmail = false;
-    const guestEmailTo = requestType === "foreign"
+    const guestEmailTo = requestType === "foreign" && !conf.guest_notified_at
       ? (r.contact_type === "email" ? r.contact_value : r.backup_email)?.trim()
       : null;
     if (guestEmailTo) {

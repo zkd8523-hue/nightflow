@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Megaphone } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
+import { CONTACT_EMAIL } from "@/lib/foreign/contact";
 
 export const metadata: Metadata = {
   title: "마케팅 정보 수신 동의",
@@ -78,7 +79,8 @@ export default function MarketingConsentPage() {
             <ul className="list-disc list-inside space-y-1 text-foreground/80">
               <li>앱 내 <strong className="text-foreground">설정 → 알림 설정</strong>에서 마케팅 수신 동의 해제</li>
               <li>(MD 회원) 수신한 문자 메시지 내 무료 수신거부 번호 또는 링크 이용</li>
-              <li>이메일: <strong className="text-foreground">support@nightflow.kr</strong></li>
+              {/* support@nightflow.kr은 받는 메일함(MX)이 없어 철회 요청이 반송됐다 — 운영 메일로 받는다(2026-10-24). */}
+              <li>이메일: <strong className="text-foreground">{CONTACT_EMAIL}</strong></li>
             </ul>
             <p className="text-[13px] text-muted-foreground">
               철회 요청은 접수일로부터 14일 이내에 처리됩니다.

@@ -121,11 +121,14 @@ const NO_BIG_BUDGETS: number[] = [];
 // 이름 없는 묶음(가격만 있는 것), 입장 시간 등 조건이 붙은 품목은 예시로 어색해서 뺀다.
 // 예산을 넘는 조합도 빼고(손님이 그 금액을 고른 거라) 85% 아래로 떨어지는 것도 뺀다.
 const EXAMPLE_CATEGORY_RANK: Record<string, number> = { champagne: 0, set: 1, cognac: 2, whisky: 3, tequila: 4, vodka: 5 };
-function budgetExamples(items: ClubMenuItem[], budget: number, weekend: boolean, ko: boolean, max = 2): string[] {
+// VVIP 전용 품목(is_vvip)은 VVIP 등급·큰 금액 칩에서만 쓴다 — Classic 예시에 VVIP 구역 술이 나오면 약속이 틀어진다.
+// 층별 가격 품목(zone)은 손님 테이블이 그 층이라는 보장이 없어 예시에서 뺀다.
+function budgetExamples(items: ClubMenuItem[], budget: number, weekend: boolean, ko: boolean, max = 2, allowVvip = false): string[] {
   type Cand = { price: number; label: string; rank: number; n: number; id: string };
   const cands: Cand[] = [];
   for (const it of items) {
     if (it.condition_note || it.condition_note_en) continue;
+    if ((it.is_vvip && !allowVvip) || it.zone) continue;
     const vs = [...(it.variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
     if (vs.length === 0) continue;
     const name = (ko ? it.name_ko : null) || it.name_en;
@@ -170,7 +173,7 @@ function bigBudgetExamples(items: ClubMenuItem[], budget: number, weekend: boole
   type Bottle = { name: string; unit: number; dp: boolean };
   const bottles: Bottle[] = [];
   for (const it of items) {
-    if (it.category !== "champagne" || it.condition_note || it.condition_note_en) continue;
+    if (it.category !== "champagne" || it.condition_note || it.condition_note_en || it.zone) continue;
     const vs = [...(it.variants ?? [])].sort((a, b) => a.sort_order - b.sort_order);
     if (vs.length === 0) continue;
     const baseLabel = (vs[0].label_en ?? "").trim();
@@ -194,7 +197,7 @@ function bigBudgetExamples(items: ClubMenuItem[], budget: number, weekend: boole
     return n >= 6 && n <= 100 && n * b.unit >= budget * 0.85;
   });
   const out = volume ? [`${volume.name} ×${countFor(volume.unit)}`] : [];
-  for (const ex of budgetExamples(items, budget, weekend, ko, 3)) {
+  for (const ex of budgetExamples(items, budget, weekend, ko, 3, true)) {
     if (out.length >= 2) break;
     if (volume && brandOf(ex) === brandOf(volume.name)) continue;
     out.push(ex);
@@ -412,7 +415,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       `Open ${formatOpenDowsEn(dows)}`,
       `${dowsIn("ja", dows)}営業`,
       `${dowsIn("zh", dows)}营业`,
-      `${dowsIn("zh", dows).replace("周", "週")}營業`
+      `${dowsIn("zh", dows).replace(/周/g, "週")}營業`
     );
   };
 
@@ -1571,9 +1574,9 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // 메뉴판이 있는(= 예약 가능한) 클럽을 골랐을 때만 예시를 만든다. 못 만들면 그 버튼은 금액만.
   const tierExamples = useMemo(
     () => (selectedClubId && menuLoadedFor === selectedClubId && menuItems.length > 0
-      ? mdBudgetOptions.map((b) => budgetExamples(menuItems, b, isWeekend, lang === "ko"))
+      ? mdBudgetOptions.map((b, i) => budgetExamples(menuItems, b, isWeekend, lang === "ko", 2, !!explicitTierArea && i === 2))
       : []),
-    [selectedClubId, menuLoadedFor, menuItems, mdBudgetOptions, isWeekend, lang]
+    [selectedClubId, menuLoadedFor, menuItems, mdBudgetOptions, isWeekend, lang, explicitTierArea]
   );
   // 강남은 VVIP(1,000만) 위로 쓰는 손님도 있어 직접 입력 대신 큰 금액 칩을 둔다(2026-10-24).
   const bigBudgets = explicitTierArea ? BIG_BUDGETS : NO_BIG_BUDGETS;

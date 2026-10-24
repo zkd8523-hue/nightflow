@@ -320,7 +320,7 @@ export function BookingPass(p: Props) {
 
   const Row = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <div className="flex gap-3 py-2.5 border-t border-border/60 first:border-t-0">
-      <div className="shrink-0 w-[86px] text-[10px] font-semibold tracking-wider uppercase text-muted-foreground pt-0.5">
+      <div className="shrink-0 w-[86px] text-[10px] font-semibold tracking-wider uppercase leading-snug text-muted-foreground pt-0.5">
         {k}
       </div>
       <div className="flex-1 min-w-0">{children}</div>
@@ -398,7 +398,9 @@ export function BookingPass(p: Props) {
                 그 대신 닿을 곳도 없어 당일 전 질문을 받을 길이 없었다(2026-10-24). */}
             {!ko && !isCancelled && (
               <div className="mt-3 space-y-1.5">
-                <p className="text-[12px] font-bold text-muted-foreground">Questions before your night?</p>
+                <p className="text-[12px] font-bold text-muted-foreground">
+                  {isPastEvent(p.eventDate) ? "Questions about your night?" : "Questions before your night?"}
+                </p>
                 <ContactButtons
                   lang="en"
                   message={`Hi! About my booking ${p.refNo}${p.clubName ? ` at ${p.clubName}` : ""} on ${fmtDate(p.eventDate, false)}.`}

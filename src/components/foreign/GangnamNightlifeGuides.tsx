@@ -153,7 +153,7 @@ const BOOKING: Record<SeoLang, Copy> = {
 
   zh: {
     title: "韩国 Booking 夜店是什么｜江南 booking 文化、价格与参加方法",
-    description: "韩国夜店的「booking（부킹）」不是预订，而是江南的习惯：店员把客人带到别桌做简短介绍，双方都可以拒绝，卡座是参与的门票。江南卡座 100 万韩元起、礼仪、不会韩语怎么订。",
+    description: "韩国夜店的「booking（부킹）」不是预订，而是江南的习惯：店员把客人带到别桌做简短介绍，双方都可以拒绝，卡座是参与的门票。江南卡座 140 万韩元起、礼仪、不会韩语怎么订。",
     ogTitle: "韩国 Booking 夜店是什么", ogSub: "江南 booking 文化 · 价格 · 怎么参加",
     keywords: ["韩国 booking 夜店", "江南 booking", "韩国夜店 booking 是什么", "韩国夜店文化", "江南夜店 外国人", "江南夜店卡座价格"],
     eyebrow: "江南夜生活 · 文化", headerCta: true,
@@ -204,7 +204,7 @@ const BOOKING: Record<SeoLang, Copy> = {
 
   "zh-tw": {
     title: "韓國 Booking 夜店是什麼｜江南文化、價格與參加",
-    description: "韓國夜店的「booking（부킹）」不是訂位，而是江南的習慣：店員把客人帶到別桌做簡短介紹，雙方都可以拒絕，桌位是參與的門票。江南桌位 100 萬韓元起、禮儀、不會韓語怎麼訂。",
+    description: "韓國夜店的「booking（부킹）」不是訂位，而是江南的習慣：店員把客人帶到別桌做簡短介紹，雙方都可以拒絕，桌位是參與的門票。江南桌位 140 萬韓元起、禮儀、不會韓語怎麼訂。",
     ogTitle: "韓國 Booking 夜店是什麼", ogSub: "江南 booking 文化 · 價格 · 怎麼參加",
     keywords: ["韓國 booking 夜店", "江南 booking", "韓國夜店 booking 是什麼", "韓國夜店文化", "江南夜店 外國人", "江南夜店桌位價格", "首爾 夜店 桌位"],
     eyebrow: "江南夜生活 · 文化", headerCta: true,
@@ -228,7 +228,7 @@ const BOOKING: Record<SeoLang, Copy> = {
     ],
     priceH2: "多少錢",
     priceBullets: [
-      `江南桌位：每桌低消 ${won(GANGNAM, "zh-tw")}，從夜店印好的酒單選酒湊滿 — 按整桌算，不是每人。4 個人一人約 25 萬韓元（約 NT$5,700）。`,
+      `江南桌位：每桌低消 ${won(GANGNAM, "zh-tw")}，從夜店印好的酒單選酒湊滿 — 按整桌算，不是每人。4 個人一人約 35 萬韓元（約 NT$8,000）。`,
       "部分夜店週末加收桌位費（3〜5 萬韓元）和入場費（2〜5 萬韓元）。確認前我們會書面告知最終價格。",
       `弘大、梨泰院桌位 ${won(HONGDAE, "zh-tw")} 起，但 booking 文化是江南的東西。`,
       "免訂金、無中介費。當晚在夜店付款。",
@@ -259,7 +259,7 @@ const BOOKING: Record<SeoLang, Copy> = {
 const ROOM_SALON: Record<SeoLang, Copy> = {
   en: {
     title: "Room Salon vs Club in Gangnam — Prices for Foreigners",
-    description: "What a Korean room salon is, why most won't take a visitor, what it costs, and the legal alternative you can actually book: a Gangnam club table from ₩1,000,000 with a printed menu and an English-speaking host. NightFlow does not book room salons.",
+    description: "What a Korean room salon is, why most won't take a visitor, what it costs, and the legal alternative you can actually book: a Gangnam club table from ₩1,400,000 with a printed menu and an English-speaking host. NightFlow does not book room salons.",
     ogTitle: "Room Salon vs Club Table", ogSub: "What foreigners can actually book in Gangnam",
     keywords: ["Korean room salon", "room salon Korea", "room salon Gangnam", "Korean room salon price", "room salon foreigners", "Korea room salon vs club", "Gangnam club table price"],
     eyebrow: "GANGNAM NIGHTLIFE · WHAT YOU CAN BOOK",
@@ -321,7 +321,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
 
   ja: {
     title: "韓国ルームサロンの料金と日本人が予約できる代替案｜江南",
-    description: "江南クラブのテーブル（100万ウォン〜、メニュー価格、英語対応MD）が日本人が実際に予約できる合法の選択肢。ルームサロンとは何か、なぜ入りにくいか、料金の実態も。NightFlowはルームサロンを手配しません。",
+    description: "江南クラブのテーブル（140万ウォン〜、メニュー価格、英語対応MD）が日本人が実際に予約できる合法の選択肢。ルームサロンとは何か、なぜ入りにくいか、料金の実態も。NightFlowはルームサロンを手配しません。",
     ogTitle: "ルームサロン vs クラブのテーブル", ogSub: "江南で日本人が実際に予約できるもの",
     keywords: ["韓国 ルームサロン", "江南 ルームサロン", "ルームサロン 料金", "ルームサロン 日本人", "韓国 ルームサロン とは", "韓国 夜遊び 江南", "江南 クラブ テーブル 料金"],
     eyebrow: "江南のナイトライフ · 予約できるもの",
@@ -358,7 +358,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
     },
     priceH2: "お金の比較",
     priceBullets: [
-      `江南のテーブルは1卓 ${won(GANGNAM, "ja")} の最低予約金額をグループ全体で店のメニューから埋める形。4人なら一人約25万ウォン — ルームサロンの一人分の見積と同等かそれ以下です。`,
+      `江南のテーブルは1卓 ${won(GANGNAM, "ja")} の最低予約金額をグループ全体で店のメニューから埋める形。4人なら一人約35万ウォン — ルームサロンの一人分の見積と同等かそれ以下です。`,
       "入場料2〜5万ウォン、週末はテーブルチャージがかかる店も。確定前に最終金額を書面でお伝えします。",
       "デポジットなし、仲介手数料なし。当日クラブで支払い。合計金額は当日前に書面で確定します。",
     ],
@@ -383,7 +383,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
 
   zh: {
     title: "韩国房间沙龙 vs 夜店卡座 — 江南价格与外国人能订的选择",
-    description: "韩国房间沙龙（room salon）是什么、为什么游客通常进不去、实际花费，以及你真正能订到的合法选择：江南夜店卡座 100 万韩元起、印刷酒单、会英语的 MD。NightFlow 不预订房间沙龙。",
+    description: "韩国房间沙龙（room salon）是什么、为什么游客通常进不去、实际花费，以及你真正能订到的合法选择：江南夜店卡座 140 万韩元起、印刷酒单、会英语的 MD。NightFlow 不预订房间沙龙。",
     ogTitle: "房间沙龙 vs 夜店卡座", ogSub: "江南 · 外国人实际能订的是什么",
     keywords: ["韩国 房间沙龙", "韩国 room salon", "江南 房间沙龙", "韩国 夜总会 价格", "韩国 夜店 外国人 江南", "首尔 江南 卡座 价格"],
     eyebrow: "江南夜生活 · 能订的是什么",
@@ -445,7 +445,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
 
   "zh-tw": {
     title: "韓國酒店（room salon）vs 夜店桌位｜江南價格",
-    description: "韓國的「酒店」（room salon）是什麼、為什麼遊客通常進不去、實際消費，以及你真正能訂到的合法選擇：江南夜店桌位 100 萬韓元起、印好的酒單、會英語的 MD。NightFlow 不代訂酒店。",
+    description: "韓國的「酒店」（room salon）是什麼、為什麼遊客通常進不去、實際消費，以及你真正能訂到的合法選擇：江南夜店桌位 140 萬韓元起、印好的酒單、會英語的 MD。NightFlow 不代訂酒店。",
     ogTitle: "韓國酒店 vs 夜店桌位", ogSub: "江南 · 外國人實際能訂的是什麼",
     keywords: ["韓國 酒店 江南", "韓國 room salon", "江南 酒店 消費", "韓國 酒店 價格", "韓國 夜店 外國人 江南", "首爾 江南 桌位 價格", "韓國 酒店 外國人"],
     eyebrow: "江南夜生活 · 能訂的是什麼",
@@ -482,7 +482,7 @@ const ROOM_SALON: Record<SeoLang, Copy> = {
     },
     priceH2: "錢怎麼比",
     priceBullets: [
-      `江南桌位是每桌 ${won(GANGNAM, "zh-tw")} 的低消，整組一起從夜店酒單湊滿。4 個人一人約 25 萬韓元（約 NT$5,700）— 和韓國酒店一個人的報價相當或更低。`,
+      `江南桌位是每桌 ${won(GANGNAM, "zh-tw")} 的低消，整組一起從夜店酒單湊滿。4 個人一人約 35 萬韓元（約 NT$8,000）— 和韓國酒店一個人的報價相當或更低。`,
       "入場費 2〜5 萬韓元，週末有時有桌位費。確認前我們把最終數字寫給你。",
       "免訂金、無中介費。當晚在夜店付款。總價會在當晚之前用書面講好。",
     ],
