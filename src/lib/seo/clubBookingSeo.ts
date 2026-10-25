@@ -56,20 +56,20 @@ const COPY: Record<SeoLang, Copy> = {
   en: {
     titleBookable: (n, a, f) => `${n} ${a} — Book a Table from ${f} | NightFlow`,
     titleInfo: (n, a) => `${n} ${a} — Entry Fee, Hours & Reviews | NightFlow`,
-    descPrice: (n, f) => `Tables at ${n} from ${f} minimum spend — real menu prices, book in English, no broker fee.`,
+    descPrice: (n, f) => `Tables at ${n} from ${f} minimum spend. Arranged in English and confirmed with the club in writing before your night.`,
     descAlt: (a) => `See which ${a} clubs you can book right now with real table prices.`,
     faqPriceQ: (n) => `How much is a table at ${n}?`,
     faqPriceA: (n, f, a, lowest, reachIn) =>
       lowest && lowest !== f
         ? `The booking minimum at ${n} through NightFlow is ${f} per table (this is the ${a}-wide minimum). Bottles and sets on the menu start at ${lowest}` +
           (reachIn != null && reachIn <= 3 ? `, so most groups reach the minimum with two or three items.` : `; you combine several to reach the minimum.`) +
-          ` You pick from the club's real menu — the total you see is what you pay at the club.`
-        : `Table bookings at ${n} through NightFlow start at ${f}. You pick items from the club's real menu, so the total you see is the price you pay at the club.`,
+          ` You choose from the club's own menu, and we confirm the final total with you in writing before the night.`
+        : `Table bookings at ${n} through NightFlow start at ${f}. You choose from the club's own menu, and we confirm the final total with you in writing before the night.`,
     faqHowQ: (n) => `How do I book a table at ${n}?`,
     faqHowA: (n) =>
-      `Choose your date and group size, pick bottles from ${n}'s menu, and leave your contact. NightFlow confirms directly with ${n} in Korean and replies to you in English — most requests get a reply within a day. No deposit, no broker fee; you pay the club on the night.`,
-    keywords: (n, a) => [`${n} table price`, `${n} bottle service price`, `${n} VIP table`, `${n} minimum spend`, `book ${n}`, `${a} table booking`, `${a} bottle service`],
-    cta: (n, f) => (f ? `Book ${n} · from ${f}` : `Book ${n}`),
+      `Choose your date and group size, pick bottles from ${n}'s menu, and leave your contact. NightFlow confirms directly with ${n} in Korean and sends you the details in English, in writing, before the night. You pay the club on the night.`,
+    keywords: (n, a) => [`${n} table price`, `${n} bottle service price`, `${n} minimum spend`, `book ${n}`, `${a} table booking`, `${a} bottle service`],
+    cta: () => `Request a table`,
     unbookableNotice: (n, a, k) => ({
       title: `${n} isn't bookable yet — ${k} other ${a} ${k === 1 ? "club is" : "clubs are"}.`,
       sub: "Table in your name, pay at the club.",
@@ -78,20 +78,20 @@ const COPY: Record<SeoLang, Copy> = {
   ja: {
     titleBookable: (n, a, f) => `${n} ${a} — テーブル予約 ${f}〜 | NightFlow`,
     titleInfo: (n, a) => `${n} ${a} — 営業時間・入場料・口コミ | NightFlow`,
-    descPrice: (n, f, fc) => `${n}のテーブルは最低${fc}（${f}）〜。実際のメニュー価格で日本語予約、仲介手数料なし。`,
+    descPrice: (n, f, fc) => `${n}のテーブルは最低${fc}（${f}）〜。日本語で手配し、来店前にクラブと確認した内容を書面でお送りします。`,
     descAlt: (a) => `${a}で今すぐ予約できるクラブと実際のテーブル料金はこちら。`,
     faqPriceQ: (n) => `${n}のテーブル料金はいくらですか？`,
     faqPriceA: (n, f, a, lowest, reachIn) =>
       lowest && lowest !== f
         ? `NightFlow経由の${n}テーブル予約は1卓あたり最低${f}（${a}エリア共通の最低予約金額）です。メニューのボトル・セット自体は${lowest}〜で` +
           (reachIn != null && reachIn <= 3 ? `、多くのグループは2〜3品で最低金額に達します。` : `、複数を組み合わせて最低金額に達します。`) +
-          `クラブの実際のメニューから選ぶので、表示合計がそのまま当日のお支払い額です。`
-        : `NightFlow経由の${n}テーブル予約は${f}〜です。クラブの実際のメニューから選ぶので、表示合計がそのまま当日のお支払い額です。`,
+          `クラブのメニューから選び、最終金額は来店前に書面で確定します。`
+        : `NightFlow経由の${n}テーブル予約は${f}〜です。クラブのメニューから選び、最終金額は来店前に書面で確定します。`,
     faqHowQ: (n) => `${n}のテーブルはどう予約しますか？`,
     faqHowA: (n) =>
-      `日程と人数を選び、${n}のメニューからボトルを選んで連絡先を残すだけ。NightFlowが${n}に韓国語で直接確認し、日本語でご返信します — 多くの場合1日以内です。デポジット不要・仲介手数料なし、お支払いは当日クラブで。`,
-    keywords: (n, a) => [`${n} テーブル料金`, `${n} ボトル 値段`, `${n} VIP`, `${n} 最低料金`, `${n} 予約方法`, `${a} テーブル予約`, `${a} ボトルサービス`],
-    cta: (n, f) => (f ? `${n}を予約 · ${f}〜` : `${n}を予約`),
+      `日程と人数を選び、${n}のメニューからボトルを選んで連絡先を残すだけ。NightFlowが${n}に韓国語で直接確認し、来店前に内容を書面でお送りします。お支払いは当日クラブで。`,
+    keywords: (n, a) => [`${n} テーブル料金`, `${n} ボトル 値段`, `${n} 最低料金`, `${n} 予約方法`, `${a} テーブル予約`, `${a} ボトルサービス`],
+    cta: () => `テーブルをリクエスト`,
     unbookableNotice: (n, a, k) => ({
       title: `${n}はまだ予約できません。${a}では${k}軒が予約できます。`,
       sub: "あなたの名前でテーブルを確保、お支払いは当日クラブで。",
@@ -100,20 +100,20 @@ const COPY: Record<SeoLang, Copy> = {
   zh: {
     titleBookable: (n, a, f) => `${n} ${a} — 卡座预订 ${f}起 | NightFlow`,
     titleInfo: (n, a) => `${n} ${a} — 入场费・营业时间・点评 | NightFlow`,
-    descPrice: (n, f, fc) => `${n}卡座最低消费${fc}（${f}）起 — 真实酒单价格，中文预订，无中介费。`,
+    descPrice: (n, f, fc) => `${n}卡座最低消费${fc}（${f}）起。中文安排，到店前与夜店确认并以书面发给您。`,
     descAlt: (a) => `看看${a}现在就能预订的夜店和真实卡座价格。`,
     faqPriceQ: (n) => `${n}的卡座多少钱？`,
     faqPriceA: (n, f, a, lowest, reachIn) =>
       lowest && lowest !== f
         ? `通过 NightFlow 预订${n}卡座，每桌最低消费${f}（${a}区域统一的最低消费）。酒单上的酒水和套餐从${lowest}起` +
           (reachIn != null && reachIn <= 3 ? `，多数人点2〜3项即可达到最低消费。` : `，组合几项即可达到最低消费。`) +
-          `您直接从夜店真实酒单选酒，看到的总额就是当晚在夜店支付的价格。`
-        : `通过 NightFlow 预订${n}卡座${f}起。您直接从夜店真实酒单选酒，看到的总额就是当晚在夜店支付的价格。`,
+          `您从夜店酒单选酒，最终金额会在到店前以书面确认。`
+        : `通过 NightFlow 预订${n}卡座${f}起。您从夜店酒单选酒，最终金额会在到店前以书面确认。`,
     faqHowQ: (n) => `怎样预订${n}的卡座？`,
     faqHowA: (n) =>
-      `选择日期和人数，从${n}的酒单选酒，留下联系方式即可。NightFlow 会用韩语直接向${n}确认，并用中文回复您 — 多数请求一天内回复。无需押金、无中介费，当晚在夜店付款。`,
-    keywords: (n, a) => [`${n} 卡座价格`, `${n} 酒水价格`, `${n} VIP卡座`, `${n} 最低消费`, `${n} 怎么预订`, `${a} 卡座预订`, `${a} 夜店最低消费`],
-    cta: (n, f) => (f ? `预订 ${n} · ${f}起` : `预订 ${n}`),
+      `选择日期和人数，从${n}的酒单选酒，留下联系方式即可。NightFlow 会用韩语直接向${n}确认，并在到店前以书面发给您。当晚在夜店付款。`,
+    keywords: (n, a) => [`${n} 卡座价格`, `${n} 酒水价格`, `${n} 最低消费`, `${n} 怎么预订`, `${a} 卡座预订`, `${a} 夜店最低消费`],
+    cta: () => `申请卡座`,
     unbookableNotice: (n, a, k) => ({
       title: `${n}暂不可预订 — ${a}另有 ${k} 家可订。`,
       sub: "以你的名字订卡座，当晚在夜店付款。",
@@ -122,20 +122,20 @@ const COPY: Record<SeoLang, Copy> = {
   "zh-tw": {
     titleBookable: (n, a, f) => `${n} ${a} — 夜店包廂 ${f}起 | NightFlow`,
     titleInfo: (n, a) => `${n} ${a} — 入場費・營業時間・評價 | NightFlow`,
-    descPrice: (n, f, fc) => `${n}包廂低消${fc}(${f})起 — 真實酒單價格,中文預訂,無中介費。`,
+    descPrice: (n, f, fc) => `${n}包廂低消${fc}(${f})起。中文安排,到店前與夜店確認並以書面傳給您。`,
     descAlt: (a) => `看看${a}現在就能訂包廂的夜店和真實包廂價格。`,
     faqPriceQ: (n) => `${n}的包廂多少錢？`,
     faqPriceA: (n, f, a, lowest, reachIn) =>
       lowest && lowest !== f
         ? `透過 NightFlow 在${n}訂包廂,每桌低消${f}(${a}區域統一的低消)。酒單上的酒水和套餐從${lowest}起` +
           (reachIn != null && reachIn <= 3 ? `,多數人點2〜3項即可達到低消。` : `,組合幾項即可達到低消。`) +
-          `您直接從夜店真實酒單選酒,看到的總額就是當晚在夜店支付的價格。`
-        : `透過 NightFlow 在${n}訂包廂${f}起。您直接從夜店真實酒單選酒,看到的總額就是當晚在夜店支付的價格。`,
+          `您從夜店酒單選酒,最終金額會在到店前以書面確認。`
+        : `透過 NightFlow 在${n}訂包廂${f}起。您從夜店酒單選酒,最終金額會在到店前以書面確認。`,
     faqHowQ: (n) => `怎麼在${n}訂包廂？`,
     faqHowA: (n) =>
-      `選擇日期和人數,從${n}的酒單選酒,留下聯絡方式即可。NightFlow 會用韓語直接向${n}確認,並用中文回覆您 — 多數請求一天內回覆。免訂金、無中介費,當晚在夜店付款。`,
-    keywords: (n, a) => [`${n} 包廂價格`, `${n} 包廂低消`, `${n} 酒水價格`, `${n} VIP 包廂`, `${n} 桌位價格`, `${n} 怎麼訂包廂`, `${a} 夜店包廂`, `${a} 夜店低消`],
-    cta: (n, f) => (f ? `訂包廂 ${n} · ${f}起` : `訂包廂 ${n}`),
+      `選擇日期和人數,從${n}的酒單選酒,留下聯絡方式即可。NightFlow 會用韓語直接向${n}確認,並在到店前以書面傳給您。當晚在夜店付款。`,
+    keywords: (n, a) => [`${n} 包廂價格`, `${n} 包廂低消`, `${n} 酒水價格`, `${n} 桌位價格`, `${n} 怎麼訂包廂`, `${a} 夜店包廂`, `${a} 夜店低消`],
+    cta: () => `申請包廂`,
     unbookableNotice: (n, a, k) => ({
       title: `${n}暫不可訂 — ${a}另有 ${k} 家可訂。`,
       sub: "用你的名字訂包廂，當晚在夜店付款。",

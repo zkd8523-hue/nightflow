@@ -442,9 +442,78 @@ function replaceCurrency(s: string, lang: Lang): string {
  * 클럽 메타 문자열(입장료·영업시간 등)을 외국인 트랙에 맞게 부분 번역.
  * ko 언어는 원본 그대로 반환.
  */
+// 낱말 치환으로는 한국어가 남던 원문 통째 번역(2026-10-25, 운영자 "외국어 페이지에 한국어 다 없애"). 11건 전수.
+// 키는 공백을 하나로 접은 원문. 빈 문자열 = 정보 없음(화면에서 숨김).
+const FULL: Record<string, Partial<Record<Lang, string>>> = {
+  "확인 필요": { en: "", ja: "", zh: "", "zh-tw": "" },
+  "목·금·토·일 20:00~ (휴일 전날 20:00~)": {
+    en: "Thu–Sun from 20:00 (also from 20:00 the night before public holidays)",
+    ja: "木・金・土・日 20:00〜（祝日前日も20:00〜）",
+    zh: "周四至周日 20:00起（节假日前一天也 20:00起）",
+    "zh-tw": "週四至週日 20:00起（國定假日前一天也 20:00起）",
+  },
+  "2층 힙합존 월/화/수/목/일 9:30~ 5:30 금/토 9:00~ 7:00 3층EDM존 월/화/수/목/일 11:00~ 5:30 금/토 11:00~7:00": {
+    en: "2F hip-hop: Sun–Thu 21:30–05:30, Fri–Sat 21:00–07:00 · 3F EDM: Sun–Thu 23:00–05:30, Fri–Sat 23:00–07:00",
+    ja: "2階ヒップホップ：日〜木 21:30〜5:30、金・土 21:00〜7:00 ／ 3階EDM：日〜木 23:00〜5:30、金・土 23:00〜7:00",
+    zh: "2楼嘻哈区：周日至周四 21:30–5:30，周五、周六 21:00–7:00 ／ 3楼EDM区：周日至周四 23:00–5:30，周五、周六 23:00–7:00",
+    "zh-tw": "2樓嘻哈區：週日至週四 21:30–5:30，週五、週六 21:00–7:00 ／ 3樓EDM區：週日至週四 23:00–5:30，週五、週六 23:00–7:00",
+  },
+  "목·금·토·일 정상영업 (공휴일 전날 당일 오픈)": {
+    en: "Open Thu–Sun (also open the night before public holidays)",
+    ja: "木〜日営業（祝日前日も営業）",
+    zh: "周四至周日营业（节假日前一天也营业）",
+    "zh-tw": "週四至週日營業（國定假日前一天也營業）",
+  },
+  "무료입장 (신분증 검사 후 입장)": {
+    en: "Free entry (ID check at the door)", ja: "入場無料（入口で身分証確認）",
+    zh: "免费入场（门口查验证件）", "zh-tw": "免費入場（門口查驗證件）",
+  },
+  "신분증 지참 필수 (미소지 시 입장 불가)": {
+    en: "Bring your ID — no entry without it", ja: "身分証必須（ない場合は入場不可）",
+    zh: "必须携带证件（未携带不能入场）", "zh-tw": "必須攜帶證件（未攜帶不能入場）",
+  },
+  "사전예매 25,000원 · 현장 30,000원 (프리드링크 2잔 포함)": {
+    en: "₩25,000 advance · ₩30,000 at the door (2 drinks included)",
+    ja: "前売 ₩25,000・当日 ₩30,000（ドリンク2杯付き）",
+    zh: "预售 ₩25,000 · 现场 ₩30,000（含2杯饮品）",
+    "zh-tw": "預售 ₩25,000 · 現場 ₩30,000（含2杯飲品）",
+  },
+  "1드링크 주문 · 2층 금연 / 3층 전자담배 OK": {
+    en: "One drink order required · No smoking on 2F · E-cigarettes OK on 3F",
+    ja: "1ドリンク注文制・2階禁煙／3階電子タバコ可",
+    zh: "需点一杯饮品 · 2楼禁烟 / 3楼可电子烟",
+    "zh-tw": "需點一杯飲品 · 2樓禁菸 / 3樓可電子菸",
+  },
+  "입장료 10,000원 (여성 입장료 면제, 래퍼 라이브 공연 시 변동)": {
+    en: "₩10,000 entry (free for women; varies on live rap show nights)",
+    ja: "入場料 ₩10,000（女性無料、ラッパーのライブ時は変動）",
+    zh: "入场费 ₩10,000（女性免费，饶舌歌手现场演出时会变动）",
+    "zh-tw": "入場費 ₩10,000（女性免費，饒舌歌手現場演出時會變動）",
+  },
+  "Well-Selected 뮤직 베뉴": {
+    en: "Well-Selected music venue", ja: "Well-Selected ミュージックベニュー",
+    zh: "Well-Selected 音乐场地", "zh-tw": "Well-Selected 音樂場地",
+  },
+  "슬리퍼 , 크록스 X ( 굽있는 샌들 상황에 따라 가능 )": {
+    en: "No slippers or Crocs (heeled sandals may be OK, depending on the night)",
+    ja: "スリッパ・クロックス不可（ヒール付きサンダルは状況により可）",
+    zh: "禁止拖鞋、洞洞鞋（有跟凉鞋视情况可）",
+    "zh-tw": "禁止拖鞋、布希鞋（有跟涼鞋視情況可）",
+  },
+};
+
 export function translateClubMeta(s: string | null | undefined, lang: Lang): string {
   if (!s) return "";
   if (lang === "ko") return s;
+  const full = FULL[s.replace(/\s+/g, " ").trim()]?.[lang];
+  if (full !== undefined) return full;
+  const out = translateWords(s, lang);
+  // 안전장치: 번역하고도 한국어가 남으면 그 칸을 숨긴다(빈 문자열) — 외국어 페이지에 한국어 0.
+  // 새 클럽 데이터가 이 경로로 숨겨지면 위 FULL 표에 원문 번역을 추가할 것.
+  return /[가-힣]/.test(out) ? "" : out;
+}
+
+function translateWords(s: string, lang: Lang): string {
 
   let out = s;
   const days = DAY_MAP[lang];

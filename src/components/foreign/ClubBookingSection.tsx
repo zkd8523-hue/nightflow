@@ -63,22 +63,22 @@ const T = {
     charge: "Table charge",
     chargeWd: "weekday",
     chargeWe: "weekend",
-    steps: ["Pick your date, group size and bottles from the real menu.", "We confirm with the club in Korean — most requests get a reply within a day.", "You get the final price in writing. Pay the club on the night."],
-    cta: (n: string) => `Book ${n}`,
+    steps: ["Pick your date, group size and bottles from the club's menu.", "We confirm everything with the club in Korean.", "You get the final price in writing. Pay the club on the night."],
+    cta: () => `Request a table`,
     onMenu: (names: string) => `On the menu: ${names}`,
     trustLine: "Final price confirmed in writing before the night · Pay the club directly",
     howItWorks: "How booking works",
     allFrom: (p: string) => `All from ${p}`,
     moreH3: (a: string) => `Other ${a} clubs you can book`,
-    notH2: (n: string) => `${n} isn't bookable yet`,
-    notP: (n: string, a: string, k: number) => k > 0 ? `We don't handle tables at ${n} yet. These ${a} clubs can be booked right now, in English, with real prices:` : `We don't handle tables at ${n} yet. See which Seoul clubs we can book for you right now.`,
+    notH2: (_n: string, a: string) => `Tables in ${a} we can arrange`,
+    notP: (n: string, a: string, k: number) => k > 0 ? `We can't arrange ${n} yet — these ${a} clubs we can.` : `We don't handle tables at ${n} yet. See which Seoul clubs we can book for you right now.`,
     altFrom: "from",
-    altBook: "Book",
+    altBook: "Request",
     altDetails: "Details",
     reviews: "reviews",
     seeAll: (a: string) => `Compare all ${a} table prices`,
     summary: (n: string, a: string, price: string, when: string | null) =>
-      `${n} is a club in ${a}. Tables start at ${price} per table, filled from the club's printed menu.${when ? ` ${when}.` : ""} Foreign visitors can book it in English through NightFlow: send your date and group size, get the final price in writing before the night, no deposit — pay the club on the night.`,
+      `${n} is a club in ${a}. Tables start at ${price} per table, filled from the club's printed menu.${when ? ` ${when}.` : ""} Foreign visitors can book it in English through NightFlow: send your date and group size, get the final price in writing before the night, and pay the club on the night.`,
     hoursLine: (h: string) => `Hours: ${h}`,
     daysLine: (d: string) => `Open ${d}`,
     dows: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
@@ -94,22 +94,22 @@ const T = {
     charge: "テーブルチャージ",
     chargeWd: "平日",
     chargeWe: "週末",
-    steps: ["日程・人数を選び、実際のメニューからボトルを選択。", "NightFlowがクラブに韓国語で確認 — 多くの場合1日以内にご返信。", "最終金額を文面でお知らせ。当日クラブでお支払い。"],
-    cta: (n: string) => `${n}を予約`,
+    steps: ["日程・人数を選び、クラブのメニューからボトルを選択。", "NightFlowがクラブに韓国語で確認。", "最終金額を文面でお知らせ。当日クラブでお支払い。"],
+    cta: () => `テーブルをリクエスト`,
     onMenu: (names: string) => `メニュー：${names}`,
     trustLine: "最終金額は当日前に書面で確定 · お支払いはクラブへ直接",
     howItWorks: "予約の流れ",
     allFrom: (p: string) => `すべて${p}〜`,
     moreH3: (a: string) => `${a}で予約できる他のクラブ`,
-    notH2: (n: string) => `${n}はまだ予約できません`,
-    notP: (n: string, a: string, k: number) => k > 0 ? `${n}のテーブルはまだお取り扱いしていません。${a}で今すぐ日本語で予約できるクラブ（実際の料金つき）：` : `${n}のテーブルはまだお取り扱いしていません。今すぐ予約できるクラブをご覧ください。`,
+    notH2: (_n: string, a: string) => `${a}で手配できるテーブル`,
+    notP: (n: string, a: string, k: number) => k > 0 ? `${n}はまだお取り扱いしていません。` : `${n}のテーブルはまだお取り扱いしていません。今すぐ予約できるクラブをご覧ください。`,
     altFrom: "",
-    altBook: "予約",
+    altBook: "リクエスト",
     altDetails: "詳細",
     reviews: "件",
     seeAll: (a: string) => `${a}のテーブル料金をすべて比較`,
     summary: (n: string, a: string, price: string, when: string | null) =>
-      `${n}は${a}のクラブです。テーブルは1卓${price}から、クラブの実際のメニューで組みます。${when ? `${when}。` : ""}NightFlowなら日本語で予約できます — 日程と人数を送ると、当日前に最終金額を文面でお知らせ。デポジット不要、当日クラブでお支払い。`,
+      `${n}は${a}のクラブです。テーブルは1卓${price}から、クラブの実際のメニューで組みます。${when ? `${when}。` : ""}NightFlowなら日本語で予約できます — 日程と人数を送ると、当日前に最終金額を文面でお知らせし、お支払いは当日クラブで。`,
     hoursLine: (h: string) => `営業時間：${h}`,
     daysLine: (d: string) => `営業日：${d}`,
     dows: ["日", "月", "火", "水", "木", "金", "土"],
@@ -125,22 +125,22 @@ const T = {
     charge: "台费",
     chargeWd: "平日",
     chargeWe: "周末",
-    steps: ["选择日期、人数，从真实酒单选酒。", "我们用韩语向夜店确认 — 多数请求一天内回复。", "书面告知最终价格。当晚在夜店付款。"],
-    cta: (n: string) => `预订 ${n}`,
+    steps: ["选择日期、人数，从夜店酒单选酒。", "我们用韩语向夜店确认所有细节。", "书面告知最终价格。当晚在夜店付款。"],
+    cta: () => `申请卡座`,
     onMenu: (names: string) => `酒单：${names}`,
     trustLine: "当晚前书面确认最终价格 · 直接向夜店付款",
     howItWorks: "预订流程",
     allFrom: (p: string) => `均 ${p} 起`,
     moreH3: (a: string) => `${a}其他可预订的夜店`,
-    notH2: (n: string) => `${n}暂时无法预订`,
-    notP: (n: string, a: string, k: number) => k > 0 ? `我们目前还不能代订${n}的卡座。以下${a}夜店现在就能用中文预订，含真实价格：` : `我们目前还不能代订${n}的卡座。看看现在可以预订的夜店。`,
+    notH2: (_n: string, a: string) => `${a}可为您安排的卡座`,
+    notP: (n: string, a: string, k: number) => k > 0 ? `${n}暂不可安排。` : `我们目前还不能代订${n}的卡座。看看现在可以预订的夜店。`,
     altFrom: "",
-    altBook: "预订",
+    altBook: "申请",
     altDetails: "详情",
     reviews: "条评价",
     seeAll: (a: string) => `比较${a}全部卡座价格`,
     summary: (n: string, a: string, price: string, when: string | null) =>
-      `${n}是${a}的夜店。卡座每桌${price}起，按夜店实际酒单组合。${when ? `${when}。` : ""}通过NightFlow可以用中文预订：发来日期和人数，到店前以书面确认最终价格，无需订金，当晚在夜店付款。`,
+      `${n}是${a}的夜店。卡座每桌${price}起，按夜店实际酒单组合。${when ? `${when}。` : ""}通过NightFlow可以用中文预订：发来日期和人数，到店前以书面确认最终价格，当晚在夜店付款。`,
     hoursLine: (h: string) => `营业时间：${h}`,
     daysLine: (d: string) => `营业日：${d}`,
     dows: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
@@ -157,22 +157,22 @@ const T = {
     charge: "包廂費",
     chargeWd: "平日",
     chargeWe: "週末",
-    steps: ["選擇日期、人數,從真實酒單選酒。", "我們用韓語向夜店確認 — 多數請求一天內回覆。", "書面告知最終價格。當晚在夜店付款。"],
-    cta: (n: string) => `訂包廂 ${n}`,
+    steps: ["選擇日期、人數,從夜店酒單選酒。", "我們用韓語向夜店確認所有細節。", "書面告知最終價格。當晚在夜店付款。"],
+    cta: () => `申請包廂`,
     onMenu: (names: string) => `酒單：${names}`,
     trustLine: "當晚前書面確認最終價格 · 直接向夜店付款",
     howItWorks: "訂位流程",
     allFrom: (p: string) => `皆 ${p} 起`,
     moreH3: (a: string) => `${a}其他可訂包廂的夜店`,
-    notH2: (n: string) => `${n}暫時無法訂包廂`,
-    notP: (n: string, a: string, k: number) => k > 0 ? `我們目前還不能代訂${n}的包廂。以下${a}夜店現在就能用中文訂包廂,含真實價格:` : `我們目前還不能代訂${n}的包廂。看看現在可以訂包廂的夜店。`,
+    notH2: (_n: string, a: string) => `${a}可為您安排的包廂`,
+    notP: (n: string, a: string, k: number) => k > 0 ? `${n}暫不可安排。` : `我們目前還不能代訂${n}的包廂。看看現在可以訂包廂的夜店。`,
     altFrom: "",
-    altBook: "訂包廂",
+    altBook: "申請",
     altDetails: "詳情",
     reviews: "則評論",
     seeAll: (a: string) => `比較${a}全部包廂價格`,
     summary: (n: string, a: string, price: string, when: string | null) =>
-      `${n}是${a}的夜店。包廂每桌${price}起，依夜店實際酒單組合。${when ? `${when}。` : ""}透過NightFlow可以用中文訂位：傳來日期和人數，到店前以書面確認最終價格，不用訂金，當晚在夜店付款。`,
+      `${n}是${a}的夜店。包廂每桌${price}起，依夜店實際酒單組合。${when ? `${when}。` : ""}透過NightFlow可以用中文訂位：傳來日期和人數，到店前以書面確認最終價格，當晚在夜店付款。`,
     hoursLine: (h: string) => `營業時間：${h}`,
     daysLine: (d: string) => `營業日：${d}`,
     dows: ["週日", "週一", "週二", "週三", "週四", "週五", "週六"],
@@ -299,7 +299,7 @@ export function ClubBookingSection({
 
         <Link rel="nofollow" href={bookHref} data-nf-track="book_cta_inline"
           className="block w-full text-center py-3 rounded-xl bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
-          {t.cta(name)}
+          {t.cta()}
         </Link>
         <p className="text-[12px] text-muted-foreground text-center -mt-2 break-keep">{t.trustLine}</p>
 
@@ -360,7 +360,7 @@ export function ClubBookingSection({
   // 예약 불가 — 같은 지역에서 지금 잡을 수 있는 클럽을 가격과 함께.
   return (
     <section className="rounded-2xl bg-card border border-border p-5 space-y-3">
-      <h2 className="text-[18px] font-black">{t.notH2(name)}</h2>
+      {alts.length > 0 && <h2 className="text-[18px] font-black">{t.notH2(name, areaLabel)}</h2>}
       <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">{t.notP(name, areaLabel, alts.length)}</p>
       {alts.length > 0 && <AltCards alts={alts} lang={lang} rates={rates} />}
       <Link href={compareHref} data-nf-track="see_area_prices" className="inline-block text-[13px] text-brand-amber underline underline-offset-2">

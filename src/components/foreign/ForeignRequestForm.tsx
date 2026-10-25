@@ -3285,7 +3285,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         {loading ? t("전송 중…", "Sending…", "送信中…", "提交中…", "提交中…") : t("요청 보내기", "Send request", "リクエスト送信", "提交请求", "提交請求")}
       </button>
       <p className="text-center text-[12px] text-muted-foreground -mt-3">
-        {t("대부분 하루 안에 회신 · 당일 클럽에서 결제", "Most requests get a reply within a day · Pay the club on the night", "多くは1日以内に返信 · 当日クラブでお支払い", "大多数一天内回复 · 当晚在夜店付款", "大多數一天內回覆 · 當晚在夜店付款")}
+        {t("방문 전 서면으로 확정 · 당일 클럽에서 결제", "Details confirmed in writing before your visit · Pay the club on the night", "来店前に書面で確定 · 当日クラブでお支払い", "到店前书面确认 · 当晚在夜店付款", "到店前書面確認 · 當晚在夜店付款")}
       </p>
 
       {/* 폼 대신 대화(2026-10-20). 10/3~10/20 실측: 예산까지 고른 20명 중 이 단계에서 14명이 이름도
@@ -3332,11 +3332,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               </h2>
               <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
                 {t(
-                  `대부분 하루 안에 회신해요. 확정되는 즉시 ${CONTACT_LABEL[contactType]}로 알려드릴게요.`,
-                  `Most requests get a reply within a day. We'll message you on ${CONTACT_LABEL[contactType]} the moment it's confirmed.`,
-                  `多くは1日以内に返信します。確定次第 ${CONTACT_LABEL[contactType]} でお知らせします。`,
-                  `大多数一天内回复。一确认就通过 ${CONTACT_LABEL[contactType]} 通知你。`,
-                  `大多數一天內回覆。一確認就透過 ${CONTACT_LABEL[contactType]} 通知你。`
+                  `확정되는 즉시 ${CONTACT_LABEL[contactType]}로 알려드릴게요.`,
+                  `We'll message you on ${CONTACT_LABEL[contactType]} as soon as it's confirmed.`,
+                  `確定次第 ${CONTACT_LABEL[contactType]} でお知らせします。`,
+                  `一确认就通过 ${CONTACT_LABEL[contactType]} 通知你。`,
+                  `一確認就透過 ${CONTACT_LABEL[contactType]} 通知你。`
                 )}
               </p>
               {requestRef && <p className="text-[12px] font-bold text-muted-foreground tabular-nums">{t("접수 번호", "Request", "受付番号", "请求编号", "請求編號")} #{requestRef}</p>}
@@ -3346,7 +3346,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             <div className="rounded-2xl bg-card border border-border p-4">
               {[
                 { done: true, active: false, title: t("접수 완료", "Request received", "受付完了", "已收到请求", "已收到請求"), sub: contactType === "email" ? t(`${contactValue.trim()}로 사본을 보냈어요`, `Copy sent to ${contactValue.trim()}`, `${contactValue.trim()} に控えを送信`, `副本已发送至 ${contactValue.trim()}`, `副本已寄至 ${contactValue.trim()}`) : t("방금", "Just now", "たった今", "刚刚", "剛剛") },
-                { done: false, active: true, title: t("클럽이 테이블 확인 중", "Club confirming your table", "クラブがテーブルを確認中", "夜店正在确认桌位", "夜店正在確認包廂"), sub: t("보통 하루 안 · 메뉴판 기준으로 가격 검수", "Usually within a day · Price checked against the menu", "通常1日以内 · メニューで価格を照合", "通常一天内 · 按酒单核对价格", "通常一天內 · 依酒單核對價格") },
+                { done: false, active: true, title: t("클럽이 테이블 확인 중", "Club confirming your table", "クラブがテーブルを確認中", "夜店正在确认桌位", "夜店正在確認包廂"), sub: t("메뉴판 기준으로 가격 검수", "Price checked against the club's menu", "メニューで価格を照合", "按酒单核对价格", "依酒單核對價格") },
                 { done: false, active: false, title: t(`${CONTACT_LABEL[contactType]}로 예약 패스 발송`, `Booking pass on ${CONTACT_LABEL[contactType]}`, `${CONTACT_LABEL[contactType]} で予約パス`, `通过 ${CONTACT_LABEL[contactType]} 发送入场凭证`, `透過 ${CONTACT_LABEL[contactType]} 傳送入場憑證`), sub: t("입구에서 여권과 함께 보여주세요", "Show it at the door with your passport", "入口でパスポートと一緒に提示", "入口出示凭证和护照", "入口出示憑證和護照") },
               ].map((step, i, arr) => (
                 <div key={i} className="flex gap-3">

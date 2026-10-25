@@ -19,6 +19,8 @@ import { BookingComingSoon } from "@/components/foreign/BookingComingSoon";
 import { fetchTablePricing, tableFrom, trimAtSentence } from "@/lib/clubs/tablePricing";
 import { bookingSeoBits, bookingFaqs, bookingJsonLdFragment } from "@/lib/seo/clubBookingSeo";
 import { ClubBookingSection } from "@/components/foreign/ClubBookingSection";
+import { BookPopup } from "@/components/foreign/BookPopup";
+import { CopyAddressButton } from "@/components/foreign/CopyAddressButton";
 import { getKrwRates } from "@/lib/utils/currency";
 
 // 번체 중국어(대만·홍콩)판 클럽 개별 페이지 — /en/clubs/[area]/[club] 과 동일 구조 복제.
@@ -240,7 +242,8 @@ export default async function ZhTwClubDetailPage({
   const reviews = localizeReviews(club.google_reviews, "zh-tw")
     .filter((r) => r.text?.trim())
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-    .slice(0, 5);
+    .filter((r) => (r.rating ?? 0) >= 4 && !/[가-힣]|\p{Extended_Pictographic}/u.test(r.text ?? ""))
+    .slice(0, 3);
   const googleUrl = getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, "zh-tw");
   const url = `https://nightflow.kr/zh-tw/clubs/${area}/${clubParam}`;
   const bookHref = `/flags/new?lang=zh-tw&area=${encodeURIComponent(club.area)}&club=${club.id}`;
@@ -272,11 +275,11 @@ export default async function ZhTwClubDetailPage({
     fee && { q: `${name}的入場費是多少？`, a: `${name}的入場費是${fee}。` },
     // 한글이 섞인 드레스코드("크록스 X" 등)는 번역이 안 된 원문이라 FAQ·JSON-LD에서 뺀다(크리틱 2차)
     dress && !/[가-힣]/.test(dress) && { q: `${name}有服裝規定嗎？`, a: `${name}的服裝規定：${dress}。` },
-    club.address && { q: `${name}在哪裡？`, a: `${name}位於${areaZh}${area === "busan" ? "" : "（首爾）"}${club.address}。` },
+    club.address && { q: `${name}在哪裡？`, a: `${name}位於${areaZh}${area === "busan" ? "" : "（首爾）"}。可用本頁的「複製地址給司機」把韓文地址給司機看。` },
     // ⚠️ 예약 중개가 가능한 클럽에만 넣는다. 담당 MD나 주대가 없으면 실제로 잡아줄 수
     // 없는데 구조화 데이터로 "예, 잡아드립니다"를 선언하면 검색결과가 거짓말이 된다.
     bookable
-      ? { q: `可以用中文在${name}訂包廂嗎？`, a: `可以。NightFlow 會直接聯絡${name}為您鎖定包廂,支援英文/中文溝通,無中介費。` }
+      ? { q: `可以用中文在${name}訂包廂嗎？`, a: `可以。NightFlow 會用韓語向${name}確認，並以書面把詳情傳給您，全程中文/英文溝通。` }
       : null,
   ].filter(Boolean) as { q: string; a: string }[];
   // 예약 가능 + 가격 있을 때만 "얼마부터/어떻게 예약" Q&A가 붙는다(거짓 선언 방지 원칙 동일).
@@ -375,11 +378,6 @@ export default async function ZhTwClubDetailPage({
           <ChevronLeft className="w-4 h-4" />
           <span className="text-[15px] font-black tracking-tight">NightFlow</span>
         </Link>
-        <Link href={`/zh-tw/clubs/${area}`}
-          data-nf-track="header_more_area"
-          className="px-3.5 py-1.5 rounded-full bg-muted border border-border text-[12px] font-bold text-foreground hover:text-brand-amber transition-colors">
-          {areaZh}的其他夜店
-        </Link>
       </header>
 
       <div className="max-w-lg lg:max-w-[900px] mx-auto px-4 lg:px-8 py-6 lg:py-10 space-y-8">
@@ -394,9 +392,9 @@ export default async function ZhTwClubDetailPage({
         <header className="space-y-2">
           <h1 className="text-3xl font-black tracking-tight">{name}</h1>
           <p className="text-muted-foreground text-[14px]">
-            {areaZh}{area === "busan" ? "" : "（首爾）"}夜店{club.name !== name && <> ・ {club.name}</>}
+            {areaZh}{area === "busan" ? "" : "（首爾）"}夜店
           </p>
-          {club.google_rating != null && (
+          {club.google_rating != null && club.google_rating >= 4 && (
             <a href={googleUrl} target="_blank" rel="noopener noreferrer" data-nf-track="outbound_google_rating"
               className="inline-flex items-center gap-1.5 text-[14px] text-brand-amber">
               <Star className="w-4 h-4 fill-current" />
@@ -409,35 +407,73 @@ export default async function ZhTwClubDetailPage({
         </header>
 
         {club.thumbnail_url && (
-          <div className="relative w-full h-56 rounded-2xl overflow-hidden">
+          <div className={`relative w-full ${bookable ? "h-40" : "h-28"} rounded-2xl overflow-hidden`}>
             <Image src={club.thumbnail_url} alt={`${name} — ${areaZh}夜店${area === "busan" ? "" : "，首爾"}`} fill
               className="object-cover" sizes="(max-width: 640px) 100vw, 512px" priority />
           </div>
         )}
 
-        {/* 예약 불가 — 첫 화면에서 "여긴 아직 안 되지만 이 지역 N곳은 된다"를 먼저 말한다(2026-09-26).
-            대안 카드(ClubBookingSection)는 스크롤 74% 지점이라 첫 화면엔 갈 곳이 없었다.
-            버튼은 하단 고정 바(모바일)·사이드바(데스크톱)가 맡고 여기는 문장만 — 같은 버튼 두 개 금지. */}
-        {!bookable && bookableSiblingCount > 0 && (() => {
-          const notice = seoBits.unbookableNotice(bookableSiblingCount);
-          return (
-            <div className="rounded-2xl border border-amber-500/45 bg-card px-4 py-3.5">
-              <p className="text-[14px] font-bold leading-snug break-keep">{notice.title}</p>
-              <p className="text-[13px] text-muted-foreground mt-0.5 break-keep">{notice.sub}</p>
-            </div>
-          );
-        })()}
+        {/* 예약 가능: 예약 카드를 첫 화면 안(사진 바로 아래)으로 — 2026-10-25 리디자인 1단계 */}
+        {bookable && (
+          <ClubBookingSection
+            lang="zh-tw"
+            clubId={club.id}
+            hours={hours}
+            openDows={club.open_dows ?? null}
+            name={name}
+            areaLabel={areaZh}
+            areaKo={club.area}
+            areaSlug={area}
+            bookable={bookable}
+            pricing={pricing.get(club.id)}
+            tableChargeWeekday={club.table_charge_weekday}
+            tableChargeWeekend={club.table_charge_weekend}
+            bookHref={bookHref}
+            alternatives={altClubs}
+            rates={fxRates}
+          />
+        )}
 
         <section>
           <h2 className="text-[18px] font-black mb-1">{name} — 營業時間・入場費・地址</h2>
           <dl className="rounded-2xl bg-card border border-border px-4">
             {hours && fact(<Clock className="w-4 h-4" />, "營業時間", hours)}
             {fee && fact(<Ticket className="w-4 h-4" />, "入場費", fee)}
-            {club.address && fact(<MapPin className="w-4 h-4" />, "地址", club.address)}
+            {club.address && (
+              <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
+                <span className="shrink-0 mt-0.5 text-muted-foreground"><MapPin className="w-4 h-4" /></span>
+                <div className="min-w-0">
+                  <dt className="text-[12px] font-bold text-muted-foreground">位置</dt>
+                  <dd className="text-[15px] text-foreground break-keep">{areaZh}{area === "busan" ? "" : "（首爾）"}</dd>
+                  <CopyAddressButton address={club.address} lang="zh-tw" />
+                </div>
+              </div>
+            )}
             {dress && fact(<Shirt className="w-4 h-4" />, "服裝規定", dress)}
             {club.instagram?.trim() && igRow(club.instagram.trim().replace(/^@/, ""))}
           </dl>
         </section>
+
+        {/* 예약 불가: 영업시간(검색해서 온 답) 바로 아래에 "이 지역에서 잡아 드릴 수 있는 테이블" */}
+        {!bookable && (
+          <ClubBookingSection
+            lang="zh-tw"
+            clubId={club.id}
+            hours={hours}
+            openDows={club.open_dows ?? null}
+            name={name}
+            areaLabel={areaZh}
+            areaKo={club.area}
+            areaSlug={area}
+            bookable={bookable}
+            pricing={pricing.get(club.id)}
+            tableChargeWeekday={club.table_charge_weekday}
+            tableChargeWeekend={club.table_charge_weekend}
+            bookHref={bookHref}
+            alternatives={altClubs}
+            rates={fxRates}
+          />
+        )}
 
         {features.length > 0 && (
           <section>
@@ -453,14 +489,14 @@ export default async function ZhTwClubDetailPage({
         )}
 
         {reviews.length > 0 && (
-          <section>
-            <h2 className="text-[18px] font-black mb-2">{name}的評價</h2>
-            <div className="space-y-2">
+          <details className="group">
+            <summary className="cursor-pointer list-none flex items-center justify-between rounded-2xl bg-card border border-border px-4 py-3.5 text-[15px] font-black">{name}的評價<span className="text-muted-foreground transition-transform group-open:rotate-180">▾</span></summary>
+            <div className="space-y-2 mt-2">
               {reviews.map((r, i) => (
                 <blockquote key={i} className="p-3 rounded-xl bg-card border border-border">
                   <p className="text-[13px] text-foreground leading-relaxed">{r.text}</p>
                   <footer className="text-[11px] text-muted-foreground mt-1.5">
-                    — {r.author_name || "Google 使用者"}
+                    — {!r.author_name || /[가-힣]/.test(r.author_name) ? "Google 使用者" : r.author_name}
                     {r.relative_time && <>，{r.relative_time}</>}
                   </footer>
                 </blockquote>
@@ -470,33 +506,14 @@ export default async function ZhTwClubDetailPage({
               className="inline-flex items-center gap-1 mt-2 text-[12px] text-brand-amber">
               查看更多 Google 評論 <ExternalLink className="w-3 h-3" />
             </a>
-          </section>
+          </details>
         )}
-
-        {/* 예약 블록 — 가능: 실가격+절차+CTA / 불가: 같은 지역 예약 가능 클럽을 가격 카드로 */}
-        <ClubBookingSection
-          lang="zh-tw"
-          clubId={club.id}
-          hours={hours}
-          openDows={club.open_dows ?? null}
-          name={name}
-          areaLabel={areaZh}
-          areaKo={club.area}
-          areaSlug={area}
-          bookable={bookable}
-          pricing={pricing.get(club.id)}
-          tableChargeWeekday={club.table_charge_weekday}
-          tableChargeWeekend={club.table_charge_weekend}
-          bookHref={bookHref}
-          alternatives={altClubs}
-          rates={fxRates}
-        />
 
 
         {faqs.length > 0 && (
-          <section>
-            <h2 className="text-[18px] font-black mb-2">{name}常見問題</h2>
-            <div className="space-y-3">
+          <details className="group">
+            <summary className="cursor-pointer list-none flex items-center justify-between rounded-2xl bg-card border border-border px-4 py-3.5 text-[15px] font-black">{name}常見問題<span className="text-muted-foreground transition-transform group-open:rotate-180">▾</span></summary>
+            <div className="space-y-3 mt-3 px-1">
               {faqs.map((f) => (
                 <div key={f.q}>
                   <h3 className="text-[14px] font-bold text-foreground">{f.q}</h3>
@@ -504,7 +521,7 @@ export default async function ZhTwClubDetailPage({
                 </div>
               ))}
             </div>
-          </section>
+          </details>
         )}
 
       </div>
@@ -534,6 +551,9 @@ export default async function ZhTwClubDetailPage({
           />
         </div>
       </div>
+      {/* 예약 유도 팝업(3초 뒤 1회). 예약 안 되는 클럽은 같은 지역 폼으로 — 폼이 예약 가능한 클럽을 추천한다. */}
+      <BookPopup lang="zh-tw" clubId={club.id} bookable={bookable}
+        href={bookable ? bookHref : `/flags/new?lang=zh-tw&area=${encodeURIComponent(club.area)}`} />
     </div>
     </ForeignShell>
   );
