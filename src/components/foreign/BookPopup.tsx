@@ -6,14 +6,14 @@ import { trackEvent } from "@/lib/analytics/events";
 
 // 외국어 클럽 상세 예약 유도 팝업(2026-10-25 운영자 결정, 하이엔드 검수 A안 "컨시어지형").
 // "concierge"는 사람이 영어로 응대한다는 전제에서만 맞는 말 — 응대 구조가 바뀌면 문구도 바꿀 것.
-// 들어오고 3초 뒤 한 번만 — 들어오자마자 본문을 가리면 구글이 모바일 검색 유입 페이지 품질을 깎는다.
+// 들어오고 6초 뒤 한 번만(3초는 너무 빠르다 — 운영자 2026-10-25) — 들어오자마자 본문을 가리면 구글이 모바일 검색 유입 페이지 품질을 깎는다.
 // 닫거나 누르면 7일간 다시 안 띄운다. 예약 안 되는 클럽 페이지에서도 뜬다(폼에서 예약 가능한 클럽 추천).
 // 문구는 하이엔드 검수 통과본: 가성비 톤("real prices", "no deposit")·VIP 표현·"Book now"(즉시 결제로 읽힘) 금지.
 // 닫기 문구는 거절("No thanks")이 아니라 "계속 둘러보기"로(운영자 2026-10-25).
 // 가독성(운영자: "가독성 너무 구려"): 어두운 페이지 위 밝은 카드 + 검정 큰 글씨, 뒤 배경은 어둡게 흐림.
 
 const KEY = "nf_book_popup_until";
-const DELAY_MS = 3000;
+const DELAY_MS = 6000;
 const SNOOZE_MS = 7 * 864e5;
 
 const COPY: Record<string, { title: string; sub: string; cta: string; close: string }> = {
