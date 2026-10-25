@@ -121,6 +121,7 @@ function classifyChannelFromReferrer(referrer: string): string {
   const r = referrer.toLowerCase();
   if (r.includes("blog.naver.com")) return "blog";
   if (r.includes("instagram.com")) return "instagram";
+  if (r.includes("reddit.com")) return "reddit";
   if (r.includes("search.naver.com")) return "organic";
   if (r.includes("google.")) return "organic";
   return "other";
