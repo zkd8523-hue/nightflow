@@ -417,8 +417,7 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
 
     // 5) in-app 알림 INSERT (알림톡과 별개로 항상 발송)
     //    오퍼 개수에 따라 문구 분기: 0개면 '오퍼 없이 마감' 결과 통보,
-    //    1개 이상이면 '검토 시작 · 선택하세요' 안내.
-    const hasOffers = (offerCount ?? 0) > 0;
+    //    1개 이상이면 '검토 시작 · 선택하세요' 안내. (hasOffers는 위 0)에서 이미 선언)
     // 조각은 자정 마감 → 검토 마감이 익일 새벽 1시. 문구를 expires_at에서 뽑는다.
     const kind = puzzle.is_recruiting_party ? "파티" : "깃발";
     // "깃발"은 받침이 있고 "파티"는 없다 — 조사를 낱말에 맞춰 고른다
