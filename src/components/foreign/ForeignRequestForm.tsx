@@ -83,6 +83,10 @@ const AREA_EMOJI: Record<string, string> = {
 // 이태원 Recommend 상위 3자리 수동 큐레이션 — 자동 알고리즘(리뷰수 기준)이 구글 장소 오매칭 등으로
 // 신뢰 못 할 값을 낼 때가 있어(예: BAT 리뷰수 급증), 검증된 클럽 3곳을 고정 후보로 두고 노출 순서만 섞음.
 const ITAEWON_RECOMMEND_CURATED = ["Dawn", "BADASS", "Day&night"];
+// 추천 쇼트리스트에서 장르 라벨을 달고 함께 Top pick이 되는 클럽(2026-10-29) — 강남은 Ace 단독이 아니라
+// 성격이 다른 두 곳을 나란히 보여준다. 순서 = 노출 순서. 값은 TAG_LABEL_I18N 장르 키.
+const SHORTLIST_TOP_PICKS: Record<string, string> = { "Club Ace": "edm", "DM SEOUL": "hiphop" };
+const TOP_PICK_ORDER = Object.keys(SHORTLIST_TOP_PICKS);
 // 3개면 MD가 비교 제안하기 충분하고, 그 이상은 고르다 지쳐 폼을 못 끝낸다.
 // 클럽은 한 곳만 고른다. 호텔을 잡을 때 세 곳을 동시에 찔러놓지 않는 것과 같다 —
 // 무엇보다 손님이 그 클럽의 메뉴를 직접 골라 총액을 확정하는 흐름이라, 클럽이
@@ -105,8 +109,12 @@ const FALLBACK_BUDGET_TIERS = [500000, 800000, 1500000];
 
 // La Rosa(홍대)만 예산 버튼 15/30/50만 — 사용자 요청(2026-09-30), 클럽 단위 예외.
 // 첫 값이 최소주문금액. ClubBookingSection.tsx의 CLUB_MIN_SPEND_OVERRIDE와 같은 클럽 ID.
+// 강남 DM SEOUL 100만·+82 250만 시작(2026-10-29, 사용자 요청) — 강남은 버튼 이름(Classic/Signature/VVIP)과
+// 큰 금액 칩을 그대로 두고 금액만 바꾼다. Signature/VVIP는 지역 값(300만/1,000만) 유지, +82만 Signature 500만.
 const CLUB_BUDGET_TIERS_OVERRIDE: Record<string, number[]> = {
   "4004d7b6-b3d2-4ec4-8c42-32d82405ded0": [150000, 300000, 500000], // La Rosa
+  "cc7db051-b75d-4c1f-9f95-29f7d8ce70d7": [1000000, 3000000, 10000000], // DM SEOUL
+  "6a19815e-c22b-4bc5-8bb5-dd84b872a7b4": [2500000, 5000000, 10000000], // +82
 };
 
 // 강남은 버튼 3개를 공식(하한·1.5배·2배) 대신 AREA_BUDGET_TIERS 값 그대로 쓰고 맨 위를 VVIP로 부른다
@@ -1278,17 +1286,27 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         const g = (y.area === "강남" ? 1 : 0) - (x.area === "강남" ? 1 : 0);
         if (g !== 0) return g;
       }
+      // 지역별 추천(area_pick, Mig 670)이 1순위 — 홍대 Bermuda·이태원 Day&night(2026-10-29).
+      // 목록 "Our pick"(recommendCompare)과 같은 규칙. 안 넣으면 리뷰순에 La Rosa가 Top pick이 됐다.
+      const pick = Number(!!y.area_pick) - Number(!!x.area_pick);
+      if (pick !== 0) return pick;
       const q = solid(y) - solid(x);
       if (q !== 0) return q;
       return (y.google_review_count ?? 0) - (x.google_review_count ?? 0);
     });
-    if (area) return pinFeatured(sorted).slice(0, 3);
+    // Top pick 클럽은 featured_rank 고정 위치보다도 앞 — 정렬 단계에서 올려도 pinFeatured가
+    // +82(2)·Lion(3)을 다시 끼워 넣어 DM SEOUL이 4번째로 잘렸다(2026-10-29).
+    const withPicks = (arr: ClubItem[]) => {
+      const picks = TOP_PICK_ORDER.map((n) => arr.find((c) => c.name === n)).filter((c): c is ClubItem => !!c);
+      return [...picks, ...arr.filter((c) => !SHORTLIST_TOP_PICKS[c.name])];
+    };
+    if (area) return withPicks(pinFeatured(sorted)).slice(0, 3);
     // 지역 미선택 상태(전체 서울)면 강남·홍대·이태원 각 1곳씩 — 안 그러면 리뷰순 정렬에
     // 리뷰 많은 지역(주로 이태원)이 3곳을 다 차지해서 나머지 지역이 안 보였다(2026-09-15).
-    if (tier === "vip") return pinFeatured(sorted).slice(0, 3); // VIP는 위에서 이미 강남만으로 좁혀 들어옴
+    if (tier === "vip") return withPicks(pinFeatured(sorted)).slice(0, 3); // VIP는 위에서 이미 강남만으로 좁혀 들어옴
     // 지역 대표 1곳도 지역 선택 시와 같은 순서(featured_rank 고정 포함)에서 뽑는다 —
     // 안 그러면 강남을 고르면 Ace, "어디든"이면 Core Seoul로 대표가 갈린다.
-    return SEOUL_AREAS.map((a) => pinFeatured(sorted.filter((c) => c.area === a))[0]).filter((c): c is ClubItem => !!c);
+    return SEOUL_AREAS.map((a) => withPicks(pinFeatured(sorted.filter((c) => c.area === a)))[0]).filter((c): c is ClubItem => !!c);
   }, [clubs, area, eventDate, genre, tier]);
   // 전체 예약 가능 수 — "전부 보기"·"아는 클럽" 링크용. 둘러보기 시트는 그날 쉬는 클럽도 (휴무 표시와 함께)
   // 전부 보여주므로 날짜로 줄이지 않는다. 추천 목록 머리글은 그날 여는 수(openTotal)를 쓴다(2026-10-02).
@@ -1570,9 +1588,12 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     setBudgetOpen(false);
     setFormStep(3);
   };
-  const explicitTierArea = !clubTiersOverride && budgetFloor.area && AREA_EXPLICIT_TIER_AREAS.has(budgetFloor.area)
-    ? budgetFloor.area
-    : null;
+  // 클럽 예외가 있어도 그 클럽이 강남이면 강남 버튼 체계(Classic/Signature/VVIP·큰 금액 칩)는 유지한다 —
+  // budgetFloor.area는 예외일 때 null이라 클럽 지역을 따로 본다.
+  const tierArea = clubTiersOverride
+    ? clubs.find((c) => selectedClubIds.includes(c.id) && c.id in CLUB_BUDGET_TIERS_OVERRIDE)?.area ?? null
+    : budgetFloor.area;
+  const explicitTierArea = tierArea && AREA_EXPLICIT_TIER_AREAS.has(tierArea) ? tierArea : null;
   // 강남 금액은 원화 먼저(approxLocal 참고) — 예산 시트와 3단계 요약 카드가 같이 쓴다.
   const wonFirst = !!explicitTierArea;
   const mdBudgetOptions = useMemo(() => {
@@ -2614,14 +2635,16 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               const f = menuFloorByClub[c.id];
               // 강남 카드는 1인당 금액을 뺀다 — 고액 테이블에서 나눠 내는 계산은 손님이 찾는 정보가 아니다(2026-10-24).
               const pp = f && !AREA_EXPLICIT_TIER_AREAS.has(c.area) ? perPersonLabel(f.amount) : null;
+              const pickGenre = SHORTLIST_TOP_PICKS[c.name];
               return (
                 <div
                   key={c.id}
                   className={`relative rounded-2xl border-2 transition-colors ${on ? "border-amber-500 bg-amber-500/[0.06]" : "border-border bg-card"}`}
                 >
-                  {i === 0 && (
-                    <span className="absolute -top-2.5 left-3 px-2 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black tracking-wide">
+                  {(i === 0 || pickGenre) && (
+                    <span className="absolute -top-2.5 left-3 px-2 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black uppercase tracking-[0.12em]">
                       {t("1순위 추천", "Top pick", "イチオシ", "首选推荐", "首選推薦")}
+                      {pickGenre ? ` · ${TAG_LABEL_I18N[pickGenre]?.[lang] ?? pickGenre}` : ""}
                     </span>
                   )}
                   <button

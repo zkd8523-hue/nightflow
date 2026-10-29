@@ -30,6 +30,8 @@ export function bookingFloor(area: string | null | undefined): number {
 // ⚠️ 폼의 CLUB_BUDGET_TIERS_OVERRIDE(ForeignRequestForm.tsx) 첫 값과 같아야 한다.
 export const CLUB_MIN_SPEND_OVERRIDE: Record<string, number> = {
   "4004d7b6-b3d2-4ec4-8c42-32d82405ded0": 150_000, // La Rosa
+  "cc7db051-b75d-4c1f-9f95-29f7d8ce70d7": 1_000_000, // DM SEOUL (2026-10-29)
+  "6a19815e-c22b-4bc5-8bb5-dd84b872a7b4": 2_500_000, // +82 (2026-10-29)
 };
 
 /** 그 클럽의 1탁 최저소비 — 클럽 예외가 있으면 그것, 없으면 지역 하한. */
