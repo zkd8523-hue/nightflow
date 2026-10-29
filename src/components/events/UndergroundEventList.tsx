@@ -18,7 +18,7 @@ import { useSearchMissLogger } from "@/lib/search/logMiss";
 import { performerMatchesQuery } from "@/lib/search/performerMatch";
 import { EventMonthCalendar } from "@/components/events/EventMonthCalendar";
 import { useArtistFavoritesContext } from "@/components/providers";
-import { CoupangSlot } from "@/components/affiliate/CoupangSlot";
+import { KoStaySlot } from "@/components/affiliate/KoStaySlot";
 
 export interface EventPerformer {
   id: string;
@@ -388,12 +388,7 @@ export function UndergroundEventList({ rows }: { rows: UndergroundEventRow[] }) 
             {/* 제휴 광고 — 목록 맨 위, 첫 날짜("오늘") 제목 바로 위. 중간에 끼우면
                 오늘 공연 수에 따라 위치가 들쭉날쭉해 애매했다(2026-10-22 운영자 결정). */}
             {groups.length > 0 && (
-              <CoupangSlot
-                variant="band"
-                placement="events"
-                title="너 빼고 다 챙긴 필수템"
-                subtitle="폰 배터리 · 향 · 입냄새 · 숙취"
-              />
+              <KoStaySlot variant="night" compact placement="events" area={area} />
             )}
 
             {groups.map(([date, list]) => (

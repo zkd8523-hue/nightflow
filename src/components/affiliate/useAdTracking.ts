@@ -20,6 +20,10 @@ export function useAdImpression<T extends HTMLElement>(params: AdTrackParams | n
   const ref = useRef<T | null>(null);
   const sent = useRef(false);
   const key = params ? `${params.ad_id}|${params.placement}|${params.items ?? ""}` : "";
+  // 타이머가 1초 뒤에 보내므로 그 사이 바뀐 값(마운트 후 정해지는 문구 각도 등)을 실어야 한다.
+  // 첫 렌더 값을 잡아 두면 노출은 전부 기본 각도(taxi)로 찍혔다(2026-10-30 발견).
+  const latest = useRef(params);
+  latest.current = params;
 
   // 같은 자리라도 보여주는 조합이 바뀌면(탭 전환 등) 새 노출로 센다
   const lastKey = useRef(key);
@@ -39,7 +43,7 @@ export function useAdImpression<T extends HTMLElement>(params: AdTrackParams | n
             timer = setTimeout(() => {
               if (sent.current) return;
               sent.current = true;
-              trackEvent("ad_impression", { ...params });
+              trackEvent("ad_impression", { ...(latest.current ?? params) });
               io.disconnect();
             }, 1000);
           }

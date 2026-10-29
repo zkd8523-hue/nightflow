@@ -3,10 +3,11 @@
 // 페이지가 부르는 단일 진입점. 문맥(언어·지역·공연)으로 쿠팡/아고다를 고르고 모양을 정한다.
 // 규칙은 lib/affiliate/config.ts decideAffiliate 한 곳에만 있다.
 
-import { decideAffiliate, toAffArea, type AffLang } from "@/lib/affiliate/config";
+import { decideAffiliate, isStayEvent, toAffArea, type AffLang } from "@/lib/affiliate/config";
 import { AREA_LABEL } from "@/lib/affiliate/agoda";
 import { CoupangSlot } from "./CoupangSlot";
 import { AgodaStrip } from "./AgodaStrip";
+import { KoStaySlot } from "./KoStaySlot";
 
 export interface AffiliateSlotProps {
   placement: string;
@@ -20,6 +21,8 @@ export interface AffiliateSlotProps {
   /** 아고다일 때 문구(없으면 기본) */
   agodaTitle?: string;
   agodaSubtitle?: string;
+  /** 클럽 상세면 이름·좌표 — 한국어 숙소 광고의 도보 시간 기준 */
+  club?: { name: string; lat?: number | null; lng?: number | null } | null;
   /** 숙소 체크인(공연·예약 날짜) */
   checkIn?: string | null;
   nights?: number;
@@ -37,6 +40,23 @@ const DEFAULT_AGODA_TITLE: Record<AffLang, (area: string) => string> = {
 
 export function AffiliateSlot(props: AffiliateSlotProps) {
   const lang = props.lang ?? "ko";
+
+  // 한국어는 전부 아고다 숙소(2026-10-30 — 쿠팡은 한 달 클릭 23·수익 222원). 문맥으로 3가지 중 고른다:
+  // 페스티벌·며칠짜리·지방 공연 = festival, 그 외 공연 = event, 클럽 = night.
+  if (lang === "ko") {
+    const ev = props.event ?? null;
+    const variant = ev ? (isStayEvent(ev, props.area) ? "festival" : "event") : "night";
+    return (
+      <KoStaySlot
+        variant={variant}
+        placement={props.placement}
+        area={props.area}
+        club={props.club}
+        date={ev?.date ?? null}
+        className={props.className}
+      />
+    );
+  }
   const kind = decideAffiliate({ lang, area: props.area, event: props.event ?? null });
 
   if (kind === "agoda") {

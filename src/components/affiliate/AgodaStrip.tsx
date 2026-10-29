@@ -20,6 +20,7 @@ import {
 } from "@/lib/affiliate/agoda";
 import { AdBadge } from "./CoupangSlot";
 import { trackAdClick, useAdImpression } from "./useAdTracking";
+import { useLiveStays } from "./useLiveStays";
 
 const COPY: Record<AffLang, { all: string; see: string }> = {
   ko: { all: "전체", see: "가격 보기"  },
@@ -51,10 +52,6 @@ const FILTER_LABEL: Record<AffLang, Record<"budget" | "mid" | "high", string>> =
   "zh-tw": { budget: "經濟", mid: "中價", high: "高檔" },
 };
 
-interface LiveStay {
-  hid: number; name: string; image: string | null; price: number | null;
-  rating: number | null; reviews: number | null; landingUrl: string | null;
-}
 
 export interface AgodaStripProps {
   lang: AffLang;
@@ -91,7 +88,7 @@ export function AgodaStrip({ lang, placement, area, title, subtitle, stay = {}, 
     () =>
       orderHotels(
         listArea,
-        HOTELS.filter((h) => h.image && (listArea === "seoul" ? ["hongdae", "itaewon", "gangnam"].includes(h.area) : h.area === listArea)),
+        HOTELS.filter((h) => h.image && !h.koOnly && (listArea === "seoul" ? ["hongdae", "itaewon", "gangnam"].includes(h.area) : h.area === listArea)),
       ),
     [listArea],
   );
@@ -100,25 +97,8 @@ export function AgodaStrip({ lang, placement, area, title, subtitle, stay = {}, 
     return f.tiers.length ? all.filter((h) => f.tiers.includes(h.tier)) : all;
   }, [all, filter]);
 
-  // 사진·그날 가격·평점은 아고다 API(서버 프록시)에서. 키가 없거나 실패하면 비어 있어 카드는 사진 없이 그대로 동작.
-  const [live, setLive] = useState<Map<number, LiveStay>>(new Map());
-  const checkInKey = stay.checkIn ?? "";
-  useEffect(() => {
-    let off = false;
-    const qs = new URLSearchParams({ area: listArea });
-    if (stay.checkIn) qs.set("checkIn", stay.checkIn);
-    if (stay.nights) qs.set("nights", String(stay.nights));
-    if (stay.adults) qs.set("adults", String(stay.adults));
-    fetch(`/api/agoda/stays?${qs}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: { hotels?: LiveStay[] } | null) => {
-        if (off || !j?.hotels?.length) return;
-        setLive(new Map(j.hotels.map((x) => [x.hid, x])));
-      })
-      .catch(() => {});
-    return () => { off = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listArea, checkInKey, stay.nights, stay.adults]);
+  // 사진·그날 가격·평점은 아고다 API(서버 프록시)에서 — useLiveStays
+  const live = useLiveStays(listArea, stay);
 
   const allPriced = shown.length > 0 && shown.every((h) => !!(h.hid && live.get(h.hid)?.price));
 

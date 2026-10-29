@@ -34,7 +34,6 @@ import { useDetectedArea } from "@/hooks/useDetectedArea";
 import type { ClubBenefitItem } from "@/lib/home/clubBenefitData";
 import { CouponHomeStrip } from "@/components/home/CouponHomeStrip";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
-import { CoupangSlot } from "@/components/affiliate/CoupangSlot";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
 import { WeeklyPromoSheet } from "@/components/home/WeeklyPromoSheet";
 import { PartyOnboardingSheet } from "@/components/home/PartyOnboardingSheet";
@@ -886,10 +885,8 @@ export function HomeContent({
                 <WeeklyNewsCarousel issues={WEEKLY_CARDS} />
               </div>
             )}
-            {/* 제휴 광고 — 클러빙 뉴스 바로 아래, 쿠폰 위(2026-10-22 운영자 결정). 홈은 무조건 쿠팡 */}
-            <div className="mt-3">
-              <CoupangSlot variant="grid" placement="home" area={detectedArea ?? null} title="잘놀러들의 핫템 TOP5" />
-            </div>
+            {/* 제휴 광고는 홈에서 뺐다(2026-10-30) — 지역·날짜 문맥이 없어 숙소를 고를 근거가 없고,
+                쿠팡 시절 홈 클릭 3건은 전부 테스트였다. */}
 
             {/* 쿠폰 스트립 — 활성 쿠폰 0건이면 자체적으로 렌더 안 함 (Migration 539) */}
             <div className="mt-4">

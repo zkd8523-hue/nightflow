@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { CoupangSlot } from "@/components/affiliate/CoupangSlot";
+import { KoStaySlot } from "@/components/affiliate/KoStaySlot";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Disc3, ThumbsUp, Heart, Search, X, CalendarDays, ChevronRight, Play } from "lucide-react";
 import { formatBusinessMin } from "@/lib/lineups/time";
@@ -402,7 +402,8 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-24">
-      <div className="max-w-lg lg:max-w-4xl mx-auto px-4 pt-6 space-y-4">
+      {/* 폭은 LIVE STAGE(/events)와 같은 max-w-lg — 탭을 오갈 때 화면 폭이 바뀌면 다른 페이지처럼 보였다(2026-10-30 운영자) */}
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
         <LineupPageHeader active="lineups" />
 
         {/* 미리듣기 가능한 DJ가 없는 날은 카드가 스스로 null을 낸다 —
@@ -580,13 +581,7 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
 
         {/* 제휴 광고 — 필터·토글 아래, 첫 날짜 목록 위. 결과가 있을 때만 */}
         {groupCount > 0 && (
-          <CoupangSlot
-            variant="band"
-            placement="lineups"
-            title="나가기 전 이거 챙겼어?"
-            subtitle="숙취 · 향 · 충전 — 잘놀러들의 핫템 TOP5"
-            refreshKey={tab}
-          />
+          <KoStaySlot variant="night" compact placement="lineups" area={area} />
         )}
 
         {groupCount === 0 ? (
@@ -643,9 +638,8 @@ export function NationwideLineupList({ rows }: { rows: LineupClubRow[] }) {
             {clubView.shown.map(([date, list]) => (
               <section key={date} className="space-y-2">
                 <DateHeader date={date} />
-                {/* 데스크톱은 2열 — 카드가 독립적이라 그리드로 쪼개도 안전하다.
-                    (DJ 탭은 한 덩어리 안에서 구분선으로 이어지는 리스트라 그대로 1열 유지) */}
-                <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2">
+                {/* 1열 — 폭을 LIVE STAGE와 같은 max-w-lg로 줄여서 데스크톱 2열은 뺐다(2026-10-30) */}
+                <div className="space-y-2">
                   {list.map((r) => (
                     <ClubLineupRow
                       key={`${r.club_id}-${r.event_date}`}

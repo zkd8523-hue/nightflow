@@ -69,7 +69,7 @@ async function fetchClubLineups(clubId: string) {
 
   const clubQuery = supabase
     .from("clubs")
-    .select("id, name, area, thumbnail_url, aliases")
+    .select("id, name, area, thumbnail_url, aliases, latitude, longitude")
     .eq("id", clubId)
     .is("deleted_at", null);
   if (!SHOW_TEST_DATA) clubQuery.eq("status", "approved");
@@ -282,6 +282,7 @@ export default async function ClubLineupHubPage({ params }: PageProps) {
           <AffiliateSlot
             placement="club_lineup"
             area={club.area}
+            club={{ name: club.name, lat: club.latitude, lng: club.longitude }}
             coupangVariant="rail"
             coupangTitle={`${club.name} 가기 전 필수템!`}
           />
