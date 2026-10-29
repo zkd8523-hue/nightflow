@@ -140,6 +140,8 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
       onClose();
       // 합류 즉시 인앱 단체채팅 입장 (오픈채팅 대체, Migration 349)
       toast.success("합류 완료! 단체채팅에서 인사를 나눠보세요 👋");
+      // 파티 채팅·오퍼는 앱 푸시로만 오므로 합류 순간에 알림 권유 (FlagCreatedInstallSheet)
+      window.dispatchEvent(new Event("party-joined"));
       router.push(`/party/${puzzle.id}`);
     } catch (err: unknown) {
       console.error("join_puzzle error:", JSON.stringify(err));

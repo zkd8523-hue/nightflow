@@ -17,6 +17,7 @@ import { NetworkOverlay } from "@/components/NetworkOverlay";
 import { AppLangGate } from "@/components/layout/AppLangGate";
 import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 import { LoginNotifyPromptSheet } from "@/components/common/LoginNotifyPromptSheet";
+import { FlagCreatedInstallSheet } from "@/components/puzzles/FlagCreatedInstallSheet";
 import { initDeepLinkHandler, initBackButtonHandler } from "@/lib/native/deepLink";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -212,6 +213,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <StaleBuildFlagReset />
       <PushInit />
       <LoginNotifyPromptInit />
+      <FlagCreatedInstallSheet />
       <NetworkOverlay />
       {/* 앱 첫 실행 언어 선택 — 루트 레이아웃 소속이라 /en·/ja·/zh 까지 전부 커버.
           (main)/layout 에 두면 미들웨어가 이미 외국어 경로로 302 시킨 뒤라 영영 안 뜬다. */}

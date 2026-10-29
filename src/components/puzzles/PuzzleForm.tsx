@@ -873,8 +873,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
       navigating = true;
-      // 등록 직후 1회성 앱설치 팝업 트리거 (안드로이드 웹에서만 실제 노출)
-      // 조각/깃발 여부를 detail로 전달해 시트 문구 분기
+      // 등록 직후 알림 권유 시트 트리거 (웹=앱 설치, 앱=푸시 켜기 — FlagCreatedInstallSheet)
+      // 파티(shareMode)일 때만 시트가 반응한다
       window.dispatchEvent(new CustomEvent("flag-created", { detail: { shareMode } }));
       // 조각은 등록 직후 카톡 공유 시트 노출(파티원 모집 동선)
       const createdQuery = shareMode
