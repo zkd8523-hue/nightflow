@@ -873,18 +873,31 @@ export function HomeContent({
                 <GuestSignMdCta />
               </div>
             )}
-            {/* ── 클러빙 뉴스 ──
-                   쿠폰보다 위에 둔다. 쿠폰은 "이미 갈 곳을 정한 사람"이 쓰는 것이고,
-                   이건 "어디 갈지 정하는" 단계라 순서상 먼저다.
-                   구독 폼을 홈에 두지 않는 이유: 한 호를 읽기 전에 "매주 받으실래요?"를
-                   물으면 받을 게 뭔지 모르는 상태에서 묻는 셈이다. 홈은 표지만 보여주고
-                   구독은 /weekly 본문을 끝까지 읽은 자리에서 받는다.
-                   0건이면 캐러셀이 스스로 렌더하지 않는다. */}
-            {WEEKLY_CARDS.length > 0 && (
-              <div className="mt-3">
-                <WeeklyNewsCarousel issues={WEEKLY_CARDS} />
-              </div>
+            {/* ── 파티 섹션 (유저가 올린 파티만) — 아티클과 자리 맞바꿈(2026-10-30 운영자): 어디갈래? 바로 아래 ── */}
+            <div className="mt-3 flex flex-col">
+            {showShareTab && (
+              <>
+                {/* ── 파티 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
+                {renderSectionRow({ icon: "🎉", label: "파티", detailTab: "share", dateLabel: shareHeaderDate, count: userShareCount })}
+
+                {/* 유저 파티(파티원 모집) 캐러셀 — HomePuzzleCarousel 재사용(shareMode + shareVariant="user") */}
+                <div className="mb-2">
+                  <HomePuzzleCarousel
+                    puzzles={sharePuzzles}
+                    totalCount={userShareCount}
+                    offerCounts={puzzleOfferCounts}
+                    userRole={user?.role as "user" | "md" | "admin" | undefined}
+                    detailHref={detailHref("share")}
+                    newFlagHref={newShareHref}
+                    showFlagCTA
+                    shareMode
+                    shareVariant="user"
+                    onActiveDateChange={setShareHeaderDate}
+                  />
+                </div>
+              </>
             )}
+            </div>
             {/* 제휴 광고는 홈에서 뺐다(2026-10-30) — 지역·날짜 문맥이 없어 숙소를 고를 근거가 없고,
                 쿠팡 시절 홈 클릭 3건은 전부 테스트였다. */}
 
@@ -916,31 +929,18 @@ export function HomeContent({
 
           {/* 🚩 깃발 섹션(헤더+인라인 가이드+캐러셀) 제거 — 깃발 신규 진입점 숨김 */}
 
-          {/* ── 파티 섹션 (유저가 올린 파티만) ── */}
-          <div className="flex flex-col">
-          {showShareTab && (
-            <>
-              {/* ── 파티 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
-              {renderSectionRow({ icon: "🎉", label: "파티", detailTab: "share", dateLabel: shareHeaderDate, count: userShareCount })}
-
-              {/* 유저 파티(파티원 모집) 캐러셀 — HomePuzzleCarousel 재사용(shareMode + shareVariant="user") */}
-              <div className="mb-2">
-                <HomePuzzleCarousel
-                  puzzles={sharePuzzles}
-                  totalCount={userShareCount}
-                  offerCounts={puzzleOfferCounts}
-                  userRole={user?.role as "user" | "md" | "admin" | undefined}
-                  detailHref={detailHref("share")}
-                  newFlagHref={newShareHref}
-                  showFlagCTA
-                  shareMode
-                  shareVariant="user"
-                  onActiveDateChange={setShareHeaderDate}
-                />
-              </div>
-            </>
+          {/* ── 클러빙 뉴스(아티클) — 파티와 자리 맞바꿈(2026-10-30 운영자), 클럽 다이렉트 아래 ──
+                 쿠폰보다 위에 둔다. 쿠폰은 "이미 갈 곳을 정한 사람"이 쓰는 것이고,
+                 이건 "어디 갈지 정하는" 단계라 순서상 먼저다.
+                 구독 폼을 홈에 두지 않는 이유: 한 호를 읽기 전에 "매주 받으실래요?"를
+                 물으면 받을 게 뭔지 모르는 상태에서 묻는 셈이다. 홈은 표지만 보여주고
+                 구독은 /weekly 본문을 끝까지 읽은 자리에서 받는다.
+                 0건이면 캐러셀이 스스로 렌더하지 않는다. */}
+          {WEEKLY_CARDS.length > 0 && (
+            <div className="mt-3">
+              <WeeklyNewsCarousel issues={WEEKLY_CARDS} />
+            </div>
           )}
-          </div>
 
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
 
