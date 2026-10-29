@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
       // /flags 인덱스 페이지 없음 → 홈의 깃발 탭(더보기)으로 301.
       // 깃발 더보기 ⋯ 버튼과 동일한 목적지 — 의도 정확 매칭.
       { source: "/flags", destination: "/?tab=puzzle&detail=1", permanent: true },
+      // 시즌 페이지 주소에서 연도를 뺐다(2026-10-30) — 매년 새 주소로 순위를 처음부터 쌓지 않고
+      // 같은 주소에 본문 날짜만 갈아 끼운다. 옛 -2026 주소는 색인·공유된 링크를 위해 301.
+      { source: "/:lang(en|ja|zh|zh-tw)/christmas-seoul-2026", destination: "/:lang/christmas-seoul", permanent: true },
+      { source: "/:lang(en|ja|zh|zh-tw)/new-years-eve-seoul-2026", destination: "/:lang/new-years-eve-seoul", permanent: true },
     ];
   },
   async headers() {

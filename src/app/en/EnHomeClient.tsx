@@ -24,7 +24,7 @@ import { recordRecentClub, useRecentClubs, removeRecentClub } from "@/lib/clubs/
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { trackForeignEvent } from "@/lib/analytics/events";
 import { ForeignSidebar, type ForeignNavKey } from "@/components/foreign/ForeignShell";
-import { HALLOWEEN_2026, CHRISTMAS_2026, NYE_2026, isHalloweenWindow, isChristmasWindow, isNyeWindow } from "@/lib/foreign/seasonal";
+import { HALLOWEEN_2026, CHRISTMAS_2026, NYE_2026, LNY_2027, isHalloweenWindow, isChristmasWindow, isNyeWindow, isLnyWindow } from "@/lib/foreign/seasonal";
 import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { UrgencyLine } from "@/components/foreign/UrgencyLine";
 import { PlanMemoryHomeSection } from "@/components/foreign/plan/PlanMemoryHomeSection";
@@ -605,6 +605,27 @@ function GuideIndex() {
             "23 點到 0 點排隊最長。能訂包廂的夜店、低消、0 點後怎麼回去。"
           ),
           href: `/${lang}/${NYE_2026.slug}`,
+        }]
+      : []),
+    // 춘절·설(2026-10-30) — 중국어 홈은 12/1부터, 영어 홈은 1/1부터. 일본어 홈엔 없다(페이지 없음).
+    ...(isLnyWindow(lang)
+      ? [{
+          cat: t("설", "LUNAR NEW YEAR 🧧", "旧正月 🧧", "春节 🧧", "過年 🧧"),
+          title: t(
+            "설 연휴에 서울 클럽 여나요?",
+            "Lunar New Year in Seoul — are clubs open?",
+            "旧正月のソウル、クラブは営業している？",
+            "春节去首尔，夜店开吗?",
+            "過年去首爾，夜店有開嗎?"
+          ),
+          desc: t(
+            "한국 설은 2/7(일), 연휴 2/6~9. 날짜별로 여는 클럽과 실제 가격.",
+            "Korea's Seollal is Feb 7, one day after Lunar New Year (Feb 6). Which nights clubs open, and real table prices.",
+            "韓国のソルラルは2/7(日)、連休は2/6〜9。営業するクラブと実際の料金。",
+            "韩国过年是 2/7(周日)，比初一晚一天，2/6–2/9 放假。哪几晚夜店营业、真实价格。",
+            "韓國過年是 2/7(週日)，比初一晚一天，2/6–2/9 放假。哪幾晚夜店有開、真實低消。"
+          ),
+          href: `/${lang}/${LNY_2027.slug}`,
         }]
       : []),
     {

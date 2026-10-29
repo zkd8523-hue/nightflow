@@ -8,10 +8,12 @@
 //   - Event 구조화 데이터 없음(우리가 주최자가 아니다). WebPage + FAQ + 가격 ItemList만.
 
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import type { Metadata } from "next";
 import { ForeignPageTracker } from "@/components/analytics/ForeignPageTracker";
 import { RealTablePrices, fetchRealTablePrices, realTablePricesJsonLd } from "@/components/foreign/RealTablePrices";
+import { StickyBookBar } from "@/components/foreign/StickyReveal";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 
 const BASE = "https://nightflow.kr";
@@ -36,6 +38,16 @@ export type SeasonGuideCopy = {
   ctaH2: string;
   ctaBody: string;
   cta: string;
+  /** 첫 화면 예약 버튼 밑 한 줄 — "무료 신청 · 예약금 없음 · 당일 클럽에 결제" */
+  ctaNote?: string;
+  /** 날짜가 정해진 시즌이면 첫 화면 버튼을 날짜별로 쪼갠다 — 누르면 폼 달력이 그 날짜로 채워진다(?date=).
+      할로윈 페이지 방문자 절반이 화면 3분의 1도 안 내리고 나갔다(스크롤 중앙값 35%, 2026-10-30).
+      첫 화면에서 한 번 누르면 날짜까지 끝나게 한다. */
+  dates?: { date: string; label: string }[];
+  /** 날짜 버튼 위 짧은 제목 */
+  datesH?: string;
+  /** 날짜 버튼 밑 "다른 날짜" 링크 */
+  otherDate?: string;
   moreH2: string;
   more: { label: string; href: string }[];
   back: string;
@@ -50,14 +62,19 @@ export type SeasonGuideConfig = {
   temporalCoverage?: string;
   /** 가격표 지역 순서(한국어 지역명) */
   areaOrder: string[];
-  copy: Record<SeoLang, SeasonGuideCopy>;
+  /** 언어별 문구. 춘절처럼 일부 언어에만 있는 페이지도 있다 — 없는 언어는 404, hreflang에서도 뺀다. */
+  copy: Partial<Record<SeoLang, SeasonGuideCopy>>;
 };
+
+const HREFLANG: Record<SeoLang, string> = { en: "en-US", zh: "zh-CN", "zh-tw": "zh-TW", ja: "ja-JP" };
 
 const OG_LOCALE: Record<SeoLang, string> = { en: "en_US", ja: "ja_JP", zh: "zh_CN", "zh-tw": "zh_TW" };
 
 export function seasonGuideMetadata(cfg: SeasonGuideConfig, lang: SeoLang): Metadata {
   const c = cfg.copy[lang];
+  if (!c) return {};
   const url = `${BASE}/${lang}/${cfg.slug}`;
+  const langs = Object.keys(cfg.copy) as SeoLang[];
   const og = `${BASE}/api/og?title=${encodeURIComponent(c.ogTitle)}&sub=${encodeURIComponent(c.ogSub)}&lang=${lang}`;
   return {
     title: { absolute: c.title },
@@ -66,11 +83,8 @@ export function seasonGuideMetadata(cfg: SeasonGuideConfig, lang: SeoLang): Meta
     alternates: {
       canonical: url,
       languages: {
-        "en-US": `${BASE}/en/${cfg.slug}`,
-        "zh-CN": `${BASE}/zh/${cfg.slug}`,
-        "zh-TW": `${BASE}/zh-tw/${cfg.slug}`,
-        "ja-JP": `${BASE}/ja/${cfg.slug}`,
-        "x-default": `${BASE}/en/${cfg.slug}`,
+        ...Object.fromEntries(langs.map((l) => [HREFLANG[l], `${BASE}/${l}/${cfg.slug}`])),
+        "x-default": `${BASE}/${langs.includes("en") ? "en" : langs[0]}/${cfg.slug}`,
       },
     },
     openGraph: {
@@ -86,6 +100,8 @@ export function seasonGuideMetadata(cfg: SeasonGuideConfig, lang: SeoLang): Meta
 
 export async function SeasonGuide({ cfg, lang }: { cfg: SeasonGuideConfig; lang: SeoLang }) {
   const c = cfg.copy[lang];
+  if (!c) notFound();
+  const bookHref = `/flags/new?lang=${lang}`;
   const url = `${BASE}/${lang}/${cfg.slug}`;
   const rank = (a: string) => {
     const i = cfg.areaOrder.indexOf(a);
@@ -127,7 +143,7 @@ export async function SeasonGuide({ cfg, lang }: { cfg: SeasonGuideConfig; lang:
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground pb-28 pb-safe lg:pb-0">
       <ForeignPageTracker kind="info" lang={lang} meta={{ page: cfg.slug }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -136,14 +152,43 @@ export async function SeasonGuide({ cfg, lang }: { cfg: SeasonGuideConfig; lang:
           <Link href={`/${lang}`} className="text-[12px] text-muted-foreground hover:text-foreground">{c.back}</Link>
           <p className="text-[12px] font-black tracking-wider text-brand-amber">{c.eyebrow}</p>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15] break-keep">{c.h1}</h1>
+          {/* 예약 버튼을 소개 문단 위로 올렸다(2026-10-30) — 문단 밑에 있으면 모바일 첫 화면에서 안 보인다.
+              id="book-cta"가 화면 위로 지나가면 하단 고정 바(StickyBookBar)가 뜬다. */}
+          <div id="book-cta" className="space-y-2">
+            {c.dates?.length ? (
+              <>
+                {c.datesH && <p className="text-[12px] font-bold text-muted-foreground">{c.datesH}</p>}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {c.dates.map((d) => (
+                    <Link rel="nofollow"
+                      key={d.date}
+                      data-nf-track="book_cta_date"
+                      data-nf-label={d.date}
+                      href={`${bookHref}&date=${d.date}`}
+                      className="rounded-xl bg-inverse text-inverse-foreground px-3 py-3 font-black text-[14px] text-center leading-snug break-keep hover:opacity-90 transition-opacity"
+                    >
+                      {d.label}
+                    </Link>
+                  ))}
+                </div>
+                {c.otherDate && (
+                  <Link rel="nofollow" data-nf-track="book_cta" href={bookHref} className="inline-block text-[13px] font-bold text-brand-amber hover:underline">
+                    {c.otherDate}
+                  </Link>
+                )}
+              </>
+            ) : (
+              <Link rel="nofollow"
+                data-nf-track="book_cta"
+                href={bookHref}
+                className="inline-block px-6 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors"
+              >
+                {c.cta}
+              </Link>
+            )}
+            {c.ctaNote && <p className="text-[12px] text-muted-foreground break-keep">{c.ctaNote}</p>}
+          </div>
           <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">{c.intro}</p>
-          <Link rel="nofollow"
-            data-nf-track="book_cta"
-            href={`/flags/new?lang=${lang}`}
-            className="inline-block px-6 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors"
-          >
-            {c.cta}
-          </Link>
         </header>
 
         <section className="space-y-3">
@@ -195,7 +240,7 @@ export async function SeasonGuide({ cfg, lang }: { cfg: SeasonGuideConfig; lang:
           <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">{c.ctaBody}</p>
           <Link rel="nofollow"
             data-nf-track="book_cta"
-            href={`/flags/new?lang=${lang}`}
+            href={bookHref}
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             {c.cta}
@@ -211,6 +256,8 @@ export async function SeasonGuide({ cfg, lang }: { cfg: SeasonGuideConfig; lang:
           </ul>
         </section>
       </div>
+      {/* 하단 고정 바는 이모지 없이(StickyBookBar 규칙) — 앞에 붙은 이모지·공백만 뗀다. */}
+      <StickyBookBar className="lg:hidden" href={bookHref} label={c.cta.replace(/^[^\p{L}\p{N}]+/u, "")} />
     </div>
   );
 }

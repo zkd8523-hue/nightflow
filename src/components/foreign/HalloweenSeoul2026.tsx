@@ -366,7 +366,7 @@ export async function HalloweenSeoul2026({ lang }: { lang: SeoLang }) {
           <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">{c.intro}</p>
           <Link rel="nofollow"
             data-nf-track="book_cta"
-            href={`/flags/new?lang=${lang}`}
+            href={`/flags/new?lang=${lang}&date=${HALLOWEEN_2026.date}`}
             className="inline-block px-6 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors"
           >
             {c.cta}
@@ -423,7 +423,7 @@ export async function HalloweenSeoul2026({ lang }: { lang: SeoLang }) {
           <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">{c.ctaBody}</p>
           <Link rel="nofollow"
             data-nf-track="book_cta"
-            href={`/flags/new?lang=${lang}`}
+            href={`/flags/new?lang=${lang}&date=${HALLOWEEN_2026.date}`}
             className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             {c.cta}

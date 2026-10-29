@@ -22,6 +22,7 @@ export function ForeignBookingScreen({
   clubs,
   presetArea,
   presetClubId,
+  presetDate,
 }: {
   label: string;
   fallbackHref: string;
@@ -31,6 +32,7 @@ export function ForeignBookingScreen({
   clubs: ForeignClubDetail[];
   presetArea?: string;
   presetClubId?: string;
+  presetDate?: string;
 }) {
   const formRef = useRef<ForeignRequestFormHandle>(null);
 
@@ -51,6 +53,7 @@ export function ForeignBookingScreen({
         clubs={clubs}
         presetArea={presetArea}
         presetClubId={presetClubId}
+        presetDate={presetDate}
       />
     </>
   );

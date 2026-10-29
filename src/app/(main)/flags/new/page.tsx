@@ -73,9 +73,13 @@ function inferLangFromCountry(countryCode: string | null | undefined): "ko" | "e
 export default async function PuzzleNewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string; area?: string; club?: string }>;
+  searchParams: Promise<{ lang?: string; area?: string; club?: string; date?: string }>;
 }) {
-  const { lang: raw, area, club } = await searchParams;
+  const { lang: raw, area, club, date } = await searchParams;
+  // 시즌 페이지의 날짜 버튼(?date=2026-12-24)으로 오면 달력을 미리 채운다(2026-10-30).
+  // 형식이 틀리거나 이미 지난 날(KST 기준)이면 버린다 — 할로윈 페이지 링크가 11월에도 남아 있다.
+  const todayKst = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
+  const presetDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= todayKst ? date : undefined;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -107,6 +111,7 @@ export default async function PuzzleNewPage({
     params.set("lang", inferred);
     if (area) params.set("area", area);
     if (club) params.set("club", club);
+    if (presetDate) params.set("date", presetDate);
     redirect(`/flags/new?${params.toString()}`);
   }
 
@@ -179,6 +184,7 @@ export default async function PuzzleNewPage({
             clubs={foreignClubs}
             presetArea={area}
             presetClubId={club}
+            presetDate={presetDate}
           />
         ) : (
           <PuzzleForm userId={user.id} />

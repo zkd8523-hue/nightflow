@@ -267,6 +267,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   clubs: ClubItem[];
   presetArea?: string;
   presetClubId?: string;
+  /** 시즌 페이지 날짜 버튼(?date=)에서 온 날짜. page.tsx가 형식·과거 날짜를 걸러서 넘긴다. */
+  presetDate?: string;
 }>(function ForeignRequestForm({
   userId,
   lang,
@@ -274,6 +276,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   clubs,
   presetArea,
   presetClubId,
+  presetDate,
 }, ref) {
   const router = useRouter();
   const t = makeT(lang);
@@ -291,13 +294,14 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [eventDate, setEventDate] = useState("");
+  const [eventDate, setEventDate] = useState(presetDate ?? "");
   // 네이티브 date input을 버리고 달력을 직접 띄운다 — 브라우저 기본 달력으로는
   // 그 클럽이 안 여는 요일을 못 고르게 막을 방법이 없다(2026-09-06).
   // 덤으로 iOS Safari의 로케일 누수(한글 표기가 새는 문제)도 같이 사라진다.
   // 날짜는 기본 펼침 — 제출 차단 사유 100%가 "날짜 미선택"이었다(7회·6명, 2026-09-16).
   // 접힌 버튼은 이미 고른 것처럼 보여서 그냥 지나친다. 아직 안 골랐으면 달력을 보여준다.
-  const [dateOpen, setDateOpen] = useState(true);
+  // 시즌 페이지에서 날짜를 골라 왔으면 접어 둔다 — 고른 날짜가 버튼에 이미 보인다.
+  const [dateOpen, setDateOpen] = useState(!presetDate);
   // 달력을 펼치는 것만으론 부족하다 — 3단계에서 막히면 날짜 섹션이 화면 밖에 있어서
   // 토스트만 보고 뭘 해야 하는지 모른다. 펼치고 그 자리로 데려간다(2026-09-16).
   const openDatePicker = useCallback(() => {
@@ -725,7 +729,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     return () => io.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formStep]);
-  useEffect(() => { if (eventDate) trackFieldOnce("date"); }, [eventDate]);
+  // 시즌 페이지에서 날짜를 들고 온 그대로면 "date_preset" — 클럽 프리셋과 같은 이유로 "date"와 나눈다.
+  useEffect(() => { if (eventDate) trackFieldOnce(presetDate && eventDate === presetDate ? "date_preset" : "date"); }, [eventDate]);
   useEffect(() => {
     if (selectedClubIds.length === 0) return;
     const preset = presetClubRef.current;

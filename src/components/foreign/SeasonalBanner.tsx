@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
-import { HALLOWEEN_2026, CHRISTMAS_2026, NYE_2026, isHalloweenWindow, isChristmasWindow, isNyeWindow } from "@/lib/foreign/seasonal";
+import { HALLOWEEN_2026, CHRISTMAS_2026, NYE_2026, LNY_2027, isHalloweenWindow, isChristmasWindow, isNyeWindow, isLnyWindow } from "@/lib/foreign/seasonal";
 
 const HALLOWEEN_AREAS = new Set(["itaewon", "hongdae", "gangnam"]);
 
@@ -29,6 +29,13 @@ const T_NYE: Record<SeoLang, { label: string; text: string; cta: string }> = {
   "zh-tw": { label: "12/31 · 週四", text: "0 點倒數要在店裡 — 23 點到 0 點排隊最長。", cta: "跨年包廂與價格 →" },
 };
 
+// 춘절(2026-10-30) — 페이지가 en·zh·zh-tw만 있어 ja 문구는 없다(isLnyWindow가 ja를 거른다).
+const T_LNY: Partial<Record<SeoLang, { label: string; text: string; cta: string }>> = {
+  en: { label: "FEB 5–9 · LUNAR NEW YEAR", text: "Korea's holiday runs Feb 6–9 and some clubs change hours — book a club that's confirmed open.", cta: "Lunar New Year tables & hours →" },
+  zh: { label: "2/5–2/9 · 春节", text: "韩国 2/6–2/9 放假，有的夜店会调整营业 — 订当晚确认营业的店。", cta: "春节卡座与营业 →" },
+  "zh-tw": { label: "2/5–2/9 · 過年", text: "韓國 2/6–2/9 放假，有的夜店會調整營業 — 訂當晚確認有開的店。", cta: "過年包廂與營業 →" },
+};
+
 export function SeasonalBanner({ lang, areaSlug }: { lang: SeoLang; areaSlug: string }) {
   if (!HALLOWEEN_AREAS.has(areaSlug)) return null;
   const season = isHalloweenWindow()
@@ -37,7 +44,9 @@ export function SeasonalBanner({ lang, areaSlug }: { lang: SeoLang; areaSlug: st
       ? { t: T_XMAS[lang], slug: CHRISTMAS_2026.slug, icon: "🎄" }
       : isNyeWindow()
         ? { t: T_NYE[lang], slug: NYE_2026.slug, icon: "🥂" }
-        : null;
+        : isLnyWindow(lang) && T_LNY[lang]
+          ? { t: T_LNY[lang]!, slug: LNY_2027.slug, icon: "🧧" }
+          : null;
   if (!season) return null;
   const t = season.t;
   return (
