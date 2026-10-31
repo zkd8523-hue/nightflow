@@ -35,6 +35,7 @@ export type ForeignReq = {
   md_seats?: string[] | null;
   md_bump_risk?: boolean | null;
   md_conditions?: string | null;
+  md_menu?: unknown;
   /** 손님이 메일에서 고른 자리 + 담당자 재확인 상태(pending | yes | no) */
   guest_choice?: string | null;
   md_reconfirm_state?: string | null;
@@ -85,6 +86,7 @@ function toProposalReq(r: ForeignReq): ProposalReq {
     mdTableOptions: r.md_table_options,
     mdRejectReason: r.md_reject_reason,
     mdRequiredAmount: r.md_required_amount,
+    mdMenuTotal: (r.md_menu as { total?: number } | null | undefined)?.total ?? null,
     mdProposedItems: r.md_proposed_items ?? null,
     mdRejectNote: r.md_reject_note ?? null,
     mdCandidates: r.mdCandidates,

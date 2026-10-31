@@ -11,6 +11,8 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MenuPhotosOverlay } from "@/components/booking/MenuPhotosOverlay";
 import { SeatPicker } from "@/components/booking/SeatPicker";
+import { MdMenuPicker, pickerTotals, type PickerValue } from "@/components/booking/MdMenuPicker";
+import type { PickerItem, TcRule } from "@/lib/booking/mdMenu";
 import { seatValueLabel, seatsOfValue, type SeatZone } from "@/lib/booking/seats";
 import type { SelectedMenuSnapshot } from "@/types/database";
 
@@ -65,6 +67,10 @@ type Props = {
   mdConditions?: string | null;
   /** 손님이 자리를 고르고 담당자 재확인을 기다리는 중이면 고른 값(md_reconfirm_state=pending) */
   pendingGuestChoice?: string | null;
+  /** 담당자 메뉴판(요일 가격 반영) · 클럽 TC 규칙 · 이미 고른 구성(Migration 705) */
+  menuItems?: PickerItem[];
+  tcRule?: TcRule;
+  mdMenuInit?: PickerValue;
 };
 
 function fmtDateKo(iso: string): string {
@@ -256,6 +262,7 @@ export function BookingProposal(p: Props) {
                   floorPlanUrls={p.floorPlanUrls ?? []}
                   menuUrls={p.menuUrls ?? []}
                   clubName={p.clubName}
+                  initialItems={p.mdProposedItems ?? lines.join("\n")}
                 />
                 ) : (
                 <ResponseBox
@@ -272,6 +279,9 @@ export function BookingProposal(p: Props) {
                   menuUrls={p.menuUrls ?? []}
                   clubName={p.clubName}
                   confirmHref={p.confirmHref ?? null}
+                  menuItems={p.menuItems ?? []}
+                  tcRule={p.tcRule ?? null}
+                  initialMenu={p.mdMenuInit ?? { qty: {}, tc: 0, tcTouched: false }}
                   initialSeats={p.mdSeats ?? []}
                   initialBumpRisk={p.mdBumpRisk ?? null}
                   initialConditions={p.mdConditions ?? null}
@@ -313,6 +323,9 @@ function ResponseBox({
   initialSeats,
   initialBumpRisk,
   initialConditions,
+  menuItems,
+  tcRule,
+  initialMenu,
   isRecommend,
   budget,
   menuUrls,
@@ -333,6 +346,9 @@ function ResponseBox({
   initialSeats: string[];
   initialBumpRisk: boolean | null;
   initialConditions: string | null;
+  menuItems: PickerItem[];
+  tcRule: TcRule;
+  initialMenu: PickerValue;
   isRecommend: boolean;
   budget: number | null;
   menuUrls: string[];
@@ -351,12 +367,15 @@ function ResponseBox({
   );
   const [conditions, setConditions] = useState(initialConditions ?? "");
   const [proposedItems, setProposedItems] = useState(initialProposedItems ?? "");
-  // 주류 제안 요청은 구성을 적어야 승인할 수 있다(서버도 같은 조건으로 막는다).
-  const itemsMissing = isRecommend && !proposedItems.trim();
+  // 메뉴판에서 구성을 고르는 건 "MD 추천" 요청이면서 메뉴판이 있는 클럽일 때. 메뉴판이 없으면 예전처럼 글로 적는다.
+  const useMenu = isRecommend && menuItems.length > 0;
+  const [menuPick, setMenuPick] = useState<PickerValue>(initialMenu);
+  // 주류 제안 요청은 구성이 있어야 보낼 수 있다(서버도 같은 조건으로 막는다).
+  const itemsMissing = isRecommend && !useMenu && !proposedItems.trim();
   const itemsRef = useRef<HTMLTextAreaElement>(null);
   const [rejectNote, setRejectNote] = useState(initialRejectNote ?? "");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mode, setMode] = useState<"idle" | "approve" | "reject">("idle");
+  const [mode, setMode] = useState<"idle" | "reject">("idle");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const hasZones = seatZones.length > 0;
@@ -372,6 +391,9 @@ function ResponseBox({
       bump_risk_required: "밀릴 수 있는지 O / X를 골라주세요.",
       reason_required: "받기 어려운 이유를 골라주세요.",
       proposed_items_required: "예산 안에서 드릴 구성을 적어주세요.",
+      menu_empty: "드릴 구성을 제안해 주세요.",
+      menu_over_budget: "손님 금액을 넘었어요. 구성을 줄여주세요.",
+      menu_invalid: "메뉴판이 바뀌었어요. 구성을 다시 골라주세요.",
       reason_text_required: "받기 어려운 이유를 적어주세요.",
       invalid_json: "전송에 실패했습니다. 다시 시도해 주세요.",
       update_failed: "저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
@@ -472,120 +494,6 @@ function ResponseBox({
         >
           다시 답하기
         </button>
-      </div>
-    );
-  }
-
-  // 예약 가능해요
-  if (mode === "approve") {
-    const seatsMissing = tableChoosable === true && (hasZones ? seats.length === 0 : !tableOptions.trim());
-    const blocker = itemsMissing
-      ? "드릴 구성을 적어주세요."
-      : tableChoosable === null
-      ? "손님이 자리를 고를 수 있는지 골라주세요."
-      : seatsMissing
-      ? "고를 수 있는 자리를 하나 이상 골라주세요."
-      : bumpRisk === null
-      ? "밀릴 수 있는지 O / X를 골라주세요."
-      : null;
-    return (
-      <div className="space-y-3">
-        {itemsInput}
-        <p className="text-[13px] font-bold text-foreground">손님이 자리를 고를 수 있나요?</p>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setTableChoosable(true)}
-            className={`h-11 rounded-xl border text-[13px] font-bold ${
-              tableChoosable === true ? "border-money bg-green-500/15 text-money" : "border-border bg-card text-foreground/80"
-            }`}
-          >
-            네, 고를 수 있어요
-          </button>
-          <button
-            type="button"
-            onClick={() => setTableChoosable(false)}
-            className={`h-11 rounded-xl border text-[13px] font-bold ${
-              tableChoosable === false ? "border-money bg-green-500/15 text-money" : "border-border bg-card text-foreground/80"
-            }`}
-          >
-            당일 배정
-          </button>
-        </div>
-
-        {tableChoosable === true && (
-          <div>
-            <p className="text-[13px] font-bold text-foreground mb-1.5">
-              어디 중에서 고를 수 있나요? <span className="text-[11px] font-semibold text-muted-foreground">필수</span>
-            </p>
-            {hasZones ? (
-              <SeatPicker zones={seatZones} selected={seats} onChange={setSeats} floorPlanUrls={floorPlanUrls} />
-            ) : (
-              <input
-                value={tableOptions}
-                onChange={(e) => setTableOptions(e.target.value)}
-                placeholder="예) A존 3번 / B존 5번"
-                className="w-full h-11 px-3 rounded-xl bg-card border border-border text-[14px] text-foreground outline-none focus:border-amber-500"
-              />
-            )}
-          </div>
-        )}
-
-        <div>
-          <p className="text-[13px] font-bold text-foreground">
-            더 높은 금액 손님이 오면 이 자리가 밀릴 수 있나요?{" "}
-            <span className="text-[11px] font-semibold text-muted-foreground">필수</span>
-          </p>
-          <div className="grid grid-cols-2 gap-2 mt-1.5">
-            <button
-              type="button"
-              onClick={() => setBumpRisk(true)}
-              className={`h-11 rounded-xl border text-[13px] font-bold ${
-                bumpRisk === true ? "border-amber-500 bg-amber-500/15 text-brand-amber" : "border-border bg-card text-foreground/80"
-              }`}
-            >
-              O 밀릴 수 있어요
-            </button>
-            <button
-              type="button"
-              onClick={() => setBumpRisk(false)}
-              className={`h-11 rounded-xl border text-[13px] font-bold ${
-                bumpRisk === false ? "border-money bg-green-500/15 text-money" : "border-border bg-card text-foreground/80"
-              }`}
-            >
-              X 안 밀려요
-            </button>
-          </div>
-          <p className="text-[11.5px] text-muted-foreground mt-1">O를 고르면 손님 예약 확인서에 안내가 붙어요</p>
-        </div>
-
-        {err && <p className="text-[12px] text-red-400">{errText(err)}</p>}
-
-        <div className="flex gap-2">
-          {backBtn}
-          <button
-            type="button"
-            disabled={busy || !!blocker}
-            onClick={async () => {
-              const ok = await post({
-                action: "approve",
-                table_choosable: tableChoosable,
-                seats: tableChoosable && hasZones ? seats : undefined,
-                table_options: tableChoosable && !hasZones ? tableOptions : undefined,
-                bump_risk: bumpRisk,
-                proposed_items: proposedItems.trim() || undefined,
-              });
-              if (ok) {
-                setResponse("approved");
-                setMode("idle");
-              }
-            }}
-            className="flex-1 h-12 rounded-xl bg-money text-black text-[15px] font-black disabled:opacity-40"
-          >
-            {busy ? "보내는 중…" : "답변 완료"}
-          </button>
-        </div>
-        {blocker && <p className="text-[12px] text-muted-foreground text-center">{blocker}</p>}
       </div>
     );
   }
@@ -692,32 +600,129 @@ function ResponseBox({
     );
   }
 
-  // 첫 화면 — 예약 가능해요 / 받기 어려워요
+  // 한 화면 — 자리 → 밀림 → 구성 → [손님에게 보내기] (2026-11-01).
+  // 짧은 질문을 먼저 답하고, 가장 큰 작업인 구성은 맨 아래에서 하고 바로 보낸다. 마지막 버튼이 곧 손님에게 가는 버튼이다.
+  const pickT = pickerTotals(menuItems, menuPick, isRecommend ? budget : null);
+  const seatsMissing = tableChoosable === true && (hasZones ? seats.length === 0 : !tableOptions.trim());
+  const blocker =
+    tableChoosable === null
+      ? "손님이 자리를 고를 수 있는지 골라주세요."
+      : seatsMissing
+      ? "고를 수 있는 자리를 하나 이상 골라주세요."
+      : bumpRisk === null
+      ? "밀릴 수 있는지 O / X를 골라주세요."
+      : useMenu
+      ? pickT.lines.length === 0
+        ? "드릴 구성을 제안해 주세요."
+        : pickT.state === "over"
+        ? "손님 금액을 넘지 않게 줄여주세요."
+        : null
+      : itemsMissing
+      ? "드릴 구성을 적어주세요."
+      : null;
+  const sendWhat = tableChoosable === false ? "예약 확인서가 손님에게 바로 나가요" : "손님에게 자리 고르기 메일이 바로 나가요";
+
   return (
-    <div className="space-y-2">
-      {itemsInput && <div className="pb-2">{itemsInput}</div>}
-      {err === "proposed_items_required" && <p className="text-[12px] text-red-400">{errText(err)}</p>}
-      <button
-        type="button"
-        onClick={() => {
-          if (itemsMissing) {
-            setErr("proposed_items_required");
-            itemsRef.current?.focus();
-            return;
-          }
-          setMode("approve");
-        }}
-        className="w-full h-12 rounded-xl bg-money text-black text-[15px] font-black"
-      >
-        예약 가능해요
-      </button>
-      <button
-        type="button"
-        onClick={() => setMode("reject")}
-        className="w-full h-12 rounded-xl border border-border bg-card text-[15px] font-bold text-foreground/80"
-      >
-        받기 어려워요
-      </button>
+    <div className="space-y-4">
+      <div>
+        <p className="text-[13px] font-bold text-foreground">손님이 자리를 고를 수 있나요?</p>
+        <div className="grid grid-cols-2 gap-2 mt-1.5">
+          <button
+            type="button"
+            onClick={() => setTableChoosable(true)}
+            className={`h-11 rounded-xl border text-[13px] font-bold ${tableChoosable === true ? "border-money bg-green-500/15 text-money" : "border-border bg-card text-foreground/80"}`}
+          >
+            네, 고를 수 있어요
+          </button>
+          <button
+            type="button"
+            onClick={() => setTableChoosable(false)}
+            className={`h-11 rounded-xl border text-[13px] font-bold ${tableChoosable === false ? "border-money bg-green-500/15 text-money" : "border-border bg-card text-foreground/80"}`}
+          >
+            당일 배정
+          </button>
+        </div>
+        {tableChoosable === true && (
+          <div className="mt-3">
+            <p className="text-[13px] font-bold text-foreground mb-1.5">
+              어디 중에서 고를 수 있나요? <span className="text-[11px] font-semibold text-muted-foreground">필수</span>
+            </p>
+            {hasZones ? (
+              <SeatPicker zones={seatZones} selected={seats} onChange={setSeats} floorPlanUrls={floorPlanUrls} />
+            ) : (
+              <input
+                value={tableOptions}
+                onChange={(e) => setTableOptions(e.target.value)}
+                placeholder="예) A존 3번 / B존 5번"
+                className="w-full h-11 px-3 rounded-xl bg-card border border-border text-[14px] text-foreground outline-none focus:border-amber-500"
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <p className="text-[13px] font-bold text-foreground">
+          더 높은 금액 손님이 오면 이 자리가 밀릴 수 있나요? <span className="text-[11px] font-semibold text-muted-foreground">필수</span>
+        </p>
+        <div className="grid grid-cols-2 gap-2 mt-1.5">
+          <button
+            type="button"
+            onClick={() => setBumpRisk(true)}
+            className={`h-11 rounded-xl border text-[13px] font-bold ${bumpRisk === true ? "border-amber-500 bg-amber-500/15 text-brand-amber" : "border-border bg-card text-foreground/80"}`}
+          >
+            O 밀릴 수 있어요
+          </button>
+          <button
+            type="button"
+            onClick={() => setBumpRisk(false)}
+            className={`h-11 rounded-xl border text-[13px] font-bold ${bumpRisk === false ? "border-money bg-green-500/15 text-money" : "border-border bg-card text-foreground/80"}`}
+          >
+            X 안 밀려요
+          </button>
+        </div>
+        <p className="text-[11.5px] text-muted-foreground mt-1">O를 고르면 손님 예약 확인서에 안내가 붙어요</p>
+      </div>
+
+      {useMenu ? (
+        <MdMenuPicker items={menuItems} budget={budget} rule={tcRule} value={menuPick} onChange={setMenuPick} clubName={clubName} />
+      ) : (
+        itemsInput
+      )}
+
+      {err && <p className="text-[12px] text-red-400">{errText(err)}</p>}
+
+      <div className="space-y-2">
+        <button
+          type="button"
+          disabled={busy || !!blocker}
+          onClick={async () => {
+            const ok = await post({
+              action: "approve",
+              table_choosable: tableChoosable,
+              seats: tableChoosable && hasZones ? seats : undefined,
+              table_options: tableChoosable && !hasZones ? tableOptions : undefined,
+              bump_risk: bumpRisk,
+              menu: useMenu
+                ? { picks: pickT.lines.map((l) => ({ variant_id: l.id, qty: l.n })), tc: menuPick.tc }
+                : undefined,
+              proposed_items: !useMenu ? proposedItems.trim() || undefined : undefined,
+            });
+            if (ok) setResponse("approved");
+          }}
+          className="w-full h-12 rounded-xl bg-money text-black text-[15px] font-black disabled:opacity-40"
+        >
+          {busy ? "보내는 중…" : "손님에게 보내기"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("reject")}
+          className="w-full h-12 rounded-xl border border-border bg-card text-[15px] font-bold text-foreground/80"
+        >
+          받기 어려워요
+        </button>
+        <p className="text-[12px] text-muted-foreground text-center">{blocker ?? `누르면 ${sendWhat}`}</p>
+      </div>
     </div>
   );
 }
@@ -733,6 +738,7 @@ function ReconfirmBox({
   floorPlanUrls,
   menuUrls,
   clubName,
+  initialItems,
 }: {
   proposalToken: string;
   choiceLabel: string;
@@ -742,6 +748,8 @@ function ReconfirmBox({
   floorPlanUrls: string[];
   menuUrls: string[];
   clubName: string | null;
+  /** 앞서 담당자가 적었거나 손님이 담은 구성 — 금액에 맞는지 눈으로 확인하고 고치게 미리 채운다 */
+  initialItems: string;
 }) {
   const [step, setStep] = useState<"ask" | "no" | "done">("ask");
   const [doneText, setDoneText] = useState("");
@@ -786,6 +794,12 @@ function ReconfirmBox({
 
       {step === "ask" && (
         <>
+          {initialItems.trim() && (
+            <div className="rounded-xl border border-border bg-card px-3.5 py-2.5">
+              <p className="text-[11.5px] font-bold text-muted-foreground mb-1">예약 확인서에 들어갈 구성</p>
+              <p className="text-[13px] text-foreground/90 whitespace-pre-line leading-relaxed">{initialItems}</p>
+            </div>
+          )}
           <p className="text-[14px] font-black text-foreground">이 자리 지금도 되나요?</p>
           <div className="grid grid-cols-2 gap-2">
             <button

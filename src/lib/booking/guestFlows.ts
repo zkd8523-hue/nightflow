@@ -15,6 +15,7 @@ import { sendSms } from "@/lib/notifications/alimtalk";
 import { notifyAssignedMd } from "@/lib/booking/notifyMd";
 import { saveConfirmation } from "@/lib/booking/confirmations";
 import { parseSeatZones, seatOptions, seatValueLabel, type SeatZone } from "@/lib/booking/seats";
+import { menuToIncludes, type MdMenu } from "@/lib/booking/mdMenu";
 import {
   COLOR, esc, fmtGuestDate, guestEmailOf, guestLayout, mailButton, mapImage, normLang, p, sendGuestEmail, waLink, type GuestLang,
 } from "@/lib/email/foreignGuest";
@@ -41,6 +42,8 @@ export type FlowReq = {
   guest_token: string;
   md_seats: string[] | null;
   md_proposed_items: string | null;
+  /** 담당자가 메뉴판에서 고른 구성·TC·합계(Migration 705) */
+  md_menu: MdMenu | null;
   md_required_amount: number | null;
   md_conditions: string | null;
   guest_choice: string | null;
@@ -49,7 +52,7 @@ export type FlowReq = {
 };
 
 const REQ_COLS =
-  "id, guest_name, event_date, group_size, status, lang, club_ids, contact_type, contact_value, backup_email, selected_menu, selected_menu_total, budget, notes, assigned_md_id, proposal_token, guest_token, md_seats, md_proposed_items, md_required_amount, md_conditions, guest_choice, guest_action_kind, guest_action_payload";
+  "id, guest_name, event_date, group_size, status, lang, club_ids, contact_type, contact_value, backup_email, selected_menu, selected_menu_total, budget, notes, assigned_md_id, proposal_token, guest_token, md_seats, md_proposed_items, md_menu, md_required_amount, md_conditions, guest_choice, guest_action_kind, guest_action_payload";
 
 export async function loadForeignReq(sb: SupabaseClient, by: { id?: string; guestToken?: string; proposalToken?: string }): Promise<FlowReq | null> {
   let q = sb.from("foreign_requests").select(REQ_COLS);
@@ -416,13 +419,26 @@ export async function notifyConfirmationChanged(sb: SupabaseClient, requestType:
 // ── 예약 확인서 자동 발급 ─────────────────────────────────────────────────────
 /** 손님 금액 그대로 확인서를 만들고 담당 MD·손님에게 보낸다(notifyAssignedMd kind=confirmation —
  *  MD 앱 알림 + 외국인 손님 예약 메일). 운영자에게는 확인용 푸시만. */
-export async function autoIssueConfirmation(sb: SupabaseClient, requestId: string, tableInfo: string): Promise<{ ok: boolean; refNo?: string }> {
+/** 확인서에 들어갈 구성 — 담당자가 확인 단계에서 적은 것 > 담당자가 응답에서 적은 것 > 손님이 담은 술.
+ *  비어 있으면 확인서를 만들지 않는다(금액에 맞는 구성이 없는 확인서가 나가면 안 된다). */
+export function resolveItems(r: Pick<FlowReq, "md_proposed_items" | "selected_menu">, override?: string | null): string[] {
+  const lines = (t: string | null | undefined) => (t ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
+  const a = lines(override);
+  if (a.length) return a;
+  const b = lines(r.md_proposed_items);
+  if (b.length) return b;
+  return (r.selected_menu?.items ?? []).map((it) => `${it.qty} ${it.name_en}${it.label_en ? ` ${it.label_en}` : ""}`);
+}
+
+export async function autoIssueConfirmation(sb: SupabaseClient, requestId: string, tableInfo: string, itemsText?: string | null): Promise<{ ok: boolean; refNo?: string; error?: string }> {
   const r = await loadForeignReq(sb, { id: requestId });
   if (!r || r.status === "cancelled") return { ok: false };
   const club = await loadClub(sb, r.club_ids?.[0]);
-  const items = r.md_proposed_items
-    ? r.md_proposed_items.split("\n").map((l) => l.trim()).filter(Boolean)
-    : (r.selected_menu?.items ?? []).map((it) => `${it.qty} ${it.name_en}${it.label_en ? ` ${it.label_en}` : ""}`);
+  // 담당자가 메뉴판에서 고른 구성이 있으면 그 품목·TC·합계가 확인서가 된다(가격이 실제 메뉴판 가격이라 금액에 맞는다).
+  // 없으면(손님이 직접 담은 요청 등) 예전처럼 손님이 담은 술/적은 글을 쓴다.
+  const menu = r.md_menu ?? null;
+  const items = menu ? menuToIncludes(menu) : resolveItems(r, itemsText);
+  if (items.length === 0) return { ok: false, error: "items_required" };
   const saved = await saveConfirmation(sb, {
     requestType: "foreign",
     requestId: r.id,
@@ -433,7 +449,8 @@ export async function autoIssueConfirmation(sb: SupabaseClient, requestId: strin
       table_info: tableInfo,
       confirmed_group_size: String(r.group_size),
       includes: items,
-      total_price: guestAmount(r),
+      total_price: menu ? menu.total : guestAmount(r),
+      requested_amount: guestAmount(r),
       guest_request: r.notes,
     },
   });
@@ -441,7 +458,7 @@ export async function autoIssueConfirmation(sb: SupabaseClient, requestId: strin
   await pushAdmins(
     sb,
     "📄 예약 확인서 자동 발급",
-    `${who(r, club)} · ${tableInfo} · ${guestAmount(r)?.toLocaleString("ko-KR") ?? "-"}원 · ${saved.ref_no}${sent.ok ? "" : " · ⚠️ 담당자 알림 실패"}`,
+    `${who(r, club)} · ${tableInfo} · ${(menu ? menu.total : guestAmount(r))?.toLocaleString("ko-KR") ?? "-"}원 · ${saved.ref_no}${sent.ok ? "" : " · ⚠️ 담당자 알림 실패"}`,
     r.id,
     "auto_confirmation",
   );

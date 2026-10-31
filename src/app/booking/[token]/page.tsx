@@ -21,7 +21,7 @@ export default async function BookingPage({
 
   const { data: conf } = await sb
     .from("booking_confirmations")
-    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, arrival_time, request_id, request_type, last_change_note, last_changed_at")
+    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, arrival_time, request_id, request_type, last_change_note, last_changed_at, requested_amount")
     .eq("public_token", token)
     .maybeSingle();
 
@@ -122,6 +122,7 @@ export default async function BookingPage({
         guestRequest={conf.guest_request}
         arrivalTime={conf.arrival_time ?? null}
         bumpRisk={req.md_bump_risk === true}
+        requestedAmount={conf.requested_amount ?? null}
         changeNote={conf.last_change_note ?? null}
         changedAt={conf.last_changed_at ?? null}
         menuUrls={((club?.drink_menu_urls as string[] | null)?.length ? club!.drink_menu_urls : club?.drink_menu_url ? [club.drink_menu_url] : []) as string[]}

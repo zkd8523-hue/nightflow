@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { autoIssueConfirmation, sendBudgetEmail, sendSeatChoiceEmail } from "@/lib/booking/guestFlows";
+import { buildMdMenu, isWeekendDate, menuToIncludes } from "@/lib/booking/mdMenu";
 
 const REJECT_LABEL: Record<string, string> = {
   budget: "금액 부족",
@@ -42,6 +43,8 @@ export async function POST(req: NextRequest) {
     bump_risk?: boolean;
     /** 금액 부족일 때 "이 조건이면 가능해요" */
     conditions?: string;
+    /** 메뉴판에서 고른 구성(2026-11-01) — 가격은 서버가 DB로 다시 계산한다. */
+    menu?: { picks?: { variant_id: string; qty: number }[]; tc?: number };
   };
   try {
     body = await req.json();
@@ -66,6 +69,7 @@ export async function POST(req: NextRequest) {
   ).data as {
     id: string;
     guest_name: string | null;
+    event_date: string;
     club_ids: string[] | null;
     selected_menu: { md_recommend?: { budget: number } } | null;
     selected_menu_total: number | null;
@@ -119,9 +123,23 @@ export async function POST(req: NextRequest) {
     patch.md_reconfirm_state = null;
     // 주류 제안 요청은 구성이 비어서 온다 — MD가 예산 안에서 드릴 구성을 적어야만
     // 승인된다. 안 그러면 손님은 뭘 받는지 모른 채 확정으로 넘어간다(Migration 676).
-    const proposedItems = (body.proposed_items ?? "").trim();
-    if (reqRow.selected_menu?.md_recommend && !proposedItems) {
-      return NextResponse.json({ error: "proposed_items_required" }, { status: 400 });
+    let proposedItems = (body.proposed_items ?? "").trim();
+    patch.md_menu = null;
+    if (reqRow.selected_menu?.md_recommend) {
+      const clubId = reqRow.club_ids?.[0];
+      if (body.menu?.picks?.length && clubId) {
+        // 메뉴판에서 고른 구성 — DB 가격으로 다시 계산하고, 손님 금액을 넘으면 저장하지 않는다.
+        const budget = reqRow.selected_menu.md_recommend.budget ?? reqRow.selected_menu_total ?? reqRow.budget ?? null;
+        const built = await buildMdMenu(sb, {
+          clubId, weekend: isWeekendDate(reqRow.event_date), picks: body.menu.picks, tc: Number(body.menu.tc ?? 0), budget,
+        });
+        if (built.ok === false) return NextResponse.json({ error: built.error }, { status: 400 });
+        patch.md_menu = built.menu;
+        proposedItems = menuToIncludes(built.menu).join("\n"); // 확인서 포함 내역·알림 문구가 같은 줄을 쓴다
+      } else if (!proposedItems) {
+        // 메뉴판이 없는 클럽은 예전처럼 글로 적는다
+        return NextResponse.json({ error: "proposed_items_required" }, { status: 400 });
+      }
     }
     patch.md_proposed_items = proposedItems || null;
     // 승인했으면 이전 거절 흔적은 지운다 — 안 그러면 화면에 둘 다 남아 헷갈린다.
@@ -147,6 +165,7 @@ export async function POST(req: NextRequest) {
     patch.md_proposed_items = null;
     patch.md_seats = null;
     patch.md_bump_risk = null;
+    patch.md_menu = null;
     patch.guest_choice = null;
     patch.md_reconfirm_state = null;
   }
@@ -172,7 +191,7 @@ export async function POST(req: NextRequest) {
       if (action === "approve") {
         if (patch.md_table_choosable === false) {
           const r = await autoIssueConfirmation(sb, reqRow.id, "Assigned on the night (당일 배정)");
-          flowNote = r.ok ? ` · 확인서 자동 발급 ${r.refNo}` : " · ⚠️ 확인서 자동 발급 실패";
+          flowNote = r.ok ? ` · 확인서 자동 발급 ${r.refNo}` : r.error === "items_required" ? " · ⚠️ 구성이 없어 확인서를 못 만들었어요(직접 작성)" : " · ⚠️ 확인서 자동 발급 실패";
         } else if ((patch.md_seats as string[] | null)?.length) {
           flowNote = (await sendSeatChoiceEmail(sb, reqRow.id)) ? " · 손님에게 자리 고르기 메일 발송" : " · ⚠️ 자리 고르기 메일 실패";
         } else {

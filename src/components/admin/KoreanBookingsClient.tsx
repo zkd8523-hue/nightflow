@@ -35,6 +35,7 @@ export type KoreanBookingReq = {
   md_table_options: string | null;
   md_reject_reason: string | null;
   md_required_amount: number | null;
+  md_menu?: unknown;
   md_proposed_items?: string | null;
   md_reject_note?: string | null;
   guest_notice?: string | null;
@@ -69,6 +70,7 @@ function toProposalReq(r: KoreanBookingReq): ProposalReq {
     mdTableOptions: r.md_table_options,
     mdRejectReason: r.md_reject_reason,
     mdRequiredAmount: r.md_required_amount,
+    mdMenuTotal: (r.md_menu as { total?: number } | null | undefined)?.total ?? null,
     mdProposedItems: r.md_proposed_items ?? null,
     mdRejectNote: r.md_reject_note ?? null,
     guestNotice: r.guest_notice ?? null,

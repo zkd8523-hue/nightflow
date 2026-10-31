@@ -10,11 +10,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { autoIssueConfirmation, flowWho, loadClub, loadForeignReq, pushAdmins, sendBudgetEmail, sendSeatChoiceEmail } from "@/lib/booking/guestFlows";
+import { autoIssueConfirmation, flowWho, loadClub, loadForeignReq, pushAdmins, resolveItems, sendBudgetEmail, sendSeatChoiceEmail } from "@/lib/booking/guestFlows";
 import { seatValueLabel, seatsOfValue } from "@/lib/booking/seats";
 
 export async function POST(req: NextRequest) {
-  let body: { proposal_token?: string; action?: string; seats?: string[]; amount?: number; conditions?: string };
+  let body: { proposal_token?: string; action?: string; seats?: string[]; amount?: number; conditions?: string; items?: string };
   try {
     body = await req.json();
   } catch {
@@ -36,10 +36,12 @@ export async function POST(req: NextRequest) {
   const choice = r.guest_choice;
 
   if (body.action === "yes") {
+    // 금액에 맞는 구성이 있어야 확인서가 나간다 — 담당자가 확인 화면에서 적거나, 앞서 적은/손님이 담은 구성이 있어야 한다.
+    if (resolveItems(r, body.items).length === 0) return NextResponse.json({ error: "items_required" }, { status: 400 });
     // 동시에 두 번 눌려도 한 번만 발급 — pending일 때만 yes로 옮긴다.
     const { data: claimed } = await sb.from("foreign_requests").update({ md_reconfirm_state: "yes", md_reconfirm_at: now }).eq("id", r.id).eq("md_reconfirm_state", "pending").select("id").maybeSingle();
     if (!claimed) return NextResponse.json({ ok: true, already: true });
-    const issued = await autoIssueConfirmation(sb, r.id, seatValueLabel(zones, choice));
+    const issued = await autoIssueConfirmation(sb, r.id, seatValueLabel(zones, choice), body.items);
     if (!issued.ok) return NextResponse.json({ error: "issue_failed" }, { status: 500 });
     return NextResponse.json({ ok: true, ref_no: issued.refNo });
   }

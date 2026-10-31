@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import type { SeatZone } from "@/lib/booking/seats";
+import { MenuPhotosOverlay } from "@/components/booking/MenuPhotosOverlay";
 
 export function SeatPicker({
   zones,
@@ -27,6 +28,8 @@ export function SeatPicker({
     () => new Set(zones.filter((z) => z.seats.some((s) => sel.has(s)) && !z.seats.every((s) => sel.has(s) || off.has(s))).map((z) => z.key)),
   );
   const [mapOpen, setMapOpen] = useState(false);
+  // 지도를 누르면 확대 뷰어 — 자리 이름 글자가 작아 클럽 안에서 폰으로 읽으려면 확대가 필요하다.
+  const [zoomMap, setZoomMap] = useState(false);
 
   const toggleZone = (z: SeatZone) => {
     const avail = z.seats.filter((s) => !off.has(s));
@@ -132,6 +135,7 @@ export function SeatPicker({
         </div>
       ))}
 
+      {zoomMap && <MenuPhotosOverlay urls={floorPlanUrls} clubName={null} onClose={() => setZoomMap(false)} />}
       {floorPlanUrls.length > 0 && (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <button
@@ -146,8 +150,9 @@ export function SeatPicker({
             <div className="border-t border-border bg-black space-y-1">
               {floorPlanUrls.map((u) => (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img key={u} src={u} alt="테이블맵" className="w-full block" />
+                <img key={u} src={u} alt="테이블맵" onClick={() => setZoomMap(true)} className="w-full block cursor-zoom-in" />
               ))}
+              <p className="text-[11px] text-muted-foreground px-3.5 py-1.5 bg-card">지도를 누르면 확대돼요</p>
             </div>
           )}
         </div>

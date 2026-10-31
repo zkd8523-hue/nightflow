@@ -59,6 +59,8 @@ export type ProposalReq = {
   guestNotice?: string | null;
   guestNoticeAt?: string | null;
   mdRequiredAmount: number | null;
+  /** 담당자가 메뉴판에서 고른 구성의 합계(TC 포함, Migration 705) — 확인서 금액 기본값 */
+  mdMenuTotal?: number | null;
   /** 주류 제안 요청에 MD가 승인하며 적은 추천 구성(Migration 676) */
   mdProposedItems: string | null;
   /** 거절 사유 직접 입력 문장(Migration 677) */
@@ -744,6 +746,8 @@ export function ConfirmForm({
   const [price, setPrice] = useState(
     c
       ? (c.total_price ? String(c.total_price) : "")
+      : req.mdMenuTotal
+      ? String(req.mdMenuTotal)
       : req.selectedMenuTotal
       ? String(req.selectedMenuTotal)
       : req.budget

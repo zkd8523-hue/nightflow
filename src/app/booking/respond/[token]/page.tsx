@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GuestRespond, type RespondView } from "@/components/booking/GuestRespond";
 import { guestAmount, loadClub, loadForeignReq } from "@/lib/booking/guestFlows";
-import { seatOptions, seatValueLabel } from "@/lib/booking/seats";
+import { seatOptions, seatValueLabel, seatsOfValue } from "@/lib/booking/seats";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +56,8 @@ export default async function GuestRespondPage({
     pickValue: q.pick ?? null,
     pickLabel: q.pick ? seatValueLabel(zones, q.pick) : null,
     alreadyPicked: r.guest_choice ? seatValueLabel(zones, r.guest_choice) : null,
+    // 구역 묶음(T1–T12)을 골랐으면 그 안에서 원하는 번호를 고를 수 있게 번호 목록을 준다.
+    zoneSeats: q.pick?.startsWith("zone:") ? seatsOfValue(zones, q.pick) : [],
     pickValid: q.pick ? seatOptions(zones, r.md_seats ?? []).some((o) => o.value === q.pick) : false,
     amount:
       kind === "budget" ? Number(r.guest_action_payload?.amount ?? r.md_required_amount ?? 0) || null

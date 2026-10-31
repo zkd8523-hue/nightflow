@@ -8,7 +8,6 @@ import Link from "next/link";
 import { MapPin, Check, Star, Instagram, MessageCircle, ChevronLeft } from "lucide-react";
 import { ContactButtons } from "@/components/foreign/ContactButtons";
 import { GUEST_CANCEL_REASONS, type GuestCancelReason } from "@/lib/booking/cancelReasons";
-import { MenuPhotosOverlay } from "@/components/booking/MenuPhotosOverlay";
 
 type Props = {
   requestId: string;
@@ -44,6 +43,8 @@ type Props = {
   /** 금액·자리·구성이 바뀐 뒤 붙는 "Updated" 안내(last_change_note) — 조용한 덮어쓰기 방지 */
   changeNote?: string | null;
   changedAt?: string | null;
+  /** 손님이 낸 금액 — 확인서 합계가 이보다 적으면 안내가 붙는다(Migration 705) */
+  requestedAmount?: number | null;
   arrivalConfirmed: boolean;
   existingReview: { rating: number; comment: string | null } | null;
 };
@@ -122,6 +123,10 @@ const TEXT = {
     menuBtn: "Drink menu",
     mapBtn: "Table map",
     updated: "Updated",
+    totalNoteTitle: "About your total",
+    totalNote: (total: string, asked: string) => `Your total is ${total} (you asked for around ${asked}). This is the closest set we could arrange.`,
+    drinksTitle: "You can change your drinks on the night",
+    drinksBody: "Want something different? Tell the staff at your table on the night.",
     bumpTitle: "Busy night: your table may change",
     bumpBody: "Tables on busy nights can go to a higher offer. If that happens, we'll tell you first, and you can add more to keep your table or cancel at no cost.",
   },
@@ -177,6 +182,10 @@ const TEXT = {
     menuBtn: "메뉴판",
     mapBtn: "테이블맵",
     updated: "변경됨",
+    totalNoteTitle: "합계 안내",
+    totalNote: (total: string, asked: string) => `합계는 ${total}이에요 (요청하신 금액은 약 ${asked}). 가능한 가장 가까운 구성이에요.`,
+    drinksTitle: "주류는 당일에도 바꿀 수 있어요",
+    drinksBody: "다른 술을 원하면 당일 테이블에서 직원에게 말씀해 주세요.",
     bumpTitle: "붐비는 날이라 자리가 바뀔 수 있어요",
     bumpBody: "더 높은 금액을 내는 손님이 오면 자리가 밀릴 수 있어요. 그럴 땐 먼저 알려드리고, 금액을 추가해 자리를 지키거나 비용 없이 취소할 수 있어요.",
   },
@@ -213,7 +222,6 @@ export function BookingPass(p: Props) {
   // 계속 "Sent" 상태라 재발송할 방법이 없다.
   const COOLDOWN_MS = 5 * 60 * 1000;
   const [sentAt, setSentAt] = useState<Partial<Record<"soon" | "arrived", number>>>({});
-  const [photos, setPhotos] = useState<"menu" | "map" | null>(null);
   const [busyKind, setBusyKind] = useState<"soon" | "arrived" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   // 쿨다운이 끝나는 시점에 버튼을 다시 그리기 위한 강제 리렌더 트리거.
@@ -425,20 +433,6 @@ export function BookingPass(p: Props) {
                 )}
               </div>
             )}
-            {/* 외국인 확정서엔 MD 직통 대신 NightFlow 운영 채널을 둔다 — 컨시어지라 MD 연락처는 넘기지 않는데,
-                그 대신 닿을 곳도 없어 당일 전 질문을 받을 길이 없었다(2026-10-24). */}
-            {!ko && !isCancelled && (
-              <div className="mt-3 space-y-1.5">
-                <p className="text-[12px] font-bold text-muted-foreground">
-                  {isPastEvent(p.eventDate) ? "Questions about your night?" : "Questions before your night?"}
-                </p>
-                <ContactButtons
-                  lang="en"
-                  message={`Hi! About my booking ${p.refNo}${p.clubName ? ` at ${p.clubName}` : ""} on ${fmtDate(p.eventDate, false)}.`}
-                  source="booking_pass"
-                />
-              </div>
-            )}
           </div>
 
           <div className="px-5 py-4">
@@ -505,6 +499,23 @@ export function BookingPass(p: Props) {
               </div>
             )}
 
+            {/* 합계가 손님 금액보다 적으면 안내, 구성이 있으면 "당일에도 바꿀 수 있다"(2026-11-01).
+                담당자는 손님 금액을 넘길 수 없고 모자라게만 맞출 수 있어서, 합계 차이는 항상 "적은 쪽"이다. */}
+            {!isCancelled && p.totalPrice != null && p.requestedAmount != null && p.totalPrice < p.requestedAmount && (
+              <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/[0.08] px-4 py-3">
+                <div className="text-[13px] font-black text-foreground">{t.totalNoteTitle}</div>
+                <p className="text-[12.5px] text-foreground/80 leading-relaxed mt-1">
+                  {t.totalNote(t.price(p.totalPrice), t.price(p.requestedAmount))}
+                </p>
+              </div>
+            )}
+            {!isCancelled && p.includes.length > 0 && (
+              <div className="mb-4 rounded-xl border border-sky-400/40 bg-sky-400/[0.08] px-4 py-3">
+                <div className="text-[13px] font-black text-foreground">{t.drinksTitle}</div>
+                <p className="text-[12.5px] text-foreground/80 leading-relaxed mt-1">{t.drinksBody}</p>
+              </div>
+            )}
+
             {/* 변경 안내 — 확인서가 바뀌면 무엇이 왜 바뀌었는지 남는다(2026-11-01). 예전엔 조용히 덮어써졌다. */}
             {p.changeNote && !isCancelled && (
               <div className="mb-4 rounded-xl border border-sky-400/40 bg-sky-400/[0.08] px-4 py-3">
@@ -516,35 +527,20 @@ export function BookingPass(p: Props) {
               </div>
             )}
 
-            {/* 주대표·테이블맵 — 손님이 확인서에서 바로 본다. 사진은 담당 MD 제안서와 같은 전체화면 뷰어. */}
-            {((p.menuUrls?.length ?? 0) > 0 || (p.floorPlanUrls?.length ?? 0) > 0) && (
-              <div className="flex gap-2 mt-4">
-                {(p.menuUrls?.length ?? 0) > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setPhotos("menu")}
-                    className="flex-1 h-10 rounded-xl bg-background border border-border text-[13px] font-bold text-foreground"
-                  >
-                    📖 {t.menuBtn}
-                  </button>
-                )}
-                {(p.floorPlanUrls?.length ?? 0) > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setPhotos("map")}
-                    className="flex-1 h-10 rounded-xl bg-background border border-border text-[13px] font-bold text-foreground"
-                  >
-                    🗺️ {t.mapBtn}
-                  </button>
-                )}
+            {/* 외국인 확인서엔 MD 직통 대신 NightFlow 운영 채널을 둔다 — 컨시어지라 MD 연락처는 넘기지 않는데,
+                그 대신 닿을 곳도 없어 당일 전 질문을 받을 길이 없었다(2026-10-24). 예약 내용 바로 아래로 옮겼다(2026-11-01):
+                맨 위에 있으면 내용을 보기 전에 연락 버튼부터 보였다. 주대표·테이블맵 버튼은 뺐다. */}
+            {!ko && !isCancelled && (
+              <div className="mt-5 pt-4 border-t border-border space-y-1.5">
+                <p className="text-[12px] font-bold text-muted-foreground text-center">
+                  {isPastEvent(p.eventDate) ? "Questions about your night?" : "Questions before your night?"}
+                </p>
+                <ContactButtons
+                  lang="en"
+                  message={`Hi! About my booking ${p.refNo}${p.clubName ? ` at ${p.clubName}` : ""} on ${fmtDate(p.eventDate, false)}.`}
+                  source="booking_pass"
+                />
               </div>
-            )}
-            {photos && (
-              <MenuPhotosOverlay
-                urls={(photos === "menu" ? p.menuUrls : p.floorPlanUrls) ?? []}
-                clubName={p.clubName}
-                onClose={() => setPhotos(null)}
-              />
             )}
 
             {/* 밀림 가능 안내 — 담당 MD가 제안서에서 O를 고른 예약만(2026-11-01). 조재윤 건처럼 나중에 알면 신뢰가 깨진다. */}

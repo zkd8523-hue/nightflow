@@ -28,6 +28,8 @@ export type ConfirmationFields = {
   confirmed_group_size: string | null;
   includes: string[];
   total_price: number | null;
+  /** 손님이 낸 금액 — 확인서 합계가 이보다 적으면 손님 확인서에 안내가 붙는다(Migration 705) */
+  requested_amount?: number | null;
   arrival_time?: string | null;
   guest_request?: string | null;
   internal_memo?: string | null;
@@ -88,6 +90,7 @@ export async function saveConfirmation(
     confirmed_group_size: fields.confirmed_group_size,
     includes: fields.includes ?? [],
     total_price: fields.total_price,
+    requested_amount: fields.requested_amount ?? null,
     arrival_time: fields.arrival_time ?? null,
     guest_request: fields.guest_request ?? null,
     internal_memo: fields.internal_memo ?? null,

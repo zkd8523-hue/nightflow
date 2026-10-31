@@ -13,7 +13,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyAssignedMd } from "@/lib/booking/notifyMd";
 import { saveConfirmation } from "@/lib/booking/confirmations";
 import { flowWho, guestAmount, loadClub, loadForeignReq, notifyMd, pushAdmins } from "@/lib/booking/guestFlows";
-import { seatValueLabel } from "@/lib/booking/seats";
+import { seatValueLabel, seatsOfValue } from "@/lib/booking/seats";
 
 export async function POST(req: NextRequest) {
   let body: { token?: string; action?: string; value?: string };
@@ -47,7 +47,9 @@ export async function POST(req: NextRequest) {
   // ── 자리 고르기 ──
   if (body.action === "pick") {
     const opts = ((r.guest_action_payload?.options as string[] | undefined) ?? []);
-    if (r.guest_action_kind !== "pick_seat" || !body.value || !opts.includes(body.value)) {
+    // 보낸 선택지 그대로이거나, 구역 묶음 안의 번호 하나(손님이 묶음에서 원하는 번호를 고른 경우)
+    const inZone = !!body.value && opts.some((o) => o.startsWith("zone:") && seatsOfValue(zones, o).includes(body.value as string));
+    if (r.guest_action_kind !== "pick_seat" || !body.value || !(opts.includes(body.value) || inZone)) {
       return NextResponse.json({ error: "invalid_choice" }, { status: 400 });
     }
     await sb.from("foreign_requests").update({
