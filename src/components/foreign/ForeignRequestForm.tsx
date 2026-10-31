@@ -3303,6 +3303,23 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         )}
       </section>
 
+      {/* 붐비는 날 가격 안내 — 요청 보내기 직전(2026-11-01). 조재윤 건(9월 확정 → 할로윈 비딩으로 인상)은
+          예약할 때 아무 말도 못 들은 게 문제였다. 확인서는 이미 끝난 뒤라, 기대는 여기서 맞춘다. */}
+      <div className="rounded-2xl border border-amber-500/40 bg-amber-500/[0.08] px-4 py-3">
+        <p className="text-[13px] font-black text-foreground">
+          {t("📈 붐비는 날엔 가격이 오를 수 있어요", "📈 Busy nights can cost more", "📈 混雑日は料金が上がることがあります", "📈 热门夜晚价格可能上涨", "📈 熱門夜晚價格可能上漲")}
+        </p>
+        <p className="text-[12px] text-muted-foreground leading-relaxed mt-1 break-keep">
+          {t(
+            "할로윈·연말처럼 붐비는 날엔 클럽이 테이블 가격을 올릴 수 있어요. 그럴 땐 먼저 알려드리고, 금액을 추가해 자리를 지키거나 비용 없이 취소할 수 있어요.",
+            "On busy nights (like Halloween or New Year's Eve), clubs may raise table prices. If that happens, we'll tell you first, and you can add more to keep your table or cancel at no cost.",
+            "ハロウィンや年末など混雑する夜は、クラブがテーブル料金を上げることがあります。その場合は先にお知らせし、追加して席を確保するか、無料でキャンセルするかを選べます。",
+            "万圣节、跨年等热门夜晚，夜店可能会提高卡座价格。如有变动我们会先通知你，你可以加价保留卡座，或免费取消。",
+            "萬聖節、跨年等熱門夜晚，夜店可能會調高包廂價格。如有變動我們會先通知你，你可以加價保留包廂，或免費取消。"
+          )}
+        </p>
+      </div>
+
       <button
         ref={sendButtonRef}
         type="button"
@@ -3313,7 +3330,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         {loading ? t("전송 중…", "Sending…", "送信中…", "提交中…", "提交中…") : t("요청 보내기", "Send request", "リクエスト送信", "提交请求", "提交請求")}
       </button>
       <p className="text-center text-[12px] text-muted-foreground -mt-3">
-        {t("방문 전 서면으로 확정 · 당일 클럽에서 결제", "Details confirmed in writing before your visit · Pay the club on the night", "来店前に書面で確定 · 当日クラブでお支払い", "到店前书面确认 · 当晚在夜店付款", "到店前書面確認 · 當晚在夜店付款")}
+        {t("지금은 결제 없음 · 당일 클럽에서 결제", "No payment now · Pay the club on the night", "今はお支払い不要 · 当日クラブでお支払い", "现在无需付款 · 当晚在夜店付款", "現在無需付款 · 當晚在夜店付款")}
       </p>
 
       {/* 폼 대신 대화(2026-10-20). 10/3~10/20 실측: 예산까지 고른 20명 중 이 단계에서 14명이 이름도

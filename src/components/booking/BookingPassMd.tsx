@@ -28,12 +28,19 @@ type Props = {
   includes: string[];
   totalPrice: number | null;
   guestRequest: string | null;
+  /** 도착 예정 시각(자유 표기 "23:00") */
+  arrivalTime?: string | null;
   hostName: string | null;
   arrivedPings: string[];
   /** 담당 MD 본인이 로그인해 연 경우에만 — 파트너 페이지 예약관리로 돌아가는 링크 */
   backHref?: string | null;
   mdToken: string;
   checkedInAt: string | null;
+  /** 밀림 처리 상태(booking_confirmations.bump_state) — pending이면 손님 답을 기다리는 중 */
+  bumpState?: string | null;
+  bumpAmount?: number | null;
+  /** 외국인 요청만 — 손님에게 메일로 유지/취소를 물을 수 있다 */
+  canBump?: boolean;
 };
 
 function fmtDateKo(iso: string): string {
@@ -58,6 +65,33 @@ export function BookingPassMd(p: Props) {
   const [cancelledNow, setCancelledNow] = useState(false);
   const [cancelErr, setCancelErr] = useState<string | null>(null);
   const isCancelled = p.cancelled || cancelledNow;
+
+  // 밀릴 것 같아요(2026-11-01) — 더 높은 금액 손님이 와서 이 자리가 밀리게 됐을 때. 취소가 아니라
+  // 손님에게 "이 금액이면 유지"를 먼저 묻는다(손님에게 약속한 "먼저 알리고 기회를 준다").
+  const [bumpStep, setBumpStep] = useState<"idle" | "form" | "sent">(p.bumpState === "pending" ? "sent" : "idle");
+  const [bumpAmt, setBumpAmt] = useState("");
+  const [bumpItems, setBumpItems] = useState("");
+  const [bumpHours, setBumpHours] = useState<"0.5" | "1" | "2" | "evening">("1");
+  const [bumpErr, setBumpErr] = useState<string | null>(null);
+  const doBump = async () => {
+    const amount = Number(bumpAmt.replace(/[^0-9]/g, ""));
+    if (!amount) return setBumpErr("유지하려면 필요한 총액을 적어주세요.");
+    setBusy(true);
+    setBumpErr(null);
+    try {
+      const res = await fetch("/api/md-bump", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ md_token: p.mdToken, amount, items: bumpItems.trim() || undefined, within: bumpHours }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok) setBumpStep("sent");
+      else setBumpErr(j.error === "no_guest_channel" ? "손님 메일 주소가 없어요. 나플 담당자에게 연락해 주세요." : "보내지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } catch {
+      setBumpErr("보내지 못했어요. 통신 상태를 확인해 주세요.");
+    }
+    setBusy(false);
+  };
 
   const doCancel = async () => {
     if (!cancelReason.trim()) return setCancelErr("취소 사유를 적어주세요.");
@@ -151,16 +185,15 @@ export function BookingPassMd(p: Props) {
             <div className="text-[10.5px] font-bold tracking-[0.22em] uppercase text-muted-foreground">
               NightFlow
             </div>
-            <div
-              className={`inline-flex items-center gap-1.5 mt-2.5 text-[11px] font-bold tracking-wider uppercase rounded-full px-3 py-1 border ${
-                isCancelled
-                  ? "text-red-400 bg-red-500/10 border-red-500/30"
-                  : "text-money bg-green-500/10 border-green-500/30"
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-              {isCancelled ? "취소됨" : "확정"}
-            </div>
+            {/* 상태 배지는 취소일 때만 — 평소엔 "Booking details/예약 확인"이라 정보가 없었다(2026-11-01). */}
+            {isCancelled && (
+              <div
+                className="inline-flex items-center gap-1.5 mt-2.5 text-[11px] font-bold tracking-wider uppercase rounded-full px-3 py-1 border text-red-400 bg-red-500/10 border-red-500/30"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                취소됨
+              </div>
+            )}
             <div className="font-mono font-bold text-[34px] tracking-wide text-brand-amber mt-3 tabular-nums">
               {p.refNo}
             </div>
@@ -176,6 +209,11 @@ export function BookingPassMd(p: Props) {
             <Row k="일시">
               <div className="text-[18px] font-bold">{fmtDateKo(p.eventDate)}</div>
             </Row>
+            {p.arrivalTime && (
+              <Row k="도착 예정">
+                <div className="text-[18px] font-bold">{p.arrivalTime}</div>
+              </Row>
+            )}
             {p.clubName && (
               <Row k="클럽">
                 <div className="text-[15px] font-semibold">{p.clubName}</div>
@@ -198,10 +236,10 @@ export function BookingPassMd(p: Props) {
               </Row>
             )}
 
+            {/* "준비" 소제목은 뺐다(2026-11-01) — 아래 네 줄이 다 비면 제목만 남아 빈 섹션처럼 보였다.
+                구분선 묶음도 내용이 하나라도 있을 때만 그린다. */}
+            {(p.tableInfo || p.includes.length > 0 || p.totalPrice != null || p.guestRequest) && (
             <div className="mt-4 pt-3 border-t border-border">
-              <div className="text-[11px] font-bold text-muted-foreground mb-1.5">
-                준비
-              </div>
               {p.tableInfo && (
                 <Row k="자리">
                   <div className="text-[15px] font-semibold">{p.tableInfo}</div>
@@ -234,6 +272,20 @@ export function BookingPassMd(p: Props) {
                 </Row>
               )}
             </div>
+            )}
+
+            {/* 도착 알림 안내 — 담당자가 처음 받는 문자에 놀라지 않게, 운영자가 매번 설명하지 않게(2026-11-01).
+                손님이 이미 신호를 보냈거나 취소된 예약엔 안 보인다. */}
+            {!isCancelled && p.arrivedPings.length === 0 && !p.checkedInAt && (
+              <div className="mt-4 rounded-xl border border-sky-400/40 bg-sky-400/[0.08] px-4 py-3">
+                <div className="text-[13.5px] font-black text-foreground">📲 손님 도착 알림</div>
+                <ol className="mt-1.5 space-y-0.5 text-[12.5px] text-foreground/80 leading-relaxed list-decimal pl-4">
+                  <li>손님이 도착 10분 전과 도착했을 때 버튼을 누르면 이 번호로 문자가 와요.</li>
+                  <li>문자를 받으면 입구로 마중 나가주세요.</li>
+                  <li>입장시킨 뒤 아래 &quot;입장 완료&quot;를 눌러주세요.</li>
+                </ol>
+              </div>
+            )}
 
             {/* 도착 신호 — 손님이 누르면 여기 표시된다 */}
             {p.arrivedPings.length > 0 && (
@@ -310,6 +362,68 @@ export function BookingPassMd(p: Props) {
                   >
                     입장 완료
                   </button>
+                )}
+
+                {/* 자리가 밀릴 것 같아요 — 외국인 요청만(손님 메일로 유지/취소를 묻는다). 입장 전까지. */}
+                {p.canBump && step !== "done" && (
+                  bumpStep === "sent" ? (
+                    <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-4 py-3">
+                      <p className="text-[13px] font-bold text-foreground">손님에게 물어봤어요{p.bumpAmount ? ` · ${p.bumpAmount.toLocaleString()}원` : ""}</p>
+                      <p className="text-[12px] text-muted-foreground mt-0.5">손님이 답하면 알려드릴게요. 유지하면 예약 확인서가 자동으로 바뀌어요.</p>
+                    </div>
+                  ) : bumpStep === "form" ? (
+                    <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] p-3.5 space-y-2.5">
+                      <p className="text-[13px] font-bold text-foreground">자리를 유지하려면 얼마가 필요한가요?</p>
+                      <input
+                        inputMode="numeric"
+                        value={bumpAmt}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^0-9]/g, "");
+                          setBumpAmt(raw ? Number(raw).toLocaleString("en-US") : "");
+                        }}
+                        placeholder="총액 예) 1,750,000"
+                        className="w-full h-11 px-3 rounded-lg bg-card border border-border text-[14px] text-foreground outline-none focus:border-amber-500"
+                      />
+                      <textarea
+                        value={bumpItems}
+                        onChange={(e) => setBumpItems(e.target.value)}
+                        rows={2}
+                        placeholder={"바뀌는 구성 (선택, 한 줄에 하나씩)\n예) 샴페인 5병"}
+                        className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-[14px] text-foreground outline-none focus:border-amber-500 resize-none"
+                      />
+                      <div>
+                        <p className="text-[11.5px] text-muted-foreground mb-1">손님이 언제까지 답해야 하나요?</p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {([["0.5", "30분"], ["1", "1시간"], ["2", "2시간"], ["evening", "영업 전"]] as const).map(([k, label]) => (
+                            <button
+                              key={k}
+                              type="button"
+                              onClick={() => setBumpHours(k)}
+                              className={`h-9 rounded-lg border text-[12.5px] font-bold ${bumpHours === k ? "border-amber-500 bg-amber-500/15 text-brand-amber" : "border-border text-foreground/80"}`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={doBump} disabled={busy || !bumpAmt} className="flex-1 h-11 rounded-lg bg-amber-500 text-black text-[13.5px] font-bold disabled:opacity-40">
+                          {busy ? "보내는 중…" : "손님에게 물어보기"}
+                        </button>
+                        <button onClick={() => { setBumpStep("idle"); setBumpErr(null); }} disabled={busy} className="w-[88px] h-11 rounded-lg border border-border text-[13.5px] font-bold text-muted-foreground disabled:opacity-50">
+                          닫기
+                        </button>
+                      </div>
+                      {bumpErr && <p className="text-[12px] text-red-400">{bumpErr}</p>}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setBumpStep("form")}
+                      className="w-full h-11 mt-3 rounded-xl border border-amber-500/40 text-brand-amber text-[13.5px] font-bold"
+                    >
+                      자리가 밀릴 것 같아요
+                    </button>
+                  )
                 )}
 
                 {/* 예약 취소 — 입장 완료된 건은 서버가 막는다(현장 진행 중). */}

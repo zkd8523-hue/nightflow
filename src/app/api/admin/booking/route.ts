@@ -16,20 +16,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { randomBytes } from "crypto";
-
-// 클럽명 단어별 첫 글자 이니셜 (예: "Club Ace" → "CA"). "Club"으로 시작하는
-// 클럽이 8개나 있어 앞 2자 그대로 쓰면("CL") 전부 겹친다. 단어가 1개뿐이면
-// 그 단어 앞 2자를 쓴다(예: "Fountain" → "FO"). 영문 이니셜을 못 뽑으면(한글
-// 이름) NF로 폴백한다.
-function clubPrefix(name: string): string {
-  const words = name.split(/\s+/).filter(Boolean);
-  const initials = words.map((w) => w.replace(/[^A-Za-z]/g, "")[0] ?? "").join("");
-  if (initials.length >= 2) return initials.slice(0, 2).toUpperCase();
-
-  const ascii = name.replace(/[^A-Za-z]/g, "");
-  if (ascii.length >= 2) return ascii.slice(0, 2).toUpperCase();
-  return "NF";
-}
+import { saveConfirmation } from "@/lib/booking/confirmations";
+import { notifyConfirmationChanged } from "@/lib/booking/guestFlows";
 
 export async function POST(req: NextRequest) {
   // 인증 — admin만
@@ -103,6 +91,10 @@ export async function POST(req: NextRequest) {
       assignPatch.md_table_options = null;
       assignPatch.md_proposed_items = null;
       assignPatch.md_reject_note = null;
+      // 새 담당자에게는 아직 안 보냈다 — 이전 담당자 기준 "보낸 지 N시간"이 남지 않게(Migration 700).
+      assignPatch.proposal_sent_at = null;
+      assignPatch.proposal_reminded_at = null;
+      assignPatch.proposal_admin_alerts = 0;
       // 새 토큰 — 이전 MD가 들고 있는 링크는 그 즉시 죽는다(404).
       assignPatch.proposal_token = randomBytes(16).toString("hex");
     }
@@ -135,66 +127,46 @@ export async function POST(req: NextRequest) {
   // 확정 클럽 — 미지정이면 요청의 1순위를 쓴다.
   const clubId = (body.club_id as string | undefined) || reqClubIds[0] || null;
 
-  let clubName = "";
-  if (clubId) {
-    const { data: club } = await sb.from("clubs").select("name").eq("id", clubId).single();
-    clubName = club?.name ?? "";
+  // 저장·변경 이력·요청 완료 처리는 자동 발급과 같은 규칙(saveConfirmation, 2026-11-01).
+  // 손님 알림은 여기서 보내지 않는다 — "확인서 보내기"(/api/admin/notify-md) 하나로 MD·손님 모두에게.
+  // 단, 이미 보낸 확인서의 금액·자리·구성을 고치면서 "손님에게 변경 알림"을 체크했으면 변경 안내를 보낸다.
+  let saved: Awaited<ReturnType<typeof saveConfirmation>>;
+  try {
+    saved = await saveConfirmation(sb, {
+      requestType,
+      requestId,
+      createdBy: user.id,
+      source: "admin",
+      changeNote: (body.change_note as string) || null,
+      changeReason: (body.change_note as string) || null,
+      fields: {
+        club_id: clubId,
+        table_info: (body.table_info as string) || null,
+        capacity_note: (body.capacity_note as string) || null,
+        confirmed_group_size: (body.confirmed_group_size as string) || null,
+        includes: (body.includes as string[]) ?? [],
+        total_price: (body.total_price as number) || null,
+        arrival_time: (body.arrival_time as string) || null,
+        guest_request: (body.guest_request as string) || null,
+        internal_memo: (body.internal_memo as string) || null,
+      },
+    });
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "save_failed" }, { status: 500 });
   }
 
-  // 이미 확정서가 있으면 ref_no를 유지한다 — 손님에게 이미 보낸 번호가 바뀌면 안 된다.
-  const { data: existing } = await sb
-    .from("booking_confirmations")
-    .select("id, ref_no, public_token, md_token")
-    .eq("request_type", requestType)
-    .eq("request_id", requestId)
-    .maybeSingle();
-
-  const refNo =
-    existing?.ref_no ??
-    `${clubPrefix(clubName || "NightFlow")}-${String(Math.floor(1000 + Math.random() * 9000))}`;
-
-  const payload = {
-    request_type: requestType,
-    request_id: requestId,
-    club_id: clubId,
-    ref_no: refNo,
-    table_info: (body.table_info as string) || null,
-    capacity_note: (body.capacity_note as string) || null,
-    confirmed_group_size: (body.confirmed_group_size as string) || null,
-    includes: (body.includes as string[]) ?? [],
-    total_price: (body.total_price as number) || null,
-    arrival_time: (body.arrival_time as string) || null,
-    guest_request: (body.guest_request as string) || null,
-    internal_memo: (body.internal_memo as string) || null,
-    created_by: user.id,
-  };
-
-  const { data: saved, error: saveErr } = await sb
-    .from("booking_confirmations")
-    .upsert(payload, { onConflict: "request_type,request_id" })
-    .select("ref_no, public_token, md_token")
-    .single();
-
-  if (saveErr || !saved) {
-    return NextResponse.json({ error: saveErr?.message ?? "save_failed" }, { status: 500 });
-  }
-
-  // 확정서가 나왔으면 원본 요청도 "완료(done)"로 넘긴다 — 안 그러면 손님 "내 예약"이
-  // 계속 "접수됨"에 머물러, 확정서를 만들어도 손님 화면엔 아무 변화가 없었다
-  // (2026-09-30). 이미 done/cancelled면 되돌리지 않는다 — 취소된 걸 여기서
-  // 되살리면 안 되고, 재확정(수정) 때 중복 알림(DB 트리거 679)도 막는다.
-  //
-  // 손님 알림은 여기서 보내지 않는다 — "확정서 보내기" 버튼(/api/admin/notify-md)
-  // 하나로 MD·손님 모두에게 보내도록 통합했다(2026-09-30, 사용자 결정). 저장
-  // 시점에 자동으로 나가면 운영자가 내용을 다듬기 전에 손님이 먼저 받는 문제가 있었다.
-  const { data: statusRow } = await sb.from(table).select("status").eq("id", requestId).single();
-  const wasAlreadyDone = statusRow?.status === "done" || statusRow?.status === "cancelled";
-  if (!wasAlreadyDone) {
-    await sb.from(table).update({ status: "done", updated_at: new Date().toISOString() }).eq("id", requestId);
+  let changeNotified = false;
+  if (saved.changed && body.notify_change === true) {
+    changeNotified = await notifyConfirmationChanged(sb, requestType, requestId).catch((e) => {
+      console.error("[admin/booking] 변경 안내 실패", e);
+      return false;
+    });
   }
 
   return NextResponse.json({
     ok: true,
+    changed: saved.changed,
+    change_notified: changeNotified,
     ref_no: saved.ref_no,
     public_token: saved.public_token,
     md_token: saved.md_token,

@@ -769,9 +769,9 @@ export function MDDashboard({
                             : needsAnswer
                             ? { label: "답변 필요", cls: "bg-amber-500 text-black" }
                             : r.mdResponse === "approved"
-                            ? { label: "승인함 · 확정서 대기", cls: "bg-green-500/10 text-money/80" }
+                            ? { label: "예약 가능 · 예약 확인서 대기", cls: "bg-green-500/10 text-money/80" }
                             : r.mdResponse === "rejected"
-                            ? { label: "거절함", cls: "bg-red-500/10 text-red-400" }
+                            ? { label: "받기 어려움", cls: "bg-red-500/10 text-red-400" }
                             : null;
                         const cardBody = (
                             <>
@@ -833,7 +833,7 @@ export function MDDashboard({
                         // 나오냐"는 혼란이 있었다(2026-09-30) — 손님 "내 예약"의 "예약 확정서 보기"
                         // 버튼처럼 무엇이 열리는지 명시한다.
                         const actionLabel = r.mdToken
-                            ? "✅ 예약 확정서 보기"
+                            ? "✅ 예약 확인서 보기"
                             : needsAnswer
                             ? "제안서 확인하고 답변하기"
                             : "제안서 보기";

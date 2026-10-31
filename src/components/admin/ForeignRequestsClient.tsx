@@ -8,6 +8,14 @@ import { isClubOpenOn } from "@/lib/utils/clubOpenDays";
 import type { SelectedMenuSnapshot } from "@/types/database";
 import { ProposalCard, MdResponseCard, ConfirmationCard, ConfirmForm, type ProposalReq, type ProposalConf } from "@/components/admin/ProposalSection";
 
+// "보낸 지 N분/N시간" — 제안서 무응답 배지용. 24시간이 넘으면 일 단위.
+function sinceText(iso: string): string {
+  const min = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if (min < 60) return `${min}분`;
+  const h = Math.floor(min / 60);
+  return h < 24 ? `${h}시간` : `${Math.floor(h / 24)}일`;
+}
+
 export type ForeignReq = {
   id: string;
   lang: string;
@@ -20,6 +28,20 @@ export type ForeignReq = {
   selected_menu_total: number | null;
   /** MD가 제안서에서 누른 응답. NULL이면 아직 회신 없음. */
   proposal_token: string;
+  /** 제안서가 MD에게 닿은 시각(Migration 700). NULL이면 아직 안 보냄 */
+  proposal_sent_at: string | null;
+  /** 담당자가 고른 자리 · 밀림 O/X · 이 조건이면 가능해요(Migration 704) */
+  guest_token?: string | null;
+  md_seats?: string[] | null;
+  md_bump_risk?: boolean | null;
+  md_conditions?: string | null;
+  /** 손님이 메일에서 고른 자리 + 담당자 재확인 상태(pending | yes | no) */
+  guest_choice?: string | null;
+  md_reconfirm_state?: string | null;
+  /** 손님에게 행동을 요청한 메일(pick_seat | budget | bump)을 보낸 시각 — guest_responded_at이 비면 아직 안 눌렀다 */
+  guest_action_kind?: string | null;
+  guest_action_sent_at?: string | null;
+  guest_responded_at?: string | null;
   md_response: string | null;
   md_responded_at: string | null;
   md_table_choosable: boolean | null;
@@ -86,6 +108,29 @@ function contactLink(type: string, value: string): string | null {
   return null; // wechat 등: 딥링크 없음 → 복사만
 }
 
+/** 손님이 WhatsApp을 남겼으면 대화창이 문구가 채워진 채로 바로 열린다(2026-11-01) — 번호를 찾거나 붙여넣을 필요 없이
+ *  보내기만 누르면 된다. WhatsApp이 없는 손님(이메일만)에겐 버튼이 안 보인다. 메일에 못 닿았을 때 한 번 더 보내는 용도. */
+function waSendUrl(r: ForeignReq, text: string): string | null {
+  if (r.contact_type !== "whatsapp") return null;
+  const num = r.contact_value.replace(/[^0-9]/g, "");
+  return num ? `https://wa.me/${num}?text=${encodeURIComponent(text)}` : null;
+}
+
+/** 지금 이 요청에서 손님에게 보낼 안내 문구 — 자동 메일과 같은 내용을 WhatsApp용 번호 선택지로 줄인 것. */
+function waDraft(r: ForeignReq): string | null {
+  const club = r.clubNames[0] ?? "the club";
+  const date = r.event_date;
+  const link = (q = "") => `https://nightflow.kr/booking/respond/${r.guest_token ?? ""}${q}`;
+  if (r.md_response === "rejected" && r.md_reject_reason === "budget" && r.md_required_amount) {
+    const amt = `₩${r.md_required_amount.toLocaleString("en-US")}`;
+    return `Hi ${r.guest_name ?? ""}! About ${club} on ${date}: the club can't do your budget that night. The closest option is ${amt}${r.md_conditions ? `\n${r.md_conditions}` : ""}\n\nReply with a number:\n1️⃣ Go ahead with ${amt}\n2️⃣ Talk about other options\n3️⃣ No thanks, cancel`;
+  }
+  if (r.md_response === "approved" && (r.md_seats?.length ?? 0) > 0 && !r.guest_choice) {
+    return `Hi ${r.guest_name ?? ""}! Good news, ${club} can take your booking on ${date} 🎉\nPlease choose your table here:\n${link()}`;
+  }
+  return null;
+}
+
 type ClubOption = { id: string; name: string; area: string | null; open_dows: number[] | null };
 
 /** "클럽이 알아서 골라주세요" 요청에 클럽을 지정 — 저장되면 club_ids[0]이 채워져
@@ -129,7 +174,7 @@ function ClubAssignBox({
       <p className="text-[12px] font-bold text-brand-amber">
         🎯 클럽 지정 필요 — 손님이 클럽을 맡겼어요{req.area ? ` (${req.area})` : " (지역 무관)"}
       </p>
-      <p className="text-[11px] text-muted-foreground">지정하면 아래에 제안서·받는 MD·확정서가 열립니다. 지정 후에는 바꿀 수 없어요.</p>
+      <p className="text-[11px] text-muted-foreground">지정하면 아래에 제안서·받는 MD·예약 확인서가 열립니다. 지정 후에는 바꿀 수 없어요.</p>
       <div className="flex gap-2">
         <select
           value={clubId}
@@ -173,7 +218,7 @@ export function ForeignRequestsClient({
   const [editing, setEditing] = useState<string | null>(null);
   // 목록이 200건까지 그냥 나열돼서, 지금 손 봐야 할 건(MD 답을 기다리는 것,
   // 거절당해 다시 잡아야 하는 것)을 눈으로 찾아야 했다. 처리 단계로 좁힌다.
-  const [tab, setTab] = useState<"all" | "needs_club" | "waiting" | "approved" | "rejected" | "done">("all");
+  const [tab, setTab] = useState<"all" | "needs_club" | "not_sent" | "waiting" | "guest_waiting" | "approved" | "rejected" | "done">("all");
 
   const updateStatus = async (id: string, status: string) => {
     setBusy(id);
@@ -237,6 +282,7 @@ export function ForeignRequestsClient({
                     md_reject_note: null,
                     md_table_choosable: null,
                     md_table_options: null,
+                    proposal_sent_at: null,
                   }
                 : {}),
             }
@@ -262,24 +308,34 @@ export function ForeignRequestsClient({
     : r.club_ids.length === 0 ? "needs_club"
     : r.md_response === "approved" ? "approved"
     : r.md_response === "rejected" ? "rejected"
-    : "waiting";
+    // 답이 없는 건을 둘로 — 제안서를 아직 안 보낸 건과, 보냈는데 무응답인 건(Migration 700, 2026-11-01).
+    // 예전엔 둘 다 "MD 답변 대기"라 몇 시간째 무응답인지 알 수 없었다.
+    : r.proposal_sent_at ? "waiting"
+    : "not_sent";
+  // 담당자는 답했는데 손님이 메일 버튼을 아직 안 누른 건 — 메일을 못 보고 있을 수 있어 따로 모은다(2026-11-01).
+  const isGuestWaiting = (r: ForeignReq) =>
+    !!r.guest_action_sent_at && !r.guest_responded_at && r.status !== "cancelled" && !r.conf;
 
   const counts = {
     all: reqs.length,
     needs_club: reqs.filter((r) => bucketOf(r) === "needs_club").length,
+    not_sent: reqs.filter((r) => bucketOf(r) === "not_sent").length,
     waiting: reqs.filter((r) => bucketOf(r) === "waiting").length,
+    guest_waiting: reqs.filter(isGuestWaiting).length,
     approved: reqs.filter((r) => bucketOf(r) === "approved").length,
     rejected: reqs.filter((r) => bucketOf(r) === "rejected").length,
     done: reqs.filter((r) => bucketOf(r) === "done").length,
   };
-  const shown = tab === "all" ? reqs : reqs.filter((r) => bucketOf(r) === tab);
+  const shown = tab === "all" ? reqs : tab === "guest_waiting" ? reqs.filter(isGuestWaiting) : reqs.filter((r) => bucketOf(r) === tab);
 
   const TABS: { key: typeof tab; label: string }[] = [
     { key: "all", label: "전체" },
     { key: "needs_club", label: "클럽 지정 필요" },
+    { key: "not_sent", label: "제안서 미발송" },
     { key: "waiting", label: "MD 답변 대기" },
-    { key: "approved", label: "MD 승인" },
-    { key: "rejected", label: "MD 거절" },
+    { key: "guest_waiting", label: "손님 답변 대기" },
+    { key: "approved", label: "MD 예약 가능" },
+    { key: "rejected", label: "MD 받기 어려움" },
     { key: "done", label: "완료" },
   ];
 
@@ -313,7 +369,29 @@ export function ForeignRequestsClient({
           <div key={r.id} className="rounded-2xl bg-card border border-border p-4 space-y-3">
             {/* 헤더: 상태 + 언어 + 시각 */}
             <div className="flex items-center justify-between gap-2">
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${st.cls}`}>{st.label}</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${st.cls}`}>{st.label}</span>
+                {isGuestWaiting(r) && r.guest_action_sent_at && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border border-sky-400/40 bg-sky-400/10 text-sky-300 truncate">
+                    손님에게 보낸 지 {sinceText(r.guest_action_sent_at)} · 미확인
+                  </span>
+                )}
+                {r.md_reconfirm_state === "pending" && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-brand-amber truncate">
+                    손님 선택 · 담당자 재확인 대기
+                  </span>
+                )}
+                {r.md_bump_risk === true && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/10 text-red-400 truncate">
+                    ⚠️ 밀릴 수 있음
+                  </span>
+                )}
+                {bucketOf(r) === "waiting" && r.proposal_sent_at && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-brand-amber truncate">
+                    보낸 지 {sinceText(r.proposal_sent_at)} · 무응답
+                  </span>
+                )}
+              </div>
               <span className="text-[11px] text-muted-foreground">{r.lang.toUpperCase()} · {new Date(r.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
             </div>
 
@@ -358,7 +436,7 @@ export function ForeignRequestsClient({
                   </span>
                   <span className="text-[13px] font-black text-money tabular-nums">예산 {r.selected_menu.md_recommend.budget.toLocaleString()}원</span>
                 </div>
-                <p className="text-[12px] text-foreground/80 mt-1">이 예산 안에서 세트를 제안해 주세요. 확정서에 가격을 적어 보내면 손님이 봅니다.</p>
+                <p className="text-[12px] text-foreground/80 mt-1">이 예산 안에서 세트를 제안해 주세요. 예약 확인서에 가격을 적어 보내면 손님이 봅니다.</p>
               </div>
             )}
             {!r.conf && r.selected_menu && r.selected_menu.items.length > 0 && (
@@ -414,10 +492,32 @@ export function ForeignRequestsClient({
             {/* 클럽이 비어 있으면 받는 MD 후보·제안서 클럽명이 없다 — 위에서 클럽을 먼저 지정한다. */}
             {r.club_ids.length > 0 && (
               <>
-                <ProposalCard req={toProposalReq(r)} allMds={allMds} onAssignMd={(mdId) => assignMd(r.id, mdId)} />
+                <ProposalCard
+                  req={toProposalReq(r)}
+                  allMds={allMds}
+                  onAssignMd={(mdId) => assignMd(r.id, mdId)}
+                  onProposalSent={() => setReqs((prev) => prev.map((x) => (x.id === r.id ? { ...x, proposal_sent_at: new Date().toISOString() } : x)))}
+                />
                 <MdResponseCard req={toProposalReq(r)} allMds={allMds} />
               </>
             )}
+            {/* 손님이 메일을 못 봤거나 아직 안 눌렀을 때 WhatsApp으로 한 번 더 — 문구가 채워진 대화창이 바로 열린다(손님이 WhatsApp을 남긴 경우만). */}
+            {(() => {
+              const draft = waDraft(r);
+              const url = draft ? waSendUrl(r, draft) : null;
+              if (!url) return null;
+              return (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center h-11 rounded-xl text-[13.5px] font-bold text-white"
+                  style={{ background: "#25D366" }}
+                >
+                  WhatsApp으로 보내기
+                </a>
+              );
+            })()}
             {r.conf && <ConfirmationCard key={r.conf.ref_no} conf={r.conf} requestType="foreign" hasMd={!!r.assigned_md_id} guestContactType={r.contact_type} />}
 
             {(r.club_ids.length > 0 || r.conf) && (
@@ -426,7 +526,7 @@ export function ForeignRequestsClient({
               className="w-full h-9 rounded-lg bg-card border border-border text-[13px] font-bold text-foreground/80 hover:border-amber-500/50 flex items-center justify-center gap-1.5"
             >
               <FileText className="w-3.5 h-3.5" />
-              {r.conf ? "확정서 수정" : "담당 MD 지정 · 확정서 작성"}
+              {r.conf ? "예약 확인서 수정" : "담당 MD 지정 · 예약 확인서 작성"}
             </button>
             )}
 

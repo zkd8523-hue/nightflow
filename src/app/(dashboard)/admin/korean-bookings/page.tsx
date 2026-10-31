@@ -34,7 +34,7 @@ export default async function AdminKoreanBookingsPage() {
   // request_type='korean'으로 구분해서 공유한다(Migration 654).
   const { data: confs } = await supabase
     .from("booking_confirmations")
-    .select("request_id, ref_no, public_token, md_token, club_id, table_info, confirmed_group_size, includes, total_price, guest_request, internal_memo, guest_notified_at, guest_notify_channel, guest_viewed_at")
+    .select("request_id, ref_no, public_token, md_token, club_id, table_info, confirmed_group_size, includes, total_price, guest_request, arrival_time, internal_memo, guest_notified_at, guest_notify_channel, guest_viewed_at")
     .eq("request_type", "korean")
     .in("request_id", requests.length ? requests.map((r) => r.id) : ["00000000-0000-0000-0000-000000000000"]);
   // 손님 벨 알림 읽음 여부 — 어드민 카드 "손님 전달 상태"용(2026-10-01).

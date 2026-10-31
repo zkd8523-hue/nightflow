@@ -15,7 +15,7 @@ export default async function AdminForeignPage() {
 
   const { data: rows } = await supabase
     .from("foreign_requests")
-    .select("id, proposal_token, lang, area, event_date, group_size, budget, selected_menu, selected_menu_total, club_ids, guest_name, assigned_md_id, contact_type, contact_value, backup_email, notes, status, created_at, md_response, md_responded_at, md_table_choosable, md_table_options, md_reject_reason, md_required_amount, md_proposed_items, md_reject_note")
+    .select("id, proposal_token, lang, area, event_date, group_size, budget, selected_menu, selected_menu_total, club_ids, guest_name, assigned_md_id, contact_type, contact_value, backup_email, notes, status, created_at, proposal_sent_at, guest_token, md_seats, md_bump_risk, md_conditions, guest_choice, md_reconfirm_state, guest_action_kind, guest_action_sent_at, guest_responded_at, md_response, md_responded_at, md_table_choosable, md_table_options, md_reject_reason, md_required_amount, md_proposed_items, md_reject_note")
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -32,7 +32,7 @@ export default async function AdminForeignPage() {
   // 확정서 (있으면 링크·확정 내용 표시)
   const { data: confs } = await supabase
     .from("booking_confirmations")
-    .select("request_id, ref_no, public_token, md_token, club_id, table_info, confirmed_group_size, includes, total_price, guest_request, internal_memo, guest_notified_at, guest_notify_channel, guest_viewed_at")
+    .select("request_id, ref_no, public_token, md_token, club_id, table_info, confirmed_group_size, includes, total_price, guest_request, arrival_time, internal_memo, guest_notified_at, guest_notify_channel, guest_viewed_at")
     .in("request_id", requests.length ? requests.map((r) => r.id) : ["00000000-0000-0000-0000-000000000000"]);
   // 손님 벨 알림 읽음 여부 — 어드민 카드 "손님 전달 상태"용(2026-10-01).
   // in_app_notifications는 본인만 읽는 RLS라 service role로 읽는다.

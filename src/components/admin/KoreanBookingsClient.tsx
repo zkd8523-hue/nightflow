@@ -282,7 +282,7 @@ export function KoreanBookingsClient({
                   <span className="text-[11px] font-bold text-violet-400">🎯 MD 추천 요청 (손님이 직접 안 담음)</span>
                   <span className="text-[13px] font-black text-money tabular-nums">예산 {r.selected_menu.md_recommend.budget.toLocaleString()}원</span>
                 </div>
-                <p className="text-[12px] text-foreground/80 mt-1">이 예산 안에서 세트를 제안해 주세요. 확정서에 가격을 적어 보내면 손님이 봅니다.</p>
+                <p className="text-[12px] text-foreground/80 mt-1">이 예산 안에서 세트를 제안해 주세요. 예약 확인서에 가격을 적어 보내면 손님이 봅니다.</p>
               </div>
             )}
             {/* 손님이 고른 술 — 확정서가 아직 없을 때만 보여준다(외국인 화면과 동일 원칙). */}
@@ -360,7 +360,7 @@ export function KoreanBookingsClient({
               className="w-full h-9 rounded-lg bg-card border border-border text-[13px] font-bold text-foreground/80 hover:border-amber-500/50 flex items-center justify-center gap-1.5"
             >
               <FileText className="w-3.5 h-3.5" />
-              {r.conf ? "확정서 수정" : "담당 MD 지정 · 확정서 작성"}
+              {r.conf ? "예약 확인서 수정" : "담당 MD 지정 · 예약 확인서 작성"}
             </button>
 
             {editing === r.id && (

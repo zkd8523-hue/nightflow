@@ -279,7 +279,7 @@ function RowLine({ r, onSave }: { r: SettlementRow; onSave: (r: SettlementRow, p
       </div>
       <Signals r={r} />
       {r.amountOverridden && r.baseAmount !== r.amount && (
-        <p className="pl-6 text-[11px] text-muted-foreground">확정서 금액 {r.baseAmount != null ? won(r.baseAmount) : "없음"} → 정산 금액으로 수정됨</p>
+        <p className="pl-6 text-[11px] text-muted-foreground">예약 확인서 금액 {r.baseAmount != null ? won(r.baseAmount) : "없음"} → 정산 금액으로 수정됨</p>
       )}
       {editing && (
         <div className="pl-6 flex gap-2">
@@ -293,7 +293,7 @@ function RowLine({ r, onSave }: { r: SettlementRow; onSave: (r: SettlementRow, p
           <button type="button" onClick={() => { onSave(r, { amount: val ? Number(val) : null }); setEditing(false); }} className="h-9 px-3 rounded-lg bg-white text-black text-[12px] font-black">저장</button>
           {r.amountOverridden && (
             <button type="button" onClick={() => { onSave(r, { amount: null }); setVal(r.baseAmount != null ? String(r.baseAmount) : ""); setEditing(false); }} className="h-9 px-3 rounded-lg bg-muted text-[12px] font-bold">
-              확정서 금액으로
+              예약 확인서 금액으로
             </button>
           )}
         </div>
@@ -309,7 +309,7 @@ function Signals({ r }: { r: SettlementRow }) {
   const t = (iso: string | null) =>
     iso ? new Date(iso).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : null;
   const chips: { label: string; at: string | null }[] = [
-    { label: "확정서 열람", at: s.viewedAt },
+    { label: "예약 확인서 열람", at: s.viewedAt },
     { label: "10분 전", at: s.soonAt },
     { label: "도착", at: s.arrivedAt },
     { label: "입장 확인(MD)", at: s.checkedInAt },
@@ -330,7 +330,7 @@ function Signals({ r }: { r: SettlementRow }) {
         (s.beforeTracking && !s.notifiedAt ? (
           <span className="text-[10.5px] font-bold text-muted-foreground">기록 없음(10/2 이전 확정 — DM 등으로 직접 확인)</span>
         ) : (
-          <span className="text-[10.5px] font-bold text-red-400">접촉 신호 없음{s.notifiedAt ? "" : " · 확정서 미발송"}</span>
+          <span className="text-[10.5px] font-bold text-red-400">접촉 신호 없음{s.notifiedAt ? "" : " · 예약 확인서 미발송"}</span>
         ))}
     </div>
   );

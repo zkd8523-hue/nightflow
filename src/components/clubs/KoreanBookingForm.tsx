@@ -259,7 +259,7 @@ export function KoreanBookingForm({
     const contactErr = validateContact(contactType, contactValue);
     if (contactErr) { trackStep("booking_submit_blocked", { reason: "contact_invalid", contact_type: contactType }); return toast.error(contactErr); }
     if (needsBackupPhone) {
-      if (!backupPhone.trim()) { trackStep("booking_submit_blocked", { reason: "no_backup_phone" }); return toast.error("확정 문자 받을 휴대폰 번호를 입력해주세요"); }
+      if (!backupPhone.trim()) { trackStep("booking_submit_blocked", { reason: "no_backup_phone" }); return toast.error("예약 확인서 받을 휴대폰 번호를 입력해주세요"); }
       const phoneErr = validateContact("phone", backupPhone);
       if (phoneErr) { trackStep("booking_submit_blocked", { reason: "backup_phone_invalid" }); return toast.error(phoneErr); }
     }
@@ -675,7 +675,7 @@ export function KoreanBookingForm({
                 />
                 {needsBackupPhone && (
                   <div className="mt-3 space-y-1.5">
-                    <p className="text-[13px] font-bold text-foreground">확정 문자 받을 휴대폰 번호*</p>
+                    <p className="text-[13px] font-bold text-foreground">예약 확인서 받을 휴대폰 번호*</p>
                     <input
                       value={backupPhone}
                       onChange={(e) => setBackupPhone(formatBookingContact("phone", e.target.value))}
@@ -684,7 +684,7 @@ export function KoreanBookingForm({
                       className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
                     />
                     <p className="text-[12px] text-muted-foreground leading-snug break-keep">
-                      로그인 없이 신청하셔서, 예약이 확정되면 이 번호로 확정서를 보내드려요.
+                      로그인 없이 신청하셔서, 자리가 잡히면 이 번호로 예약 확인서를 보내드려요.
                     </p>
                   </div>
                 )}
@@ -721,7 +721,7 @@ export function KoreanBookingForm({
                 <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">
                   {userId
                     ? "24시간 안에 연락드릴게요."
-                    : "24시간 안에 연락드릴게요. 확정되면 남겨주신 휴대폰 번호로 확정서를 문자로 보내드려요."}
+                    : "24시간 안에 연락드릴게요. 자리가 잡히면 남겨주신 휴대폰 번호로 예약 확인서를 문자로 보내드려요."}
                 </p>
               </div>
 
@@ -757,9 +757,9 @@ export function KoreanBookingForm({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/app-icon.png" alt="나플" className="w-11 h-11 rounded-xl shrink-0" />
                     <div className="space-y-0.5">
-                      <p className="text-[14px] font-black text-foreground break-keep">확정서는 앱 알림으로 보내드려요</p>
+                      <p className="text-[14px] font-black text-foreground break-keep">예약 확인서는 앱 알림으로 보내드려요</p>
                       <p className="text-[12px] text-muted-foreground leading-relaxed break-keep">
-                        앱이 없으면 예약이 확정돼도 알림을 못 받을 수 있어요.
+                        앱이 없으면 예약 확인서가 나와도 알림을 못 받을 수 있어요.
                       </p>
                     </div>
                   </div>
@@ -770,16 +770,16 @@ export function KoreanBookingForm({
                     onClick={() => trackAppDownloadClick("booking_submitted", { club_id: clubId })}
                     className="block w-full h-12 leading-[3rem] rounded-full bg-green-600 text-white text-center font-black text-[15px] active:scale-[0.99] transition-transform"
                   >
-                    앱 설치하고 확정 알림 받기
+                    앱 설치하고 예약 알림 받기
                   </a>
                 </div>
               )}
               {userId && isDesktop && (
                 <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-4 text-left space-y-3">
                   <div className="space-y-0.5">
-                    <p className="text-[14px] font-black text-foreground break-keep">확정서는 앱 알림으로 보내드려요</p>
+                    <p className="text-[14px] font-black text-foreground break-keep">예약 확인서는 앱 알림으로 보내드려요</p>
                     <p className="text-[12px] text-muted-foreground leading-relaxed break-keep">
-                      휴대폰에 앱을 깔아두면 예약이 확정되는 순간 바로 알려드려요.
+                      휴대폰에 앱을 깔아두면 예약 확인서가 나오는 순간 바로 알려드려요.
                     </p>
                   </div>
                   <AppInstallQr location="booking_submitted" />

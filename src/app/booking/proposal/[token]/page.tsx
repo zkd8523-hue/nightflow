@@ -16,6 +16,7 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { BookingProposal } from "@/components/booking/BookingProposal";
+import { parseSeatZones } from "@/lib/booking/seats";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export default async function BookingProposalPage({
   let req = (
     await sb
       .from("foreign_requests")
-      .select("id, proposal_token, guest_name, event_date, group_size, status, lang, club_ids, selected_menu, selected_menu_total, budget, notes, assigned_md_id, md_response, md_table_choosable, md_table_options, md_reject_reason, md_required_amount, md_proposed_items, md_reject_note")
+      .select("id, proposal_token, guest_name, event_date, group_size, status, lang, club_ids, selected_menu, selected_menu_total, budget, notes, assigned_md_id, md_response, md_table_choosable, md_table_options, md_reject_reason, md_required_amount, md_proposed_items, md_reject_note, md_seats, md_bump_risk, md_conditions, guest_choice, md_reconfirm_state")
       // URL 세그먼트는 proposal_token(무작위 16바이트). 예약 id는 노출하지 않는다.
       .eq("proposal_token", token)
       .maybeSingle()
@@ -41,7 +42,7 @@ export default async function BookingProposalPage({
     requestType = "korean";
     const { data: koreanReq } = await sb
       .from("korean_booking_requests")
-      .select("id, proposal_token, guest_name, event_date, group_size, status, club_id, selected_menu, selected_menu_total, notes, assigned_md_id, md_response, md_table_choosable, md_table_options, md_reject_reason, md_required_amount, md_proposed_items, md_reject_note")
+      .select("id, proposal_token, guest_name, event_date, group_size, status, club_id, selected_menu, selected_menu_total, notes, assigned_md_id, md_response, md_table_choosable, md_table_options, md_reject_reason, md_required_amount, md_proposed_items, md_reject_note, md_seats, md_bump_risk, md_conditions, guest_choice, md_reconfirm_state")
       .eq("proposal_token", token)
       .maybeSingle();
     req = koreanReq
@@ -53,7 +54,7 @@ export default async function BookingProposalPage({
 
   const clubId = (req.club_ids as string[] | null)?.[0] ?? null;
   const { data: club } = clubId
-    ? await sb.from("clubs").select("name, drink_menu_url, drink_menu_urls").eq("id", clubId).maybeSingle()
+    ? await sb.from("clubs").select("name, drink_menu_url, drink_menu_urls, floor_plan_url, floor_plan_urls, seat_zones").eq("id", clubId).maybeSingle()
     : { data: null };
 
   const { data: md } = req.assigned_md_id
@@ -100,6 +101,14 @@ export default async function BookingProposalPage({
         club?.drink_menu_urls?.length ? club.drink_menu_urls : club?.drink_menu_url ? [club.drink_menu_url] : []
       }
       backHref={backHref}
+      floorPlanUrls={
+        club?.floor_plan_urls?.length ? club.floor_plan_urls : club?.floor_plan_url ? [club.floor_plan_url] : []
+      }
+      seatZones={parseSeatZones(club?.seat_zones)}
+      mdSeats={req.md_seats ?? []}
+      mdBumpRisk={req.md_bump_risk ?? null}
+      mdConditions={req.md_conditions ?? null}
+      pendingGuestChoice={req.md_reconfirm_state === "pending" ? req.guest_choice : null}
     />
   );
 }

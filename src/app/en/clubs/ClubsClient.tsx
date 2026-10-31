@@ -414,7 +414,7 @@ export function ClubsClient({
                 </p>
                 <p className="text-[12px] text-muted-foreground leading-relaxed mt-1 break-keep">
                   {t(
-                    "가기 전에 총액을 확정서로 보내드려요. 결제는 자리에 앉은 뒤 클럽에 — 그 전엔 아무것도 내지 않아요.",
+                    "가기 전에 총액을 예약 확인서로 보내드려요. 결제는 자리에 앉은 뒤 클럽에 — 그 전엔 아무것도 내지 않아요.",
                     "We send your total in writing before you go. You pay the club when you're seated — nothing before.",
                     "合計金額を事前に書面でお送りします。お支払いは着席後にクラブへ — 事前のお支払いはありません。",
                     "去之前我们会以书面形式发给你总价。入座后再付给夜店 — 之前不收任何钱。",

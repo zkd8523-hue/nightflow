@@ -39,6 +39,8 @@ const COPY: Record<Lang, {
   badge: string;
   heading: (club: string | null) => string;
   intro: string;
+  /** 여권 필참 띠 — 확인서 화면 맨 위 띠와 같은 문구(2026-11-01) */
+  passport: string;
   date: string; club: string; group: string; name: string; host: string; total: string;
   guests: (n: string) => string;
   pay: string;
@@ -47,10 +49,11 @@ const COPY: Record<Lang, {
   why: string;
 }> = {
   en: {
-    subject: (club, date) => `Confirmed: your table${club ? ` at ${club}` : ""} — ${date}`,
-    badge: "CONFIRMED",
-    heading: (club) => (club ? `Your table at ${club} is confirmed` : "Your table is confirmed"),
+    subject: (club, date) => `Your booking details: table${club ? ` at ${club}` : ""} — ${date}`,
+    badge: "BOOKING DETAILS",
+    heading: (club) => (club ? `Here are your booking details for ${club}` : "Here are your booking details"),
     intro: "Show your booking pass at the door with your passport (19+).",
+    passport: "🛂 Bring your passport. Without it, you may be refused entry.",
     date: "Date", club: "Club", group: "Group", name: "Name at the door", host: "Your host", total: "Total",
     guests: (n) => `${n} guests`,
     pay: "Pay the club on the night, card or cash.",
@@ -59,10 +62,11 @@ const COPY: Record<Lang, {
     why: "You're getting this because you booked a table through NightFlow.",
   },
   ja: {
-    subject: (club, date) => `予約確定：${club ? `${club}・` : ""}${date}`,
-    badge: "予約確定",
-    heading: (club) => (club ? `${club}のテーブルが確定しました` : "テーブルが確定しました"),
+    subject: (club, date) => `予約内容：${club ? `${club}・` : ""}${date}`,
+    badge: "予約内容",
+    heading: (club) => (club ? `${club}の予約内容です` : "予約内容です"),
     intro: "入口でパスポートと一緒に予約パスをお見せください（19歳以上）。",
+    passport: "🛂 パスポートを必ずお持ちください。お持ちでない場合、入場できないことがあります。",
     date: "日付", club: "クラブ", group: "人数", name: "入口でのお名前", host: "担当", total: "合計",
     guests: (n) => `${n}名`,
     pay: "お支払いは当日クラブで。カード・現金どちらも可。",
@@ -71,10 +75,11 @@ const COPY: Record<Lang, {
     why: "NightFlow でテーブルを予約されたためお送りしています。",
   },
   zh: {
-    subject: (club, date) => `预订已确认：${club ? `${club} · ` : ""}${date}`,
-    badge: "已确认",
-    heading: (club) => (club ? `${club} 的卡座已确认` : "你的卡座已确认"),
+    subject: (club, date) => `预订详情：${club ? `${club} · ` : ""}${date}`,
+    badge: "预订详情",
+    heading: (club) => (club ? `${club} 的预订详情` : "你的预订详情"),
     intro: "入场时请出示预订凭证和护照（19岁以上）。",
+    passport: "🛂 请务必携带护照，否则可能无法入场。",
     date: "日期", club: "夜店", group: "人数", name: "入场登记姓名", host: "负责人", total: "总额",
     guests: (n) => `${n}人`,
     pay: "当晚在夜店付款，刷卡或现金均可。",
@@ -83,10 +88,11 @@ const COPY: Record<Lang, {
     why: "你收到此邮件，是因为你通过 NightFlow 预订了卡座。",
   },
   "zh-tw": {
-    subject: (club, date) => `訂位已確認：${club ? `${club} · ` : ""}${date}`,
-    badge: "已確認",
-    heading: (club) => (club ? `${club} 的包廂已確認` : "你的包廂已確認"),
+    subject: (club, date) => `訂位資訊：${club ? `${club} · ` : ""}${date}`,
+    badge: "訂位資訊",
+    heading: (club) => (club ? `${club} 的訂位資訊` : "你的訂位資訊"),
     intro: "入場時請出示入場憑證和護照（19歲以上）。",
+    passport: "🛂 請務必攜帶護照，否則可能無法入場。",
     date: "日期", club: "夜店", group: "人數", name: "入場登記姓名", host: "負責人", total: "總額",
     guests: (n) => `${n}人`,
     pay: "當晚在夜店付款，刷卡或現金皆可。",
@@ -136,6 +142,7 @@ export function buildForeignConfirmedEmail(o: ForeignConfirmedEmail): { subject:
 <tr><td style="background:${CARD};border-radius:20px;padding:28px 24px;">
 <p style="margin:0 0 12px;"><span style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;color:${GREEN};border:1px solid #166534;border-radius:999px;padding:4px 12px;">${c.badge}</span></p>
 <h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:900;color:#fff;letter-spacing:-0.5px;">${c.heading(club)}</h1>
+<p style="margin:0 0 14px;padding:10px 12px;border-radius:12px;background:${AMBER};font-size:13px;line-height:1.5;font-weight:900;color:#000;">${c.passport}</p>
 <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:${MUTED};">${c.intro}</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
 ${row(c.date, esc(date))}

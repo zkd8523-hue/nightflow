@@ -7,7 +7,7 @@ export const GUEST_CANCEL_REASONS = [
   { code: "party", ko: "같이 갈 사람이 바뀌었어요", en: "My group changed" },
   { code: "price", ko: "가격이 부담돼요", en: "Too expensive" },
   { code: "elsewhere", ko: "다른 곳으로 가기로 했어요", en: "Going somewhere else" },
-  { code: "slow", ko: "확정까지 너무 오래 걸렸어요", en: "Confirmation took too long" },
+  { code: "slow", ko: "예약 확인까지 너무 오래 걸렸어요", en: "It took too long to arrange" },
   { code: "other", ko: "기타", en: "Other" },
 ] as const;
 

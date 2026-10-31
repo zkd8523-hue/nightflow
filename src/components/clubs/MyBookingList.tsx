@@ -304,7 +304,7 @@ function BookingRow({
                   href={`/booking/${booking.confirm_public_token}`}
                   className="flex items-center justify-center gap-1.5 w-full h-11 mt-1 rounded-lg bg-amber-500 text-black text-[13px] font-black"
                 >
-                  ✅ 예약 확정서 보기
+                  ✅ 예약 확인서 보기
                 </Link>
               )}
 

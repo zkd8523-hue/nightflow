@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSms } from "@/lib/notifications/alimtalk";
+import { buildCancelledByClubEmail, guestEmailOf, sendGuestEmail } from "@/lib/email/foreignGuest";
 
 const SITE = "https://nightflow.kr";
 const DOW = "일월화수목금토";
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
   const table = requestType === "korean" ? "korean_booking_requests" : "foreign_requests";
   const { data: rawReq } = await sb
     .from(table)
-    .select(`id, user_id, guest_name, event_date, group_size, status, contact_type, contact_value, ${requestType === "korean" ? "club_id" : "club_ids"}`)
+    .select(`id, user_id, guest_name, event_date, group_size, status, contact_type, contact_value, ${requestType === "korean" ? "club_id" : "club_ids, lang, backup_email"}`)
     .eq("id", conf.request_id)
     .single();
   if (!rawReq) return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
 
   const clubId = conf.club_id ?? (requestType === "korean" ? r.club_id : r.club_ids?.[0]) ?? null;
   const { data: club } = clubId
-    ? await sb.from("clubs").select("name").eq("id", clubId).maybeSingle()
+    ? await sb.from("clubs").select("name, name_en").eq("id", clubId).maybeSingle()
     : { data: null };
   const d = new Date(r.event_date + "T00:00:00");
   const dateText = `${d.getMonth() + 1}/${d.getDate()}(${DOW[d.getDay()]})`;
@@ -152,8 +153,27 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // 외국인 손님은 앱 푸시도 한국 휴대폰도 없어 위 알림이 하나도 닿지 않았다(2026-11-01) —
+  // 폼에서 이메일이 필수라 메일로 알린다. 클럽 사유는 넣지 않는다(운영자에게 하는 말).
+  let guestEmailed = false;
+  if (requestType === "foreign") {
+    const rr = r as unknown as { lang?: string | null; backup_email?: string | null; contact_type?: string | null; contact_value?: string | null };
+    const to = guestEmailOf(rr);
+    if (to) {
+      try {
+        const m = buildCancelledByClubEmail({ lang: rr.lang ?? null, clubName: club?.name_en || clubName, eventDate: r.event_date, refNo: conf.ref_no });
+        await sendGuestEmail(to, m.subject, m.html);
+        guestEmailed = true;
+      } catch (e) {
+        console.error("[booking-md-cancel] 손님 메일 실패", e);
+      }
+    }
+  }
+
   // 운영자 — 사유 포함, 대체 클럽 안내 등 후속 응대용.
-  const adminText = `${requestType === "foreign" ? "[외국인] " : ""}${clubName} ${guest}님 ${sizeText} ${dateText} 예약을 파트너가 취소했어요 — 사유: ${reason} (${conf.ref_no})`;
+  const adminText = `${requestType === "foreign" ? "[외국인] " : ""}${clubName} ${guest}님 ${sizeText} ${dateText} 예약을 파트너가 취소했어요 — 사유: ${reason} (${conf.ref_no})${
+    requestType === "foreign" ? (guestEmailed ? " · 손님에게 취소 메일 발송됨" : " · ⚠️ 손님 메일 실패, 직접 연락 필요") : ""
+  }`;
   let adminNotified = false;
   const { data: admins } = await sb.from("users").select("id").eq("role", "admin");
   for (const a of admins ?? []) {

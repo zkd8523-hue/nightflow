@@ -1445,7 +1445,7 @@ function HeroSection({
       <div className="px-4 pt-3 flex items-center gap-1.5">
         <ShieldCheck className="w-4 h-4 text-money shrink-0" />
         <p className="text-[14px] font-black text-money leading-tight">
-          {t("금액은 당일 전에 확정서로 정해드려요.", "Your price is confirmed in writing before the night.", "料金は当日前に書面で確定します。", "当晚之前就书面确认好价格。", "當晚之前就用書面把價格講好。")}
+          {t("금액은 당일 전에 예약 확인서로 정해드려요.", "Your price is confirmed in writing before the night.", "料金は当日前に書面で確定します。", "当晚之前就书面确认好价格。", "當晚之前就用書面把價格講好。")}
         </p>
       </div>
 

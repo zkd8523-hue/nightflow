@@ -8,6 +8,7 @@ import Link from "next/link";
 import { MapPin, Check, Star, Instagram, MessageCircle, ChevronLeft } from "lucide-react";
 import { ContactButtons } from "@/components/foreign/ContactButtons";
 import { GUEST_CANCEL_REASONS, type GuestCancelReason } from "@/lib/booking/cancelReasons";
+import { MenuPhotosOverlay } from "@/components/booking/MenuPhotosOverlay";
 
 type Props = {
   requestId: string;
@@ -33,6 +34,16 @@ type Props = {
   /** 한국 예약에서만 채워진다 — MD가 등록한 카톡 오픈채팅 URL. */
   hostKakaoUrl?: string | null;
   publicToken: string;
+  /** 도착 예정 시각(booking_confirmations.arrival_time, 자유 표기 "23:00") */
+  arrivalTime?: string | null;
+  /** 클럽 주대 사진 · 테이블맵 — 확인서에서 바로 열어보게(2026-11-01) */
+  menuUrls?: string[];
+  floorPlanUrls?: string[];
+  /** 담당 MD가 "더 높은 금액이 오면 밀릴 수 있다"에 O를 고른 예약 */
+  bumpRisk?: boolean;
+  /** 금액·자리·구성이 바뀐 뒤 붙는 "Updated" 안내(last_change_note) — 조용한 덮어쓰기 방지 */
+  changeNote?: string | null;
+  changedAt?: string | null;
   arrivalConfirmed: boolean;
   existingReview: { rating: number; comment: string | null } | null;
 };
@@ -60,7 +71,7 @@ function fmtDate(iso: string, ko: boolean): string {
 // 문구가 그대로 나와서 한국 손님이 "Your host", "Pay at venue"를 봤다(2026-09-29).
 const TEXT = {
   en: {
-    confirmed: "Confirmed",
+    confirmed: "Booking details",
     cancelled: "Cancelled",
     host: "Your host ",
     date: "Date",
@@ -107,9 +118,15 @@ const TEXT = {
     cancelErrPast: "Past bookings can't be cancelled.",
     cancelErrArrived: "You've already checked in, so this booking can't be cancelled.",
     cancelErrGeneric: "Couldn't cancel. Please try again in a moment or message us.",
+    arrive: "Arrive by",
+    menuBtn: "Drink menu",
+    mapBtn: "Table map",
+    updated: "Updated",
+    bumpTitle: "Busy night: your table may change",
+    bumpBody: "Tables on busy nights can go to a higher offer. If that happens, we'll tell you first, and you can add more to keep your table or cancel at no cost.",
   },
   ko: {
-    confirmed: "예약 확정",
+    confirmed: "예약 확인",
     cancelled: "취소됨",
     host: "담당 MD ",
     date: "날짜",
@@ -156,6 +173,12 @@ const TEXT = {
     cancelErrPast: "지난 예약은 취소할 수 없어요.",
     cancelErrArrived: "이미 입장한 예약은 취소할 수 없어요.",
     cancelErrGeneric: "취소하지 못했어요. 잠시 뒤 다시 시도하거나 담당 MD에게 연락해 주세요.",
+    arrive: "도착 예정",
+    menuBtn: "메뉴판",
+    mapBtn: "테이블맵",
+    updated: "변경됨",
+    bumpTitle: "붐비는 날이라 자리가 바뀔 수 있어요",
+    bumpBody: "더 높은 금액을 내는 손님이 오면 자리가 밀릴 수 있어요. 그럴 땐 먼저 알려드리고, 금액을 추가해 자리를 지키거나 비용 없이 취소할 수 있어요.",
   },
 };
 
@@ -190,6 +213,7 @@ export function BookingPass(p: Props) {
   // 계속 "Sent" 상태라 재발송할 방법이 없다.
   const COOLDOWN_MS = 5 * 60 * 1000;
   const [sentAt, setSentAt] = useState<Partial<Record<"soon" | "arrived", number>>>({});
+  const [photos, setPhotos] = useState<"menu" | "map" | null>(null);
   const [busyKind, setBusyKind] = useState<"soon" | "arrived" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   // 쿨다운이 끝나는 시점에 버튼을 다시 그리기 위한 강제 리렌더 트리거.
@@ -342,21 +366,28 @@ export function BookingPass(p: Props) {
           {ko ? "내 예약" : "Home"}
         </Link>
         <div className="rounded-3xl bg-card border border-border overflow-hidden">
+          {/* 여권 필참 — 외국인은 여권이 없으면 입구에서 막힐 수 있다(2026-11-01, 사용자 요청).
+              입구에서 보여주는 화면이라 카드 맨 위 띠로 둔다. 한국 예약엔 해당 없음. */}
+          {!ko && !isCancelled && !isPastEvent(p.eventDate) && (
+            <div className="bg-amber-500 text-black px-4 py-2.5 text-center">
+              <p className="text-[13.5px] font-black uppercase tracking-wide">🛂 Bring your passport</p>
+              <p className="text-[11.5px] font-bold opacity-75 mt-0.5">Without it, you may be refused entry.</p>
+            </div>
+          )}
           {/* 스텁 */}
           <div className="bg-muted/40 px-5 pt-5 pb-4 text-center">
             <div className="text-[10.5px] font-bold tracking-[0.22em] uppercase text-muted-foreground">
               NightFlow
             </div>
-            <div
-              className={`inline-flex items-center gap-1.5 mt-2.5 text-[11px] font-bold tracking-wider uppercase rounded-full px-3 py-1 border ${
-                isCancelled
-                  ? "text-red-400 bg-red-500/10 border-red-500/30"
-                  : "text-money bg-green-500/10 border-green-500/30"
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-              {isCancelled ? t.cancelled : t.confirmed}
-            </div>
+            {/* 상태 배지는 취소일 때만 — 평소엔 "Booking details/예약 확인"이라 정보가 없었다(2026-11-01). */}
+            {isCancelled && (
+              <div
+                className="inline-flex items-center gap-1.5 mt-2.5 text-[11px] font-bold tracking-wider uppercase rounded-full px-3 py-1 border text-red-400 bg-red-500/10 border-red-500/30"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                {t.cancelled}
+              </div>
+            )}
             <div className="font-mono font-bold text-[34px] tracking-wide text-brand-amber mt-3 tabular-nums">
               {p.refNo}
             </div>
@@ -414,6 +445,11 @@ export function BookingPass(p: Props) {
             <Row k={t.date}>
               <div className="text-[18px] font-bold">{fmtDate(p.eventDate, ko)}</div>
             </Row>
+            {p.arrivalTime && (
+              <Row k={t.arrive}>
+                <div className="text-[18px] font-bold">{p.arrivalTime}</div>
+              </Row>
+            )}
             {p.clubName && (
               <Row k={t.venue}>
                 <div className="text-[18px] font-bold">{p.clubName}</div>
@@ -466,6 +502,56 @@ export function BookingPass(p: Props) {
                     <div className="text-[14px] text-foreground/90">{p.guestRequest}</div>
                   </Row>
                 )}
+              </div>
+            )}
+
+            {/* 변경 안내 — 확인서가 바뀌면 무엇이 왜 바뀌었는지 남는다(2026-11-01). 예전엔 조용히 덮어써졌다. */}
+            {p.changeNote && !isCancelled && (
+              <div className="mb-4 rounded-xl border border-sky-400/40 bg-sky-400/[0.08] px-4 py-3">
+                <div className="text-[13px] font-black text-foreground">
+                  {t.updated}
+                  {p.changedAt ? ` · ${fmtDate(p.changedAt.slice(0, 10), ko)}` : ""}
+                </div>
+                <p className="text-[12.5px] text-foreground/80 leading-relaxed mt-1">{p.changeNote}</p>
+              </div>
+            )}
+
+            {/* 주대표·테이블맵 — 손님이 확인서에서 바로 본다. 사진은 담당 MD 제안서와 같은 전체화면 뷰어. */}
+            {((p.menuUrls?.length ?? 0) > 0 || (p.floorPlanUrls?.length ?? 0) > 0) && (
+              <div className="flex gap-2 mt-4">
+                {(p.menuUrls?.length ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPhotos("menu")}
+                    className="flex-1 h-10 rounded-xl bg-background border border-border text-[13px] font-bold text-foreground"
+                  >
+                    📖 {t.menuBtn}
+                  </button>
+                )}
+                {(p.floorPlanUrls?.length ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPhotos("map")}
+                    className="flex-1 h-10 rounded-xl bg-background border border-border text-[13px] font-bold text-foreground"
+                  >
+                    🗺️ {t.mapBtn}
+                  </button>
+                )}
+              </div>
+            )}
+            {photos && (
+              <MenuPhotosOverlay
+                urls={(photos === "menu" ? p.menuUrls : p.floorPlanUrls) ?? []}
+                clubName={p.clubName}
+                onClose={() => setPhotos(null)}
+              />
+            )}
+
+            {/* 밀림 가능 안내 — 담당 MD가 제안서에서 O를 고른 예약만(2026-11-01). 조재윤 건처럼 나중에 알면 신뢰가 깨진다. */}
+            {p.bumpRisk && !isCancelled && (
+              <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/[0.08] px-4 py-3">
+                <div className="text-[13px] font-black text-foreground">{t.bumpTitle}</div>
+                <p className="text-[12px] text-muted-foreground leading-relaxed mt-1">{t.bumpBody}</p>
               </div>
             )}
 

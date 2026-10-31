@@ -17,6 +17,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { autoIssueConfirmation, sendBudgetEmail, sendSeatChoiceEmail } from "@/lib/booking/guestFlows";
 
 const REJECT_LABEL: Record<string, string> = {
   budget: "금액 부족",
@@ -35,6 +36,12 @@ export async function POST(req: NextRequest) {
     required_amount?: number;
     proposed_items?: string;
     reason_text?: string;
+    /** 자리 목록에서 고른 자리(Migration 704) — 자리 목록이 없는 클럽은 table_options 글 */
+    seats?: string[];
+    /** 더 높은 금액이 오면 밀릴 수 있나 — 예약 가능 답변엔 필수 */
+    bump_risk?: boolean;
+    /** 금액 부족일 때 "이 조건이면 가능해요" */
+    conditions?: string;
   };
   try {
     body = await req.json();
@@ -94,10 +101,22 @@ export async function POST(req: NextRequest) {
     if (typeof body.table_choosable !== "boolean") {
       return NextResponse.json({ error: "table_choosable_required" }, { status: 400 });
     }
+    if (typeof body.bump_risk !== "boolean") {
+      return NextResponse.json({ error: "bump_risk_required" }, { status: 400 });
+    }
+    const seats = Array.isArray(body.seats) ? body.seats.filter((x) => typeof x === "string" && x.trim()).slice(0, 80) : [];
+    const options = (body.table_options ?? "").trim();
+    if (body.table_choosable && seats.length === 0 && !options) {
+      return NextResponse.json({ error: "seats_required" }, { status: 400 });
+    }
     patch.md_table_choosable = body.table_choosable;
-    patch.md_table_options = body.table_choosable
-      ? (body.table_options ?? "").trim() || null
-      : null;
+    patch.md_seats = body.table_choosable && seats.length ? seats : null;
+    patch.md_table_options = body.table_choosable ? (seats.length ? seats.join(", ") : options) || null : null;
+    patch.md_bump_risk = body.bump_risk;
+    patch.md_conditions = null;
+    // 새로 답하면 이전 손님 선택·재확인은 무효
+    patch.guest_choice = null;
+    patch.md_reconfirm_state = null;
     // 주류 제안 요청은 구성이 비어서 온다 — MD가 예산 안에서 드릴 구성을 적어야만
     // 승인된다. 안 그러면 손님은 뭘 받는지 모른 채 확정으로 넘어간다(Migration 676).
     const proposedItems = (body.proposed_items ?? "").trim();
@@ -122,9 +141,14 @@ export async function POST(req: NextRequest) {
     patch.md_required_amount =
       body.reason === "budget" && body.required_amount ? body.required_amount : null;
     patch.md_reject_note = body.reason === "other" ? rejectNote : null;
+    patch.md_conditions = body.reason === "budget" ? (body.conditions ?? "").trim().slice(0, 500) || null : null;
     patch.md_table_choosable = null;
     patch.md_table_options = null;
     patch.md_proposed_items = null;
+    patch.md_seats = null;
+    patch.md_bump_risk = null;
+    patch.guest_choice = null;
+    patch.md_reconfirm_state = null;
   }
 
   const table = requestType === "korean" ? "korean_booking_requests" : "foreign_requests";
@@ -136,6 +160,33 @@ export async function POST(req: NextRequest) {
 
   if (upErr) {
     return NextResponse.json({ error: "update_failed" }, { status: 500 });
+  }
+
+  // 외국인 요청은 담당자 답에 따라 손님 흐름을 바로 시작한다(2026-11-01) — 운영자가 옮겨 적지 않게.
+  //   예약 가능 + 자리 → 자리 고르기 메일 / 예약 가능 + 당일 배정 → 예약 확인서 자동 발급
+  //   받기 어려워요 · 금액 부족 → 금액 안내 메일(이 금액으로 진행 / WhatsApp / 취소)
+  // 금액 부족이 아닌 거절은 손님에게 바로 보내지 않는다 — 운영자가 다른 담당자·클럽을 먼저 알아본다.
+  let flowNote = "";
+  if (requestType === "foreign") {
+    try {
+      if (action === "approve") {
+        if (patch.md_table_choosable === false) {
+          const r = await autoIssueConfirmation(sb, reqRow.id, "Assigned on the night (당일 배정)");
+          flowNote = r.ok ? ` · 확인서 자동 발급 ${r.refNo}` : " · ⚠️ 확인서 자동 발급 실패";
+        } else if ((patch.md_seats as string[] | null)?.length) {
+          flowNote = (await sendSeatChoiceEmail(sb, reqRow.id)) ? " · 손님에게 자리 고르기 메일 발송" : " · ⚠️ 자리 고르기 메일 실패";
+        } else {
+          flowNote = " · 자리 목록이 없어 손님 안내는 직접";
+        }
+      } else if (patch.md_reject_reason === "budget" && patch.md_required_amount) {
+        flowNote = (await sendBudgetEmail(sb, reqRow.id)) ? " · 손님에게 금액 안내 메일 발송" : " · ⚠️ 금액 안내 메일 실패";
+      } else {
+        flowNote = " · 손님 안내는 관리자 화면에서";
+      }
+    } catch (e) {
+      console.error("[proposal-response] 손님 흐름 실패", e);
+      flowNote = " · ⚠️ 손님 자동 안내 실패";
+    }
   }
 
   // 어드민에게 앱 푸시로 알린다 — 예전엔 여기 알림이 아예 없어서 MD가 답해도
@@ -165,16 +216,17 @@ export async function POST(req: NextRequest) {
     // 주류 제안 요청이면 MD가 적은 구성을 한 줄로 붙인다 — 알림만 보고도 손님에게 전달할 수 있게.
     const proposed = (patch.md_proposed_items as string | null)?.split("\n").map((l) => l.trim()).filter(Boolean).join(", ");
     const bodyText = approved
-      ? `${mdName}${clubName ? ` · ${clubName}` : ""} — ${guest}님 요청 승인${proposed ? ` · 제안: ${proposed}` : ""}`
-      : `${mdName}${clubName ? ` · ${clubName}` : ""} — ${guest}님 요청 거절 (${
+      ? `${mdName}${clubName ? ` · ${clubName}` : ""} — ${guest}님 요청 예약 가능${proposed ? ` · 제안: ${proposed}` : ""}`
+      : `${mdName}${clubName ? ` · ${clubName}` : ""} — ${guest}님 요청 받기 어려움 (${
           body.reason === "other" ? (patch.md_reject_note as string) : REJECT_LABEL[body.reason ?? ""] ?? body.reason
         })`;
+    const bodyWithFlow = bodyText + flowNote;
 
     for (const admin of admins ?? []) {
       await sb.rpc("notify_user_push", {
         p_user_id: admin.id,
-        p_title: approved ? "✅ MD 승인" : "❌ MD 거절",
-        p_body: bodyText,
+        p_title: approved ? "✅ MD 예약 가능" : "❌ MD 받기 어려움",
+        p_body: bodyWithFlow,
         p_data: { type: "proposal_response", request_id: reqRow.id, action },
         p_url: requestType === "korean" ? "/admin/korean-bookings" : "/admin/foreign",
         p_category: "transaction",

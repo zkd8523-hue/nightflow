@@ -245,7 +245,7 @@ export function BookingLookup({
                 {step === -1
                   ? t("취소된 요청이에요", "This request was cancelled", "このリクエストはキャンセル済みです", "该请求已取消", "此請求已取消")
                   : step === 2
-                  ? t("확정됐어요", "Confirmed", "確定しました", "已确认", "已確認")
+                  ? t("예약 확인서가 나왔어요", "Your booking details are ready", "予約内容が届きました", "预订详情已就绪", "訂位資訊已備妥")
                   : step === 1
                   ? t("담당자가 클럽과 조율 중이에요", "We're working with the club", "担当者がクラブと調整中です", "我们正在和夜店沟通", "我們正在和夜店溝通")
                   : t("클럽이 테이블 확인 중이에요", "The club is checking your table", "クラブがテーブルを確認中です", "夜店正在确认桌位", "夜店正在確認包廂")}
@@ -343,11 +343,11 @@ export function BookingLookup({
             {step !== -1 && !row.pass_token && (
               <p className="text-center text-[12px] text-muted-foreground leading-relaxed break-keep">
                 {t(
-                  `확정되면 ${channel}로 예약 패스를 보내드려요. 이 페이지는 언제든 다시 열어볼 수 있어요.`,
-                  `We'll send your booking pass on ${channel} once it's confirmed. You can reopen this page anytime.`,
-                  `確定したら ${channel} で予約パスをお送りします。このページはいつでも再度開けます。`,
-                  `确认后我们会通过 ${channel} 发送入场凭证。本页随时可以再打开。`,
-                  `確認後我們會透過 ${channel} 傳送入場憑證。本頁隨時可以再打開。`
+                  `자리가 잡히면 ${channel}로 예약 패스를 보내드려요. 이 페이지는 언제든 다시 열어볼 수 있어요.`,
+                  `We'll send your booking pass on ${channel} once your table is arranged. You can reopen this page anytime.`,
+                  `テーブルが取れたら ${channel} で予約パスをお送りします。このページはいつでも再度開けます。`,
+                  `订到卡座后我们会通过 ${channel} 发送入场凭证。本页随时可以再打开。`,
+                  `訂到包廂後我們會透過 ${channel} 傳送入場憑證。本頁隨時可以再打開。`
                 )}
               </p>
             )}

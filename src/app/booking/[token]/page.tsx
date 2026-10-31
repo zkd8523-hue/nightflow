@@ -21,7 +21,7 @@ export default async function BookingPage({
 
   const { data: conf } = await sb
     .from("booking_confirmations")
-    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, request_id, request_type")
+    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, arrival_time, request_id, request_type, last_change_note, last_changed_at")
     .eq("public_token", token)
     .maybeSingle();
 
@@ -33,7 +33,7 @@ export default async function BookingPage({
   const clubIdCol = conf.request_type === "korean" ? "club_id" : "club_ids";
   const { data: reqRow } = await sb
     .from(reqTable)
-    .select(`guest_name, event_date, group_size, status, assigned_md_id, ${clubIdCol}`)
+    .select(`guest_name, event_date, group_size, status, assigned_md_id, md_bump_risk, ${clubIdCol}`)
     .eq("id", conf.request_id)
     .single();
 
@@ -44,6 +44,7 @@ export default async function BookingPage({
     group_size: number;
     status: string;
     assigned_md_id: string | null;
+    md_bump_risk?: boolean | null;
     club_ids?: string[] | null;
     club_id?: string | null;
   };
@@ -53,7 +54,7 @@ export default async function BookingPage({
   const { data: club } = clubId
     ? await sb
         .from("clubs")
-        .select("name, name_en, area, address, latitude, longitude, operating_hours")
+        .select("name, name_en, area, address, latitude, longitude, operating_hours, drink_menu_url, drink_menu_urls, floor_plan_url, floor_plan_urls")
         .eq("id", clubId)
         .maybeSingle()
     : { data: null };
@@ -119,6 +120,12 @@ export default async function BookingPage({
         includes={conf.includes ?? []}
         totalPrice={conf.total_price}
         guestRequest={conf.guest_request}
+        arrivalTime={conf.arrival_time ?? null}
+        bumpRisk={req.md_bump_risk === true}
+        changeNote={conf.last_change_note ?? null}
+        changedAt={conf.last_changed_at ?? null}
+        menuUrls={((club?.drink_menu_urls as string[] | null)?.length ? club!.drink_menu_urls : club?.drink_menu_url ? [club.drink_menu_url] : []) as string[]}
+        floorPlanUrls={((club?.floor_plan_urls as string[] | null)?.length ? club!.floor_plan_urls : club?.floor_plan_url ? [club.floor_plan_url] : []) as string[]}
         hostName={md?.display_name ?? null}
         hostInstagram={hostInstagram}
         hostKakaoUrl={hostKakaoUrl}

@@ -19,7 +19,7 @@ export default async function BookingMdPage({
 
   const { data: conf } = await sb
     .from("booking_confirmations")
-    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, request_id, md_checked_in_at, request_type")
+    .select("ref_no, club_id, table_info, includes, total_price, confirmed_group_size, guest_request, arrival_time, request_id, md_checked_in_at, request_type, bump_state, bump_amount")
     .eq("md_token", token)
     .maybeSingle();
 
@@ -84,6 +84,10 @@ export default async function BookingMdPage({
       includes={conf.includes ?? []}
       totalPrice={conf.total_price}
       guestRequest={conf.guest_request}
+      arrivalTime={conf.arrival_time ?? null}
+      bumpState={conf.bump_state ?? null}
+      bumpAmount={conf.bump_amount ?? null}
+      canBump={conf.request_type !== "korean"}
       hostName={md?.display_name ?? null}
       arrivedPings={(pings ?? []).map((p) => p.kind)}
       backHref={backHref}

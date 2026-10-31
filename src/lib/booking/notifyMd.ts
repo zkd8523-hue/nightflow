@@ -47,9 +47,11 @@ export async function notifyAssignedMd(
     kind: "proposal" | "confirmation";
     /** 손님이 조건을 바꿔 다시 요청한 제안서 — 제목·문구를 "수정된 제안"으로 */
     revised?: boolean;
+    /** 무응답 재알림(cron, Migration 701) — 제목만 바꾸고 보낸 시각은 그대로 둔다 */
+    reminder?: boolean;
   }
 ): Promise<NotifyMdResult> {
-  const { requestType, requestId, kind, revised } = opts;
+  const { requestType, requestId, kind, revised, reminder } = opts;
   const table = requestType === "korean" ? "korean_booking_requests" : "foreign_requests";
 
   const { data: rawReq } = await sb
@@ -120,14 +122,16 @@ export async function notifyAssignedMd(
   ].filter(Boolean);
   const title =
     kind === "confirmation"
-      ? "✅ 예약 확정서가 나왔어요"
+      ? "✅ 예약 확인서가 나왔어요"
+      : reminder
+      ? "⏰ 예약 제안에 아직 답이 없어요"
       : revised
       ? "📩 손님이 조건을 바꿔 다시 요청했어요"
       : "📩 예약 제안이 왔어요";
   const text =
     kind === "proposal"
       ? `${parts.join(" · ")} — 가능 여부를 알려주세요`
-      : `${parts.join(" · ")} — ${conf?.ref_no ?? ""} 확정서를 확인해 주세요`;
+      : `${parts.join(" · ")} — ${conf?.ref_no ?? ""} 예약 확인서를 확인해 주세요`;
 
   const mdId = r.assigned_md_id;
   const inAppType = kind === "proposal" ? "md_new_booking_proposal" : "md_booking_confirmed";
@@ -170,6 +174,19 @@ export async function notifyAssignedMd(
     }
   }
 
+  // 제안서가 MD에게 실제로 닿은 시각(Migration 700) — 어드민 "답변 대기 · 보낸 지 N시간" 표시용.
+  // 다시 보내면(재촉·손님 재요청) 시각을 새로 찍어 무응답 시간을 그때부터 센다.
+  // 재알림이면 보낸 시각은 그대로 두고 재알림 시각만 찍는다(한 건당 한 번, Migration 701).
+  // 새로 보내면 재알림 기록을 지워 다시 한 번 재알림 대상이 되게 한다.
+  if (kind === "proposal" && mdResult.ok) {
+    const now = new Date().toISOString();
+    const { error } = await sb
+      .from(table)
+      .update(reminder ? { proposal_reminded_at: now } : { proposal_sent_at: now, proposal_reminded_at: null, proposal_admin_alerts: 0 })
+      .eq("id", r.id);
+    if (error) console.error("[notifyAssignedMd] 제안서 시각 기록 실패", error);
+  }
+
   // 확정서가 나온 경우엔 손님에게도 보낸다 — "확정서 저장" 시점 자동 발송을 없애고
   // 이 "보내기" 버튼 하나로 MD·손님 모두 커버한다(2026-09-30).
   // 손님 알림은 부가 기능이라 실패해도 MD 발송 결과(mdResult)에는 영향을 주지 않는다.
@@ -181,8 +198,8 @@ export async function notifyAssignedMd(
     let guestChannel: GuestChannel = "none";
     try {
       const guestPath = `/booking/${conf.public_token}`;
-      const guestTitle = "✅ 예약이 확정됐어요";
-      const guestText = `${parts.join(" · ")} — ${conf.ref_no ?? ""} 확정서를 확인해 주세요`;
+      const guestTitle = "✅ 예약 확인서가 나왔어요";
+      const guestText = `${parts.join(" · ")} — ${conf.ref_no ?? ""} 예약 확인서를 확인해 주세요`;
       // 비회원 요청(user_id NULL, Migration 696)은 인앱·푸시 대상이 없다 — 바로 문자로 간다.
       if (r.user_id) await insertInApp(sb, r.user_id, "korean_booking_confirmed", guestTitle, guestText, guestPath);
 
@@ -210,7 +227,7 @@ export async function notifyAssignedMd(
         try {
           await sendSms(
             guestPhone,
-            `[나이트플로우] 예약이 확정됐어요\n${guestText}\n${SITE}${guestPath}\n입장할 때 확정서 화면을 보여주세요.`
+            `[나이트플로우] 예약 확인서가 나왔어요\n${guestText}\n${SITE}${guestPath}\n입장할 때 예약 확인서 화면을 보여주세요.`
           );
           guestChannel = "sms";
         } catch (e) {

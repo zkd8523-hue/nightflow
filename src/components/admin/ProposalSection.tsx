@@ -28,6 +28,8 @@ export type ProposalConf = {
   includes: string[];
   total_price: number | null;
   guest_request: string | null;
+  /** 도착 예정 시각(자유 표기 "23:00") — 손님·담당자 확인서에 "도착 예정"으로 보인다 */
+  arrival_time?: string | null;
   internal_memo: string | null;
   /** 손님 전달 상태(Migration 680) — 확정서 저장 직후엔 없을 수 있다 */
   guest_notified_at?: string | null;
@@ -251,7 +253,7 @@ function MdPicker({
 
 const SEND_ERROR: Record<string, string> = {
   md_required: "받는 MD를 먼저 지정하세요",
-  no_confirmation: "확정서를 먼저 저장하세요",
+  no_confirmation: "예약 확인서를 먼저 저장하세요",
   cancelled: "취소된 요청이에요",
   no_channel: "이 MD는 앱 알림도 번호도 없어요 — 링크를 복사해 직접 보내주세요",
 };
@@ -303,13 +305,13 @@ function SendToMdButton({
       setBusy(false);
     }
   };
-  const label = kind === "proposal" ? "제안서 보내기" : "확정서 보내기";
+  const label = kind === "proposal" ? "제안서 보내기" : "예약 확인서 보내기";
   return (
     <button
       type="button"
       onClick={send}
       disabled={disabled || busy}
-      title={disabled ? "받는 MD를 먼저 지정하세요" : `담당 MD에게 ${kind === "proposal" ? "제안서" : "확정서"} 앱 알림 보내기`}
+      title={disabled ? "받는 MD를 먼저 지정하세요" : `담당 MD에게 ${kind === "proposal" ? "제안서" : "예약 확인서"} 앱 알림 보내기`}
       className="ml-auto shrink-0 h-8 px-3 rounded-lg bg-white text-black text-[12px] font-black flex items-center gap-1.5 disabled:opacity-40"
     >
       <Send className="w-3.5 h-3.5" />
@@ -327,10 +329,13 @@ export function ProposalCard({
   req,
   allMds = [],
   onAssignMd,
+  onProposalSent,
 }: {
   req: ProposalReq;
   allMds?: MdCandidate[];
   onAssignMd: (mdId: string | null) => Promise<boolean>;
+  /** 제안서가 MD에게 닿은 직후 — 목록의 "답변 대기 · 보낸 지 N분"을 새로고침 없이 갱신 */
+  onProposalSent?: () => void;
 }) {
   const others = useMemo(() => otherMdsOf(req.mdCandidates, allMds), [req.mdCandidates, allMds]);
   return (
@@ -360,7 +365,7 @@ export function ProposalCard({
         <div className="w-full flex items-center gap-2 pt-2 mt-1 border-t border-border/60">
           <span className="text-[11px] text-muted-foreground shrink-0">받는 MD</span>
           <MdPicker candidates={req.mdCandidates} others={others} assignedId={req.assignedMdId} onAssign={onAssignMd} />
-          <SendToMdButton requestType={req.requestType} requestId={req.id} kind="proposal" disabled={!req.assignedMdId} />
+          <SendToMdButton requestType={req.requestType} requestId={req.id} kind="proposal" disabled={!req.assignedMdId} onSent={() => onProposalSent?.()} />
         </div>
       </div>
 
@@ -461,7 +466,7 @@ export function MdResponseCard({ req, allMds = [] }: { req: ProposalReq; allMds?
     >
       <div className="flex items-center gap-2">
         <span className={`text-[12px] font-black ${approved ? "text-money" : "text-red-400"}`}>
-          {approved ? "✅ MD 승인" : "❌ MD 거절"}
+          {approved ? "✅ MD 예약 가능" : "❌ MD 받기 어려움"}
         </span>
         {req.mdRespondedAt && (
           <span className="text-[11px] text-muted-foreground ml-auto">
@@ -579,7 +584,7 @@ export function ConfirmationCard({
       </div>
       <div className="w-full flex items-center gap-2 pt-2 mt-1 border-t border-border/60">
         <span className="text-[11px] text-muted-foreground">
-          {hasMd ? "담당 MD 앱으로 확정서 알림" : "담당 MD가 지정되지 않았어요"}
+          {hasMd ? "담당 MD 앱으로 예약 확인서 알림" : "담당 MD가 지정되지 않았어요"}
         </span>
         {/* 확정서 폼에서 MD를 바꾸면 목록의 assigned_md_id는 새로고침 전까지 옛 값이라 막지 않는다 —
             MD가 정말 없으면 서버가 md_required로 돌려준다. */}
@@ -659,7 +664,7 @@ function GuestDeliveryLine({
           </span>
         )}
         <span className={`${chip} ${viewedAt ? "bg-green-500/15 text-green-500" : "bg-muted/50 text-muted-foreground"}`}>
-          {viewedAt ? `확정서 열람 ${shortTime(viewedAt)}` : "확정서 미열람"}
+          {viewedAt ? `예약 확인서 열람 ${shortTime(viewedAt)}` : "예약 확인서 미열람"}
         </span>
       </div>
       {undelivered && (
@@ -746,6 +751,11 @@ export function ConfirmForm({
       : ""
   );
   const [request, setRequest] = useState(c ? (c.guest_request ?? "") : (req.notes ?? ""));
+  const [arrival, setArrival] = useState(c?.arrival_time ?? "");
+  // 이미 나간 확인서를 고칠 때 — 변경 사유를 적고 손님에게 알릴지 고른다(2026-11-01).
+  // 예전엔 조용히 덮어써져 손님도 모르고 이전 가격 기록도 없었다.
+  const [changeNote, setChangeNote] = useState("");
+  const [notifyChange, setNotifyChange] = useState(true);
   const [memo, setMemo] = useState(c?.internal_memo ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -764,13 +774,20 @@ export function ConfirmForm({
         includes: includes.split("\n").map(normalizeIncludeLine).filter(Boolean),
         total_price: price ? Number(price.replace(/[^0-9]/g, "")) : null,
         guest_request: request.trim() || null,
+        arrival_time: arrival.trim() || null,
         internal_memo: memo.trim() || null,
+        change_note: c ? changeNote.trim() || undefined : undefined,
+        notify_change: c ? notifyChange : undefined,
       }),
     });
     setSaving(false);
     const json = await res.json();
     if (!res.ok) return toast.error(json.error ?? "저장 실패");
-    toast.success(`확정서 저장 — ${json.ref_no}`);
+    toast.success(
+      json.changed
+        ? `예약 확인서 수정 — ${json.ref_no}${json.change_notified ? " · 손님에게 변경 안내 발송" : notifyChange && c ? " · ⚠️ 변경 안내 발송 실패" : ""}`
+        : `예약 확인서 저장 — ${json.ref_no}`,
+    );
     onSaved({
       request_id: req.id,
       ref_no: json.ref_no,
@@ -782,6 +799,7 @@ export function ConfirmForm({
       includes: includes.split("\n").map(normalizeIncludeLine).filter(Boolean),
       total_price: price ? Number(price.replace(/[^0-9]/g, "")) : null,
       guest_request: request.trim() || null,
+      arrival_time: arrival.trim() || null,
       internal_memo: memo.trim() || null,
     });
   };
@@ -890,6 +908,20 @@ export function ConfirmForm({
           <input value={tableInfo} onChange={(e) => setTableInfo(e.target.value)} placeholder="R zone · 2 tables" className={inputCls} />
         </div>
         <div>
+          <label className="text-[11px] text-muted-foreground">도착 예정 (선택)</label>
+          <input value={arrival} onChange={(e) => setArrival(e.target.value)} placeholder="23:00" className={inputCls} />
+        </div>
+        {c && (
+          <div className="col-span-2 rounded-lg border border-sky-400/30 bg-sky-400/[0.05] p-2.5 space-y-1.5">
+            <label className="text-[11px] text-muted-foreground">변경 사유 (금액·자리·구성을 바꿀 때 — 손님 확인서에 안내로 남아요)</label>
+            <input value={changeNote} onChange={(e) => setChangeNote(e.target.value)} placeholder="예) 할로윈 비딩으로 테이블 7 가격이 올랐어요 (5병)" className={inputCls} />
+            <label className="flex items-center gap-2 text-[12px] text-foreground/80">
+              <input type="checkbox" checked={notifyChange} onChange={(e) => setNotifyChange(e.target.checked)} />
+              바뀌면 손님에게 변경 안내 보내기 (외국인은 메일, 한국 예약은 앱 알림)
+            </label>
+          </div>
+        )}
+        <div>
           <label className="text-[11px] text-muted-foreground">확정가 (원)</label>
           <input
             value={price ? Number(price.replace(/[^0-9]/g, "")).toLocaleString("en-US") : ""}
@@ -923,7 +955,7 @@ export function ConfirmForm({
         disabled={saving}
         className="w-full h-10 rounded-lg bg-white text-black text-[13px] font-black disabled:opacity-50"
       >
-        {saving ? "저장 중…" : "확정서 저장 · 링크 발급"}
+        {saving ? "저장 중…" : "예약 확인서 저장 · 링크 발급"}
       </button>
     </div>
   );
