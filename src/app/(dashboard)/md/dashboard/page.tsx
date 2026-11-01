@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MDDashboard } from "@/components/md/MDDashboard";
+import { loadMdSettlement } from "@/lib/booking/settlements";
+import { dueBadge } from "@/components/md/MdSettlementView";
 
 import type { User, Auction, Club, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan, CouponIssue } from "@/types/database";
 
@@ -428,6 +430,34 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         } as unknown as Auction
     ] : (auctions || []) as unknown as Auction[];
 
+    // 정산 카드(2026-11-01) — 운영자 안내를 받고 아직 입금 전인 달이 있으면 클럽 줄 아래 큰 카드,
+    // 없으면 지난 정산이 있을 때만 "정산 내역" 한 줄. 실패해도 대시보드는 떠야 해서 로그만 남긴다.
+    let settlementSummary: { due: { month: string; fee: number; count: number; dueLabel: string; badge: string; late: boolean } | null; latest: { month: string; label: string } | null } | null = null;
+    if (conciergeMdId && !testMode) {
+        try {
+            const settleToday = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
+            const months = await loadMdSettlement(adminSb, conciergeMdId, settleToday);
+            const due = months.find((m) => m.status === "due");
+            const past = [...months].reverse().find((m) => m.status !== "open");
+            const LABEL = { paid: "입금 완료", checking: "금액 확인 중", none: "중개료 없음", due: "입금 전", open: "진행 중" } as const;
+            if (due) {
+                const b = dueBadge(due.due, settleToday);
+                const dd = new Date(`${due.due}T00:00:00Z`);
+                settlementSummary = {
+                    due: {
+                        month: due.month, fee: due.fee, count: due.count, badge: b.label, late: b.late,
+                        dueLabel: `${dd.getUTCMonth() + 1}월 ${dd.getUTCDate()}일 (${"일월화수목금토"[dd.getUTCDay()]})까지 입금`,
+                    },
+                    latest: null,
+                };
+            } else if (past) {
+                settlementSummary = { due: null, latest: { month: past.month, label: `${Number(past.month.slice(5, 7))}월 ${LABEL[past.status]}` } };
+            }
+        } catch (e) {
+            console.error("[md/dashboard] 정산 요약 실패", e);
+        }
+    }
+
     return (
         <div className="min-h-screen bg-background">
             <MDDashboard
@@ -438,6 +468,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 initialTopBids={topBids}
                 initialPuzzleOffers={puzzleOffers || []}
                 initialForeignRequests={initialForeignRequests}
+                settlementSummary={settlementSummary}
                 mdRepliedOfferIds={mdRepliedOfferIds}
                 guestSignClubs={hotdealClubs.map((c) => ({
                     id: c.id,

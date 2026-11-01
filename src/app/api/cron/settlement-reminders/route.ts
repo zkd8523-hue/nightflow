@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { planSettlementReminders, type SettlementReminderKind } from "@/lib/booking/settlements";
 import { sendSms } from "@/lib/notifications/alimtalk";
+import { settleLinkOf, withSettleLink } from "@/lib/booking/settleLink";
 
 const KIND_BY_DAY: Record<number, SettlementReminderKind> = { 7: "due_soon", 10: "due_today" };
 
@@ -33,7 +34,9 @@ async function handle(req: NextRequest) {
   const month = /^\d{4}-\d{2}$/.test(q.get("month") ?? "") ? q.get("month")! : prev.toISOString().slice(0, 7);
 
   const sb = createAdminClient();
-  const { send, skipped } = await planSettlementReminders(sb, kind, month, todayKst);
+  const { send: planned, skipped } = await planSettlementReminders(sb, kind, month, todayKst);
+  // 문자 속 "내역 보기" 링크(2026-11-01) — 로그인 없이 그 MD의 정산 화면이 열린다(/booking/settle/{토큰}).
+  const send = planned.map((s) => ({ ...s, message: withSettleLink(s.message, settleLinkOf(s.mdId, month)) }));
   if (dry) {
     return NextResponse.json({
       ok: true, dry: true, kind, month, today: todayKst, skipped,
@@ -59,7 +62,7 @@ async function handle(req: NextRequest) {
         p_title: `💰 ${Number(month.slice(5, 7))}월 정산 안내`,
         p_body: s.message,
         p_data: { type: "md_settlement", month },
-        p_url: "/md/dashboard",
+        p_url: `/md/settlements?month=${month}`,
         p_category: "transaction",
       });
       if (!error) channel = "push";

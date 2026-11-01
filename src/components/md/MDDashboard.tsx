@@ -31,7 +31,7 @@ import { ShareOptionManager } from "@/components/md/ShareOptionManager";
 import { ShareWeekdayPlanBoard } from "@/components/md/ShareWeekdayPlanBoard";
 import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
 import { ShareLiveToggleList } from "@/components/md/ShareLiveToggleList";
-import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle, Pencil, Users, Calendar, ClipboardList } from "lucide-react";
+import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle, Pencil, Users, Calendar, ClipboardList, Receipt, ChevronRight, Check } from "lucide-react";
 import { FeatureGate } from "@/components/common/FeatureGate";
 import { toast } from "sonner";
 import { getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
@@ -158,6 +158,11 @@ interface MDDashboardProps {
         /** MD 응답 — null(미응답) | "approved" | "rejected" */
         mdResponse: string | null;
     }[];
+    /** 정산 카드(2026-11-01) — due가 있으면 큰 카드, 없으면 latest로 "정산 내역" 한 줄. null이면 아무것도 안 그림 */
+    settlementSummary?: {
+        due: { month: string; fee: number; count: number; dueLabel: string; badge: string; late: boolean } | null;
+        latest: { month: string; label: string } | null;
+    } | null;
 }
 
 export function MDDashboard({
@@ -180,6 +185,7 @@ export function MDDashboard({
     shareWeekdayPlans = [],
     initialCoupons = [],
     initialForeignRequests = [],
+    settlementSummary = null,
 }: MDDashboardProps) {
     const [auctions, setAuctions] = useState<Auction[]>(initialAuctions);
     const [clubs, setClubs] = useState<Club[]>(initialClubs);
@@ -608,6 +614,53 @@ export function MDDashboard({
                     </button>
                 )}
             </div>
+
+            {/* 정산(2026-11-01) — 보낼 중개료가 있을 때만 큰 카드. 입금이 확인되면 한 줄 "정산 내역"으로 줄어든다.
+                하단 탭 "예약관리"(?section=concierge)로 오면 이 아래로 바로 내려가므로 주 진입점은 정산 문자 링크다. */}
+            {settlementSummary?.due ? (
+                <div className="px-4 pb-2">
+                    <Link
+                        href={`/md/settlements?month=${settlementSummary.due.month}`}
+                        className="flex items-center gap-3 pl-4 pr-3.5 py-3.5 bg-card border border-amber-500 rounded-2xl active:scale-[0.98] transition-transform"
+                    >
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
+                            <Receipt className="w-5 h-5 text-brand-amber" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[12px] font-medium text-muted-foreground">
+                                {Number(settlementSummary.due.month.slice(5, 7))}월 중개료 · 예약 {settlementSummary.due.count}건
+                            </p>
+                            <p className="text-[20px] font-black text-foreground tabular-nums leading-tight">
+                                {settlementSummary.due.fee.toLocaleString()}원
+                            </p>
+                            <p className="text-[12px] text-muted-foreground">{settlementSummary.due.dueLabel}</p>
+                        </div>
+                        <span
+                            className={`shrink-0 text-[12px] font-black px-2.5 py-1 rounded-full ${
+                                settlementSummary.due.late ? "bg-red-500 text-white" : "bg-amber-500 text-black"
+                            }`}
+                        >
+                            {settlementSummary.due.badge}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                    </Link>
+                </div>
+            ) : settlementSummary?.latest ? (
+                <div className="px-4 pb-2">
+                    <Link
+                        href="/md/settlements"
+                        className="flex items-center gap-2.5 min-h-11 px-4 py-2.5 bg-card border border-border rounded-xl"
+                    >
+                        <Receipt className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-[13px] font-bold text-foreground">정산 내역</span>
+                        <span className="ml-auto flex items-center gap-1 text-[12px] font-bold text-muted-foreground">
+                            {settlementSummary.latest.label.endsWith("입금 완료") && <Check className="w-3 h-3 text-money" strokeWidth={3} />}
+                            {settlementSummary.latest.label}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </Link>
+                </div>
+            ) : null}
 
             {/* 액션 버튼 3종 — 바깥 테두리에 "파트너 도구" 레전드(fieldset legend 스타일)로 라벨링 */}
             <div className="px-4 mt-5 relative">

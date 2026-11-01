@@ -157,8 +157,64 @@ export async function loadSettlementRows(sb: SupabaseClient): Promise<Settlement
     .sort((a, b) => a.eventDate.localeCompare(b.eventDate));
 }
 
+// ── MD 본인 정산 화면(2026-11-01) ─────────────────────────────────────────
+// /md/settlements(로그인)·/booking/settle/{토큰}(문자 링크)·대시보드 카드가 같이 쓴다.
+// 상태:
+//  · paid     정산 완료 체크됨(settlement_payments)
+//  · due      운영자가 이 달 안내(①, sent_by 있음)를 보냈고 아직 입금 전 — 금액이 사람 손을 거친 뒤에만 "보내주실 금액"으로 보인다
+//  · checking 지난달인데 운영자 안내 전 — 금액이 바뀔 수 있어 "확인 중"
+//  · open     이번 달(진행 중)
+//  · none     지난달인데 정산할 건이 없음(국내 예약뿐 등)
+
+export type MdSettlementStatus = "paid" | "due" | "checking" | "open" | "none";
+
+export type MdSettlementMonth = {
+  month: string;
+  /** 이 MD의 그 달 확인서 전부(제외 건 포함) — 화면 목록용 */
+  rows: SettlementRow[];
+  count: number;
+  total: number;
+  rate: number;
+  fee: number;
+  due: string;
+  status: MdSettlementStatus;
+  paidAt: string | null;
+};
+
+export async function loadMdSettlement(sb: SupabaseClient, mdId: string, todayKst: string): Promise<MdSettlementMonth[]> {
+  const [rows, rates, notices, payments] = await Promise.all([
+    loadSettlementRows(sb),
+    loadMonthRates(sb),
+    sb.from("settlement_notices").select("month, sent_by").eq("md_id", mdId),
+    sb.from("settlement_payments").select("month, paid_at").eq("md_id", mdId),
+  ]);
+  const thisMonth = todayKst.slice(0, 7);
+  const noticed = new Set((notices.data ?? []).filter((n) => n.sent_by).map((n) => n.month as string));
+  const paidAt = new Map((payments.data ?? []).map((p) => [p.month as string, p.paid_at as string]));
+  const byMonth = new Map<string, SettlementRow[]>();
+  for (const r of rows) {
+    if (r.mdId !== mdId) continue;
+    byMonth.set(r.month, [...(byMonth.get(r.month) ?? []), r]);
+  }
+  return [...byMonth.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, list]) => {
+      const inc = list.filter((r) => r.included);
+      const total = inc.reduce((s, r) => s + (r.amount ?? 0), 0);
+      const rate = rateOf(rates, month);
+      const fee = feeOf(total, rate);
+      const status: MdSettlementStatus = paidAt.has(month) ? "paid"
+        : month >= thisMonth ? "open"
+        : fee <= 0 ? "none"
+        : noticed.has(month) ? "due"
+        : "checking";
+      return { month, rows: list, count: inc.length, total, rate, fee, due: dueDateOf(month), status, paidAt: paidAt.get(month) ?? null };
+    });
+}
+
 /** 정산 입금 계좌 — MD 문자에 그대로 들어간다(운영자 제공 2026-10-10). */
-export const SETTLEMENT_BANK_ACCOUNT = "카카오뱅크 3333-37-4374607 (김민기(매드다윗))";
+export const SETTLEMENT_BANK = { name: "카카오뱅크", number: "3333-37-4374607", holder: "김민기(매드다윗)" } as const;
+export const SETTLEMENT_BANK_ACCOUNT = `${SETTLEMENT_BANK.name} ${SETTLEMENT_BANK.number} (${SETTLEMENT_BANK.holder})`;
 
 const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
 const mmdd = (ymd: string) => `${Number(ymd.slice(5, 7))}/${Number(ymd.slice(8, 10))}`;

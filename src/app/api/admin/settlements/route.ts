@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadSettlementRows, feeOf, loadMonthRates, rateOf } from "@/lib/booking/settlements";
 import { sendSms } from "@/lib/notifications/alimtalk";
+import { settleLinkOf, withSettleLink } from "@/lib/booking/settleLink";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -52,9 +53,11 @@ export async function POST(req: NextRequest) {
   if (body.action === "send") {
     const month = body.month as string | undefined;
     const mdId = body.md_id as string | undefined;
-    const message = ((body.message as string | undefined) ?? "").trim();
+    const typed = ((body.message as string | undefined) ?? "").trim();
     if (!month || !/^\d{4}-\d{2}$/.test(month) || !mdId) return NextResponse.json({ error: "month_and_md_required" }, { status: 400 });
-    if (!message) return NextResponse.json({ error: "message_required" }, { status: 400 });
+    if (!typed) return NextResponse.json({ error: "message_required" }, { status: 400 });
+    // 운영자가 쓴 문구 "입금:" 줄 아래에 정산 내역 링크를 서버에서 붙인다(2026-11-01) — 서명 열쇠가 서버에만 있어서.
+    const message = withSettleLink(typed, settleLinkOf(mdId, month));
 
     const rows = (await loadSettlementRows(sb)).filter((r) => r.month === month && r.mdId === mdId && r.included);
     if (rows.length === 0) return NextResponse.json({ error: "no_items" }, { status: 404 });
@@ -70,7 +73,7 @@ export async function POST(req: NextRequest) {
         p_title: title,
         p_body: message,
         p_data: { type: "md_settlement", month },
-        p_url: "/md/dashboard",
+        p_url: `/md/settlements?month=${month}`,
         p_category: "transaction",
       });
       if (!error) channel = "push";

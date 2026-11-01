@@ -23,6 +23,7 @@ const MD_DASHBOARD_PREFIXES = [
   "/md/floor-plan",
   "/md/hotdeal",
   "/md/settings",
+  "/md/settlements",
   "/md/share-slots",
   "/md/transactions",
   "/md/vip",
