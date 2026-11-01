@@ -34,6 +34,22 @@ export const bottlesOfLabel = (label: string): number | null => {
 
 export const tcFor = (rule: TcRule, bottles: number): number => (rule && bottles < rule.below_bottles ? rule.amount : 0);
 
+/** 병 수와 상관없이 늘 붙는 TC(메뉴판에 "테이블 이용 시 테이블 차지 5만원 추가"처럼 적힌 클럽)는 below_bottles를 이 값으로 둔다. */
+export const TC_ALWAYS = 1_000_000;
+export const tcIsAlways = (rule: NonNullable<TcRule>): boolean => rule.below_bottles >= TC_ALWAYS;
+
+/** 클럽의 TC 규칙 — 병 수 조건이 있으면 그것(Club Ace), 없으면 클럽 설정의 평일·주말 금액을 항상 적용(DM SEOUL 5만원 등). */
+export function effectiveTcRule(
+  club: { table_charge_rule?: unknown; table_charge_weekday?: number | null; table_charge_weekend?: number | null } | null | undefined,
+  weekend: boolean,
+): TcRule {
+  if (!club) return null;
+  const rule = parseTcRule(club.table_charge_rule);
+  if (rule) return rule;
+  const flat = weekend ? club.table_charge_weekend : club.table_charge_weekday;
+  return flat && flat > 0 ? { below_bottles: TC_ALWAYS, amount: flat } : null;
+}
+
 /** 담당자 메뉴판 — 활성 품목만, 조건부·층별·VVIP 전용은 제외(손님이 어떤 테이블인지 알 수 없다). 요일 가격 반영. */
 export async function loadPickerMenu(sb: SupabaseClient, clubId: string, weekend: boolean): Promise<PickerItem[]> {
   const { data } = await sb

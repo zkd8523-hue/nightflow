@@ -10,7 +10,7 @@
 
 import { useMemo, useState } from "react";
 import { X } from "lucide-react";
-import { BAND_LOW, bottlesOfLabel, tcFor, type PickerItem, type TcRule } from "@/lib/booking/mdMenu";
+import { BAND_LOW, bottlesOfLabel, tcFor, tcIsAlways, type PickerItem, type TcRule } from "@/lib/booking/mdMenu";
 
 export type PickerValue = { qty: Record<string, number>; tc: number; tcTouched: boolean };
 
@@ -140,11 +140,12 @@ export function MdMenuPicker({
     t.lines.length && rule ? (
       value.tc === need ? (
         <p className="text-[11.5px] text-green-300 mt-1.5">
-          ✓ TC 확인 · {t.bottles}병{need ? ` (${rule.below_bottles}병 미만 → ${won(need)})` : ` (${rule.below_bottles}병 이상 → TC 없음)`}
+          ✓ TC 확인 · {t.bottles}병
+          {tcIsAlways(rule) ? ` (이 클럽은 TC ${won(need ?? 0)}가 항상 붙어요)` : need ? ` (${rule.below_bottles}병 미만 → ${won(need)})` : ` (${rule.below_bottles}병 이상 → TC 없음)`}
         </p>
       ) : (
         <p className="text-[12px] leading-relaxed rounded-lg bg-amber-500/10 text-amber-100 px-2.5 py-2 mt-1.5">
-          <b>TC 확인이 필요해요</b> — {t.bottles}병이면 TC가 {won(need ?? 0)}인데 지금 {won(value.tc)}이에요.
+          <b>TC 확인이 필요해요</b> — {tcIsAlways(rule) ? "이 클럽은" : `${t.bottles}병이면`} TC가 {won(need ?? 0)}인데 지금 {won(value.tc)}이에요.
         </p>
       )
     ) : null;
@@ -361,7 +362,11 @@ function PickerSheet({
         <div className="flex items-center justify-between gap-3">
           <div className="text-[12.5px] font-extrabold">
             테이블 차지 (TC)
-            {rule && <span className="block text-[11px] font-medium text-muted-foreground">{rule.below_bottles}병 미만이면 {won(rule.amount)}</span>}
+            {rule && (
+              <span className="block text-[11px] font-medium text-muted-foreground">
+                {tcIsAlways(rule) ? `이 클럽은 TC ${won(rule.amount)}가 항상 붙어요` : `${rule.below_bottles}병 미만이면 ${won(rule.amount)}`}
+              </span>
+            )}
           </div>
           <input
             inputMode="numeric"
@@ -386,7 +391,7 @@ function PickerSheet({
             <p className="text-[11.5px] text-green-300 mt-1.5">✓ TC 확인 · {t.bottles}병</p>
           ) : (
             <p className="text-[12px] leading-relaxed rounded-lg bg-amber-500/10 text-amber-100 px-2.5 py-2 mt-1.5">
-              <b>TC 확인이 필요해요</b> — {t.bottles}병이면 TC가 {won(need ?? 0)}인데 지금 {won(value.tc)}이에요.
+              <b>TC 확인이 필요해요</b> — {tcIsAlways(rule) ? "이 클럽은" : `${t.bottles}병이면`} TC가 {won(need ?? 0)}인데 지금 {won(value.tc)}이에요.
             </p>
           )
         )}

@@ -17,7 +17,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { BookingProposal } from "@/components/booking/BookingProposal";
 import { parseSeatZones } from "@/lib/booking/seats";
-import { isWeekendDate, loadPickerMenu, parseTcRule, type MdMenu } from "@/lib/booking/mdMenu";
+import { effectiveTcRule, isWeekendDate, loadPickerMenu, type MdMenu } from "@/lib/booking/mdMenu";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +55,7 @@ export default async function BookingProposalPage({
 
   const clubId = (req.club_ids as string[] | null)?.[0] ?? null;
   const { data: club } = clubId
-    ? await sb.from("clubs").select("name, drink_menu_url, drink_menu_urls, floor_plan_url, floor_plan_urls, seat_zones, table_charge_rule").eq("id", clubId).maybeSingle()
+    ? await sb.from("clubs").select("name, drink_menu_url, drink_menu_urls, floor_plan_url, floor_plan_urls, seat_zones, table_charge_rule, table_charge_weekday, table_charge_weekend").eq("id", clubId).maybeSingle()
     : { data: null };
 
   const { data: md } = req.assigned_md_id
@@ -122,7 +122,7 @@ export default async function BookingProposalPage({
       mdConditions={req.md_conditions ?? null}
       pendingGuestChoice={req.md_reconfirm_state === "pending" ? req.guest_choice : null}
       menuItems={menuItems}
-      tcRule={parseTcRule(club?.table_charge_rule)}
+      tcRule={effectiveTcRule(club, isWeekendDate(req.event_date))}
       mdMenuInit={mdMenuInit}
     />
   );
