@@ -56,8 +56,8 @@ export async function POST(req: NextRequest) {
     const typed = ((body.message as string | undefined) ?? "").trim();
     if (!month || !/^\d{4}-\d{2}$/.test(month) || !mdId) return NextResponse.json({ error: "month_and_md_required" }, { status: 400 });
     if (!typed) return NextResponse.json({ error: "message_required" }, { status: 400 });
-    // 운영자가 쓴 문구 "입금:" 줄 아래에 정산 내역 링크를 서버에서 붙인다(2026-11-01) — 서명 열쇠가 서버에만 있어서.
-    const message = withSettleLink(typed, settleLinkOf(mdId, month));
+    // 운영자가 쓴 문구 "입금:" 줄 아래에 정산 내역 링크를 서버에서 붙인다(2026-11-01) (문구에 링크가 이미 있으면 그대로).
+    const message = withSettleLink(typed, settleLinkOf(month));
 
     const rows = (await loadSettlementRows(sb)).filter((r) => r.month === month && r.mdId === mdId && r.included);
     if (rows.length === 0) return NextResponse.json({ error: "no_items" }, { status: 404 });

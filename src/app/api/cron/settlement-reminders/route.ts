@@ -35,8 +35,8 @@ async function handle(req: NextRequest) {
 
   const sb = createAdminClient();
   const { send: planned, skipped } = await planSettlementReminders(sb, kind, month, todayKst);
-  // 문자 속 "내역 보기" 링크(2026-11-01) — 로그인 없이 그 MD의 정산 화면이 열린다(/booking/settle/{토큰}).
-  const send = planned.map((s) => ({ ...s, message: withSettleLink(s.message, settleLinkOf(s.mdId, month)) }));
+  // 문자 속 "내역 보기" 링크(2026-11-01) — 앱이 깔려 있으면 앱으로 열리고, 로그인한 MD 본인 정산 화면으로 간다.
+  const send = planned.map((s) => ({ ...s, message: withSettleLink(s.message, settleLinkOf(month)) }));
   if (dry) {
     return NextResponse.json({
       ok: true, dry: true, kind, month, today: todayKst, skipped,

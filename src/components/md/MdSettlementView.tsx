@@ -1,4 +1,4 @@
-// MD 본인 정산 화면(2026-11-01) — /md/settlements(로그인)와 /booking/settle/{토큰}(정산 문자 링크)이 같이 쓴다.
+// MD 본인 정산 화면(2026-11-01) — /md/settlements(로그인 필수). 정산 문자 링크(/booking/settle)도 여기로 온다.
 // 숫자는 관리자 정산 화면·정산 문자와 같은 계산(loadMdSettlement → settlements.ts)이라 셋이 항상 같다.
 //
 // 보여주지 않는 것:
@@ -46,16 +46,13 @@ export function MdSettlementView({
   basePath,
   backHref,
   todayKst,
-  mdName,
 }: {
   months: MdSettlementMonth[];
   selected: string | null;
-  /** 월 탭 링크의 앞부분 — "/md/settlements" 또는 "/booking/settle/{토큰}" */
+  /** 월 탭 링크의 앞부분 */
   basePath: string;
-  /** 로그인 화면이면 대시보드로, 문자 링크면 없음 */
   backHref?: string;
   todayKst: string;
-  mdName?: string | null;
 }) {
   const tabs = months.slice(-6);
   const cur = months.find((m) => m.month === selected) ?? null;
@@ -69,7 +66,7 @@ export function MdSettlementView({
               <ChevronLeft className="w-5 h-5" />
             </Link>
           )}
-          <h1 className="text-[18px] font-black">{mdName ? `${mdName} 파트너님 정산` : "정산"}</h1>
+          <h1 className="text-[18px] font-black">정산</h1>
         </div>
 
         <div className="px-4 pt-4 space-y-4">

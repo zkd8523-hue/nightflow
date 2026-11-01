@@ -158,7 +158,7 @@ export async function loadSettlementRows(sb: SupabaseClient): Promise<Settlement
 }
 
 // ── MD 본인 정산 화면(2026-11-01) ─────────────────────────────────────────
-// /md/settlements(로그인)·/booking/settle/{토큰}(문자 링크)·대시보드 카드가 같이 쓴다.
+// /md/settlements(로그인 필수, 문자 링크 /booking/settle도 여기로)·대시보드 카드가 같이 쓴다.
 // 상태:
 //  · paid     정산 완료 체크됨(settlement_payments)
 //  · due      운영자가 이 달 안내(①, sent_by 있음)를 보냈고 아직 입금 전 — 금액이 사람 손을 거친 뒤에만 "보내주실 금액"으로 보인다

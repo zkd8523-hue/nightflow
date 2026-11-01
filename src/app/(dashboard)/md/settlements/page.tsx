@@ -1,5 +1,5 @@
 // MD 본인 정산 내역(2026-11-01). 대시보드 정산 카드·앱 푸시(p_url)가 여기로 온다.
-// 문자 링크는 로그인 없이 열리는 /booking/settle/{토큰} — 같은 화면(MdSettlementView)을 쓴다.
+// 정산 문자 링크 /booking/settle(앱 링크)도 여기로 넘어온다.
 
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
