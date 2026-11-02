@@ -174,7 +174,7 @@ async function handle(req: NextRequest) {
         p_title: `⏰ ${d.type === "foreign" ? "[외국인] " : ""}MD 무응답`,
         p_body: body,
         p_data: { type: "proposal_no_response", request_id: r.id },
-        p_url: d.adminUrl,
+        p_url: d.type === "foreign" ? `${d.adminUrl}?id=${r.id}` : d.adminUrl,
         p_category: "transaction",
       });
       if (error) console.error("[proposal-reminders] admin push 실패", a.id, error);

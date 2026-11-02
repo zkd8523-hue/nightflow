@@ -16,6 +16,7 @@ import { notifyAssignedMd } from "@/lib/booking/notifyMd";
 import { saveConfirmation } from "@/lib/booking/confirmations";
 import { parseSeatZones, seatOptions, seatValueLabel, type SeatZone } from "@/lib/booking/seats";
 import { menuToIncludes, type MdMenu } from "@/lib/booking/mdMenu";
+import { guestWa, krPhoneToWa } from "@/lib/booking/groupChat";
 import {
   COLOR, esc, fmtGuestDate, guestEmailOf, guestLayout, mailButton, mapImage, normLang, p, sendGuestEmail, waLink, type GuestLang,
 } from "@/lib/email/foreignGuest";
@@ -84,7 +85,7 @@ export async function pushAdmins(sb: SupabaseClient, title: string, body: string
   for (const a of admins ?? []) {
     const { error } = await sb.rpc("notify_user_push", {
       p_user_id: a.id, p_title: title, p_body: body,
-      p_data: { type: kind, request_id: requestId }, p_url: "/admin/foreign", p_category: "transaction",
+      p_data: { type: kind, request_id: requestId }, p_url: `/admin/foreign?id=${requestId}`, p_category: "transaction",
     });
     if (error) console.error("[guestFlows] admin push 실패", kind, error);
   }
@@ -455,10 +456,19 @@ export async function autoIssueConfirmation(sb: SupabaseClient, requestId: strin
     },
   });
   const sent = await notifyAssignedMd(sb, { requestType: "foreign", requestId: r.id, kind: "confirmation" });
+  // 확인서가 나오면 운영자가 손님·담당 MD와 단톡방을 만든다 — 알림만 보고도 바로 만들 수 있게 두 번호를 같이 싣는다.
+  // 누르면 관리자 예약 카드의 "단톡방 만들기" 칸(방 이름·번호 복사, 첫 메시지 보내기)으로 간다.
+  const { data: md } = r.assigned_md_id
+    ? await sb.from("users").select("display_name, phone").eq("id", r.assigned_md_id).maybeSingle()
+    : { data: null };
+  const gw = guestWa(r.contact_type ?? "", r.contact_value ?? "");
+  const mw = krPhoneToWa(md?.phone);
   await pushAdmins(
     sb,
-    "📄 예약 확인서 자동 발급",
-    `${who(r, club)} · ${tableInfo} · ${(menu ? menu.total : guestAmount(r))?.toLocaleString("ko-KR") ?? "-"}원 · ${saved.ref_no}${sent.ok ? "" : " · ⚠️ 담당자 알림 실패"}`,
+    "🎉 확인서 발급 · 단톡방 만들기",
+    `${who(r, club)} · ${saved.ref_no}\n` +
+      `손님 ${gw ? `WhatsApp ${gw.display}` : `WhatsApp 없음 (${r.contact_type ?? "-"} ${r.contact_value ?? ""})`} · ` +
+      `MD ${md?.display_name ?? "미지정"} ${mw?.display ?? "번호 없음"}${sent.ok ? "" : " · ⚠️ 담당자 알림 실패"}`,
     r.id,
     "auto_confirmation",
   );

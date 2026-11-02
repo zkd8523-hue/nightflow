@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Copy, Calendar, Users, UserRound, Coins, MapPin, Trash2, FileText } from "lucide-react";
+import { Copy, Calendar, Users, UserRound, Coins, MapPin, Trash2, FileText, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isClubOpenOn } from "@/lib/utils/clubOpenDays";
 import type { SelectedMenuSnapshot } from "@/types/database";
 import { ProposalCard, MdResponseCard, ConfirmationCard, ConfirmForm, type ProposalReq, type ProposalConf } from "@/components/admin/ProposalSection";
+import { chatLang, firstGroupMessage, groupRoomName, guestWa, hostNameGuess, krPhoneToWa, waChatUrl, waShareUrl } from "@/lib/booking/groupChat";
 
 // "보낸 지 N분/N시간" — 제안서 무응답 배지용. 24시간이 넘으면 일 단위.
 function sinceText(iso: string): string {
@@ -53,6 +54,8 @@ export type ForeignReq = {
   md_reject_note?: string | null;
   club_ids: string[];
   clubNames: string[];
+  /** 첫 클럽 영문명 — 단톡방 방 이름·첫 메시지용(없으면 clubNames[0]) */
+  clubNameEn?: string | null;
   guest_name: string | null;
   assigned_md_id: string | null;
   conf: ProposalConf | null;
@@ -206,14 +209,126 @@ function ClubAssignBox({
   );
 }
 
+// 폰에서 번호가 잘리지 않게 버튼은 아이콘으로 — 번호·방 이름 전체가 보여야 그대로 확인하고 넣을 수 있다.
+function ChatRow({ label, sub, value, wa, copyText, onCopy }: { label: string; sub?: string; value: string; wa?: string | null; copyText?: string | null; onCopy: (t: string) => void }) {
+  return (
+    <div className="flex items-center gap-2 py-1.5 border-t border-border/60 first:border-t-0">
+      <span className="w-12 shrink-0 text-[11px] font-bold text-muted-foreground">{label}</span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-[13px] font-bold text-foreground break-words">{value}</span>
+        {sub && <span className="block text-[11px] text-muted-foreground truncate">{sub}</span>}
+      </span>
+      {wa && (
+        <a href={wa} target="_blank" rel="noopener noreferrer" aria-label={`${label} WhatsApp 열기`} className="shrink-0 w-8 h-8 rounded-lg border border-green-500/40 text-money flex items-center justify-center">
+          <MessageCircle className="w-4 h-4" />
+        </a>
+      )}
+      {copyText && (
+        <button type="button" onClick={() => onCopy(copyText)} aria-label={`${label} 복사`} className="shrink-0 w-8 h-8 rounded-lg border border-border bg-background text-foreground/80 flex items-center justify-center">
+          <Copy className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** 단톡방 만들기(2026-11-01) — 확인서가 나온 다가오는 예약 카드에만 보인다.
+ *  WhatsApp엔 사람을 넣은 채 그룹을 만드는 링크가 없어서 방은 앱에서 직접 만들고, 여기선 방 이름·두 번호·첫 메시지를 채워 준다.
+ *  첫 메시지는 번호 없는 wa.me 링크로 열어 방금 만든 방을 고르면 채워진 채로 들어간다. */
+function GroupChatBox({ r, md }: { r: ForeignReq; md: { id: string; name: string; phone: string | null } | null }) {
+  const conf = r.conf!;
+  const club = r.clubNameEn || r.clubNames[0] || "the club";
+  const gw = guestWa(r.contact_type, r.contact_value);
+  const mw = krPhoneToWa(md?.phone);
+  // 호스트 영문 이름 — MD 테이블에 영문 이름이 없어 display_name으로 추정하고, 고치면 이 브라우저에 MD별로 기억한다.
+  const hostKey = md ? `nf_host_en_${md.id}` : null;
+  const [host, setHost] = useState(() => hostNameGuess(md?.name));
+  useEffect(() => {
+    if (!hostKey) return;
+    try {
+      const saved = localStorage.getItem(hostKey);
+      // 서버 렌더엔 localStorage가 없어 첫 렌더는 추정값, 마운트 뒤 저장값으로 바꾼다(useDetectedArea와 같은 이유)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (saved) setHost(saved);
+    } catch {}
+  }, [hostKey]);
+  const saveHost = (v: string) => {
+    setHost(v);
+    try {
+      if (hostKey) localStorage.setItem(hostKey, v);
+    } catch {}
+  };
+  const room = groupRoomName({ refNo: conf.ref_no, club, eventDate: r.event_date, guestName: r.guest_name });
+  const msg = firstGroupMessage({
+    lang: chatLang(r.lang),
+    guestName: r.guest_name,
+    club,
+    eventDate: r.event_date,
+    groupSize: (conf.confirmed_group_size ?? String(r.group_size)).trim(),
+    tableInfo: conf.table_info,
+    includes: conf.includes ?? [],
+    total: conf.total_price,
+    host,
+  });
+  const copy = (text: string) => {
+    navigator.clipboard?.writeText(text).then(() => toast.success("복사됨")).catch(() => toast.error("복사하지 못했어요"));
+  };
+  return (
+    <div className="rounded-xl border border-green-500/35 bg-green-500/[0.05] px-3 py-2.5">
+      <p className="text-[13px] font-black text-money">💬 단톡방 만들기</p>
+      <p className="text-[11px] text-muted-foreground mt-0.5 mb-1">① WhatsApp에서 방 만들기(이름·두 번호) ② 첫 메시지 보내기</p>
+      <ChatRow onCopy={copy} label="방 이름" value={room} copyText={room} />
+      {gw ? (
+        <ChatRow onCopy={copy} label="손님" value={gw.display} wa={waChatUrl(gw.digits)} copyText={gw.display} />
+      ) : (
+        <ChatRow onCopy={copy} label="손님" value={`WhatsApp 없음 · ${r.contact_type} ${r.contact_value}`} copyText={r.contact_value} />
+      )}
+      <ChatRow onCopy={copy} label="MD" sub={md?.name} value={mw?.display ?? (md ? "번호 없음" : "담당 MD 없음")} wa={mw ? waChatUrl(mw.digits) : null} copyText={mw?.display ?? null} />
+      <div className="flex items-center gap-2 py-1.5 border-t border-border/60">
+        <span className="w-12 shrink-0 text-[11px] font-bold text-muted-foreground">호스트</span>
+        <input
+          value={host}
+          onChange={(e) => saveHost(e.target.value)}
+          placeholder="영문 이름 (예: Woohyun)"
+          className="flex-1 min-w-0 h-8 px-2 rounded-lg bg-background border border-border text-[13px] font-bold text-foreground outline-none focus:border-green-500/60"
+        />
+      </div>
+      <details className="mt-1.5">
+        <summary className="text-[12px] text-foreground/80 cursor-pointer">첫 메시지 미리보기</summary>
+        <pre className="mt-1.5 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-foreground/85 bg-background border border-border rounded-lg px-2.5 py-2">{msg}</pre>
+      </details>
+      <div className="flex gap-1.5 mt-2">
+        <a
+          href={waShareUrl(msg)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 flex items-center justify-center h-10 rounded-xl text-[13px] font-bold text-white"
+          style={{ background: "#25D366" }}
+        >
+          첫 메시지 WhatsApp으로 보내기
+        </a>
+        <button type="button" onClick={() => copy(msg)} className="shrink-0 h-10 px-3 rounded-xl border border-border bg-background text-[12.5px] font-bold text-foreground/80">
+          복사
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** 영업일(KST, 새벽 6시 경계) — 어젯밤 예약은 새벽까지 "다가오는 예약"으로 본다. */
+const businessToday = () => new Date(Date.now() + (9 - 6) * 3600_000).toISOString().slice(0, 10);
+
 export function ForeignRequestsClient({
   initial,
   allMds = [],
   clubOptions = [],
+  focusId = null,
 }: {
   initial: ForeignReq[];
   allMds?: { id: string; name: string; phone: string | null }[];
   clubOptions?: ClubOption[];
+  /** 알림에서 열었을 때(?id=) 그 카드로 스크롤 */
+  focusId?: string | null;
 }) {
   const [reqs, setReqs] = useState<ForeignReq[]>(initial);
   const [busy, setBusy] = useState<string | null>(null);
@@ -221,6 +336,10 @@ export function ForeignRequestsClient({
   // 목록이 200건까지 그냥 나열돼서, 지금 손 봐야 할 건(MD 답을 기다리는 것,
   // 거절당해 다시 잡아야 하는 것)을 눈으로 찾아야 했다. 처리 단계로 좁힌다.
   const [tab, setTab] = useState<"all" | "needs_club" | "not_sent" | "waiting" | "guest_waiting" | "approved" | "rejected" | "done">("all");
+  // 알림을 누르고 들어오면(?id=) 그 카드로 스크롤하고 테두리를 강조한다 — 예전엔 목록 맨 위에서 직접 찾아야 했다.
+  useEffect(() => {
+    if (focusId) document.getElementById(`req-${focusId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [focusId]);
 
   const updateStatus = async (id: string, status: string) => {
     setBusy(id);
@@ -368,7 +487,7 @@ export function ForeignRequestsClient({
         const st = STATUS_META[r.status] ?? STATUS_META.new;
         const link = contactLink(r.contact_type, r.contact_value);
         return (
-          <div key={r.id} className="rounded-2xl bg-card border border-border p-4 space-y-3">
+          <div key={r.id} id={`req-${r.id}`} className={`rounded-2xl bg-card border p-4 space-y-3 scroll-mt-4 transition-shadow ${focusId === r.id ? "border-amber-500 ring-2 ring-amber-500/60" : "border-border"}`}>
             {/* 헤더: 상태 + 언어 + 시각 */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
@@ -488,6 +607,10 @@ export function ForeignRequestsClient({
                 <a href={`mailto:${r.backup_email}`} className="text-[14px] font-bold text-money underline truncate flex-1">{r.backup_email}</a>
                 <button onClick={() => copy(r.backup_email!)} className="shrink-0 text-muted-foreground hover:text-foreground p-2 -m-1"><Copy className="w-4 h-4" /></button>
               </div>
+            )}
+
+            {r.conf && r.status !== "cancelled" && r.event_date >= businessToday() && (
+              <GroupChatBox r={r} md={allMds.find((m) => m.id === r.assigned_md_id) ?? r.mdCandidates.find((m) => m.id === r.assigned_md_id) ?? null} />
             )}
 
             {/* 제안서·MD응답·확정서 — 외국인/한국 요청 공용(ProposalSection.tsx, 2026-09-06). */}

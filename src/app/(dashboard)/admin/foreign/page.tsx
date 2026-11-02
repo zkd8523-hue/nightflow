@@ -6,7 +6,9 @@ import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminForeignPage() {
+// ?id= — 운영자 알림(확인서 발급·무응답 등)을 누르면 그 예약 카드로 바로 스크롤한다(2026-11-01).
+export default async function AdminForeignPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
+  const { id: focusId } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -24,9 +26,14 @@ export default async function AdminForeignPage() {
   // club_ids → 클럽명 매핑
   const allClubIds = Array.from(new Set(requests.flatMap((r) => (r.club_ids as string[]) ?? [])));
   const clubNameById: Record<string, string> = {};
+  // 영문명 — 단톡방 첫 메시지·방 이름은 손님이 읽으니 영문명부터 쓴다
+  const clubNameEnById: Record<string, string> = {};
   if (allClubIds.length > 0) {
-    const { data: clubs } = await supabase.from("clubs").select("id, name").in("id", allClubIds);
-    clubs?.forEach((c) => { clubNameById[c.id] = c.name; });
+    const { data: clubs } = await supabase.from("clubs").select("id, name, name_en").in("id", allClubIds);
+    clubs?.forEach((c) => {
+      clubNameById[c.id] = c.name;
+      if (c.name_en) clubNameEnById[c.id] = c.name_en;
+    });
   }
 
   // 확정서 (있으면 링크·확정 내용 표시)
@@ -113,6 +120,7 @@ export default async function AdminForeignPage() {
     ...r,
     club_ids: (r.club_ids as string[]) ?? [],
     clubNames: ((r.club_ids as string[]) ?? []).map((id) => clubNameById[id] ?? id.slice(0, 8)),
+    clubNameEn: clubNameEnById[((r.club_ids as string[]) ?? [])[0]] ?? null,
     conf: confByReq[r.id] ?? null,
     mdCandidates: Array.from(
       new Set(((r.club_ids as string[]) ?? []).flatMap((cid) => mdsByClub[cid] ?? []))
@@ -130,7 +138,7 @@ export default async function AdminForeignPage() {
             컨시어지 — 클럽 MD에 직접 연락(카톡/전화)해서 자리·가격 확정 후, 아래 연락처로 회신하세요.
           </p>
         </div>
-        <ForeignRequestsClient initial={enriched} allMds={allMds} clubOptions={clubOptions} />
+        <ForeignRequestsClient initial={enriched} allMds={allMds} clubOptions={clubOptions} focusId={focusId ?? null} />
       </div>
     </div>
   );

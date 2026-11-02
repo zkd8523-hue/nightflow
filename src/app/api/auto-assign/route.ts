@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   const mdId = club?.representative_md_id as string | null | undefined;
   if (!mdId) return NextResponse.json({ ok: true, skipped: "no_representative" });
 
-  const adminUrl = requestType === "korean" ? "/admin/korean-bookings" : "/admin/foreign";
+  const adminUrl = requestType === "korean" ? "/admin/korean-bookings" : `/admin/foreign?id=${r.id}`;
   const who = `${club?.name ?? "클럽"} · ${r.guest_name?.trim() || "게스트"}님 ${r.group_size}명 ${r.event_date.slice(5).replace("-", "/")}`;
   const pushAdmins = async (title: string, text: string) => {
     const { data: admins } = await sb.from("users").select("id").eq("role", "admin");

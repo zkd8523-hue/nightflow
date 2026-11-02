@@ -247,7 +247,7 @@ export async function POST(req: NextRequest) {
         p_title: approved ? "✅ MD 예약 가능" : "❌ MD 받기 어려움",
         p_body: bodyWithFlow,
         p_data: { type: "proposal_response", request_id: reqRow.id, action },
-        p_url: requestType === "korean" ? "/admin/korean-bookings" : "/admin/foreign",
+        p_url: requestType === "korean" ? "/admin/korean-bookings" : `/admin/foreign?id=${reqRow.id}`,
         p_category: "transaction",
       });
     }
