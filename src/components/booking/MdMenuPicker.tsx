@@ -112,6 +112,16 @@ export function MdMenuPicker({
   const [open, setOpen] = useState(false);
   const t = pickerTotals(items, value, budget);
   const diff = budget != null ? t.total - budget : 0;
+  // 메뉴판을 열지 않고 추천 구성을 바로 넣는다(2026-11-02) — 누를 때마다 다음 추천(최대 3개)으로 바뀐다.
+  const recs = useMemo(() => (budget != null ? recommend(items, budget, rule) : []), [items, budget, rule]);
+  const [recIdx, setRecIdx] = useState(-1);
+  const applyNextRec = () => {
+    const i = (recIdx + 1) % recs.length;
+    const qty: Record<string, number> = {};
+    recs[i].parts.forEach((p) => (qty[p.id] = p.n));
+    onChange({ qty, tc: recs[i].tc, tcTouched: false });
+    setRecIdx(i);
+  };
 
   const tag =
     t.state === "ok" ? { cls: "bg-green-500/15 text-money", text: "딱 맞음" }
@@ -181,13 +191,24 @@ export function MdMenuPicker({
       </div>
       {message}
       {tcCheck}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="w-full h-12 rounded-xl border border-amber-500 text-brand-amber text-[15px] font-black bg-card"
-      >
-        {t.lines.length ? "구성 수정" : "구성 제안"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex-1 h-12 rounded-xl border border-amber-500 text-brand-amber text-[15px] font-black bg-card"
+        >
+          {t.lines.length ? "구성 수정" : "구성 제안"}
+        </button>
+        {recs.length > 0 && (
+          <button
+            type="button"
+            onClick={applyNextRec}
+            className="flex-1 h-12 rounded-xl bg-amber-500 text-black text-[15px] font-black"
+          >
+            {recIdx < 0 ? "✨ 추천 구성" : recs.length > 1 ? `✨ 다른 추천 ${((recIdx + 1) % recs.length) + 1}/${recs.length}` : "✨ 추천 구성"}
+          </button>
+        )}
+      </div>
       {open && (
         <PickerSheet
           items={items} budget={budget} rule={rule} value={value} onChange={onChange}
