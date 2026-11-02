@@ -21,6 +21,11 @@ export function parseSeatZones(raw: unknown): SeatZone[] {
   );
 }
 
+/** 구역 자리 범위 표시 — "T1–T12". 한 자리짜리 구역(룸 R1 등)은 "R1–R1"이 아니라 "R1". */
+export function zoneRange(z: SeatZone): string {
+  return z.seats.length === 1 ? z.seats[0] : `${z.seats[0]}–${z.seats[z.seats.length - 1]}`;
+}
+
 /** 손님에게 보여줄 선택지 — 구역 전체면 묶음 하나, 아니면 자리 하나씩. value는 손님이 고르면 저장되는 값. */
 export type SeatOption = { value: string; label: string; labelKo: string };
 
@@ -33,7 +38,7 @@ export function seatOptions(zones: SeatZone[], picked: string[]): SeatOption[] {
     const mine = z.seats.filter((s) => set.has(s));
     if (mine.length === 0) continue;
     if (mine.length === z.seats.length) {
-      const range = `${z.seats[0]}–${z.seats[z.seats.length - 1]}`;
+      const range = zoneRange(z);
       out.push({ value: `zone:${z.key}`, label: `${z.label_en} (${range})`, labelKo: `${z.label} 전체 (${range})` });
     } else {
       mine.forEach((s) => out.push({ value: s, label: `Table ${s}`, labelKo: s }));
@@ -49,7 +54,7 @@ export function seatValueLabel(zones: SeatZone[], value: string, ko = false): st
   if (value.startsWith("zone:")) {
     const z = zones.find((x) => x.key === value.slice(5));
     if (!z) return value.slice(5);
-    const range = `${z.seats[0]}–${z.seats[z.seats.length - 1]}`;
+    const range = zoneRange(z);
     return ko ? `${z.label} (${range})` : `${z.label_en} (${range})`;
   }
   return ko ? value : `Table ${value}`;

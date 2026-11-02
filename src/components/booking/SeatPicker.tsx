@@ -5,7 +5,7 @@
 // 몇 자리만 될 때만 "일부 가능"을 펼쳐 번호를 고른다. 테이블맵은 아래 접이식으로 같이 본다.
 
 import { useState } from "react";
-import type { SeatZone } from "@/lib/booking/seats";
+import { zoneRange, type SeatZone } from "@/lib/booking/seats";
 import { MenuPhotosOverlay } from "@/components/booking/MenuPhotosOverlay";
 
 export function SeatPicker({
@@ -84,7 +84,7 @@ export function SeatPicker({
                     <span className="min-w-0">
                       <span className={`block text-[14px] font-black ${full ? "text-money" : "text-foreground"}`}>{z.label}</span>
                       <span className={`block text-[11px] font-semibold truncate ${part ? "text-brand-amber" : "text-muted-foreground"}`}>
-                        {part ? `일부: ${picked.join(", ")}` : `${z.seats[0]}–${z.seats[z.seats.length - 1]}`}
+                        {part ? `일부: ${picked.join(", ")}` : zoneRange(z)}
                       </span>
                     </span>
                     <span className={`shrink-0 text-[13px] font-black ${full ? "text-money" : "text-muted-foreground"}`}>
