@@ -11,6 +11,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendSms } from "@/lib/notifications/alimtalk";
 import { sendForeignConfirmedEmail } from "@/lib/email/foreignConfirmed";
+import { assignGroupRoom } from "@/lib/booking/groupRooms";
+import { chatLang, guestGreeting } from "@/lib/booking/groupChat";
 
 // SMS 링크는 운영 도메인으로 고정한다 — 로컬에서 보내도 받는 사람 링크는 열려야 한다.
 const SITE = "https://nightflow.kr";
@@ -58,7 +60,7 @@ export async function notifyAssignedMd(
     .from(table)
     .select(
       `id, user_id, guest_name, event_date, group_size, status, assigned_md_id, proposal_token, selected_menu_total, contact_type, contact_value, ${
-        requestType === "korean" ? "club_id, backup_phone" : "club_ids, budget, lang, backup_email"
+        requestType === "korean" ? "club_id, backup_phone" : "club_ids, budget, lang, backup_email, md_menu"
       }`
     )
     .eq("id", requestId)
@@ -84,13 +86,14 @@ export async function notifyAssignedMd(
     /** 외국인 요청만 — 확정 메일 언어와 받는 주소(메신저로 접수한 손님은 예비 이메일) */
     lang?: string | null;
     backup_email?: string | null;
+    md_menu?: { lines?: { qty: number; name_en: string; name_ko: string | null; label_en: string }[] } | null;
   };
   if (r.status === "cancelled") return { ok: false, error: "cancelled", status: 409 };
   if (!r.assigned_md_id) return { ok: false, error: "md_required", status: 400 };
 
   const { data: conf } = await sb
     .from("booking_confirmations")
-    .select("ref_no, md_token, public_token, club_id, total_price, confirmed_group_size, guest_notified_at")
+    .select("ref_no, md_token, public_token, club_id, total_price, confirmed_group_size, guest_notified_at, table_info, includes, arrival_time")
     .eq("request_type", requestType)
     .eq("request_id", r.id)
     .maybeSingle();
@@ -245,6 +248,11 @@ export async function notifyAssignedMd(
     // "확정서 보내기"는 MD 재촉용으로 여러 번 누르기도 한다 — 손님 메일은 처음 보낼 때(guest_notified_at
     // 비어 있을 때) 한 번만. 다시 누를 때마다 "Confirmed" 메일이 쌓이면 손님이 헷갈린다.
     let guestEmail = false;
+    // 미리 만들어 둔 단톡방을 이 예약에 배정한다(2026-11-04, Migration 707) — 손님 메일 유무와 상관없이 확인서가 나오면 한 번.
+    // 이미 배정돼 있으면 그대로. 방이 없거나 표가 없으면 null — 확정 메일·MD 알림을 막지 않는다.
+    const chat = requestType === "foreign"
+      ? await assignGroupRoom(sb, { requestType: "foreign", requestId: r.id, mdId }).catch(() => null)
+      : null;
     const guestEmailTo = requestType === "foreign" && !conf.guest_notified_at
       ? (r.contact_type === "email" ? r.contact_value : r.backup_email)?.trim()
       : null;
@@ -262,6 +270,22 @@ export async function notifyAssignedMd(
           guestName: r.guest_name,
           hostName: host?.display_name ?? null,
           totalPrice: conf.total_price ?? null,
+          chatUrl: chat?.room?.invite_url ?? null,
+          chatGreeting: chat?.room
+            ? guestGreeting({
+                lang: chatLang(r.lang),
+                guestName: r.guest_name,
+                refNo: conf.ref_no ?? "",
+                club: club?.name_en || club?.name || "the club",
+                eventDate: r.event_date,
+                groupSize: (conf.confirmed_group_size ?? String(r.group_size)).trim(),
+                tableInfo: conf.table_info ?? null,
+                includes: conf.includes ?? [],
+                menuLines: r.md_menu?.lines ?? null,
+                total: conf.total_price ?? null,
+                arrivalTime: conf.arrival_time ?? null,
+              })
+            : null,
         });
         guestEmail = true;
       } catch (e) {

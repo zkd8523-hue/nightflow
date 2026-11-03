@@ -32,6 +32,10 @@ type Props = {
   hostInstagram?: string | null;
   /** 한국 예약에서만 채워진다 — MD가 등록한 카톡 오픈채팅 URL. */
   hostKakaoUrl?: string | null;
+  /** WhatsApp 단톡방 초대 링크(Migration 707) — 외국인 예약에 방이 배정된 경우만 */
+  groupChatUrl?: string | null;
+  /** 단톡방에 들어가 처음 보낼 인사 문구(손님 언어 + 한국어 한 줄) */
+  groupGreeting?: string | null;
   publicToken: string;
   /** 도착 예정 시각(booking_confirmations.arrival_time, 자유 표기 "23:00") */
   arrivalTime?: string | null;
@@ -224,6 +228,7 @@ export function BookingPass(p: Props) {
   const [sentAt, setSentAt] = useState<Partial<Record<"soon" | "arrived", number>>>({});
   const [busyKind, setBusyKind] = useState<"soon" | "arrived" | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [greetCopied, setGreetCopied] = useState(false);
   // 쿨다운이 끝나는 시점에 버튼을 다시 그리기 위한 강제 리렌더 트리거.
   const [, forceTick] = useState(0);
 
@@ -524,6 +529,47 @@ export function BookingPass(p: Props) {
                   {p.changedAt ? ` · ${fmtDate(p.changedAt.slice(0, 10), ko)}` : ""}
                 </div>
                 <p className="text-[12.5px] text-foreground/80 leading-relaxed mt-1">{p.changeNote}</p>
+              </div>
+            )}
+
+            {/* 단톡방 — 운영자가 미리 만들어 둔 방이 배정된 외국인 예약만. 호스트와 NightFlow가 같이 있어 당일 안내·추가 주문을 여기서 받는다. */}
+            {!ko && !isCancelled && p.groupChatUrl && (
+              <div className="mt-5 rounded-xl border border-green-500/40 bg-green-500/[0.07] px-4 py-3">
+                <a
+                  href={p.groupChatUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center h-11 rounded-xl text-[14px] font-black text-black"
+                  style={{ background: "#25D366" }}
+                >
+                  💬 Chat with your host
+                </a>
+                <p className="mt-2.5 text-[12px] leading-relaxed text-muted-foreground">
+                  A private chat just for your booking: only you, your host and the NightFlow team.
+                </p>
+                <ul className="mt-2.5 space-y-1 text-[12.5px] leading-relaxed text-foreground/85">
+                  <li>· Get met at the door and guided to your table</li>
+                  <li>· Ask for water, ice or mixers, or order more at your table</li>
+                  <li>· Any other questions are welcome too</li>
+                </ul>
+                {p.groupGreeting && (
+                  <div className="mt-3">
+                    <p className="text-[12px] font-bold text-foreground">After you join, feel free to send this:</p>
+                    <pre className="mt-1.5 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-foreground/85 bg-background border border-border rounded-lg px-3 py-2">{p.groupGreeting}</pre>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(p.groupGreeting!).then(() => {
+                          setGreetCopied(true);
+                          setTimeout(() => setGreetCopied(false), 1800);
+                        }).catch(() => {});
+                      }}
+                      className="mt-2 w-full h-10 rounded-xl border border-border bg-card text-[13px] font-bold text-foreground"
+                    >
+                      {greetCopied ? "✓ Copied" : "Copy message"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

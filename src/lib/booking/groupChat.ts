@@ -3,6 +3,8 @@
 // 여기서는 방 이름·번호·첫 메시지를 채워 준다(관리자 예약 카드 GroupChatBox, 확인서 발급 알림).
 // 서버·클라이언트 둘 다 쓰므로 순수 함수만 둔다.
 
+import { bottlesOfLabel } from "@/lib/booking/mdMenu";
+
 export type ChatLang = "en" | "ja" | "zh" | "zh-tw";
 
 export function chatLang(lang: string | null | undefined): ChatLang {
@@ -182,7 +184,7 @@ export function firstGroupMessage(o: {
   const t = T[o.lang];
   const drinks = o.includes
     .filter((l) => !/^table charge/i.test(l.trim()))
-    .map((l) => l.trim().replace(/\s+x(\d+)$/i, " ×$1"))
+    .map(fmtDrink)
     .join(" · ");
   const name = o.host.trim();
   // 이름을 모르면 "Your host: Your host"가 되지 않게 머리줄은 클럽만, 아래 문장은 "Your host"로 쓴다
@@ -205,5 +207,80 @@ export function firstGroupMessage(o: {
     "",
     t.more,
     t.bye,
+  ].join("\n");
+}
+
+// ── 손님 첫 인사(2026-11-04) ──────────────────────────────────────────────
+// 손님이 단톡방에 들어가자마자 붙여넣을 문구 — 확인서·확정 메일에 "복사" 버튼/박스로 나간다.
+// 손님 언어 윗부분 + 아래에 한국어 한 줄(사장님·MD가 한눈에 알아보게). 예약번호·날짜·인원·자리·주류·금액이 다 들어 있어
+// 누구 예약인지 되묻지 않아도 된다. 도착 시간이 확인서에 있으면 채우고, 없으면 그 줄은 뺀다(빈칸이 남지 않게).
+
+/** "4 Illumi-Light Ice" · "Illumi-Light Ice x4" → "Illumi-Light Ice ×4" */
+function fmtDrink(line: string): string {
+  const l = line.trim();
+  const lead = l.match(/^(\d+)\s+(.+)$/);
+  if (lead) return lead[1] === "1" ? lead[2] : `${lead[2]} ×${lead[1]}`; // 1개는 ×1을 붙이지 않는다("5 bottle set ×1" 방지)
+  return l.replace(/\s+x(\d+)$/i, " ×$1");
+}
+
+export type GreetLine = { qty: number; name_en: string; name_ko: string | null; label_en: string };
+
+const KO_DOW = "일월화수목금토";
+const dateKo = (ymd: string) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return `${m}/${d}(${KO_DOW[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
+};
+const wonKo = (n: number) => (n % 10000 === 0 ? `${n / 10000}만원` : `${n.toLocaleString("ko-KR")}원`);
+const tableKo = (info: string | null) => {
+  const t = (info ?? "").trim();
+  if (!t || /당일 배정|on the night|on arrival/i.test(t)) return "당일 배정";
+  return t.replace(/^table\s+/i, "");
+};
+/** 메뉴판에서 고른 구성 → 한글 줄. 한글 이름이 없으면 영문 이름. 병/세트는 라벨로 읽는다. */
+function drinkKo(l: GreetLine): string {
+  const name = l.name_ko || l.name_en;
+  const bottles = bottlesOfLabel(l.label_en);
+  if (/set/i.test(l.label_en)) return `${name} ${bottles ? `${bottles}병 ` : ""}세트${l.qty > 1 ? ` ×${l.qty}` : ""}`;
+  if (/bottle/i.test(l.label_en)) return `${name} ${l.qty}병`;
+  return `${name} ×${l.qty}`;
+}
+
+const G: Record<ChatLang, { hi: (n: string) => string; booking: string; guests: (n: string) => string; arrive: (t: string) => string }> = {
+  en: { hi: (n) => `Hi! This is ${n || "a guest"} 👋`, booking: "Booking", guests: (n) => `${n} guests`, arrive: (t) => `We'll arrive around ${t}` },
+  ja: { hi: (n) => `こんにちは！${n || "ゲスト"}です👋`, booking: "予約", guests: (n) => `${n}名`, arrive: (t) => `到着は ${t} ごろの予定です` },
+  zh: { hi: (n) => `你好！我是 ${n || "客人"} 👋`, booking: "预订", guests: (n) => `${n}人`, arrive: (t) => `我们大约 ${t} 到店` },
+  "zh-tw": { hi: (n) => `你好！我是 ${n || "客人"} 👋`, booking: "預訂", guests: (n) => `${n}人`, arrive: (t) => `我們大約 ${t} 到場` },
+};
+
+export function guestGreeting(o: {
+  lang: ChatLang;
+  guestName: string | null;
+  refNo: string;
+  club: string;
+  eventDate: string;
+  groupSize: string;
+  tableInfo: string | null;
+  includes: string[];
+  menuLines?: GreetLine[] | null;
+  total: number | null;
+  arrivalTime?: string | null;
+}): string {
+  const g = G[o.lang];
+  const name = firstName(o.guestName);
+  const size = o.groupSize.trim();
+  const sizeText = /^\d+$/.test(size) ? g.guests(size) : size;
+  const arrival = (o.arrivalTime ?? "").trim();
+  const drinksEn = o.includes.filter((l) => !/^table charge/i.test(l.trim())).map(fmtDrink).join(" · ");
+  const drinksKo = o.menuLines?.length ? o.menuLines.map(drinkKo).join(", ") : drinksEn;
+  const sizeKo = /^\d+$/.test(size) ? `${size}명` : size;
+  return [
+    g.hi(name),
+    `${g.booking} ${o.refNo} · ${o.club} · ${fmtDate(o.eventDate, o.lang)} · ${sizeText}`,
+    [tableText(o.tableInfo, o.lang), drinksEn, o.total != null ? `₩${o.total.toLocaleString("en-US")}` : ""].filter(Boolean).join(" · "),
+    ...(arrival ? [g.arrive(arrival)] : []),
+    "",
+    `(안녕하세요, ${name ? `${name}님 ` : ""}예약입니다.`,
+    `${o.refNo} · ${dateKo(o.eventDate)} · ${sizeKo}`,
+    `${[tableKo(o.tableInfo), drinksKo, o.total != null ? wonKo(o.total) : "", arrival ? `도착 ${arrival}` : ""].filter(Boolean).join(" · ")})`,
   ].join("\n");
 }

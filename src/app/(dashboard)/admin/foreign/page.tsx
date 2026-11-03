@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ForeignRequestsClient, type ForeignReq } from "@/components/admin/ForeignRequestsClient";
 import { fetchMenuClubIds, isBookable } from "@/lib/clubs/bookable";
+import { mdShortName, poolRoomName } from "@/lib/booking/groupRooms";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,34 @@ export default async function AdminForeignPage({ searchParams }: { searchParams:
     const path = `/booking/${c.public_token}`;
     confByReq[c.request_id] = { ...c, guest_bell_read: path in bellReadByPath ? bellReadByPath[path] : null };
   });
+
+  // 단톡방 풀(Migration 707) — 예약에 배정된 방 + MD별 남은 방 수. 표가 아직 없으면 에러만 나고 빈 값으로 간다.
+  const adminDb = createAdminClient();
+  const { data: roomRows } = await adminDb.from("group_chat_rooms").select("md_id, label, invite_url, status, request_id");
+  const roomByReq: Record<string, { label: string; url: string }> = {};
+  const poolByMd: Record<string, { free: number; total: number }> = {};
+  (roomRows ?? []).forEach((rm) => {
+    if (rm.request_id) roomByReq[rm.request_id as string] = { label: rm.label as string, url: rm.invite_url as string };
+    const e = (poolByMd[rm.md_id as string] ??= { free: 0, total: 0 });
+    e.total++;
+    if (rm.status === "free") e.free++;
+  });
+  // 방을 등록할 수 있는 MD — 클럽 대표 담당자 + 이미 방이 있는 MD
+  const { data: repClubs } = await supabase.from("clubs").select("representative_md_id, name, name_en").not("representative_md_id", "is", null);
+  const clubOfMd: Record<string, string> = {};
+  (repClubs ?? []).forEach((c) => { clubOfMd[c.representative_md_id as string] = (c.name_en as string | null) || (c.name as string); });
+  const poolMdIds = Array.from(new Set([...(repClubs ?? []).map((c) => c.representative_md_id as string), ...Object.keys(poolByMd)]));
+  const { data: poolMdRows } = poolMdIds.length
+    ? await supabase.from("users").select("id, display_name").in("id", poolMdIds)
+    : { data: [] as { id: string; display_name: string | null }[] };
+  const pool = (poolMdRows ?? []).map((m) => ({
+    mdId: m.id as string,
+    name: (m.display_name as string | null) ?? "(이름없음)",
+    short: mdShortName(m.display_name as string | null),
+    roomName: poolRoomName(clubOfMd[m.id as string], mdShortName(m.display_name as string | null)),
+    free: poolByMd[m.id as string]?.free ?? 0,
+    total: poolByMd[m.id as string]?.total ?? 0,
+  }));
 
   // 담당 MD 후보 — 요청에 걸린 클럽들의 파트너.
   // 전체 MD를 다 내려주면 목록이 길어 못 쓴다.
@@ -122,6 +151,7 @@ export default async function AdminForeignPage({ searchParams }: { searchParams:
     clubNames: ((r.club_ids as string[]) ?? []).map((id) => clubNameById[id] ?? id.slice(0, 8)),
     clubNameEn: clubNameEnById[((r.club_ids as string[]) ?? [])[0]] ?? null,
     conf: confByReq[r.id] ?? null,
+    chatRoom: roomByReq[r.id] ?? null,
     mdCandidates: Array.from(
       new Set(((r.club_ids as string[]) ?? []).flatMap((cid) => mdsByClub[cid] ?? []))
     )
@@ -138,7 +168,7 @@ export default async function AdminForeignPage({ searchParams }: { searchParams:
             컨시어지 — 클럽 MD에 직접 연락(카톡/전화)해서 자리·가격 확정 후, 아래 연락처로 회신하세요.
           </p>
         </div>
-        <ForeignRequestsClient initial={enriched} allMds={allMds} clubOptions={clubOptions} focusId={focusId ?? null} />
+        <ForeignRequestsClient initial={enriched} allMds={allMds} clubOptions={clubOptions} focusId={focusId ?? null} pool={pool} />
       </div>
     </div>
   );

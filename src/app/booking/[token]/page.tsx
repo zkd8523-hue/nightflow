@@ -7,6 +7,8 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BookingPass } from "@/components/booking/BookingPass";
+import { roomOfRequest } from "@/lib/booking/groupRooms";
+import { chatLang, guestGreeting } from "@/lib/booking/groupChat";
 import { BookingViewBeacon } from "@/components/booking/BookingViewBeacon";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +35,7 @@ export default async function BookingPage({
   const clubIdCol = conf.request_type === "korean" ? "club_id" : "club_ids";
   const { data: reqRow } = await sb
     .from(reqTable)
-    .select(`guest_name, event_date, group_size, status, assigned_md_id, md_bump_risk, ${clubIdCol}`)
+    .select(`guest_name, event_date, group_size, status, assigned_md_id, md_bump_risk, ${conf.request_type === "foreign" ? "lang, md_menu, " : ""}${clubIdCol}`)
     .eq("id", conf.request_id)
     .single();
 
@@ -93,6 +95,25 @@ export default async function BookingPage({
     .eq("request_id", conf.request_id)
     .maybeSingle();
 
+  // 단톡방(Migration 707) — 외국인 예약에 방이 배정됐으면 "단톡방 들어가기" 버튼을 보여준다.
+  const chatRoom = conf.request_type === "foreign" ? await roomOfRequest(sb, "foreign", conf.request_id) : null;
+  // 들어가자마자 보낼 인사 문구 — 손님 언어 + 한국어 한 줄(사장님·MD용). 복사 버튼으로 나간다.
+  const groupGreeting = chatRoom
+    ? guestGreeting({
+        lang: chatLang((req as { lang?: string | null }).lang),
+        guestName: req.guest_name,
+        refNo: conf.ref_no,
+        club: club?.name_en || club?.name || "the club",
+        eventDate: req.event_date,
+        groupSize: String(conf.confirmed_group_size ?? req.group_size),
+        tableInfo: conf.table_info,
+        includes: conf.includes ?? [],
+        menuLines: ((req as { md_menu?: { lines?: { qty: number; name_en: string; name_ko: string | null; label_en: string }[] } | null }).md_menu?.lines) ?? null,
+        total: conf.total_price,
+        arrivalTime: conf.arrival_time ?? null,
+      })
+    : null;
+
   return (
     <>
       <BookingViewBeacon token={token} />
@@ -128,6 +149,8 @@ export default async function BookingPage({
         menuUrls={((club?.drink_menu_urls as string[] | null)?.length ? club!.drink_menu_urls : club?.drink_menu_url ? [club.drink_menu_url] : []) as string[]}
         floorPlanUrls={((club?.floor_plan_urls as string[] | null)?.length ? club!.floor_plan_urls : club?.floor_plan_url ? [club.floor_plan_url] : []) as string[]}
         hostName={md?.display_name ?? null}
+        groupChatUrl={chatRoom?.invite_url ?? null}
+        groupGreeting={groupGreeting}
         hostInstagram={hostInstagram}
         hostKakaoUrl={hostKakaoUrl}
       />

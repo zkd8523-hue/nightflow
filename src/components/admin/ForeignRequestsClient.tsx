@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { isClubOpenOn } from "@/lib/utils/clubOpenDays";
 import type { SelectedMenuSnapshot } from "@/types/database";
 import { ProposalCard, MdResponseCard, ConfirmationCard, ConfirmForm, type ProposalReq, type ProposalConf } from "@/components/admin/ProposalSection";
-import { chatLang, firstGroupMessage, groupRoomName, guestWa, hostNameGuess, krPhoneToWa, waChatUrl, waShareUrl } from "@/lib/booking/groupChat";
+import { chatLang, firstGroupMessage, hostNameGuess, waShareUrl } from "@/lib/booking/groupChat";
 
 // "보낸 지 N분/N시간" — 제안서 무응답 배지용. 24시간이 넘으면 일 단위.
 function sinceText(iso: string): string {
@@ -60,6 +60,8 @@ export type ForeignReq = {
   assigned_md_id: string | null;
   conf: ProposalConf | null;
   mdCandidates: { id: string; name: string; phone: string | null }[];
+  /** 배정된 단톡방(Migration 707) — 없으면 null */
+  chatRoom?: { label: string; url: string } | null;
   contact_type: string;
   contact_value: string;
   backup_email: string | null;
@@ -209,8 +211,71 @@ function ClubAssignBox({
   );
 }
 
-// 폰에서 번호가 잘리지 않게 버튼은 아이콘으로 — 번호·방 이름 전체가 보여야 그대로 확인하고 넣을 수 있다.
-function ChatRow({ label, sub, value, wa, copyText, onCopy }: { label: string; sub?: string; value: string; wa?: string | null; copyText?: string | null; onCopy: (t: string) => void }) {
+
+type PoolMd = { mdId: string; name: string; short: string; roomName: string; free: number; total: number };
+
+/** 단톡방 풀(2026-11-04, Migration 707) — 한가할 때 "담당 MD가 들어 있는 빈 방"을 미리 만들어 초대 링크만 여기 등록한다.
+ *  확인서가 나오면 안 쓴 방이 자동으로 한 예약에 붙고, 그 링크가 손님 확정 메일·확인서 버튼으로 나간다. 한 번 쓴 방은 다시 안 쓴다. */
+function GroupRoomPool({ initial }: { initial: PoolMd[] }) {
+  const [pool, setPool] = useState(initial);
+  const [mdId, setMdId] = useState(initial.find((m) => m.free < 3)?.mdId ?? initial[0]?.mdId ?? "");
+  const [links, setLinks] = useState("");
+  const [busy, setBusy] = useState(false);
+  if (initial.length === 0) return null;
+  const low = pool.filter((m) => m.free <= 1);
+  const sel = pool.find((m) => m.mdId === mdId);
+  const add = async () => {
+    if (!mdId || !links.trim()) return;
+    setBusy(true);
+    const res = await fetch("/api/admin/group-rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "add", md_id: mdId, links: links.split(/\s+/).filter(Boolean) }),
+    });
+    const j = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) return toast.error(j.error ?? "등록 실패");
+    setPool((prev) => prev.map((m) => (m.mdId === mdId ? { ...m, free: j.free, total: j.total } : m)));
+    setLinks("");
+    const bad = (j.invalid?.length ?? 0) + (j.duplicate?.length ?? 0);
+    toast.success(`${j.added.length}개 등록${bad ? ` · ${bad}개는 건너뜀(링크 형식 오류·이미 등록)` : ""}`);
+  };
+  return (
+    <details className="rounded-xl border border-border bg-card px-3 py-2.5" open={low.length > 0}>
+      <summary className="cursor-pointer text-[13px] font-bold flex items-center gap-2 flex-wrap">
+        <span>💬 단톡방 풀</span>
+        {pool.map((m) => (
+          <span key={m.mdId} className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${m.free <= 1 ? "border-red-500/40 bg-red-500/10 text-red-400" : "border-green-500/40 bg-green-500/10 text-money"}`}>
+            {m.short} 남은 방 {m.free}
+          </span>
+        ))}
+      </summary>
+      <div className="mt-2.5 space-y-2">
+        <p className="text-[11.5px] text-muted-foreground leading-relaxed">
+          WhatsApp에서 <b>담당 MD를 넣은 빈 방</b>을 만들고 초대 링크(그룹 정보 → 링크로 초대)를 여기에 붙여넣으세요. 한 줄에 하나, 여러 개 한꺼번에 가능해요.
+          {sel && <> 방 이름은 모두 <b className="text-foreground">{sel.roomName}</b>로 — 손님이 보는 이름이라 예약마다 바꿀 필요가 없어요.</>}
+        </p>
+        <select value={mdId} onChange={(e) => setMdId(e.target.value)} className="w-full h-9 px-2 rounded-lg bg-background border border-border text-[13px] font-bold">
+          {pool.map((m) => (
+            <option key={m.mdId} value={m.mdId}>{m.name} · 남은 방 {m.free}/{m.total}</option>
+          ))}
+        </select>
+        <textarea
+          value={links}
+          onChange={(e) => setLinks(e.target.value)}
+          placeholder={"https://chat.whatsapp.com/...\nhttps://chat.whatsapp.com/..."}
+          className="w-full min-h-[84px] px-2.5 py-2 rounded-lg bg-background border border-border text-[12.5px] font-mono outline-none focus:border-green-500/60"
+        />
+        <button type="button" disabled={busy || !links.trim()} onClick={add} className="w-full h-9 rounded-lg bg-green-500/15 text-money border border-green-500/30 text-[13px] font-bold disabled:opacity-50">
+          방 등록
+        </button>
+      </div>
+    </details>
+  );
+}
+
+// 폰에서 번호가 잘리지 않게 버튼은 아이콘으로 — 방 이름·링크 전체가 보여야 그대로 확인하고 쓸 수 있다.
+function ChatRow({ label, sub, value, copyText, onCopy, href }: { label: string; sub?: string; value: string; copyText?: string | null; onCopy: (t: string) => void; href?: string | null }) {
   return (
     <div className="flex items-center gap-2 py-1.5 border-t border-border/60 first:border-t-0">
       <span className="w-12 shrink-0 text-[11px] font-bold text-muted-foreground">{label}</span>
@@ -218,8 +283,8 @@ function ChatRow({ label, sub, value, wa, copyText, onCopy }: { label: string; s
         <span className="block text-[13px] font-bold text-foreground break-words">{value}</span>
         {sub && <span className="block text-[11px] text-muted-foreground truncate">{sub}</span>}
       </span>
-      {wa && (
-        <a href={wa} target="_blank" rel="noopener noreferrer" aria-label={`${label} WhatsApp 열기`} className="shrink-0 w-8 h-8 rounded-lg border border-green-500/40 text-money flex items-center justify-center">
+      {href && (
+        <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`${label} 열기`} className="shrink-0 w-8 h-8 rounded-lg border border-green-500/40 text-money flex items-center justify-center">
           <MessageCircle className="w-4 h-4" />
         </a>
       )}
@@ -232,14 +297,14 @@ function ChatRow({ label, sub, value, wa, copyText, onCopy }: { label: string; s
   );
 }
 
-/** 단톡방 만들기(2026-11-01) — 확인서가 나온 다가오는 예약 카드에만 보인다.
- *  WhatsApp엔 사람을 넣은 채 그룹을 만드는 링크가 없어서 방은 앱에서 직접 만들고, 여기선 방 이름·두 번호·첫 메시지를 채워 준다.
- *  첫 메시지는 번호 없는 wa.me 링크로 열어 방금 만든 방을 고르면 채워진 채로 들어간다. */
+/** 단톡방(2026-11-04 개편) — 확인서가 나오면 미리 만든 방이 자동 배정된다. 운영자는 그 방을 열어 이름을 바꾸고 첫 메시지만 보낸다.
+ *  손님은 링크로 직접 들어온다(번호를 몰라도 되고, 번호가 틀려도 상관없다). 방이 없으면 여기서 배정하거나 링크를 직접 연결한다. */
 function GroupChatBox({ r, md }: { r: ForeignReq; md: { id: string; name: string; phone: string | null } | null }) {
   const conf = r.conf!;
+  const [room, setRoom] = useState(r.chatRoom ?? null);
+  const [busy, setBusy] = useState(false);
+  const [manual, setManual] = useState("");
   const club = r.clubNameEn || r.clubNames[0] || "the club";
-  const gw = guestWa(r.contact_type, r.contact_value);
-  const mw = krPhoneToWa(md?.phone);
   // 호스트 영문 이름 — MD 테이블에 영문 이름이 없어 display_name으로 추정하고, 고치면 이 브라우저에 MD별로 기억한다.
   const hostKey = md ? `nf_host_en_${md.id}` : null;
   const [host, setHost] = useState(() => hostNameGuess(md?.name));
@@ -258,7 +323,6 @@ function GroupChatBox({ r, md }: { r: ForeignReq; md: { id: string; name: string
       if (hostKey) localStorage.setItem(hostKey, v);
     } catch {}
   };
-  const room = groupRoomName({ refNo: conf.ref_no, club, eventDate: r.event_date, guestName: r.guest_name });
   const msg = firstGroupMessage({
     lang: chatLang(r.lang),
     guestName: r.guest_name,
@@ -273,17 +337,51 @@ function GroupChatBox({ r, md }: { r: ForeignReq; md: { id: string; name: string
   const copy = (text: string) => {
     navigator.clipboard?.writeText(text).then(() => toast.success("복사됨")).catch(() => toast.error("복사하지 못했어요"));
   };
+  const call = async (body: Record<string, unknown>) => {
+    setBusy(true);
+    const res = await fetch("/api/admin/group-rooms", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ request_id: r.id, ...body }) });
+    const j = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      const msgs: Record<string, string> = {
+        no_free_room: "남은 방이 없어요. 위 '단톡방 풀'에서 방을 더 등록하거나 링크를 직접 연결하세요.",
+        invalid_link: "WhatsApp 그룹 초대 링크(chat.whatsapp.com/…)가 아니에요.",
+        link_in_use: "이미 다른 곳에 등록된 링크예요.",
+        md_required: "담당 MD가 아직 없어요.",
+      };
+      return toast.error(msgs[j.error] ?? j.error ?? "실패");
+    }
+    if (j.room) setRoom({ label: j.room.label, url: j.room.invite_url });
+    toast.success(j.mailed ? "방 연결 · 손님에게 링크 메일을 보냈어요" : "방 연결 (손님 메일은 못 보냈어요 — 확인서에는 버튼이 나와요)");
+  };
+
+  if (!room) {
+    return (
+      <div className="rounded-xl border border-amber-500/40 bg-amber-500/[0.05] px-3 py-2.5 space-y-2">
+        <p className="text-[13px] font-black text-brand-amber">💬 단톡방 — 아직 배정된 방이 없어요</p>
+        <button type="button" disabled={busy || !r.assigned_md_id} onClick={() => call({ action: "assign" })} className="w-full h-10 rounded-xl bg-green-500/15 text-money border border-green-500/30 text-[13px] font-bold disabled:opacity-50">
+          미리 만든 빈 방 배정하기
+        </button>
+        <div className="flex gap-1.5">
+          <input
+            value={manual}
+            onChange={(e) => setManual(e.target.value)}
+            placeholder="또는 방 초대 링크 직접 붙여넣기"
+            className="flex-1 min-w-0 h-9 px-2.5 rounded-lg bg-background border border-border text-[12.5px] outline-none focus:border-green-500/60"
+          />
+          <button type="button" disabled={busy || !manual.trim()} onClick={() => call({ action: "link", url: manual })} className="shrink-0 h-9 px-3 rounded-lg border border-border bg-background text-[12.5px] font-bold disabled:opacity-50">
+            연결
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border border-green-500/35 bg-green-500/[0.05] px-3 py-2.5">
-      <p className="text-[13px] font-black text-money">💬 단톡방 만들기</p>
-      <p className="text-[11px] text-muted-foreground mt-0.5 mb-1">① WhatsApp에서 방 만들기(이름·두 번호) ② 첫 메시지 보내기</p>
-      <ChatRow onCopy={copy} label="방 이름" value={room} copyText={room} />
-      {gw ? (
-        <ChatRow onCopy={copy} label="손님" value={gw.display} wa={waChatUrl(gw.digits)} copyText={gw.display} />
-      ) : (
-        <ChatRow onCopy={copy} label="손님" value={`WhatsApp 없음 · ${r.contact_type} ${r.contact_value}`} copyText={r.contact_value} />
-      )}
-      <ChatRow onCopy={copy} label="MD" sub={md?.name} value={mw?.display ?? (md ? "번호 없음" : "담당 MD 없음")} wa={mw ? waChatUrl(mw.digits) : null} copyText={mw?.display ?? null} />
+      <p className="text-[13px] font-black text-money">💬 단톡방 · 배정됨</p>
+      <p className="text-[11px] text-muted-foreground mt-0.5 mb-1">① 아래 방 열기(링크를 누르면 그 방으로 바로 가요) ② 첫 메시지 보내기 — 손님은 확정 메일·확인서의 링크로 직접 들어와요</p>
+      <ChatRow onCopy={copy} label="배정 방" value={room.label} sub="방 이름은 모두 같아서 링크로 열어야 해요" copyText={room.url} href={room.url} />
       <div className="flex items-center gap-2 py-1.5 border-t border-border/60">
         <span className="w-12 shrink-0 text-[11px] font-bold text-muted-foreground">호스트</span>
         <input
@@ -323,12 +421,15 @@ export function ForeignRequestsClient({
   allMds = [],
   clubOptions = [],
   focusId = null,
+  pool = [],
 }: {
   initial: ForeignReq[];
   allMds?: { id: string; name: string; phone: string | null }[];
   clubOptions?: ClubOption[];
   /** 알림에서 열었을 때(?id=) 그 카드로 스크롤 */
   focusId?: string | null;
+  /** 단톡방 풀 — MD별 남은 방(Migration 707) */
+  pool?: PoolMd[];
 }) {
   const [reqs, setReqs] = useState<ForeignReq[]>(initial);
   const [busy, setBusy] = useState<string | null>(null);
@@ -462,6 +563,7 @@ export function ForeignRequestsClient({
 
   return (
     <div className="space-y-3">
+      <GroupRoomPool initial={pool} />
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1">
         {TABS.map((t) => (
           <button

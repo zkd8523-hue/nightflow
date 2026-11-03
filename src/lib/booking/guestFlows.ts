@@ -16,7 +16,7 @@ import { notifyAssignedMd } from "@/lib/booking/notifyMd";
 import { saveConfirmation } from "@/lib/booking/confirmations";
 import { parseSeatZones, seatOptions, seatValueLabel, type SeatZone } from "@/lib/booking/seats";
 import { menuToIncludes, type MdMenu } from "@/lib/booking/mdMenu";
-import { guestWa, krPhoneToWa } from "@/lib/booking/groupChat";
+import { freeCount, roomOfRequest } from "@/lib/booking/groupRooms";
 import {
   COLOR, esc, fmtGuestDate, guestEmailOf, guestLayout, mailButton, mapImage, normLang, p, sendGuestEmail, waLink, type GuestLang,
 } from "@/lib/email/foreignGuest";
@@ -456,19 +456,17 @@ export async function autoIssueConfirmation(sb: SupabaseClient, requestId: strin
     },
   });
   const sent = await notifyAssignedMd(sb, { requestType: "foreign", requestId: r.id, kind: "confirmation" });
-  // 확인서가 나오면 운영자가 손님·담당 MD와 단톡방을 만든다 — 알림만 보고도 바로 만들 수 있게 두 번호를 같이 싣는다.
-  // 누르면 관리자 예약 카드의 "단톡방 만들기" 칸(방 이름·번호 복사, 첫 메시지 보내기)으로 간다.
-  const { data: md } = r.assigned_md_id
-    ? await sb.from("users").select("display_name, phone").eq("id", r.assigned_md_id).maybeSingle()
-    : { data: null };
-  const gw = guestWa(r.contact_type ?? "", r.contact_value ?? "");
-  const mw = krPhoneToWa(md?.phone);
+  // 확인서가 나오면 미리 만든 단톡방이 배정된다(notifyAssignedMd, Migration 707) — 운영자는 그 방을 열어 이름을 바꾸고
+  // 첫 메시지만 보낸다. 방이 없으면 "방 없음"을 알려 풀에 방을 더 등록하게 한다. 누르면 관리자 예약 카드의 "단톡방" 칸으로 간다.
+  const chat = await roomOfRequest(sb, "foreign", r.id);
+  const left = chat ? await freeCount(sb, chat.md_id) : 0;
+  const chatText = chat
+    ? `단톡방 「${chat.label}」 배정 · 손님이 들어와 인사하면 첫 메시지를 보내주세요${left <= 1 ? ` · ⚠️ 남은 방 ${left}개 — 더 만들어 주세요` : ""}`
+    : "⚠️ 단톡방 풀에 빈 방이 없어요 — 방을 만들어 등록하거나 링크를 직접 연결하세요";
   await pushAdmins(
     sb,
     "🎉 확인서 발급 · 단톡방 만들기",
-    `${who(r, club)} · ${saved.ref_no}\n` +
-      `손님 ${gw ? `WhatsApp ${gw.display}` : `WhatsApp 없음 (${r.contact_type ?? "-"} ${r.contact_value ?? ""})`} · ` +
-      `MD ${md?.display_name ?? "미지정"} ${mw?.display ?? "번호 없음"}${sent.ok ? "" : " · ⚠️ 담당자 알림 실패"}`,
+    `${who(r, club)} · ${saved.ref_no}\n${chatText}${sent.ok ? "" : " · ⚠️ 담당자 알림 실패"}`,
     r.id,
     "auto_confirmation",
   );

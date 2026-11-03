@@ -45,6 +45,14 @@ const COPY: Record<Lang, {
   guests: (n: string) => string;
   pay: string;
   cta: string;
+  /** 단톡방 들어가기(Migration 707) — 방이 배정된 예약에만 */
+  chat: string;
+  /** 누가 있는 방인지 — "group chat"만 쓰면 낯선 사람이 있을까 꺼려진다 */
+  chatPrivate: string;
+  /** 단톡방에 들어가면 얻는 것 세 줄 */
+  chatBenefits: string[];
+  /** 방에 들어간 뒤 보낼 인사 안내 */
+  chatSay: string;
   questions: (wa: string, ig: string) => string;
   why: string;
 }> = {
@@ -58,6 +66,10 @@ const COPY: Record<Lang, {
     guests: (n) => `${n} guests`,
     pay: "Pay the club on the night, card or cash.",
     cta: "Open booking pass",
+    chat: "Chat with your host",
+    chatPrivate: "A private chat just for your booking: only you, your host and the NightFlow team.",
+    chatBenefits: ["Get met at the door and guided to your table", "Ask for water, ice or mixers, or order more at your table", "Any other questions are welcome too"],
+    chatSay: "After you join, feel free to send this:",
     questions: (wa, ig) => `Questions before your night? ${wa} · ${ig} · or reply to this email.`,
     why: "You're getting this because you booked a table through NightFlow.",
   },
@@ -71,6 +83,10 @@ const COPY: Record<Lang, {
     guests: (n) => `${n}名`,
     pay: "お支払いは当日クラブで。カード・現金どちらも可。",
     cta: "予約パスを開く",
+    chat: "ホストとチャット",
+    chatPrivate: "あなたの予約専用のプライベートチャットです。参加者はあなた、ホスト、NightFlowチームだけです。",
+    chatBenefits: ["到着時にお出迎えし、テーブルまでご案内", "水・氷・ミキサーの依頼や、テーブルでの追加注文", "その他のご質問もお気軽にどうぞ"],
+    chatSay: "参加したら、よければこちらを送ってください：",
     questions: (wa, ig) => `当日までのご質問は ${wa}・${ig}、またはこのメールへの返信でどうぞ。`,
     why: "NightFlow でテーブルを予約されたためお送りしています。",
   },
@@ -84,6 +100,10 @@ const COPY: Record<Lang, {
     guests: (n) => `${n}人`,
     pay: "当晚在夜店付款，刷卡或现金均可。",
     cta: "打开预订凭证",
+    chat: "与接待聊天",
+    chatPrivate: "专属于你预订的私密聊天，只有你、接待和 NightFlow 团队。",
+    chatBenefits: ["到店时有人迎接，并带你到座位", "可以要水、冰块或调酒饮料，也可以在桌边加点", "其他任何问题也都可以问我们"],
+    chatSay: "加入后，欢迎发送这条消息：",
     questions: (wa, ig) => `到店前有问题？${wa} · ${ig}，或直接回复本邮件。`,
     why: "你收到此邮件，是因为你通过 NightFlow 预订了卡座。",
   },
@@ -97,6 +117,10 @@ const COPY: Record<Lang, {
     guests: (n) => `${n}人`,
     pay: "當晚在夜店付款，刷卡或現金皆可。",
     cta: "打開入場憑證",
+    chat: "與公關聊天",
+    chatPrivate: "專屬於你訂位的私密聊天，只有你、公關和 NightFlow 團隊。",
+    chatBenefits: ["到場時有人迎接，並帶你到座位", "可以要水、冰塊或調酒飲料，也可以在桌邊加點", "其他任何問題也都可以問我們"],
+    chatSay: "加入後，歡迎傳送這則訊息：",
     questions: (wa, ig) => `到店前有問題？${wa} · ${ig}，或直接回覆本郵件。`,
     why: "你收到此郵件，是因為你透過 NightFlow 訂了包廂。",
   },
@@ -121,6 +145,10 @@ export type ForeignConfirmedEmail = {
   /** 담당 MD 표시 이름 — "확정서 보내기"는 MD가 확인한 뒤라 이때는 정해져 있다 */
   hostName: string | null;
   totalPrice: number | null;
+  /** WhatsApp 단톡방 초대 링크(Migration 707) — 있으면 "단톡방 들어가기" 버튼을 붙인다 */
+  chatUrl?: string | null;
+  /** 방에 들어가 처음 보낼 인사 문구 — chatUrl과 같이 있을 때만 박스로 보여준다 */
+  chatGreeting?: string | null;
 };
 
 export function buildForeignConfirmedEmail(o: ForeignConfirmedEmail): { subject: string; html: string } {
@@ -142,7 +170,7 @@ export function buildForeignConfirmedEmail(o: ForeignConfirmedEmail): { subject:
 <tr><td style="background:${CARD};border-radius:20px;padding:28px 24px;">
 <p style="margin:0 0 12px;"><span style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;color:${GREEN};border:1px solid #166534;border-radius:999px;padding:4px 12px;">${c.badge}</span></p>
 <h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:900;color:#fff;letter-spacing:-0.5px;">${c.heading(club)}</h1>
-<p style="margin:0 0 14px;padding:10px 12px;border-radius:12px;background:${AMBER};font-size:13px;line-height:1.5;font-weight:900;color:#000;">${c.passport}</p>
+<p style="margin:0 0 14px;padding:2px 0 2px 12px;border-left:3px solid ${AMBER};font-size:13px;line-height:1.5;font-weight:700;color:${AMBER};">${c.passport}</p>
 <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:${MUTED};">${c.intro}</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
 ${row(c.date, esc(date))}
@@ -156,6 +184,11 @@ ${o.totalPrice ? row(c.total, `₩${o.totalPrice.toLocaleString("en-US")}`, GREE
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px;"><tr><td style="border-radius:14px;background:${AMBER};">
 <a href="${o.passUrl}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:900;color:#000;text-decoration:none;border-radius:14px;">${c.cta}</a>
 </td></tr></table>
+${o.chatUrl ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:14px 0 0;"><tr><td style="border-radius:14px;background:#25D366;">
+<a href="${esc(o.chatUrl)}" style="display:inline-block;padding:13px 24px;font-size:14px;font-weight:900;color:#000;text-decoration:none;border-radius:14px;">💬 ${c.chat}</a>
+</td></tr></table>
+<p style="margin:10px 0 0;font-size:12px;line-height:1.5;color:${MUTED};">${c.chatPrivate}</p><div style="margin:8px 0 0;font-size:12.5px;line-height:1.8;color:#e5e5e5;">${c.chatBenefits.map((b) => `· ${b}`).join("<br>")}</div>${o.chatGreeting ? `<p style="margin:12px 0 6px;font-size:12px;font-weight:700;color:#fff;">${c.chatSay}</p>
+<div style="margin:0;padding:10px 12px;border-radius:12px;background:#0f0f10;border:1px solid #2c2c2e;font-size:12.5px;line-height:1.6;color:#e5e5e5;white-space:pre-wrap;">${esc(o.chatGreeting)}</div>` : ""}` : ""}
 </td></tr>
 <tr><td style="padding:18px 20px 0;"><p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:${MUTED};">${c.questions(wa, ig)}</p>
 <p style="margin:0;font-size:11px;line-height:1.6;color:${MUTED};">${c.why}</p></td></tr>
