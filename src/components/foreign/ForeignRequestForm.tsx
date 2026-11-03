@@ -221,13 +221,13 @@ const FALLBACK_MIN_BUDGET = FALLBACK_BUDGET_TIERS[0];
 // 예전 하드 게이트가 "Yes"를 기억하던 키. 소프트 게이트 전환 후에도 Continue 시 계속 찍어둔다 —
 // 다른 화면이 이 키로 "확정 손님"을 판별할 수 있게 호환용으로 남긴다.
 const TRIP_GATE_KEY = "nf_trip_gate_qualified";
-const CONTACT_TYPES = ["whatsapp", "instagram", "email", "wechat", "line"] as const;
+// WeChat은 2026-11-04에 뺐다(사용자 결정 — 접수 25건 중 선택 0건). 예전 요청의 wechat 값은 관리자 화면에서 그대로 보인다.
+const CONTACT_TYPES = ["whatsapp", "instagram", "email", "line"] as const;
 type ContactType = (typeof CONTACT_TYPES)[number];
 const CONTACT_LABEL: Record<ContactType, string> = {
   whatsapp: "WhatsApp",
   instagram: "Instagram",
   email: "Email",
-  wechat: "WeChat",
   line: "LINE",
 };
 // 흔한 이메일 도메인 오타 → 정타. 강제 교정이 아니라 제출 직전 "혹시 이거 아닌가요?"로만 확인.
@@ -557,13 +557,16 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
 
 
   const [guestName, setGuestName] = useState("");
-  const [contactType, setContactType] = useState<ContactType>("whatsapp");
+  // 기본 선택 없음(2026-11-04) — 예전엔 WhatsApp이 미리 골라져 있어서, WhatsApp을 안 쓰는 일본 손님이
+  // 그대로 휴대폰 번호를 넣고 제출했다(가입 안 된 번호). 손님이 쓰는 앱을 직접 고르게 한다.
+  const [contactType, setContactType] = useState<ContactType | null>(null);
+  const contactLabel = contactType ? CONTACT_LABEL[contactType] : "";
   // 예비 이메일 — 메신저 ID 검색이 막히면 연락이 끊긴다. 2026-09-19에 LINE ID가
   // 검색되지 않아 ₩100만 예약을 통째로 놓쳤다(야후재팬 유입, 48분 체류 후 제출).
   // contactType이 email이면 중복이라 받지 않는다.
   const [backupEmail, setBackupEmail] = useState("");
-  // 검색 허용 경고(LINE/WeChat/Instagram)를 읽고 체크했는지. 채널을 바꾸면 반드시 풀린다 —
-  // LINE에서 체크한 채로 WeChat으로 옮기면 다른 설정 경로를 안 보고 통과해버린다.
+  // 검색 허용 경고(LINE/Instagram)를 읽고 체크했는지. 채널을 바꾸면 반드시 풀린다 —
+  // LINE에서 체크한 채로 Instagram으로 옮기면 다른 설정 경로를 안 보고 통과해버린다.
   const [contactWarnAck, setContactWarnAck] = useState(false);
   const [preferredLang, setPreferredLang] = useState<Lang>(lang);
   const [contactValue, setContactValue] = useState("");
@@ -666,7 +669,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     picked: { snapshot: SelectedMenuSnapshot; total: number } | null;
     menuZone: string | null;
     guestName: string;
-    contactType: ContactType;
+    contactType: ContactType | null;
     preferredLang: Lang;
     contactValue: string;
     backupEmail?: string;
@@ -756,7 +759,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     setPicked(d.picked);
     setMenuZone(d.menuZone);
     setGuestName(d.guestName);
-    setContactType(d.contactType);
+    // 예전에 저장된 초안이 지금은 없는 채널(wechat)이면 선택 안 한 상태로 — 버튼이 없어 고를 수도 없게 된다.
+    setContactType(d.contactType && (CONTACT_TYPES as readonly string[]).includes(d.contactType) ? d.contactType : null);
     setPreferredLang(d.preferredLang);
     setContactValue(d.contactValue);
     setBackupEmail(d.backupEmail ?? "");
@@ -950,14 +954,12 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     whatsapp: "+1 234 567 890",
     instagram: "@yourhandle",
     email: "you@example.com",
-    wechat: "WeChat ID",
     line: "LINE ID",
   };
   const contactHint: Record<ContactType, string> = {
     whatsapp: "",
     instagram: "",
     email: "",
-    wechat: "",
     line: "",
   };
 
@@ -965,7 +967,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // LINE ID nobuito0719 건(2026-09-19): 값은 멀쩡한데 검색이 안 돼 리드가 그대로 증발했다.
   // 오타 검증으로는 원리적으로 못 잡는 실패라, 제출 전에 본인이 설정을 켜게 하는 게 유일한 방어.
   //  - LINE   : ID 검색 허용 off + (일본 번호는) 연령확인 미완료면 검색 결과에 아예 안 뜸
-  //  - WeChat : 设置 > 隐私 > 添加我的方式 > 微信号 를 끄면 동일하게 검색 불가 (기본은 켜짐)
   //  - Instagram: 검색 자체는 되지만 DM이 요청함/숨김요청함으로 빠지면 알림도 읽음표시도 없음
   const contactWarning: Record<ContactType, string> = {
     whatsapp: "",
@@ -976,13 +977,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       "DMが「メッセージリクエスト」に入ることがあります。リクエスト欄もご確認ください",
       "私信可能会进入「消息请求」，请一并查看",
       "私訊可能會進入「訊息請求」，請一併查看"
-    ),
-    wechat: t(
-      "설정 > 개인정보 보호 > 나를 추가하는 방법 > 'WeChat ID'가 켜져 있어야 찾을 수 있어요",
-      "We can only find you if Settings > Privacy > Methods for Friending Me > 'WeChat ID' is ON",
-      "設定 > プライバシー > 友達への追加方法 >「WeChat ID」がオンになっている必要があります",
-      "需开启 设置 > 隐私 > 添加我的方式 > 「微信号」，否则搜不到你",
-      "需開啟 設定 > 隱私 > 加我的方式 >「微信號」，否則搜尋不到你"
     ),
     line: t(
       "설정 > 친구 > 'ID로 친구 추가 허용'이 켜져 있어야 찾을 수 있어요",
@@ -1083,6 +1077,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       blocked("no_name");
       return toast.error(t("예약자 이름을 입력해주세요", "Enter the name for the booking", "予約者名を入力", "请填写预订人姓名"));
     }
+    if (!contactType) {
+      blocked("no_contact_type");
+      return toast.error(t("연락받을 앱을 골라주세요", "Choose how we should reach you", "連絡方法を選んでください", "请选择联系方式", "請選擇聯絡方式"));
+    }
     if (!contactValue.trim()) {
       blocked("no_contact");
       return toast.error(t("연락처를 입력해주세요", "Enter your contact", "連絡先を入力", "请填写联系方式"));
@@ -1128,6 +1126,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       // id를 클라이언트에서 만든다 — 익명(anon)은 SELECT 정책이 없어 INSERT … RETURNING을
       // 못 받는다. 접수 번호(NF-XXXXXX)는 이 id의 앞 6자 = DB ref_code 생성 컬럼과 같은 값.
       const newId = crypto.randomUUID();
+      if (!contactType) throw new Error("no_contact_type"); // handleSubmit에서 이미 막힌다 — 타입 좁히기용
       const { error } = await supabase.from("foreign_requests").insert({
         id: newId,
         user_id: userId,
@@ -3148,6 +3147,12 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             </button>
           ))}
         </div>
+        {!contactType ? (
+          <p className="text-[12.5px] text-muted-foreground">
+            {t("연락받을 앱을 골라주세요", "Choose the app you actually use", "普段使っているアプリを選んでください", "请选择你常用的联系方式", "請選擇你常用的聯絡方式")}
+          </p>
+        ) : (
+        <>
         <input
           value={contactValue}
           onChange={(e) => setContactValue(e.target.value)}
@@ -3178,11 +3183,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             />
             <p className="text-[12px] text-muted-foreground mt-1.5">
               {t(
-                `${CONTACT_LABEL[contactType]} 검색이 막혀 있으면 연락을 못 드려요. 이메일로도 보내드릴게요.`,
-                `If your ${CONTACT_LABEL[contactType]} ID can't be found, we can't reach you. We'll email you as well.`,
-                `${CONTACT_LABEL[contactType]} のID検索がオフだとご連絡できません。メールでもお送りします。`,
-                `如果无法搜索到你的 ${CONTACT_LABEL[contactType]}，我们就联系不上。我们也会发邮件给你。`,
-                `如果搜尋不到你的 ${CONTACT_LABEL[contactType]}，我們就聯絡不上。我們也會寄信給你。`
+                `${contactLabel} 검색이 막혀 있으면 연락을 못 드려요. 이메일로도 보내드릴게요.`,
+                `If your ${contactLabel} ID can't be found, we can't reach you. We'll email you as well.`,
+                `${contactLabel} のID検索がオフだとご連絡できません。メールでもお送りします。`,
+                `如果无法搜索到你的 ${contactLabel}，我们就联系不上。我们也会发邮件给你。`,
+                `如果搜尋不到你的 ${contactLabel}，我們就聯絡不上。我們也會寄信給你。`
               )}
             </p>
           </div>
@@ -3209,6 +3214,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               </span>
             </button>
           </div>
+        )}
+        </>
         )}
       </section>
 
@@ -3377,11 +3384,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               </h2>
               <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
                 {t(
-                  `확정되는 즉시 ${CONTACT_LABEL[contactType]}로 알려드릴게요.`,
-                  `We'll message you on ${CONTACT_LABEL[contactType]} as soon as it's confirmed.`,
-                  `確定次第 ${CONTACT_LABEL[contactType]} でお知らせします。`,
-                  `一确认就通过 ${CONTACT_LABEL[contactType]} 通知你。`,
-                  `一確認就透過 ${CONTACT_LABEL[contactType]} 通知你。`
+                  `확정되는 즉시 ${contactLabel}로 알려드릴게요.`,
+                  `We'll message you on ${contactLabel} as soon as it's confirmed.`,
+                  `確定次第 ${contactLabel} でお知らせします。`,
+                  `一确认就通过 ${contactLabel} 通知你。`,
+                  `一確認就透過 ${contactLabel} 通知你。`
                 )}
               </p>
               {requestRef && <p className="text-[12px] font-bold text-muted-foreground tabular-nums">{t("접수 번호", "Request", "受付番号", "请求编号", "請求編號")} #{requestRef}</p>}
@@ -3392,7 +3399,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               {[
                 { done: true, active: false, title: t("접수 완료", "Request received", "受付完了", "已收到请求", "已收到請求"), sub: contactType === "email" ? t(`${contactValue.trim()}로 사본을 보냈어요`, `Copy sent to ${contactValue.trim()}`, `${contactValue.trim()} に控えを送信`, `副本已发送至 ${contactValue.trim()}`, `副本已寄至 ${contactValue.trim()}`) : t("방금", "Just now", "たった今", "刚刚", "剛剛") },
                 { done: false, active: true, title: t("클럽이 테이블 확인 중", "Club confirming your table", "クラブがテーブルを確認中", "夜店正在确认桌位", "夜店正在確認包廂"), sub: t("메뉴판 기준으로 가격 검수", "Price checked against the club's menu", "メニューで価格を照合", "按酒单核对价格", "依酒單核對價格") },
-                { done: false, active: false, title: t(`${CONTACT_LABEL[contactType]}로 예약 패스 발송`, `Booking pass on ${CONTACT_LABEL[contactType]}`, `${CONTACT_LABEL[contactType]} で予約パス`, `通过 ${CONTACT_LABEL[contactType]} 发送入场凭证`, `透過 ${CONTACT_LABEL[contactType]} 傳送入場憑證`), sub: t("입구에서 여권과 함께 보여주세요", "Show it at the door with your passport", "入口でパスポートと一緒に提示", "入口出示凭证和护照", "入口出示憑證和護照") },
+                { done: false, active: false, title: t(`${contactLabel}로 예약 패스 발송`, `Booking pass on ${contactLabel}`, `${contactLabel} で予約パス`, `通过 ${contactLabel} 发送入场凭证`, `透過 ${contactLabel} 傳送入場憑證`), sub: t("입구에서 여권과 함께 보여주세요", "Show it at the door with your passport", "入口でパスポートと一緒に提示", "入口出示凭证和护照", "入口出示憑證和護照") },
               ].map((step, i, arr) => (
                 <div key={i} className="flex gap-3">
                   <div className="flex flex-col items-center">
@@ -3452,7 +3459,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
               ))}
               <div className="flex items-center justify-between text-[13px]">
                 <span className="text-muted-foreground">{t("회신", "Reply to", "返信先", "回复到", "回覆到")}</span>
-                <span className="font-bold text-foreground break-all text-right">{CONTACT_LABEL[contactType]} {contactValue.trim()}</span>
+                <span className="font-bold text-foreground break-all text-right">{contactLabel} {contactValue.trim()}</span>
               </div>
               {/* 예비 이메일도 눈으로 확인시킨다 — 오타 하나면 예비 경로가 의미 없어진다. */}
               {contactType !== "email" && backupEmail.trim() && (
@@ -3602,7 +3609,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
           {/* 연락처 — 오타 확인 핵심 */}
           <div className="relative mt-5 rounded-2xl bg-muted/60 border border-border p-4 pt-5">
             <span className="absolute -top-3 left-4 text-[11px] font-black text-amber-500 bg-amber-500/15 border border-amber-500/40 px-3 py-1 rounded-full">
-              {CONTACT_LABEL[contactType]}
+              {contactLabel}
             </span>
             <p className="text-[20px] font-black text-foreground break-all leading-tight">
               {contactValue.trim()}
