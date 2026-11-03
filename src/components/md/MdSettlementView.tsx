@@ -117,7 +117,7 @@ export function MdSettlementView({
           <p className="text-[12px] text-muted-foreground leading-relaxed text-center break-keep">
             정산은 방문일이 속한 달 기준이고, 다음 달 10일까지 입금합니다.
             <br />
-            매월 7일·10일에 문자로도 안내드려요.
+            매월 10일(입금 기한)에 문자로도 안내드려요.
           </p>
         </div>
       </div>

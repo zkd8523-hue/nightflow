@@ -8,7 +8,7 @@
 //  · 금액: settlement_items.amount가 있으면 그것, 없으면 확정서 total_price
 //  · 수수료: 금액 × 그 달 수수료율(기본 5%, settlement_month_rates로 달별 변경 — 2026-09는 4%),
 //    원 단위 반올림. 지급기한: 익월 10일. 정산 완료는 settlement_payments(월·MD)
-//  · 7일·10일 자동 리마인드: 아래 planSettlementReminders(2026-10-10)
+//  · 10일 자동 리마인드: 아래 planSettlementReminders(2026-10-10, 7일 안내는 2026-11-03에 뺌)
 // Migration 682(settlement_items·settlement_notices)·685(수수료율·정산 완료) 기준.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -49,7 +49,7 @@ export type SettlementNotice = {
   channel: string;
   sent_at: string;
   fee_amount: number;
-  /** NULL = 7·10일 자동 리마인드(2026-10-10). */
+  /** NULL = 10일 자동 리마인드(2026-10-10). */
   sent_by?: string | null;
 };
 
@@ -239,7 +239,8 @@ export function defaultSettlementMessage(month: string, clubName: string, rows: 
 }
 
 // ── 자동 리마인드(2026-10-10) ────────────────────────────────────────────
-// 매월 7일(due_soon)·10일(due_today) 10:00 KST에 /api/cron/settlement-reminders가 지난달분을 MD에게 문자로 보낸다.
+// 매월 10일(due_today) 10:00 KST에 /api/cron/settlement-reminders가 지난달분을 MD에게 문자로 보낸다.
+// (7일 미리 안내 due_soon은 2026-11-03에 자동 발송에서 뺐다 — 수동 실행 ?kind=due_soon으로만 남김)
 //  · 운영자가 이 달 안내(①)를 직접 보낸 MD만 — 금액은 사람이 확인한 뒤에만 자동으로 나간다
 //  · 정산 완료(settlement_payments) 체크된 MD는 건너뛴다
 //  · 자동 발송은 settlement_notices.sent_by = NULL로 남는다. 같은 날 자동 발송이 이미 있으면 건너뛴다(재실행 안전)

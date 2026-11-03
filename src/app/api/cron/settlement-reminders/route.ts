@@ -1,9 +1,9 @@
-// MD 정산 자동 리마인드(2026-10-10) — 매월 7일(미리 안내)·10일(기한 당일) 10:00 KST.
+// MD 정산 자동 리마인드(2026-10-10) — 매월 10일(기한 당일) 10:00 KST. 7일 미리 안내는 2026-11-03에 뺐다(사용자 결정).
 // pg_cron(Migration 692)이 service_role_key를 Bearer로 실어 호출한다. 대상·문구는 planSettlementReminders.
 //
 // GET/POST ?dry=1        → 보내지 않고 대상·문구만 돌려준다
 //          ?kind=due_soon|due_today, ?month=YYYY-MM → 수동 실행·테스트용(기본: 오늘 날짜로 판단, 지난달)
-// 7·10일이 아닌 날 kind 없이 부르면 아무것도 하지 않는다.
+// 10일이 아닌 날 kind 없이 부르면 아무것도 하지 않는다 — pg_cron(Migration 692)은 7일에도 부르지만 그날은 그냥 넘어간다.
 // 정산 문자는 기록이 남아야 해서 앱 푸시보다 문자가 먼저다(전화번호 없을 때만 푸시).
 
 import { NextRequest, NextResponse } from "next/server";
@@ -12,7 +12,7 @@ import { planSettlementReminders, type SettlementReminderKind } from "@/lib/book
 import { sendSms } from "@/lib/notifications/alimtalk";
 import { settleLinkOf, withSettleLink } from "@/lib/booking/settleLink";
 
-const KIND_BY_DAY: Record<number, SettlementReminderKind> = { 7: "due_soon", 10: "due_today" };
+const KIND_BY_DAY: Record<number, SettlementReminderKind> = { 10: "due_today" };
 
 async function handle(req: NextRequest) {
   // Vercel env 값 끝에 줄바꿈이 붙어 있다(2026-10-10 확인) — trim 없이 비교하면 항상 401.

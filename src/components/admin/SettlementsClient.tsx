@@ -219,7 +219,7 @@ export function SettlementsClient({
                   rows={8}
                   className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-[13px] leading-relaxed outline-none focus:border-amber-500"
                 />
-                <p className="text-[11px] text-muted-foreground">앱 푸시가 있으면 푸시, 없으면 문자(솔라피)로 갑니다. 이걸 보낸 MD에게만 7일·10일 리마인드 문자가 자동으로 나가요(정산 완료 체크하면 멈춤). 보낼 때 "입금:" 줄 아래에 MD 정산 내역 링크가 자동으로 붙고, 보낸 뒤부터 MD 화면에 "보내주실 중개료"로 떠요.</p>
+                <p className="text-[11px] text-muted-foreground">앱 푸시가 있으면 푸시, 없으면 문자(솔라피)로 갑니다. 이걸 보낸 MD에게만 10일(기한 당일) 리마인드 문자가 자동으로 나가요(정산 완료 체크하면 멈춤). 보낼 때 "입금:" 줄 아래에 MD 정산 내역 링크가 자동으로 붙고, 보낸 뒤부터 MD 화면에 "보내주실 중개료"로 떠요.</p>
                 <button
                   type="button"
                   disabled={sending}
