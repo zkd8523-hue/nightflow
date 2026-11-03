@@ -545,11 +545,11 @@ export function BookingPass(p: Props) {
                   💬 Chat with your host
                 </a>
                 <p className="mt-2.5 text-[12px] leading-relaxed text-muted-foreground">
-                  A private chat just for your booking: only you, your host and the NightFlow team.
+                  Just you, your host and NightFlow.
                 </p>
                 <ul className="mt-2.5 space-y-1 text-[12.5px] leading-relaxed text-foreground/85">
                   <li>· Get met at the door and guided to your table</li>
-                  <li>· Ask for water, ice or mixers, or order more at your table</li>
+                  <li>· Ask for water, ice, mixers or more drinks</li>
                   <li>· Any other questions are welcome too</li>
                 </ul>
                 {p.groupGreeting && (
