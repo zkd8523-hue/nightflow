@@ -6,12 +6,12 @@
 // 손님이 고른 술은 selected_menu 스냅샷에서 그대로 뽑는다 — 운영자가 옮겨 적지 않는다.
 // MD가 여기서 바로 승인/거절하면 /api/proposal-response로 저장되고 운영자에게 SMS가 간다.
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MenuPhotosOverlay } from "@/components/booking/MenuPhotosOverlay";
 import { SeatPicker } from "@/components/booking/SeatPicker";
-import { MdMenuPicker, pickerTotals, type PickerValue } from "@/components/booking/MdMenuPicker";
+import { MdMenuPicker, pickerTotals, recommend, type PickerValue } from "@/components/booking/MdMenuPicker";
 import type { PickerItem, TcRule } from "@/lib/booking/mdMenu";
 import { seatValueLabel, seatsOfValue, type SeatZone } from "@/lib/booking/seats";
 import type { SelectedMenuSnapshot } from "@/types/database";
@@ -67,6 +67,12 @@ type Props = {
   mdConditions?: string | null;
   /** 손님이 자리를 고르고 담당자 재확인을 기다리는 중이면 고른 값(md_reconfirm_state=pending) */
   pendingGuestChoice?: string | null;
+  /** 손님이 적어 둔 2순위 자리 — "any"나 없음이면 null */
+  guestBackup?: string | null;
+  /** 제안서를 보낸 시각 — 당일 요청의 답변 남은 시간 계산용 */
+  proposalSentAt?: string | null;
+  /** 이 담당자가 이 클럽에 저번에 보낸 구성(한 줄에 하나) — 메뉴판 없는 클럽에서 "지난번 구성 불러오기" */
+  lastItems?: string | null;
   /** 담당자 메뉴판(요일 가격 반영) · 클럽 TC 규칙 · 이미 고른 구성(Migration 705) */
   menuItems?: PickerItem[];
   tcRule?: TcRule;
@@ -263,6 +269,8 @@ export function BookingProposal(p: Props) {
                   menuUrls={p.menuUrls ?? []}
                   clubName={p.clubName}
                   initialItems={p.mdProposedItems ?? lines.join("\n")}
+                  mdSeats={p.mdSeats ?? []}
+                  guestBackup={p.guestBackup ?? null}
                 />
                 ) : (
                 <ResponseBox
@@ -282,6 +290,10 @@ export function BookingProposal(p: Props) {
                   menuItems={p.menuItems ?? []}
                   tcRule={p.tcRule ?? null}
                   initialMenu={p.mdMenuInit ?? { qty: {}, tc: 0, tcTouched: false }}
+                  lastItems={p.lastItems ?? null}
+                  eventDate={p.eventDate}
+                  proposalSentAt={p.proposalSentAt ?? null}
+                  guestChoseDrinks={lines.length > 0}
                   initialSeats={p.mdSeats ?? []}
                   initialBumpRisk={p.mdBumpRisk ?? null}
                   initialConditions={p.mdConditions ?? null}
@@ -333,9 +345,18 @@ function ResponseBox({
   seatZones,
   clubName,
   confirmHref,
+  lastItems,
+  eventDate,
+  proposalSentAt,
+  guestChoseDrinks,
 }: {
   proposalToken: string;
   confirmHref: string | null;
+  lastItems: string | null;
+  eventDate: string;
+  proposalSentAt: string | null;
+  /** 손님이 메뉴에서 술을 직접 골랐는지 — 아니면 "손님이 고른 술 그대로" 빠른 보내기는 의미가 없다 */
+  guestChoseDrinks: boolean;
   initialResponse: string | null;
   initialTableChoosable: boolean | null;
   initialTableOptions: string | null;
@@ -372,7 +393,14 @@ function ResponseBox({
   const [menuPick, setMenuPick] = useState<PickerValue>(initialMenu);
   // 주류 제안 요청은 구성이 있어야 보낼 수 있다(서버도 같은 조건으로 막는다).
   const itemsMissing = isRecommend && !useMenu && !proposedItems.trim();
-  const itemsRef = useRef<HTMLTextAreaElement>(null);
+  // 메뉴판 없는 클럽에서 가격을 적었을 때 합계가 손님 금액을 넘는지(넘으면 보내지 못하게 막는다 — 메뉴판 클럽과 같은 규칙)
+  const [freeOver, setFreeOver] = useState(false);
+  // 당일 요청 빠르게 보내기 — ✨추천 구성 1번 + 당일 배정 + 밀림 X. 메뉴판 없이 구성을 적어야 하는 요청은 대상이 아니다.
+  const sameDay = isBusinessToday(eventDate);
+  const recs = useMemo(() => (useMenu && budget != null ? recommend(menuItems, budget, tcRule) : []), [useMenu, menuItems, budget, tcRule]);
+  const quickRec = recs[0] ?? null;
+  const quickOk = sameDay && (isRecommend ? useMenu && !!quickRec : guestChoseDrinks);
+  const itemsRef = useRef<HTMLDivElement>(null);
   const [rejectNote, setRejectNote] = useState(initialRejectNote ?? "");
   const [menuOpen, setMenuOpen] = useState(false);
   const [mode, setMode] = useState<"idle" | "reject">("idle");
@@ -384,6 +412,8 @@ function ResponseBox({
   const errText = (code: string) =>
     ({
       cancelled: "이미 취소된 예약입니다. 담당자에게 확인해 주세요.",
+      confirmed: "이미 예약 확인서가 나간 예약이에요. 바꿀 땐 예약 확인서의 \"자리가 밀릴 것 같아요\"를 눌러주세요.",
+      seat_required: "진행할 자리를 골라주세요.",
       not_found: "만료되었거나 잘못된 링크입니다. 담당자에게 다시 요청해 주세요.",
       bad_params: "입력이 올바르지 않습니다. 다시 선택해 주세요.",
       table_choosable_required: "손님이 자리를 고를 수 있는지 골라주세요.",
@@ -429,7 +459,7 @@ function ResponseBox({
         {budget ? `${budget.toLocaleString()}원 안에서 ` : ""}어떤 구성으로 드릴까요?
       </p>
       <div className="flex items-center justify-between gap-2 mt-0.5">
-        <p className="text-[11.5px] text-muted-foreground">한 줄에 하나씩 · 손님에게 그대로 전달돼요</p>
+        <p className="text-[11.5px] text-muted-foreground">품목과 수량은 손님에게 그대로 전달돼요</p>
         {menuUrls.length > 0 && (
           <button
             type="button"
@@ -441,19 +471,19 @@ function ResponseBox({
           </button>
         )}
       </div>
-      <textarea
-        ref={itemsRef}
-        value={proposedItems}
-        onChange={(e) => {
-          setProposedItems(e.target.value);
-          if (err === "proposed_items_required") setErr(null);
-        }}
-        rows={3}
-        placeholder={"예) 돔페리뇽 1\n잭다니엘 2\n과일·믹서 포함"}
-        className={`w-full mt-1.5 px-3 py-2.5 rounded-xl bg-card border text-[14px] text-foreground outline-none focus:border-amber-500 resize-none ${
-          err === "proposed_items_required" ? "border-red-500/60" : "border-amber-500/40"
-        }`}
-      />
+      <div ref={itemsRef}>
+        <FreeCompose
+          value={proposedItems}
+          budget={budget}
+          lastItems={lastItems}
+          invalid={err === "proposed_items_required"}
+          onChange={(text, over) => {
+            setProposedItems(text);
+            setFreeOver(over);
+            if (err === "proposed_items_required") setErr(null);
+          }}
+        />
+      </div>
       {menuOpen && (
         <MenuPhotosOverlay urls={menuUrls} clubName={clubName} onClose={() => setMenuOpen(false)} />
       )}
@@ -619,11 +649,46 @@ function ResponseBox({
         : null
       : itemsMissing
       ? "드릴 구성을 적어주세요."
+      : isRecommend && freeOver
+      ? "손님 금액을 넘지 않게 줄여주세요."
       : null;
   const sendWhat = tableChoosable === false ? "예약 확인서가 손님에게 바로 나가요" : "손님에게 자리 고르기 메일이 바로 나가요";
 
+  const quickSummary = quickRec
+    ? `✨ 추천 구성: ${quickRec.parts.map((q) => `${q.n} × ${q.name}`).join(" + ")} · TC ${quickRec.tc.toLocaleString()}원 = ${quickRec.total.toLocaleString()}원`
+    : "손님이 고른 술 그대로";
+
   return (
     <div className="space-y-4">
+      {sameDay && (
+        <div className="space-y-2.5">
+          <SameDayTimer sentAt={proposalSentAt} />
+          {quickOk && (
+            <div className="rounded-xl border border-border bg-card px-3.5 py-3">
+              <p className="text-[11.5px] font-bold text-muted-foreground mb-1">빠르게 보내기</p>
+              <p className="text-[13.5px] leading-relaxed">{quickSummary}</p>
+              <p className="text-[12.5px] text-muted-foreground">자리: 당일 배정 · 밀림 X</p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  const ok = await post({
+                    action: "approve",
+                    table_choosable: false,
+                    bump_risk: false,
+                    menu: quickRec ? { picks: quickRec.parts.map((q) => ({ variant_id: q.id, qty: q.n })), tc: quickRec.tc } : undefined,
+                  });
+                  if (ok) setResponse("approved");
+                }}
+                className="w-full h-12 mt-2.5 rounded-xl bg-white text-black text-[15px] font-black disabled:opacity-40"
+              >
+                {busy ? "보내는 중…" : "이대로 손님에게 보내기"}
+              </button>
+              <p className="text-[11.5px] text-muted-foreground text-center mt-1.5">자리나 구성을 바꾸려면 아래에서 직접 골라주세요</p>
+            </div>
+          )}
+        </div>
+      )}
       <div>
         <p className="text-[13px] font-bold text-foreground">손님이 자리를 고를 수 있나요?</p>
         <div className="grid grid-cols-2 gap-2 mt-1.5">
@@ -727,6 +792,148 @@ function ResponseBox({
   );
 }
 
+/** 당일 요청(영업일 기준, 새벽 6시 경계 — 무응답 알림 cron과 같은 기준)의 답변 남은 시간.
+ *  15분이 지나면 지금처럼 담당자에게 한 번 더, 나플 운영자에게 알림이 간다(다른 담당자에게 넘기지는 않는다). */
+const SAME_DAY_LIMIT_MIN = 15;
+const isBusinessToday = (eventDate: string) => eventDate === new Date(Date.now() + (9 - 6) * 3600_000).toISOString().slice(0, 10);
+
+function SameDayTimer({ sentAt }: { sentAt: string | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const left = sentAt ? new Date(sentAt).getTime() + SAME_DAY_LIMIT_MIN * 60_000 - now : null;
+  const over = left != null && left <= 0;
+  const mm = left != null && !over ? `${String(Math.floor(left / 60000)).padStart(2, "0")}:${String(Math.floor((left % 60000) / 1000)).padStart(2, "0")}` : null;
+  return (
+    <div className={`flex items-center justify-between gap-3 rounded-xl border px-3.5 py-3 ${over ? "border-red-500/50 bg-red-500/[0.08]" : "border-amber-500/50 bg-amber-500/[0.08]"}`}>
+      <div className="min-w-0">
+        <p className="text-[13px] font-black text-foreground">오늘 · 당일 요청</p>
+        <p className="text-[11.5px] text-muted-foreground mt-0.5">
+          {over ? `${SAME_DAY_LIMIT_MIN}분이 지났어요. 나플에도 알림이 갔어요` : `${SAME_DAY_LIMIT_MIN}분 안에 답해주세요. 넘으면 나플에 알림이 가요`}
+        </p>
+      </div>
+      {mm && <p className="shrink-0 font-mono text-[24px] font-black text-brand-amber tabular-nums" aria-label={`남은 시간 ${mm}`}>{mm}</p>}
+    </div>
+  );
+}
+
+/** 메뉴판이 없는 클럽의 구성 입력(2026-11-06) — 글로 적으면 합계가 금액을 넘는지 알 수 없었다.
+ *  품목·수량·가격을 줄로 적으면 합계가 자동으로 나오고, 금액을 넘으면 보낼 수 없다. 손님에게는 "수량 품목"과 테이블차지 줄만 전달된다(가격은 담당자 화면 안에서만). */
+type FreeRow = { name: string; qty: number; price: string };
+const fmtWon = (n: number) => `₩${n.toLocaleString("en-US")}`;
+const parseFreeRows = (text: string): FreeRow[] => {
+  const rows = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !/^table charge/i.test(l))
+    .map((l) => {
+      const m = l.match(/^(\d+)\s+(.+)$/);
+      return m ? { name: m[2], qty: Number(m[1]), price: "" } : { name: l, qty: 1, price: "" };
+    });
+  return rows.length ? rows : [{ name: "", qty: 1, price: "" }];
+};
+
+function FreeCompose({
+  value,
+  budget,
+  lastItems,
+  invalid,
+  onChange,
+}: {
+  value: string;
+  budget: number | null;
+  lastItems: string | null;
+  invalid: boolean;
+  onChange: (text: string, over: boolean) => void;
+}) {
+  const [rows, setRows] = useState<FreeRow[]>(() => parseFreeRows(value));
+  const [tc, setTc] = useState(() => {
+    const m = value.match(/table charge\s*₩?\s*([\d,]+)/i);
+    return m ? m[1].replace(/,/g, "") : "";
+  });
+  const tcNum = Number(tc) || 0;
+  const named = rows.filter((r) => r.name.trim());
+  const priced = named.length > 0 && named.every((r) => Number(r.price.replace(/[^0-9]/g, "")) > 0);
+  const total = priced ? named.reduce((s, r) => s + r.qty * Number(r.price.replace(/[^0-9]/g, "")), 0) + tcNum : null;
+  const over = total != null && budget != null && total > budget;
+  const pct = total != null && budget ? Math.round((total / budget) * 100) : null;
+
+  const push = (nextRows: FreeRow[], nextTc: string) => {
+    setRows(nextRows);
+    setTc(nextTc);
+    const lines = nextRows.filter((r) => r.name.trim()).map((r) => `${r.qty} ${r.name.trim()}`);
+    const tcN = Number(nextTc) || 0;
+    if (tcN > 0) lines.push(`Table charge ${fmtWon(tcN)}`);
+    const nn = nextRows.filter((r) => r.name.trim());
+    const tot = nn.length > 0 && nn.every((r) => Number(r.price.replace(/[^0-9]/g, "")) > 0) ? nn.reduce((s, r) => s + r.qty * Number(r.price.replace(/[^0-9]/g, "")), 0) + tcN : null;
+    onChange(lines.join("\n"), tot != null && budget != null && tot > budget);
+  };
+  const setRow = (i: number, patch: Partial<FreeRow>) => push(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)), tc);
+
+  return (
+    <div className={`mt-1.5 rounded-xl border bg-card p-3 space-y-2 ${invalid ? "border-red-500/60" : "border-amber-500/40"}`}>
+      {lastItems && lastItems.trim() && (
+        <button type="button" onClick={() => push(parseFreeRows(lastItems), tc)} className="text-[12.5px] font-bold text-brand-amber">
+          ↺ 지난번 구성 불러오기
+        </button>
+      )}
+      {rows.map((r, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <input
+            value={r.name}
+            onChange={(e) => setRow(i, { name: e.target.value })}
+            placeholder={i === 0 ? "예) 돔페리뇽" : "품목"}
+            aria-label="품목"
+            className="flex-1 min-w-0 h-10 px-2.5 rounded-lg bg-background border border-border text-[13.5px] outline-none focus:border-amber-500"
+          />
+          <span className="flex items-center gap-1 shrink-0">
+            <button type="button" aria-label="수량 줄이기" onClick={() => setRow(i, { qty: Math.max(1, r.qty - 1) })} className="w-7 h-7 rounded-md bg-muted text-[15px] font-bold">−</button>
+            <b className="w-5 text-center text-[13px] tabular-nums">{r.qty}</b>
+            <button type="button" aria-label="수량 늘리기" onClick={() => setRow(i, { qty: r.qty + 1 })} className="w-7 h-7 rounded-md bg-muted text-[15px] font-bold">+</button>
+          </span>
+          <input
+            inputMode="numeric"
+            value={r.price ? Number(r.price.replace(/[^0-9]/g, "")).toLocaleString("en-US") : ""}
+            onChange={(e) => setRow(i, { price: e.target.value.replace(/[^0-9]/g, "") })}
+            placeholder="1개 가격"
+            aria-label="1개 가격"
+            className="w-[92px] h-10 px-2 rounded-lg bg-background border border-border text-right text-[12.5px] font-mono outline-none focus:border-amber-500"
+          />
+          {rows.length > 1 && (
+            <button type="button" aria-label="이 줄 지우기" onClick={() => push(rows.filter((_, j) => j !== i), tc)} className="w-7 h-7 shrink-0 rounded-md text-muted-foreground">×</button>
+          )}
+        </div>
+      ))}
+      <button type="button" onClick={() => push([...rows, { name: "", qty: 1, price: "" }], tc)} className="text-[12.5px] font-bold text-brand-amber">
+        + 품목 추가
+      </button>
+      <div className="flex items-center justify-between gap-2 pt-1 border-t border-border">
+        <label htmlFor="free-tc" className="text-[12.5px] font-bold">테이블 차지 (TC)</label>
+        <input
+          id="free-tc"
+          inputMode="numeric"
+          value={tc ? Number(tc).toLocaleString("en-US") : ""}
+          onChange={(e) => push(rows, e.target.value.replace(/[^0-9]/g, ""))}
+          placeholder="0"
+          className="w-[110px] h-9 px-2 rounded-lg bg-background border border-border text-right text-[13px] font-mono outline-none focus:border-amber-500"
+        />
+      </div>
+      <div className="flex items-center justify-between font-black">
+        <span className="text-[13px]">합계</span>
+        <span className={`font-mono text-[16px] ${over ? "text-red-400" : "text-money"}`}>{total != null ? fmtWon(total) : "가격을 넣으면 계산돼요"}</span>
+      </div>
+      {over && budget != null && total != null && (
+        <p className="text-[12px] leading-relaxed rounded-lg bg-red-500/10 text-red-200 px-2.5 py-2">
+          손님 금액보다 <b>{fmtWon(total - budget)}</b> 많아요. <b>넘길 수 없어요</b> — 줄여주세요.
+        </p>
+      )}
+      {!over && pct != null && <p className="text-[11.5px] text-muted-foreground">금액의 {pct}%예요.</p>}
+    </div>
+  );
+}
+
 /** 손님이 자리를 고른 뒤 담당자 재확인(2026-11-01) — "이 자리 지금도 되나요?"
  *  네 → 예약 확인서가 자동으로 나간다. 안 돼요 → 대신 가능한 자리 / 다른 조건 / 대신 가능한 자리도 없음. */
 function ReconfirmBox({
@@ -739,6 +946,8 @@ function ReconfirmBox({
   menuUrls,
   clubName,
   initialItems,
+  mdSeats,
+  guestBackup,
 }: {
   proposalToken: string;
   choiceLabel: string;
@@ -750,8 +959,17 @@ function ReconfirmBox({
   clubName: string | null;
   /** 앞서 담당자가 적었거나 손님이 담은 구성 — 금액에 맞는지 눈으로 확인하고 고치게 미리 채운다 */
   initialItems: string;
+  /** 담당자가 고를 수 있다고 답한 자리 */
+  mdSeats: string[];
+  guestBackup: string | null;
 }) {
   const [step, setStep] = useState<"ask" | "no" | "done">("ask");
+  const [fb, setFb] = useState<string | null>(null);
+  // 같은 구역 빈 자리 — 손님이 고른 자리가 속한 구역에서, 담당자가 가능하다고 한 자리만
+  const mine = new Set(choiceSeats);
+  const mdSet = new Set(mdSeats);
+  const zoneMates = (seatZones.find((z) => z.seats.some((x) => mine.has(x)))?.seats ?? []).filter((x) => !mine.has(x) && mdSet.has(x));
+  const backupOk = !!guestBackup && mdSet.has(guestBackup) && !mine.has(guestBackup);
   const [doneText, setDoneText] = useState("");
   const [alt, setAlt] = useState<string[]>([]);
   const [condOpen, setCondOpen] = useState(false);
@@ -828,6 +1046,49 @@ function ReconfirmBox({
             <br />
             대신 가능한 자리가 있나요?
           </p>
+          {(backupOk || zoneMates.length > 0) && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/[0.06] p-3 space-y-2">
+              <p className="text-[13px] font-black text-foreground">바로 다른 자리로 진행</p>
+              {backupOk && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => send({ action: "fallback", seat: guestBackup }, `${guestBackup}로 예약 확인서가 나갔어요.\n손님에게는 ${choiceLabel}이 어려워 ${guestBackup}로 잡았다고 함께 안내돼요.`)}
+                  className="w-full h-11 rounded-xl border border-amber-500/60 bg-amber-500/10 text-[14px] font-black text-brand-amber disabled:opacity-40"
+                >
+                  손님 2순위 {guestBackup}로 진행
+                </button>
+              )}
+              {zoneMates.length > 0 && (
+                <>
+                  <p className="text-[12px] text-muted-foreground">같은 구역 빈 자리</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {zoneMates.map((x) => (
+                      <button
+                        key={x}
+                        type="button"
+                        onClick={() => setFb(x === fb ? null : x)}
+                        className={`min-w-[44px] h-9 px-2 rounded-lg border text-[13px] font-bold ${fb === x ? "border-amber-500 bg-amber-500/15 text-brand-amber" : "border-border text-foreground/80"}`}
+                      >
+                        {x}
+                      </button>
+                    ))}
+                  </div>
+                  {fb && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => send({ action: "fallback", seat: fb }, `${fb}로 예약 확인서가 나갔어요.\n손님에게는 ${choiceLabel}이 어려워 ${fb}로 잡았다고 함께 안내돼요.`)}
+                      className="w-full h-11 rounded-xl bg-money text-black text-[14px] font-black disabled:opacity-40"
+                    >
+                      {fb}로 바로 진행
+                    </button>
+                  )}
+                </>
+              )}
+              <p className="text-[11.5px] text-muted-foreground">다른 구역이나 다른 조건이면 아래에서 손님에게 다시 안내해요.</p>
+            </div>
+          )}
           {seatZones.length > 0 && (
             <SeatPicker zones={seatZones} selected={alt} onChange={setAlt} floorPlanUrls={floorPlanUrls} disabled={choiceSeats} />
           )}
@@ -907,7 +1168,7 @@ function ReconfirmBox({
           </button>
         </>
       )}
-      {err && <p className="text-[12px] text-red-400">전송에 실패했어요. 잠시 후 다시 시도해 주세요.</p>}
+      {err && <p className="text-[12px] text-red-400">{err === "confirmed" ? "이미 예약 확인서가 나간 예약이에요. 바꿀 땐 예약 확인서의 \"자리가 밀릴 것 같아요\"를 눌러주세요." : "전송에 실패했어요. 잠시 후 다시 시도해 주세요."}</p>}
     </div>
   );
 }

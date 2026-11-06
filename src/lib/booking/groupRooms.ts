@@ -20,8 +20,8 @@ const COLS = "id, md_id, label, invite_url, status, request_type, request_id, as
 export const mdShortName = (displayName: string | null | undefined) =>
   (displayName ?? "MD").replace(/\([^)]*\)/g, "").trim().split(/\s+/).pop() || "MD";
 
-/** 손님이 보는 방 이름 — "클럽명 MD이름-NightFlow". 모든 방이 같은 이름이라 예약마다 이름을 바꿀 필요가 없다(2026-11-04 사용자 결정). */
-export const poolRoomName = (clubName: string | null | undefined, short: string) => `${(clubName ?? "").trim() || "Club"} ${short}-NightFlow`;
+/** 손님이 보는 방 이름 — "클럽명 · NightFlow"(예: Club Ace · NightFlow). 모든 방이 같은 이름이라 예약마다 이름을 바꿀 필요가 없다(2026-11-04 사용자 결정). */
+export const poolRoomName = (clubName: string | null | undefined) => `${(clubName ?? "").trim() || "Club"} · NightFlow`;
 
 /** WhatsApp 그룹 초대 링크만 받는다. 쿼리스트링은 떼고 정규화한다. */
 export function cleanInvite(raw: string | null | undefined): string | null {

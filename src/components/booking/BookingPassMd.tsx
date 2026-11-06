@@ -70,7 +70,23 @@ export function BookingPassMd(p: Props) {
   // 손님에게 "이 금액이면 유지"를 먼저 묻는다(손님에게 약속한 "먼저 알리고 기회를 준다").
   const [bumpStep, setBumpStep] = useState<"idle" | "form" | "sent">(p.bumpState === "pending" ? "sent" : "idle");
   const [bumpAmt, setBumpAmt] = useState("");
-  const [bumpItems, setBumpItems] = useState("");
+  // 지금 구성에서 시작해 수량만 바꾼다(2026-11-06) — 글로 다시 적으면 테이블차지 줄이 빠졌다. 합계는 담당자가 정한 총액(버튼 또는 직접 입력).
+  const [bumpPreset, setBumpPreset] = useState<number | "custom" | null>(null);
+  const [bumpQty, setBumpQty] = useState<Record<number, number>>({});
+  const bumpLines = p.includes.map((l, i) => {
+    const m = l.match(/^(\d+)\s+(.+)$/);
+    if (/^table charge/i.test(l)) return { i, kind: "tc" as const, text: l, qty: 0, name: "" };
+    if (m) return { i, kind: "qty" as const, text: l, qty: Number(m[1]), name: m[2] };
+    return { i, kind: "text" as const, text: l, qty: 0, name: "" };
+  });
+  const bumpChanged = bumpLines.some((l) => l.kind === "qty" && (bumpQty[l.i] ?? l.qty) !== l.qty);
+  const bumpItems = bumpChanged
+    ? bumpLines.map((l) => (l.kind === "qty" ? `${bumpQty[l.i] ?? l.qty} ${l.name}` : l.text)).join("\n")
+    : "";
+  const pickBumpAmount = (delta: number) => {
+    setBumpPreset(delta);
+    if (p.totalPrice != null) setBumpAmt((p.totalPrice + delta).toLocaleString("en-US"));
+  };
   const [bumpHours, setBumpHours] = useState<"0.5" | "1" | "2" | "evening">("1");
   const [bumpErr, setBumpErr] = useState<string | null>(null);
   const doBump = async () => {
@@ -373,24 +389,68 @@ export function BookingPassMd(p: Props) {
                     </div>
                   ) : bumpStep === "form" ? (
                     <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] p-3.5 space-y-2.5">
-                      <p className="text-[13px] font-bold text-foreground">자리를 유지하려면 얼마가 필요한가요?</p>
-                      <input
-                        inputMode="numeric"
-                        value={bumpAmt}
-                        onChange={(e) => {
-                          const raw = e.target.value.replace(/[^0-9]/g, "");
-                          setBumpAmt(raw ? Number(raw).toLocaleString("en-US") : "");
-                        }}
-                        placeholder="총액 예) 1,750,000"
-                        className="w-full h-11 px-3 rounded-lg bg-card border border-border text-[14px] text-foreground outline-none focus:border-amber-500"
-                      />
-                      <textarea
-                        value={bumpItems}
-                        onChange={(e) => setBumpItems(e.target.value)}
-                        rows={2}
-                        placeholder={"바뀌는 구성 (선택, 한 줄에 하나씩)\n예) 샴페인 5병"}
-                        className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-[14px] text-foreground outline-none focus:border-amber-500 resize-none"
-                      />
+                      <p className="text-[13px] font-bold text-foreground">얼마나 더 필요해요?</p>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {p.totalPrice != null && [200000, 400000, 600000].map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => pickBumpAmount(d)}
+                            className={`h-9 rounded-lg border text-[12.5px] font-bold ${bumpPreset === d ? "border-amber-500 bg-amber-500/15 text-brand-amber" : "border-border text-foreground/80"}`}
+                          >
+                            +{d / 10000}만
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setBumpPreset("custom")}
+                          className={`h-9 rounded-lg border text-[12.5px] font-bold ${p.totalPrice == null ? "col-span-4" : ""} ${bumpPreset === "custom" ? "border-amber-500 bg-amber-500/15 text-brand-amber" : "border-border text-foreground/80"}`}
+                        >
+                          직접
+                        </button>
+                      </div>
+                      {(bumpPreset === "custom" || p.totalPrice == null) && (
+                        <input
+                          inputMode="numeric"
+                          value={bumpAmt}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/[^0-9]/g, "");
+                            setBumpAmt(raw ? Number(raw).toLocaleString("en-US") : "");
+                          }}
+                          placeholder="총액 예) 1,750,000"
+                          className="w-full h-11 px-3 rounded-lg bg-card border border-border text-[14px] text-foreground outline-none focus:border-amber-500"
+                        />
+                      )}
+                      {bumpAmt && (
+                        <p className="text-[15px] font-black text-money" style={{ fontFamily: "ui-monospace, Menlo, monospace" }}>
+                          {p.totalPrice != null ? `${p.totalPrice.toLocaleString()}원 → ` : ""}{bumpAmt}원
+                        </p>
+                      )}
+                      {bumpLines.length > 0 && (
+                        <div>
+                          <p className="text-[11.5px] text-muted-foreground mb-1">구성 (지금 구성에서 시작 · 바꿀 때만 수량을 조절해요)</p>
+                          <div className="rounded-lg border border-border bg-card px-3 py-1">
+                            {bumpLines.map((l) =>
+                              l.kind === "qty" ? (
+                                <div key={l.i} className="flex items-center justify-between gap-2 py-1.5 text-[13px]">
+                                  <span className="min-w-0 truncate">{l.name}</span>
+                                  <span className="flex items-center gap-2 shrink-0">
+                                    <button type="button" aria-label={`${l.name} 줄이기`} onClick={() => setBumpQty((q) => ({ ...q, [l.i]: Math.max(0, (q[l.i] ?? l.qty) - 1) }))} className="w-7 h-7 rounded-md bg-muted text-[15px] font-bold">−</button>
+                                    <b className="w-5 text-center tabular-nums">{bumpQty[l.i] ?? l.qty}</b>
+                                    <button type="button" aria-label={`${l.name} 늘리기`} onClick={() => setBumpQty((q) => ({ ...q, [l.i]: (q[l.i] ?? l.qty) + 1 }))} className="w-7 h-7 rounded-md bg-muted text-[15px] font-bold">+</button>
+                                    {(bumpQty[l.i] ?? l.qty) !== l.qty && <span className="text-[12px] font-bold text-brand-amber w-7">{(bumpQty[l.i] ?? l.qty) - l.qty > 0 ? "+" : ""}{(bumpQty[l.i] ?? l.qty) - l.qty}</span>}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div key={l.i} className="flex items-center justify-between py-1.5 text-[13px] text-muted-foreground">
+                                  <span className="min-w-0 truncate">{l.text}</span>
+                                  {l.kind === "tc" && <span className="shrink-0 text-[11px]">고정</span>}
+                                </div>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      )}
                       <div>
                         <p className="text-[11.5px] text-muted-foreground mb-1">손님이 언제까지 답해야 하나요?</p>
                         <div className="grid grid-cols-4 gap-1.5">

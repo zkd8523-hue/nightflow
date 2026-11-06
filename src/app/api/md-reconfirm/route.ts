@@ -10,17 +10,17 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { autoIssueConfirmation, flowWho, loadClub, loadForeignReq, pushAdmins, resolveItems, sendBudgetEmail, sendSeatChoiceEmail } from "@/lib/booking/guestFlows";
-import { seatValueLabel, seatsOfValue } from "@/lib/booking/seats";
+import { autoIssueConfirmation, flowWho, foreignConfirmation, loadClub, loadForeignReq, pushAdmins, resolveItems, sendBudgetEmail, sendSeatChoiceEmail } from "@/lib/booking/guestFlows";
+import { seatOptions, seatValueLabel, seatsOfValue } from "@/lib/booking/seats";
 
 export async function POST(req: NextRequest) {
-  let body: { proposal_token?: string; action?: string; seats?: string[]; amount?: number; conditions?: string; items?: string };
+  let body: { proposal_token?: string; action?: string; seats?: string[]; amount?: number; conditions?: string; items?: string; seat?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
-  if (!body.proposal_token || !["yes", "alt", "condition", "none"].includes(body.action ?? "")) {
+  if (!body.proposal_token || !["yes", "alt", "condition", "none", "fallback"].includes(body.action ?? "")) {
     return NextResponse.json({ error: "bad_params" }, { status: 400 });
   }
 
@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
   if (!r) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (r.status === "cancelled") return NextResponse.json({ error: "cancelled" }, { status: 409 });
   if (!r.guest_choice) return NextResponse.json({ error: "no_choice" }, { status: 409 });
+  // 예약 확인서가 나간 뒤 "안 돼요"를 보내면 확정된 손님에게 "다시 고르세요" 메일이 간다 — 확정된 예약은 "자리가 밀릴 것 같아요"로만 바꾼다.
+  // (yes는 아래에서 한 번만 처리되도록 이미 막혀 있어 그대로 둔다)
+  if (body.action !== "yes" && (await foreignConfirmation(sb, r.id))) return NextResponse.json({ error: "confirmed" }, { status: 409 });
 
   const club = await loadClub(sb, r.club_ids?.[0]);
   const zones = club?.seat_zones ?? [];
@@ -46,6 +49,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, ref_no: issued.refNo });
   }
 
+  // 고른 자리가 안 돼서 다른 자리로 바로 진행 — 손님 2순위가 있으면 그 자리, 없으면 담당자가 같은 구역 빈 자리를 골라 바로 확인서를 낸다.
+  // 새 메일을 한 번 더 보내지 않는다(확인서 메일 한 통에 "고른 자리가 어려워 이 자리로 잡았어요"가 같이 실린다).
+  if (body.action === "fallback") {
+    const gone = new Set(seatsOfValue(zones, choice));
+    const allowed = new Set(seatOptions(zones, r.md_seats ?? []).flatMap((o) => (seatsOfValue(zones, o.value).length ? seatsOfValue(zones, o.value) : [o.value])).filter((x) => !gone.has(x)));
+    const saved = typeof r.guest_action_payload?.backup === "string" && r.guest_action_payload.backup !== "any" ? (r.guest_action_payload.backup as string) : null;
+    const target = (body.seat ?? "").trim() || saved;
+    if (!target || !allowed.has(target)) return NextResponse.json({ error: "seat_required" }, { status: 400 });
+    if (resolveItems(r, body.items).length === 0) return NextResponse.json({ error: "items_required" }, { status: 400 });
+    const { data: claimed } = await sb.from("foreign_requests").update({ md_reconfirm_state: "yes", md_reconfirm_at: now, guest_choice: target }).eq("id", r.id).eq("md_reconfirm_state", "pending").select("id").maybeSingle();
+    if (!claimed) return NextResponse.json({ ok: true, already: true });
+    const issued = await autoIssueConfirmation(sb, r.id, seatValueLabel(zones, target), body.items, `${seatValueLabel(zones, choice)} wasn't available, so we arranged ${seatValueLabel(zones, target)} for you.`);
+    if (!issued.ok) return NextResponse.json({ error: "issue_failed" }, { status: 500 });
+    return NextResponse.json({ ok: true, ref_no: issued.refNo, seat: target });
+  }
+
   // 안 돼요 — 이 자리는 다시 못 고르게 상태를 닫는다.
   await sb.from("foreign_requests").update({ md_reconfirm_state: "no", md_reconfirm_at: now }).eq("id", r.id);
 
@@ -56,7 +75,7 @@ export async function POST(req: NextRequest) {
     if (seats.length === 0) return NextResponse.json({ error: "seats_required" }, { status: 400 });
     await sb.from("foreign_requests").update({ md_seats: seats, guest_choice: null, md_reconfirm_state: null }).eq("id", r.id);
     const sent = await sendSeatChoiceEmail(sb, r.id, choice);
-    await pushAdmins(sb, "🔁 [외국인] 자리 다시 안내", `${flowWho(r, club)} — ${seatValueLabel(zones, choice, true)} 불가 → ${seats.join(", ")} ${sent ? "손님에게 다시 안내" : "⚠️ 메일 실패, 직접 연락 필요"}`, r.id, "seat_realt");
+    await pushAdmins(sb, "🔁 [외국인] 자리 다시 안내", `${flowWho(r, club)} — ${seatValueLabel(zones, choice, true)} 불가 → ${seats.join(", ")} ${sent ? "손님에게 다시 안내" : "⚠️ 메일 실패, 직접 연락 필요"}`, r.id, "seat_realt", sent);
     return NextResponse.json({ ok: true, sent });
   }
 
@@ -69,7 +88,7 @@ export async function POST(req: NextRequest) {
       guest_choice: null, md_reconfirm_state: null,
     }).eq("id", r.id);
     const sent = await sendBudgetEmail(sb, r.id);
-    await pushAdmins(sb, "🔁 [외국인] 다른 조건 안내", `${flowWho(r, club)} — ${seatValueLabel(zones, choice, true)} 불가 → ₩${amount.toLocaleString("en-US")} 조건 ${sent ? "손님에게 안내" : "⚠️ 메일 실패, 직접 연락 필요"}`, r.id, "seat_condition");
+    await pushAdmins(sb, "🔁 [외국인] 다른 조건 안내", `${flowWho(r, club)} — ${seatValueLabel(zones, choice, true)} 불가 → ₩${amount.toLocaleString("en-US")} 조건 ${sent ? "손님에게 안내" : "⚠️ 메일 실패, 직접 연락 필요"}`, r.id, "seat_condition", sent);
     return NextResponse.json({ ok: true, sent });
   }
 

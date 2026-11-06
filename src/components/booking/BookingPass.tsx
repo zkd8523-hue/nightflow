@@ -8,6 +8,7 @@ import Link from "next/link";
 import { MapPin, Check, Star, Instagram, MessageCircle, ChevronLeft } from "lucide-react";
 import { ContactButtons } from "@/components/foreign/ContactButtons";
 import { GUEST_CANCEL_REASONS, type GuestCancelReason } from "@/lib/booking/cancelReasons";
+import { guestIncludeLine, guestTableText, isAssignedOnArrival } from "@/lib/booking/guestText";
 
 type Props = {
   requestId: string;
@@ -93,7 +94,7 @@ const TEXT = {
     request: "Request",
     onArrival: "On arrival",
     maps: "Open in Google Maps",
-    unlockNote: "These buttons unlock on the day of your visit.",
+    unlockNote: "These buttons unlock on {date}.",
     letKnow: "Let your host know you're coming",
     soon: "10 min away",
     here: "I'm here",
@@ -109,7 +110,7 @@ const TEXT = {
     reviewSubmitting: "Submitting...",
     reviewNeedRating: "Please select a rating.",
     reviewFail: "Could not save your review. Please try again.",
-    cancelBtn: "Cancel booking",
+    cancelBtn: "Can't make it? Cancel booking",
     cancelTitle: "Cancel this booking?",
     cancelBody: "Your host and NightFlow will be notified right away. This can't be undone.",
     cancelReasonLabel: "Why are you cancelling?",
@@ -380,11 +381,13 @@ export function BookingPass(p: Props) {
         </Link>
         <div className="rounded-3xl bg-card border border-border overflow-hidden">
           {/* 여권 필참 — 외국인은 여권이 없으면 입구에서 막힐 수 있다(2026-11-01, 사용자 요청).
-              입구에서 보여주는 화면이라 카드 맨 위 띠로 둔다. 한국 예약엔 해당 없음. */}
+              입구에서 보여주는 화면이라 카드 맨 위 띠로 둔다. 한국 예약엔 해당 없음.
+              2026-11-06: 확정 메일과 같은 모양(양쪽 화살표 한 줄) — 버튼처럼 보이는 채운 띠·🛂 이모지(기기마다 파란 네모로 나옴)는 뺐다. */}
           {!ko && !isCancelled && !isPastEvent(p.eventDate) && (
-            <div className="bg-amber-500 text-black px-4 py-2.5 text-center">
-              <p className="text-[13.5px] font-black uppercase tracking-wide">🛂 Bring your passport</p>
-              <p className="text-[11.5px] font-bold opacity-75 mt-0.5">Without it, you may be refused entry.</p>
+            <div className="bg-amber-500/[0.12] border-y-2 border-amber-500 px-2 py-3 text-center">
+              <p className="text-[15px] leading-snug font-black text-foreground">
+                <span className="text-amber-500">→</span> Bring your passport — required <span className="text-amber-500">←</span>
+              </p>
             </div>
           )}
           {/* 스텁 */}
@@ -472,7 +475,10 @@ export function BookingPass(p: Props) {
               <div className="mt-4 pt-3 border-t border-border">
                 {p.tableInfo && (
                   <Row k={t.seating}>
-                    <div className="text-[14.5px] font-semibold">{p.tableInfo}</div>
+                    <div className="text-[14.5px] font-semibold">{ko ? p.tableInfo : guestTableText(p.tableInfo)}</div>
+                    {!ko && isAssignedOnArrival(p.tableInfo) && (
+                      <div className="text-[12px] text-muted-foreground mt-0.5">Your host picks the best open table on the night.</div>
+                    )}
                   </Row>
                 )}
                 {p.includes.length > 0 && (
@@ -480,7 +486,7 @@ export function BookingPass(p: Props) {
                     <ul className="space-y-0.5">
                       {p.includes.map((it) => (
                         <li key={it} className="text-[14px] text-foreground/90">
-                          {it}
+                          {ko ? it : guestIncludeLine(it)}
                         </li>
                       ))}
                     </ul>
@@ -628,7 +634,7 @@ export function BookingPass(p: Props) {
               <div className="mt-4 pt-3.5 border-t border-border">
                 {!isEventDay(p.eventDate) ? (
                   <p className="text-center text-[12px] text-muted-foreground mb-2">
-                    {t.unlockNote}
+                    {t.unlockNote.replace("{date}", fmtDate(p.eventDate, ko))}
                   </p>
                 ) : (
                   !isSent("soon") && !isSent("arrived") && (
@@ -676,10 +682,10 @@ export function BookingPass(p: Props) {
               </div>
             )}
 
-            {/* 리뷰 — 입장 완료(arrivalConfirmed) 여부와 무관하게 항상 쓸 수 있다.
-                MD가 그 버튼을 안 눌러도 방문은 끝났을 수 있어서 작성 자체를
-                막지 않고, 안내 문구만 다르게 보여준다. */}
-            {!isCancelled && (
+            {/* 리뷰 — 방문 전엔 숨긴다(2026-11-06): 일주일 남은 예약에도 별점 칸이 커서 도착 알림·취소가 밀렸다.
+                MD가 입장 완료를 누른 뒤, 또는 방문일이 지난 뒤부터 쓸 수 있다. MD가 그 버튼을 안 눌러도
+                방문은 끝났을 수 있어서 방문일이 지나면 작성 자체는 막지 않는다. */}
+            {!isCancelled && (p.arrivalConfirmed || isPastEvent(p.eventDate)) && (
               <div className="mt-4 pt-3.5 border-t border-border">
                 <div className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted-foreground mb-2">
                   {t.review}

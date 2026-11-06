@@ -41,6 +41,7 @@ export type FlowReq = {
   assigned_md_id: string | null;
   proposal_token: string;
   guest_token: string;
+  md_response: string | null;
   md_seats: string[] | null;
   md_proposed_items: string | null;
   /** 담당자가 메뉴판에서 고른 구성·TC·합계(Migration 705) */
@@ -53,7 +54,7 @@ export type FlowReq = {
 };
 
 const REQ_COLS =
-  "id, guest_name, event_date, group_size, status, lang, club_ids, contact_type, contact_value, backup_email, selected_menu, selected_menu_total, budget, notes, assigned_md_id, proposal_token, guest_token, md_seats, md_proposed_items, md_menu, md_required_amount, md_conditions, guest_choice, guest_action_kind, guest_action_payload";
+  "id, guest_name, event_date, group_size, status, lang, club_ids, contact_type, contact_value, backup_email, selected_menu, selected_menu_total, budget, notes, assigned_md_id, proposal_token, guest_token, md_response, md_seats, md_proposed_items, md_menu, md_required_amount, md_conditions, guest_choice, guest_action_kind, guest_action_payload";
 
 export async function loadForeignReq(sb: SupabaseClient, by: { id?: string; guestToken?: string; proposalToken?: string }): Promise<FlowReq | null> {
   let q = sb.from("foreign_requests").select(REQ_COLS);
@@ -75,12 +76,21 @@ export async function loadClub(sb: SupabaseClient, clubId: string | null | undef
   return { id: data.id, name: data.name, name_en: data.name_en, seat_zones: parseSeatZones(data.seat_zones), floorPlanUrls: plans };
 }
 
+/** 외국인 예약의 예약 확인서(있으면). 확인서가 나간 뒤엔 예전 메일 버튼·옛 제안서 링크로 자리·금액을 다시 바꾸지 못하게 막는 기준이다(2026-11-06). */
+export async function foreignConfirmation(sb: SupabaseClient, requestId: string): Promise<{ ref_no: string | null; public_token: string | null; md_token: string | null; table_info: string | null } | null> {
+  const { data } = await sb.from("booking_confirmations").select("ref_no, public_token, md_token, table_info").eq("request_type", "foreign").eq("request_id", requestId).maybeSingle();
+  return (data as { ref_no: string | null; public_token: string | null; md_token: string | null; table_info: string | null } | null) ?? null;
+}
+
 /** 손님이 낸 금액 — 메뉴를 담았으면 그 합계, MD 추천이면 예산. */
 export const guestAmount = (r: Pick<FlowReq, "selected_menu_total" | "budget">) => r.selected_menu_total ?? r.budget ?? null;
 
 export const respondUrl = (r: Pick<FlowReq, "guest_token">, query = "") => `${SITE}/booking/respond/${r.guest_token}${query}`;
 
-export async function pushAdmins(sb: SupabaseClient, title: string, body: string, requestId: string, kind: string): Promise<void> {
+/** quiet=true: 정상 흐름이라 사람이 손댈 게 없는 알림 — 푸시는 보내지 않는다(관리자 예약 카드의 진행 타임라인에서 본다, 2026-11-06).
+ *  울리는 건 내가 나서야 할 때(대안 없음·무응답·기한 지남·메일 실패 등)만. */
+export async function pushAdmins(sb: SupabaseClient, title: string, body: string, requestId: string, kind: string, quiet = false): Promise<void> {
+  if (quiet) return;
   const { data: admins } = await sb.from("users").select("id").eq("role", "admin");
   for (const a of admins ?? []) {
     const { error } = await sb.rpc("notify_user_push", {
@@ -431,7 +441,7 @@ export function resolveItems(r: Pick<FlowReq, "md_proposed_items" | "selected_me
   return (r.selected_menu?.items ?? []).map((it) => `${it.qty} ${it.name_en}${it.label_en ? ` ${it.label_en}` : ""}`);
 }
 
-export async function autoIssueConfirmation(sb: SupabaseClient, requestId: string, tableInfo: string, itemsText?: string | null): Promise<{ ok: boolean; refNo?: string; error?: string }> {
+export async function autoIssueConfirmation(sb: SupabaseClient, requestId: string, tableInfo: string, itemsText?: string | null, note?: string | null): Promise<{ ok: boolean; refNo?: string; error?: string }> {
   const r = await loadForeignReq(sb, { id: requestId });
   if (!r || r.status === "cancelled") return { ok: false };
   const club = await loadClub(sb, r.club_ids?.[0]);
@@ -455,6 +465,10 @@ export async function autoIssueConfirmation(sb: SupabaseClient, requestId: strin
       guest_request: r.notes,
     },
   });
+  // 손님이 고른 자리가 안 돼 2순위로 잡은 경우 등 — 확인서 페이지와 확인서 메일에 그 이유를 한 줄 붙인다.
+  if (note) {
+    await sb.from("booking_confirmations").update({ last_change_note: note, last_changed_at: new Date().toISOString() }).eq("request_type", "foreign").eq("request_id", r.id);
+  }
   const sent = await notifyAssignedMd(sb, { requestType: "foreign", requestId: r.id, kind: "confirmation" });
   // 확인서가 나오면 미리 만든 단톡방이 배정된다(notifyAssignedMd, Migration 707) — 운영자는 그 방을 열어 이름을 바꾸고
   // 첫 메시지만 보낸다. 방이 없으면 "방 없음"을 알려 풀에 방을 더 등록하게 한다. 누르면 관리자 예약 카드의 "단톡방" 칸으로 간다.

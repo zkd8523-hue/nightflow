@@ -17,6 +17,70 @@ function sinceText(iso: string): string {
   return h < 24 ? `${h}시간` : `${Math.floor(h / 24)}일`;
 }
 
+/** 예약 진행 타임라인 + "지금 누구 차례인지"(2026-11-06) — 상태 배지만으론 누가 뭘 해야 하는지 몰라 카드를 일일이 열어봐야 했다.
+ *  이미 저장된 시각·값으로만 그린다(새 컬럼 없음). 무응답 기준은 cron(proposal-reminders)과 같다: 당일 15분, 그 외 3시간. */
+function ReqTimeline({ r, mdName }: { r: ForeignReq; mdName: string | null }) {
+  const md = mdName ?? "담당자";
+  const hhmm = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }) : "");
+  const seats = r.md_seats ?? [];
+  const approved = r.md_response === "approved";
+  const rejected = r.md_response === "rejected";
+  const menuTotal = (r.md_menu as { total?: number } | null | undefined)?.total ?? null;
+  const pendingReconfirm = r.md_reconfirm_state === "pending";
+  type Step = { done: boolean; title: string; sub?: string };
+  const steps: Step[] = [
+    { done: true, title: r.assigned_md_id ? `접수 · ${md} 지정` : "접수 · 담당자 미지정", sub: hhmm(r.created_at) },
+    rejected
+      ? { done: true, title: "MD 받기 어려움", sub: r.md_required_amount ? `${r.md_required_amount.toLocaleString()}원이면 가능` : undefined }
+      : {
+          done: approved,
+          title: approved ? "MD 예약 가능" : "MD 답변 대기",
+          sub: approved
+            ? [seats.length ? (seats.length > 6 ? `자리 ${seats.length}개` : seats.join("·")) : "당일 배정", r.md_bump_risk === true ? "밀림 O" : r.md_bump_risk === false ? "밀림 X" : "", menuTotal ? `합계 ${menuTotal.toLocaleString()}원` : ""].filter(Boolean).join(" · ")
+            : undefined,
+        },
+  ];
+  if (approved && seats.length > 0) {
+    steps.push({ done: !!r.guest_choice, title: r.guest_choice ? `손님이 ${r.guest_choice.replace(/^zone:/, "") } 선택` : "손님 자리 선택 대기", sub: r.guest_choice ? hhmm(r.guest_responded_at) : undefined });
+    if (r.guest_choice) steps.push({ done: !pendingReconfirm && !!r.conf, title: pendingReconfirm ? "담당자 재확인 대기" : "담당자 재확인" });
+  }
+  steps.push({ done: !!r.conf, title: r.conf ? `예약 확인서 발급 · ${r.conf.ref_no}` : "예약 확인서" });
+
+  // 지금 차례
+  const sameDay = r.event_date === businessToday();
+  const since = (iso: string | null | undefined) => (iso ? `${sinceText(iso)}째` : "");
+  let turn: string | null = null;
+  if (r.conf) turn = null;
+  else if (!r.assigned_md_id) turn = "나: 담당자를 지정해 제안서를 보내주세요";
+  else if (rejected) turn = r.md_required_amount ? `손님: 금액 안내 메일 확인 ${since(r.guest_action_sent_at)}` : "나: 다른 클럽·조건 제안";
+  else if (!approved) turn = `${md}: 제안서 답변 ${since(r.proposal_sent_at)} · ${sameDay ? "15분" : "3시간"} 넘으면 알림`;
+  else if (seats.length > 0 && !r.guest_choice) turn = `손님: 자리 고르기 ${since(r.guest_action_sent_at)}`;
+  else if (pendingReconfirm) turn = `${md}: "이 자리 지금도 되나요?" ${since(r.guest_responded_at)}`;
+  else turn = `${md}: 예약 확인서 발급 대기`;
+
+  return (
+    <div className="rounded-xl border border-border bg-background/60 px-3 py-2.5">
+      <ol className="space-y-1.5">
+        {steps.map((st, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span
+              aria-hidden="true"
+              className={`mt-px shrink-0 w-[18px] h-[18px] rounded-full grid place-items-center text-[10px] font-black border ${st.done ? "bg-green-500/15 text-money border-green-500/40" : "bg-card text-muted-foreground border-border"}`}
+            >
+              {st.done ? "✓" : "·"}
+            </span>
+            <span className={`text-[12.5px] leading-snug ${st.done ? "text-foreground/90" : "text-muted-foreground"}`}>
+              <b className="font-bold">{st.title}</b>
+              {st.sub && <span className="text-muted-foreground"> · {st.sub}</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+      {turn && <p className="mt-2 pt-2 border-t border-border text-[12.5px] font-black text-brand-amber">지금 차례 → {turn}</p>}
+    </div>
+  );
+}
+
 export type ForeignReq = {
   id: string;
   lang: string;
@@ -68,6 +132,8 @@ export type ForeignReq = {
   notes: string | null;
   status: string;
   created_at: string;
+  /** 담당자가 테스트 계정(is_test)인 요청 — 목록·통계에서 기본 숨김 */
+  isTest?: boolean;
 };
 
 // ForeignReq(이 화면 전용, snake_case+club_ids배열) → ProposalReq(제안서/확정서
@@ -436,6 +502,7 @@ export function ForeignRequestsClient({
   const [editing, setEditing] = useState<string | null>(null);
   // 목록이 200건까지 그냥 나열돼서, 지금 손 봐야 할 건(MD 답을 기다리는 것,
   // 거절당해 다시 잡아야 하는 것)을 눈으로 찾아야 했다. 처리 단계로 좁힌다.
+  const [showTest, setShowTest] = useState(() => !!initial.find((x) => x.id === focusId)?.isTest);
   const [tab, setTab] = useState<"all" | "needs_club" | "not_sent" | "waiting" | "guest_waiting" | "approved" | "rejected" | "done">("all");
   // 알림을 누르고 들어오면(?id=) 그 카드로 스크롤하고 테두리를 강조한다 — 예전엔 목록 맨 위에서 직접 찾아야 했다.
   useEffect(() => {
@@ -538,17 +605,19 @@ export function ForeignRequestsClient({
   const isGuestWaiting = (r: ForeignReq) =>
     !!r.guest_action_sent_at && !r.guest_responded_at && r.status !== "cancelled" && !r.conf;
 
+  const hiddenTest = reqs.filter((r) => r.isTest).length;
+  const visible = showTest ? reqs : reqs.filter((r) => !r.isTest);
   const counts = {
-    all: reqs.length,
-    needs_club: reqs.filter((r) => bucketOf(r) === "needs_club").length,
-    not_sent: reqs.filter((r) => bucketOf(r) === "not_sent").length,
-    waiting: reqs.filter((r) => bucketOf(r) === "waiting").length,
-    guest_waiting: reqs.filter(isGuestWaiting).length,
-    approved: reqs.filter((r) => bucketOf(r) === "approved").length,
-    rejected: reqs.filter((r) => bucketOf(r) === "rejected").length,
-    done: reqs.filter((r) => bucketOf(r) === "done").length,
+    all: visible.length,
+    needs_club: visible.filter((r) => bucketOf(r) === "needs_club").length,
+    not_sent: visible.filter((r) => bucketOf(r) === "not_sent").length,
+    waiting: visible.filter((r) => bucketOf(r) === "waiting").length,
+    guest_waiting: visible.filter(isGuestWaiting).length,
+    approved: visible.filter((r) => bucketOf(r) === "approved").length,
+    rejected: visible.filter((r) => bucketOf(r) === "rejected").length,
+    done: visible.filter((r) => bucketOf(r) === "done").length,
   };
-  const shown = tab === "all" ? reqs : tab === "guest_waiting" ? reqs.filter(isGuestWaiting) : reqs.filter((r) => bucketOf(r) === tab);
+  const shown = tab === "all" ? visible : tab === "guest_waiting" ? visible.filter(isGuestWaiting) : visible.filter((r) => bucketOf(r) === tab);
 
   const TABS: { key: typeof tab; label: string }[] = [
     { key: "all", label: "전체" },
@@ -580,6 +649,12 @@ export function ForeignRequestsClient({
           </button>
         ))}
       </div>
+
+      {hiddenTest > 0 && (
+        <button type="button" onClick={() => setShowTest((v) => !v)} className="text-[12px] font-bold text-brand-amber">
+          {showTest ? `테스트 요청 ${hiddenTest}건 다시 숨기기` : `테스트 요청 ${hiddenTest}건 숨김 · 보기`}
+        </button>
+      )}
 
       {shown.length === 0 && (
         <p className="text-center text-muted-foreground py-10 text-[13px]">이 단계에 해당하는 요청이 없어요.</p>
@@ -617,6 +692,11 @@ export function ForeignRequestsClient({
               </div>
               <span className="text-[11px] text-muted-foreground">{r.lang.toUpperCase()} · {new Date(r.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
             </div>
+
+            {/* 진행 타임라인 + 지금 누구 차례인지 — 취소된 건은 생략 */}
+            {r.status !== "cancelled" && (
+              <ReqTimeline r={r} mdName={(r.mdCandidates.find((m) => m.id === r.assigned_md_id)?.name ?? allMds.find((m) => m.id === r.assigned_md_id)?.name) ?? null} />
+            )}
 
             {/* 클럽 */}
             {r.clubNames.length > 0 ? (

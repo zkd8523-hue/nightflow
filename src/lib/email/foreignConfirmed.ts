@@ -145,6 +145,8 @@ export type ForeignConfirmedEmail = {
   /** 담당 MD 표시 이름 — "확정서 보내기"는 MD가 확인한 뒤라 이때는 정해져 있다 */
   hostName: string | null;
   totalPrice: number | null;
+  /** 확인서에 붙은 안내 한 줄(예: 고른 자리가 안 돼 다른 자리로 잡았을 때) */
+  note?: string | null;
   /** WhatsApp 단톡방 초대 링크(Migration 707) — 있으면 "단톡방 들어가기" 버튼을 붙인다 */
   chatUrl?: string | null;
   /** 방에 들어가 처음 보낼 인사 문구 — chatUrl과 같이 있을 때만 박스로 보여준다 */
@@ -172,6 +174,7 @@ export function buildForeignConfirmedEmail(o: ForeignConfirmedEmail): { subject:
 <h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:900;color:#fff;letter-spacing:-0.5px;">${c.heading(club)}</h1>
 <p style="margin:0 0 14px;padding:12px 8px;background:rgba(245,158,11,0.12);border-top:2px solid ${AMBER};border-bottom:2px solid ${AMBER};text-align:center;font-size:15px;line-height:1.4;font-weight:900;color:#fff;"><span style="color:${AMBER};">→</span> ${c.passport} <span style="color:${AMBER};">←</span></p>
 <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:${MUTED};">${c.intro}</p>
+${o.note ? `<p style="margin:0 0 14px;padding:10px 12px;border-radius:12px;background:#0f0f10;border:1px solid #2c2c2e;font-size:13.5px;line-height:1.6;color:#e5e5e5;">${esc(o.note)}</p>` : ""}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
 ${row(c.date, esc(date))}
 ${club ? row(c.club, area ? `${club} · ${esc(area)}` : club) : ""}

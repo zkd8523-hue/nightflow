@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
     `${flowWho(r, club)} — 유지하려면 ${amount.toLocaleString("ko-KR")}원 · ${sent ? "손님에게 유지/취소 메일 발송" : "⚠️ 손님 메일 실패, 직접 연락 필요"}`,
     r.id,
     "bump_requested",
+    sent, // 손님 메일이 정상 발송됐으면 조용히 — 실패일 때만 울린다
   );
   if (!sent) return NextResponse.json({ error: "no_guest_channel" }, { status: 422 });
   return NextResponse.json({ ok: true, deadline: deadline.toISOString() });

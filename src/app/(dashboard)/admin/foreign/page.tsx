@@ -84,7 +84,7 @@ export default async function AdminForeignPage({ searchParams }: { searchParams:
     mdId: m.id as string,
     name: (m.display_name as string | null) ?? "(이름없음)",
     short: mdShortName(m.display_name as string | null),
-    roomName: poolRoomName(clubOfMd[m.id as string], mdShortName(m.display_name as string | null)),
+    roomName: poolRoomName(clubOfMd[m.id as string]),
     free: poolByMd[m.id as string]?.free ?? 0,
     total: poolByMd[m.id as string]?.total ?? 0,
   }));
@@ -145,8 +145,14 @@ export default async function AdminForeignPage({ searchParams }: { searchParams:
       .map((c) => ({ id: c.id, name: c.name, area: c.area, open_dows: (c.open_dows as number[] | null) ?? null }));
   }
 
+  // 담당자가 테스트 계정(is_test)인 요청은 목록·통계에서 기본 숨김 — 지우지 않아도 실제 요청과 섞이지 않는다(2026-11-06).
+  const assignedIds = Array.from(new Set(requests.map((r) => r.assigned_md_id as string | null).filter((x): x is string => !!x)));
+  const { data: testMdRows } = assignedIds.length ? await supabase.from("users").select("id").in("id", assignedIds).eq("is_test", true) : { data: [] as { id: string }[] };
+  const testMdIds = new Set((testMdRows ?? []).map((u) => u.id));
+
   const enriched: ForeignReq[] = requests.map((r) => ({
     ...r,
+    isTest: !!r.assigned_md_id && testMdIds.has(r.assigned_md_id as string),
     club_ids: (r.club_ids as string[]) ?? [],
     clubNames: ((r.club_ids as string[]) ?? []).map((id) => clubNameById[id] ?? id.slice(0, 8)),
     clubNameEn: clubNameEnById[((r.club_ids as string[]) ?? [])[0]] ?? null,

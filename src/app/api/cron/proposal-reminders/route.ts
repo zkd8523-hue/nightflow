@@ -60,6 +60,10 @@ async function handle(req: NextRequest) {
     { type: "korean" as const, table: "korean_booking_requests", cols: "club_id", adminUrl: "/admin/korean-bookings" },
   ];
 
+  // 담당자가 테스트 계정(is_test)인 요청은 알림 대상에서 뺀다 — 지우지 않으면 테스트 요청의 무응답 알림이 실제 운영자를 깨운다(2026-11-06).
+  const { data: testMdRows } = await sb.from("users").select("id").eq("is_test", true);
+  const testMds = new Set((testMdRows ?? []).map((u) => u.id as string));
+
   const due: { type: "foreign" | "korean"; adminUrl: string; row: Row; waitedMin: number; sameDay: boolean; first: boolean }[] = [];
   for (const t of tracks) {
     const { data, error } = await sb
@@ -76,6 +80,7 @@ async function handle(req: NextRequest) {
       continue;
     }
     for (const row of (data ?? []) as unknown as Row[]) {
+      if (row.assigned_md_id && testMds.has(row.assigned_md_id)) continue;
       const sameDay = row.event_date === today;
       const steps = sameDay ? SAME_DAY_STEPS : OTHER_DAY_STEPS;
       const sent = row.proposal_admin_alerts ?? 0;
@@ -91,13 +96,14 @@ async function handle(req: NextRequest) {
   const GUEST_OTHER_MIN = 180;
   const { data: waiting } = await sb
     .from("foreign_requests")
-    .select("id, event_date, guest_action_kind, guest_action_sent_at, guest_alerts")
+    .select("id, event_date, guest_action_kind, guest_action_sent_at, guest_alerts, assigned_md_id")
     .not("guest_action_sent_at", "is", null)
     .is("guest_responded_at", null)
     .eq("guest_alerts", 0)
     .neq("status", "cancelled")
     .gte("event_date", today);
   const guestDue = (waiting ?? []).filter((w) => {
+    if (w.assigned_md_id && testMds.has(w.assigned_md_id as string)) return false;
     const mins = Math.floor((now - new Date(w.guest_action_sent_at as string).getTime()) / 60000);
     return mins >= (w.event_date === today ? GUEST_SAME_DAY_MIN : GUEST_OTHER_MIN);
   });

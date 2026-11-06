@@ -93,7 +93,7 @@ export async function notifyAssignedMd(
 
   const { data: conf } = await sb
     .from("booking_confirmations")
-    .select("ref_no, md_token, public_token, club_id, total_price, confirmed_group_size, guest_notified_at, table_info, includes, arrival_time")
+    .select("ref_no, md_token, public_token, club_id, total_price, confirmed_group_size, guest_notified_at, table_info, includes, arrival_time, last_change_note")
     .eq("request_type", requestType)
     .eq("request_id", r.id)
     .maybeSingle();
@@ -270,6 +270,7 @@ export async function notifyAssignedMd(
           guestName: r.guest_name,
           hostName: host?.display_name ?? null,
           totalPrice: conf.total_price ?? null,
+          note: conf.last_change_note ?? null,
           chatUrl: chat?.room?.invite_url ?? null,
           chatGreeting: chat?.room
             ? guestGreeting({

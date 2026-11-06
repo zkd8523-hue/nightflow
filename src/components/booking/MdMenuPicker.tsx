@@ -47,7 +47,7 @@ const lineText = (l: Line) =>
   `${l.n} × ${l.name}${l.label && !/^1 bottle$/i.test(l.label) && !/^set$/i.test(l.label) ? ` · ${l.label}` : ""}`;
 
 /** 추천 구성 — 샴페인 세트 / 한 종 N병 / 두 종 조합 중 금액 이하·80% 이상, 합계가 가까운 순. 같은 술 조합은 한 번만. */
-function recommend(items: PickerItem[], budget: number, rule: TcRule) {
+export function recommend(items: PickerItem[], budget: number, rule: TcRule) {
   const low = Math.round(budget * BAND_LOW);
   const champs = items.filter((m) => m.cat === "champagne");
   type P = { id: string; n: number; unit: number; name: string; label: string };
@@ -158,6 +158,20 @@ export function MdMenuPicker({
           <b>TC 확인이 필요해요</b> — {tcIsAlways(rule) ? "이 클럽은" : `${t.bottles}병이면`} TC가 {won(need ?? 0)}인데 지금 {won(value.tc)}이에요.
         </p>
       )
+    ) : !rule && t.lines.length ? (
+      // 클럽 TC가 DB에 없으면 합계에 0원으로만 들어가 손님이 현장에서 더 내게 된다 — 오늘 TC를 직접 넣게 하고, 넣은 금액은 클럽 설정에도 저장한다(2026-11-06).
+      <div className="rounded-lg border border-amber-500/40 bg-amber-500/[0.06] px-2.5 py-2 mt-1.5 space-y-1.5">
+        <p className="text-[12px] font-bold text-brand-amber">이 클럽 TC를 아직 몰라요</p>
+        <p className="text-[11.5px] text-muted-foreground leading-relaxed">오늘 TC가 있으면 넣어주세요. 넣은 금액은 이 클럽 설정에도 저장돼요.</p>
+        <input
+          inputMode="numeric"
+          aria-label="오늘 테이블 차지(TC)"
+          value={value.tc ? value.tc.toLocaleString("en-US") : ""}
+          onChange={(e) => onChange({ ...value, tc: Number(e.target.value.replace(/[^0-9]/g, "")) || 0, tcTouched: true })}
+          placeholder="예) 50,000"
+          className="w-full h-10 rounded-lg border border-border bg-card px-3 text-[13.5px] font-mono outline-none focus:border-amber-500"
+        />
+      </div>
     ) : null;
 
   return (

@@ -17,7 +17,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { autoIssueConfirmation, sendBudgetEmail, sendSeatChoiceEmail } from "@/lib/booking/guestFlows";
+import { autoIssueConfirmation, foreignConfirmation, sendBudgetEmail, sendSeatChoiceEmail } from "@/lib/booking/guestFlows";
 import { buildMdMenu, isWeekendDate, menuToIncludes } from "@/lib/booking/mdMenu";
 
 const REJECT_LABEL: Record<string, string> = {
@@ -95,6 +95,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "cancelled" }, { status: 409 });
   }
 
+  // 예약 확인서가 나간 뒤 다시 승인·거절하면 손님 선택이 초기화되고 새 메일이 나간다(확인서는 옛 자리 그대로).
+  // 확정된 예약의 변경은 MD 확인서의 "자리가 밀릴 것 같아요" / "예약 취소"로만 한다. (외국인 트랙만 — 한국 예약은 흐름이 달라 그대로 둔다)
+  if (requestType === "foreign" && (await foreignConfirmation(sb, reqRow.id))) {
+    return NextResponse.json({ error: "confirmed" }, { status: 409 });
+  }
+
   const patch: Record<string, unknown> = {
     md_response: action === "approve" ? "approved" : "rejected",
     md_responded_at: new Date().toISOString(),
@@ -134,6 +140,15 @@ export async function POST(req: NextRequest) {
           clubId, weekend: isWeekendDate(reqRow.event_date), picks: body.menu.picks, tc: Number(body.menu.tc ?? 0), budget,
         });
         if (built.ok === false) return NextResponse.json({ error: built.error }, { status: 400 });
+        // 클럽에 TC가 아직 없는데 담당자가 오늘 TC를 넣었으면 그 요일(평일/주말) 값으로 클럽 설정에 저장한다 —
+        // 다음 손님부터 합계에 TC가 자동으로 들어간다. 이미 값이 있으면 건드리지 않는다.
+        if (built.menu.tc > 0) {
+          const col = isWeekendDate(reqRow.event_date) ? "table_charge_weekend" : "table_charge_weekday";
+          const { data: tcClub } = await sb.from("clubs").select("table_charge_rule, table_charge_weekday, table_charge_weekend").eq("id", clubId).maybeSingle();
+          if (tcClub && !tcClub.table_charge_rule && (tcClub as Record<string, unknown>)[col] == null) {
+            await sb.from("clubs").update({ [col]: built.menu.tc }).eq("id", clubId);
+          }
+        }
         patch.md_menu = built.menu;
         proposedItems = menuToIncludes(built.menu).join("\n"); // 확인서 포함 내역·알림 문구가 같은 줄을 쓴다
       } else if (!proposedItems) {
@@ -190,7 +205,7 @@ export async function POST(req: NextRequest) {
     try {
       if (action === "approve") {
         if (patch.md_table_choosable === false) {
-          const r = await autoIssueConfirmation(sb, reqRow.id, "Assigned on the night (당일 배정)");
+          const r = await autoIssueConfirmation(sb, reqRow.id, "Assigned when you arrive (당일 배정)");
           flowNote = r.ok ? ` · 확인서 자동 발급 ${r.refNo}` : r.error === "items_required" ? " · ⚠️ 구성이 없어 확인서를 못 만들었어요(직접 작성)" : " · ⚠️ 확인서 자동 발급 실패";
         } else if ((patch.md_seats as string[] | null)?.length) {
           flowNote = (await sendSeatChoiceEmail(sb, reqRow.id)) ? " · 손님에게 자리 고르기 메일 발송" : " · ⚠️ 자리 고르기 메일 실패";
@@ -241,7 +256,10 @@ export async function POST(req: NextRequest) {
         })`;
     const bodyWithFlow = bodyText + flowNote;
 
-    for (const admin of admins ?? []) {
+    // 외국인 요청에서 손님 안내가 정상으로 나갔으면(확인서 자동 발급·자리 고르기 메일·금액 안내 메일) 사람이 손댈 게 없어 푸시를 생략한다(2026-11-06).
+    // 받기 어려움(금액 부족 외)·자동 안내 실패·직접 안내 필요면 그대로 울린다.
+    const quiet = requestType === "foreign" && /확인서 자동 발급 |자리 고르기 메일 발송|금액 안내 메일 발송/.test(flowNote) && !flowNote.includes("⚠️");
+    for (const admin of quiet ? [] : admins ?? []) {
       await sb.rpc("notify_user_push", {
         p_user_id: admin.id,
         p_title: approved ? "✅ MD 예약 가능" : "❌ MD 받기 어려움",
