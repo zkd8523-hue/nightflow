@@ -19,11 +19,13 @@ export function SettlementsClient({
   rows: initialRows,
   notices: initialNotices,
   rates,
+  mdRates,
   payments: initialPayments,
 }: {
   rows: SettlementRow[];
   notices: SettlementNotice[];
   rates: Record<string, number>;
+  mdRates: Record<string, number>;
   payments: SettlementPayment[];
 }) {
   const [rows, setRows] = useState(initialRows);
@@ -56,8 +58,12 @@ export function SettlementsClient({
     return [...m.entries()];
   })();
   const monthTotal = included.reduce((s, r) => s + (r.amount ?? 0), 0);
-  const rate = rateOf(rates, month);
-  const pct = `${+(rate * 100).toFixed(2)}%`;
+  // 담당자별 요율(Migration 708)이 있어 묶음마다 요율이 다를 수 있다 — 달 합계도 묶음별 수수료를 더한다.
+  const pctOf = (r: number) => `${+(r * 100).toFixed(2)}%`;
+  const groupRates = groups.map(([, g]) => rateOf(rates, month, g.mdId, mdRates));
+  const monthFee = groups.reduce((s, [, g], i) => s + feeOf(g.rows.reduce((t, r) => t + (r.amount ?? 0), 0), groupRates[i]), 0);
+  const sameRate = new Set(groupRates).size <= 1;
+  const pct = sameRate ? pctOf(groupRates[0] ?? rateOf(rates, month)) : "";
 
   const togglePaid = async (mdId: string, paid: boolean) => {
     const res = await fetch("/api/admin/settlements", {
@@ -139,7 +145,7 @@ export function SettlementsClient({
         </div>
         <div>
           <p className="text-[11px] text-muted-foreground">수수료 {pct}</p>
-          <p className="text-[16px] font-black text-money tabular-nums">{won(feeOf(monthTotal, rate))}</p>
+          <p className="text-[16px] font-black text-money tabular-nums">{won(monthFee)}</p>
         </div>
         <div>
           <p className="text-[11px] text-muted-foreground">지급기한</p>
@@ -152,6 +158,7 @@ export function SettlementsClient({
       {/* 클럽 · MD별 */}
       {groups.map(([key, g]) => {
         const total = g.rows.reduce((s, r) => s + (r.amount ?? 0), 0);
+        const rate = rateOf(rates, month, g.mdId, mdRates);
         const last = notices.find((n) => n.month === month && n.md_id === g.mdId);
         const paid = payments.find((p) => p.month === month && p.md_id === g.mdId);
         const open = composer?.key === key;
@@ -164,7 +171,7 @@ export function SettlementsClient({
               </div>
               <div className="text-right shrink-0">
                 <p className="text-[12px] text-muted-foreground">{g.rows.length}건 · {won(total)}</p>
-                <p className="text-[17px] font-black text-money tabular-nums">수수료 {won(feeOf(total, rate))}</p>
+                <p className="text-[17px] font-black text-money tabular-nums">수수료 {pctOf(rate)} {won(feeOf(total, rate))}</p>
               </div>
             </div>
 

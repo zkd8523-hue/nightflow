@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 import { ClubsClient } from "./ClubsClient";
 import { localizeReviews } from "@/lib/clubs/reviewI18n";
+import { isRatingShown, shownReviews } from "@/lib/clubs/ratingDisplay";
 
 export const metadata: Metadata = {
   // absolute = root layout의 "%s | 나플" template 무시 (한글 노출 차단)
@@ -108,7 +109,7 @@ export default async function EnClubsPage() {
   const clubList = (clubs ?? []).map((c) => ({
     ...c,
     // 숨김 대상(연락처 홍보·날짜만) 제거 — reviewI18n
-    google_reviews: localizeReviews(c.google_reviews, "en"),
+    google_reviews: shownReviews(localizeReviews(c.google_reviews, "en")),
     has_md: (c.partners?.length ?? 0) > 0,
     agreed: !!c.foreign_booking_agreed,
     // 주대까지 있어야 실제로 예약을 잡아줄 수 있다 — 배지·정렬의 기준.
@@ -137,7 +138,7 @@ export default async function EnClubsPage() {
             return (
               <li key={c.id}>
                 {c.name} — {areaEn} club
-                {c.google_rating ? ` (${c.google_rating}★)` : ""}
+                {isRatingShown(c.google_rating) ? ` (${c.google_rating}★)` : ""}
               </li>
             );
           })}

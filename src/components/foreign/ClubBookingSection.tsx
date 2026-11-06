@@ -2,9 +2,11 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 import type { ClubPriceSummary } from "@/lib/clubs/tablePricing";
 import { formatWon, clubFloor, CLUB_MIN_SPEND_OVERRIDE, representativeItems } from "@/lib/clubs/tablePricing";
+import { clubTagline, clubAltHint } from "@/lib/clubs/clubTagline";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 import type { KrwRates } from "@/lib/utils/currency";
 import { approxLocal, displayItem } from "@/lib/foreign/premiumMenu";
+import { MIN_SHOWN_RATING } from "@/lib/clubs/ratingDisplay";
 
 // 외국어 클럽 상세의 "예약" 블록(서버 컴포넌트). 4개 언어 페이지가 공유한다.
 //
@@ -190,8 +192,6 @@ function wonInline(n: number, lang: SeoLang, rates?: KrwRates): string {
   return l ? `${formatWon(n)} (${l})` : formatWon(n);
 }
 
-// 별점이 낮은 클럽을 "대신 여기" 카드에 별과 함께 띄우면 오히려 망설이게 한다 — 4.0 미만은 별을 숨긴다.
-const MIN_SHOWN_RATING = 4;
 
 function AltCards({ alts, lang, rates, hidePrice = false }: { alts: AltClub[]; lang: SeoLang; rates?: KrwRates; hidePrice?: boolean }) {
   const t = T[lang];
@@ -265,6 +265,8 @@ export function ClubBookingSection({
     const dowsText = openDows && openDows.length
       ? openDows.length === 7 ? t.daily : [...openDows].sort((a, b) => a - b).map((d) => t.dows[d]).join("·")
       : null;
+    const tagline = clubTagline(clubId, lang);
+    const altHint = clubAltHint(clubId, lang);
     const whenLine = hours ? t.hoursLine(hours) : dowsText ? t.daysLine(dowsText) : null;
     const chargeText = [
       tableChargeWeekday ? `${t.chargeWd} ${formatWon(tableChargeWeekday)}` : null,
@@ -279,6 +281,7 @@ export function ClubBookingSection({
             "예약 방법" 접힘 안으로 — 접혀 있어도 HTML에 그대로 있어 검색엔진·AI는 계속 읽는다. */}
         <div>
           <h2 className="text-[18px] font-black">{t.h2(name)}</h2>
+          {tagline && <p className="text-[13px] text-foreground/90 mt-1 break-keep">{tagline}</p>}
           <p className="text-[12px] font-bold text-muted-foreground mt-2">
             {anchoredByFloor ? t.minSpend(areaLabel) : t.tablesFrom}
           </p>
@@ -302,6 +305,11 @@ export function ClubBookingSection({
           {t.cta()}
         </Link>
         <p className="text-[12px] text-muted-foreground text-center -mt-2 break-keep">{t.trustLine}</p>
+        {altHint && (
+          <Link href={`/${lang}/clubs/${areaSlug}/${altHint.slug}`} className="block text-center text-[13px] font-bold text-brand-amber hover:underline break-keep">
+            {altHint.text}
+          </Link>
+        )}
 
         <details className="group rounded-xl border border-border">
           <summary className="cursor-pointer list-none px-3.5 py-2.5 text-[13px] font-bold text-foreground flex items-center justify-between">
@@ -310,7 +318,7 @@ export function ClubBookingSection({
           </summary>
           <div className="px-3.5 pb-3.5 space-y-3">
             <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">
-              {t.summary(name, areaLabel, wonInline(from, lang, rates), whenLine)}
+              {tagline ? `${tagline} ` : ""}{t.summary(name, areaLabel, wonInline(from, lang, rates), whenLine)}
             </p>
             <ol className="space-y-1.5">
               {t.steps.map((st, i) => (

@@ -29,6 +29,7 @@ import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
 import { UrgencyLine } from "@/components/foreign/UrgencyLine";
 import { PlanMemoryHomeSection } from "@/components/foreign/plan/PlanMemoryHomeSection";
 import { SiteTabs, SiteTabsInline } from "@/components/foreign/plan/SiteTabs";
+import { isRatingShown } from "@/lib/clubs/ratingDisplay";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
@@ -525,7 +526,7 @@ function ClubThumb({ club, onOpen }: { club: ClubItem; onOpen: () => void }) {
       <p className="text-[12px] font-bold text-foreground mt-1.5 truncate lg:text-[13px] lg:mt-2">{name}</p>
       {/* 구글 평점 — 이미 fetch되던 값인데 카드에 안 그려서 "Real price" 배지와 달리
           홈 카드가 아무 근거도 안 보여줬다(2026-09-09). 리뷰 5건 미만은 숫자가 의미 없어 숨긴다. */}
-      {club.google_rating != null && (club.google_review_count ?? 0) >= 5 && (
+      {isRatingShown(club.google_rating) && (club.google_review_count ?? 0) >= 5 && (
         <p className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
           <Star className="w-3 h-3 text-brand-amber fill-current" />
           {club.google_rating.toFixed(1)} ({club.google_review_count})

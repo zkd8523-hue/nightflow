@@ -51,6 +51,7 @@ const KPOP_VENUES = [
   { name: "NB2 (Noise Basement 2)", district: "弘大", vibe: "标志性 K-POP 夜店。YG 旗下，嘻哈+K-POP 金曲整夜。首尔国际游客集中度最高。", bestFor: "首次访韩 K-POP 粉丝游客" },
   { name: "Club Purple", district: "弘大", vibe: "嘻哈为主，但 K-POP 金曲频繁播放。新手友好，无严格门控。", bestFor: "嘻哈 + K-POP 随性夜" },
   { name: "Club ACE", district: "江南", vibe: "大型 EDM 夜店，繁忙夜晚设 K-POP 楼层。时尚人群，有着装要求。", bestFor: "EDM + K-POP 结合夜" },
+  { name: "DM SEOUL", district: "江南", vibe: "江南代表性的嘻哈 Lounge，仅周五、周六夜间营业，也会放 K-POP 和 EDM。卡座 ₩1,000,000 起，是我们在江南提供的最低消费最低的夜店。", bestFor: "在江南玩 K-POP + 嘻哈，预算更低", href: "/zh/clubs/gangnam/dm-seoul" },
   { name: "Club Dokkaebi", district: "弘大", vibe: "嘻哈为主，但定期播放 K-POP 金曲。高端制作，氛围热烈。", bestFor: "同时喜欢嘻哈的 K-POP 粉丝" },
 ];
 
@@ -101,7 +102,7 @@ export default function ZhKpopClubsPage() {
             {KPOP_VENUES.map((v) => (
               <div key={v.name} className="p-5 rounded-2xl bg-card border border-border space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-bold text-[15px] text-foreground">{v.name}</p>
+                  <p className="font-bold text-[15px] text-foreground">{v.href ? <Link href={v.href} className="hover:text-brand-amber">{v.name}</Link> : v.name}</p>
                   <p className="text-[12px] text-muted-foreground">{v.district}</p>
                 </div>
                 <p className="text-[13px] text-muted-foreground leading-relaxed">{v.vibe}</p>

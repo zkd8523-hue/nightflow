@@ -3,6 +3,7 @@ import type { ClubPriceSummary } from "@/lib/clubs/tablePricing";
 import { tableFrom, formatWon } from "@/lib/clubs/tablePricing";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
 import { krwTo, langToCurrency, type KrwRates } from "@/lib/utils/currency";
+import { isRatingShown } from "@/lib/clubs/ratingDisplay";
 
 // 지역 페이지(/{lang}/clubs/{area})의 "테이블 가격 비교"(서버 컴포넌트).
 //
@@ -82,7 +83,7 @@ export function AreaTablePrices({
             <li key={r.id} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 items-center px-3 py-2.5">
               <div className="min-w-0">
                 <Link href={r.href} data-nf-track="area_price_details" className="text-[14px] font-black text-foreground hover:text-brand-amber">{r.name}</Link>
-                {r.rating != null && (
+                {isRatingShown(r.rating) && (
                   <span className="ml-1.5 text-[11px] text-muted-foreground whitespace-nowrap">
                     ★ {r.rating.toFixed(1)}{r.reviewCount ? ` · ${r.reviewCount.toLocaleString()} ${t.reviews}` : ""}
                   </span>

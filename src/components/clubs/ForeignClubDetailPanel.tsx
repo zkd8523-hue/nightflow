@@ -10,6 +10,7 @@ import { clubTagline } from "@/lib/clubs/bookable";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
 import { foreignClubPageHref } from "@/lib/clubs/slug";
 import { trackForeignEvent } from "@/lib/analytics/events";
+import { isRatingShown, shownReviews } from "@/lib/clubs/ratingDisplay";
 
 export type GoogleReview = {
   author_name: string | null;
@@ -138,7 +139,7 @@ export function ForeignClubDetailPanel({
         </div>
 
 
-        {club.google_rating != null && (
+        {isRatingShown(club.google_rating) && (
           <a href={googleUrl} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-[13px] text-brand-amber hover:text-brand-amber transition-colors">
             ⭐ {club.google_rating.toFixed(1)}
@@ -173,9 +174,9 @@ export function ForeignClubDetailPanel({
         {/* 구글 리뷰 미리보기 — 최대 5개, ingest-google-ratings.mjs가 월 1회 갱신(영어 자동번역).
             평점 높은 순으로 보여준다 — 구글이 주는 순서는 뒤죽박죽이라 첫 카드가 1점짜리면
             클럽을 열어본 사람이 바로 닫는다(카드→예약 전환이 병목이었음). */}
-        {club.google_reviews && club.google_reviews.length > 0 && (
+        {shownReviews(club.google_reviews).length > 0 && (
           <div className="-mx-5 px-5 flex gap-2.5 overflow-x-auto no-scrollbar snap-x">
-            {[...club.google_reviews]
+            {shownReviews(club.google_reviews)
               .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
               .map((r, i) => (
               <div
@@ -271,9 +272,9 @@ export function ForeignClubDetailPanel({
           />
         )}
 
-        {/* 별점 있는 클럽은 상단 링크(별점+리뷰수)로 충분 → 하단 버튼 중복 제거.
-            별점 없는 클럽만 정보 접근용 fallback으로 노출. */}
-        {club.google_rating == null && (
+        {/* 별점을 보여준 클럽은 상단 링크(별점+리뷰수)로 충분 → 하단 버튼 중복 제거.
+            별점을 안 보여준 클럽(없거나 4.0 미만)은 구글로 가는 길을 여기 남긴다. */}
+        {!isRatingShown(club.google_rating) && (
           <a
             href={googleUrl}
             target="_blank"

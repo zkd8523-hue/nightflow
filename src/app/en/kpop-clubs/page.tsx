@@ -86,6 +86,13 @@ const KPOP_VENUES = [
     bestFor: "EDM + K-pop combined night",
   },
   {
+    name: "DM SEOUL",
+    dbName: "DM SEOUL",
+    district: "Gangnam",
+    vibe: "Gangnam’s go-to hip-hop lounge, open Fri & Sat nights, with K-pop and EDM mixed in. Tables from ₩1,000,000 — the lowest minimum we offer in Gangnam.",
+    bestFor: "K-pop + hip-hop in Gangnam on a lower table budget",
+  },
+  {
     name: "Club Dokkaebi",
     dbName: "Dokkebi",
     district: "Hongdae",

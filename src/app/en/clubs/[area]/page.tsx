@@ -13,6 +13,7 @@ import { AreaProfile } from "@/components/foreign/AreaProfile";
 import { ClubsClient } from "../ClubsClient";
 import { clubSlug } from "@/lib/clubs/slug";
 import { localizeReviews } from "@/lib/clubs/reviewI18n";
+import { isRatingShown, shownReviews } from "@/lib/clubs/ratingDisplay";
 
 // 동네별 단독 페이지 — 외국인 SEO 핵심 라우트.
 // "Gangnam club booking", "Hongdae nightclub", "Itaewon club" 등
@@ -277,7 +278,7 @@ export default async function EnClubsAreaPage({
   const clubList = (clubs ?? []).map((c) => ({
     ...c,
     // 숨김 대상(연락처 홍보·날짜만) 제거 — reviewI18n
-    google_reviews: localizeReviews(c.google_reviews, "en"),
+    google_reviews: shownReviews(localizeReviews(c.google_reviews, "en")),
     has_md: (c.partners?.length ?? 0) > 0,
     agreed: !!c.foreign_booking_agreed,
     // 주대까지 있어야 실제로 예약을 잡아줄 수 있다 — 배지·정렬의 기준.
@@ -334,7 +335,7 @@ export default async function EnClubsAreaPage({
               address: c.address
                 ? { "@type": "PostalAddress", addressLocality: config.en, addressCountry: "KR" }
                 : undefined,
-              aggregateRating: c.google_rating
+              aggregateRating: isRatingShown(c.google_rating)
                 ? {
                     "@type": "AggregateRating",
                     ratingValue: c.google_rating,
@@ -400,7 +401,7 @@ export default async function EnClubsAreaPage({
           {clubList.map((c) => {
             const nameEn = c.name_en?.trim();
             const slug = nameEn ? clubSlug(nameEn) : null;
-            const label = `${nameEn || c.name} — ${config.en} club${c.google_rating ? ` (${c.google_rating}★)` : ""}`;
+            const label = `${nameEn || c.name} — ${config.en} club${isRatingShown(c.google_rating) ? ` (${c.google_rating}★)` : ""}`;
             return (
               <li key={c.id}>
                 {slug ? (

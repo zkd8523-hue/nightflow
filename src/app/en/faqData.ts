@@ -97,7 +97,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "night-total",
     category: "cost",
     q: "What does a full night out realistically cost?",
-    a: "Budget night in Hongdae/Itaewon (pre-drinks + one cover + a few drinks + shared taxi): about ₩40,000–90,000. VIP night in Gangnam is the table — from ₩1,400,000 total, which split among a group of 6–10 is roughly ₩140,000–230,000 each.",
+    a: "Budget night in Hongdae/Itaewon (pre-drinks + one cover + a few drinks + shared taxi): about ₩40,000–90,000. A Gangnam night is the table — most clubs from ₩1,400,000 total (DM SEOUL from ₩1,000,000 on Fri/Sat), which split among a group of 6–10 is roughly ₩100,000–230,000 each.",
   },
   {
     id: "hidden-fees",
@@ -184,7 +184,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "music",
     category: "culture",
     q: "What music do the different areas play?",
-    a: "Gangnam mega-clubs: mainstream EDM, big-room and commercial house — glossy and high-budget. Hongdae: a young mix of indie, hip-hop, K-pop and electronic in smaller, cheaper clubs. Itaewon: the most underground — techno, house, UK bass, plus hip-hop rooms — the pick for serious music fans.",
+    a: "Gangnam mega-clubs: mainstream EDM, big-room and commercial house — glossy and high-budget. For hip-hop in Gangnam, DM SEOUL is the go-to lounge (Fri & Sat). Hongdae: a young mix of indie, hip-hop, K-pop and electronic in smaller, cheaper clubs. Itaewon: the most underground — techno, house, UK bass, plus hip-hop rooms — the pick for serious music fans.",
   },
 
   // ── Areas & Timing ──────────────────────────────────────────

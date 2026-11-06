@@ -24,6 +24,7 @@ const KPOP_VENUES = [
   { name: "NB2 (Noise Basement 2)", district: "弘大", vibe: "象徴的なK-POPナイトクラブ。YG所有、ヒップホップ+K-POPの名曲を一晩中。ソウル最高の国際観光客集中度。", bestFor: "初めての韓国旅行のK-POPファン" },
   { name: "Club Purple", district: "弘大", vibe: "ヒップホップ中心だが、K-POPドロップも頻繁。初心者フレンドリー、厳格なドアポリシーなし。", bestFor: "ヒップホップ + K-POPカジュアル夜" },
   { name: "Club ACE", district: "江南", vibe: "大型EDMクラブで、混雑する夜にはK-POPフロアあり。洗練された客層、ドレスコードあり。", bestFor: "EDM + K-POP組み合わせ夜" },
+  { name: "DM SEOUL", district: "江南", vibe: "江南を代表するヒップホップ・ラウンジ。営業は金・土の夜、K-POPとEDMも流れます。テーブルは₩1,000,000〜（江南で当社がご案内する最低金額が最も低いクラブ）。", bestFor: "江南でK-POP＋ヒップホップを低めの予算で", href: "/ja/clubs/gangnam/dm-seoul" },
   { name: "Club Dokkaebi", district: "弘大", vibe: "ヒップホップフォーカスだが、K-POPヒットを定期的に。プレミアム制作、活気ある客層。", bestFor: "ヒップホップも好きなK-POPファン" },
 ];
 
@@ -53,7 +54,7 @@ export default function JaKpopClubsPage() {
             {KPOP_VENUES.map((v) => (
               <div key={v.name} className="p-5 rounded-2xl bg-card border border-border space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-bold text-[15px] text-foreground">{v.name}</p>
+                  <p className="font-bold text-[15px] text-foreground">{v.href ? <Link href={v.href} className="hover:text-brand-amber">{v.name}</Link> : v.name}</p>
                   <p className="text-[12px] text-muted-foreground">{v.district}</p>
                 </div>
                 <p className="text-[13px] text-muted-foreground leading-relaxed">{v.vibe}</p>

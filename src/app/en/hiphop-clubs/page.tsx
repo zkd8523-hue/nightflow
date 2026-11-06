@@ -53,7 +53,14 @@ export const metadata: Metadata = {
 };
 
 // 실제 승인 클럽(genre:hiphop 태그) 중 리뷰 상위 — 지역 다양성 고려. 설명은 장르·지역 기준으로 정직하게.
-const HIPHOP_VENUES = [
+const HIPHOP_VENUES: { name: string; district: string; vibe: string; bestFor: string; href?: string }[] = [
+  {
+    name: "DM SEOUL",
+    district: "Gangnam",
+    vibe: "Gangnam’s go-to hip-hop lounge, open Friday and Saturday nights (23:00–05:30). Tables start at ₩1,000,000 — the lowest table minimum we offer in Gangnam. Hip-hop first, with EDM and K-pop mixed in.",
+    bestFor: "A Gangnam hip-hop night on a lower table budget",
+    href: "/en/clubs/gangnam/dm-seoul",
+  },
   {
     name: "NB2 (Noise Basement 2)",
     district: "Hongdae",
@@ -153,7 +160,9 @@ export default function EnHiphopClubsPage() {
                 className="p-5 rounded-2xl bg-card border border-border space-y-2"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-bold text-[15px] text-foreground">{v.name}</p>
+                  <p className="font-bold text-[15px] text-foreground">
+                    {v.href ? <Link href={v.href} className="hover:text-brand-amber">{v.name}</Link> : v.name}
+                  </p>
                   <p className="text-[12px] text-muted-foreground">{v.district}</p>
                 </div>
                 <p className="text-[13px] text-muted-foreground leading-relaxed">{v.vibe}</p>

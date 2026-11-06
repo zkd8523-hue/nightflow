@@ -6,7 +6,7 @@
 //  · 기본 포함: 외국인 확정은 포함, 한국 확정은 제외 — settlement_items 행으로 건별로 바꿀 수 있다
 //  · 정산월: 방문일(event_date) 기준 YYYY-MM
 //  · 금액: settlement_items.amount가 있으면 그것, 없으면 확정서 total_price
-//  · 수수료: 금액 × 그 달 수수료율(기본 5%, settlement_month_rates로 달별 변경 — 2026-09는 4%),
+//  · 수수료: 금액 × 요율. 담당자 요율(settlement_md_rates, Migration 708) > 달별 요율(settlement_month_rates, 2026-09는 4%) > 기본 5%,
 //    원 단위 반올림. 지급기한: 익월 10일. 정산 완료는 settlement_payments(월·MD)
 //  · 10일 자동 리마인드: 아래 planSettlementReminders(2026-10-10, 7일 안내는 2026-11-03에 뺌)
 // Migration 682(settlement_items·settlement_notices)·685(수수료율·정산 완료) 기준.
@@ -60,8 +60,15 @@ export async function loadMonthRates(sb: SupabaseClient): Promise<Record<string,
   const { data } = await sb.from("settlement_month_rates").select("month, rate");
   return Object.fromEntries((data ?? []).map((r) => [r.month as string, Number(r.rate)]));
 }
-export function rateOf(rates: Record<string, number>, month: string): number {
-  return rates[month] ?? SETTLEMENT_FEE_RATE;
+/** 담당자별 요율(Migration 708) — 표가 아직 없으면 빈 값이라 달별 요율로 계산된다. */
+export async function loadMdRates(sb: SupabaseClient): Promise<Record<string, number>> {
+  const { data } = await sb.from("settlement_md_rates").select("md_id, rate");
+  return Object.fromEntries((data ?? []).map((r) => [r.md_id as string, Number(r.rate)]));
+}
+/** 적용 순서: 담당자 요율 > 달별 요율 > 기본 5%. */
+export function rateOf(rates: Record<string, number>, month: string, mdId?: string | null, mdRates?: Record<string, number>): number {
+  const own = mdId ? mdRates?.[mdId] : undefined;
+  return own ?? rates[month] ?? SETTLEMENT_FEE_RATE;
 }
 
 export function feeOf(amount: number, rate: number = SETTLEMENT_FEE_RATE): number {
@@ -182,9 +189,10 @@ export type MdSettlementMonth = {
 };
 
 export async function loadMdSettlement(sb: SupabaseClient, mdId: string, todayKst: string): Promise<MdSettlementMonth[]> {
-  const [rows, rates, notices, payments] = await Promise.all([
+  const [rows, rates, mdRates, notices, payments] = await Promise.all([
     loadSettlementRows(sb),
     loadMonthRates(sb),
+    loadMdRates(sb),
     sb.from("settlement_notices").select("month, sent_by").eq("md_id", mdId),
     sb.from("settlement_payments").select("month, paid_at").eq("md_id", mdId),
   ]);
@@ -201,7 +209,7 @@ export async function loadMdSettlement(sb: SupabaseClient, mdId: string, todayKs
     .map(([month, list]) => {
       const inc = list.filter((r) => r.included);
       const total = inc.reduce((s, r) => s + (r.amount ?? 0), 0);
-      const rate = rateOf(rates, month);
+      const rate = rateOf(rates, month, mdId, mdRates);
       const fee = feeOf(total, rate);
       const status: MdSettlementStatus = paidAt.has(month) ? "paid"
         : month >= thisMonth ? "open"
@@ -292,13 +300,13 @@ export async function planSettlementReminders(
   month: string,
   todayKst: string,
 ): Promise<{ send: SettlementReminder[]; skipped: { mdId: string; mdName: string; reason: string }[] }> {
-  const [rows, rates, notices, payments] = await Promise.all([
+  const [rows, rates, mdRates, notices, payments] = await Promise.all([
     loadSettlementRows(sb),
     loadMonthRates(sb),
+    loadMdRates(sb),
     sb.from("settlement_notices").select("md_id, sent_by, sent_at").eq("month", month),
     sb.from("settlement_payments").select("md_id").eq("month", month),
   ]);
-  const rate = rateOf(rates, month);
   const paid = new Set((payments.data ?? []).map((p) => p.md_id as string));
   const kstDate = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 10);
   const manual = new Set((notices.data ?? []).filter((n) => n.sent_by).map((n) => n.md_id as string));
@@ -317,6 +325,7 @@ export async function planSettlementReminders(
   for (const [mdId, list] of byMd) {
     const mdName = list[0].mdName;
     const total = list.reduce((s, r) => s + (r.amount ?? 0), 0);
+    const rate = rateOf(rates, month, mdId, mdRates);
     const fee = feeOf(total, rate);
     const reason = paid.has(mdId) ? "정산 완료"
       : fee <= 0 ? "중개료 0원"

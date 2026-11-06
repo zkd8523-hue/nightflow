@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { loadSettlementRows, loadMonthRates, type SettlementNotice, type SettlementPayment } from "@/lib/booking/settlements";
+import { loadSettlementRows, loadMdRates, loadMonthRates, type SettlementNotice, type SettlementPayment } from "@/lib/booking/settlements";
 import { SettlementsClient } from "@/components/admin/SettlementsClient";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +22,7 @@ export default async function AdminSettlementsPage() {
     .order("sent_at", { ascending: false })
     .limit(500);
   const rates = await loadMonthRates(sb);
+  const mdRates = await loadMdRates(sb);
   const { data: payments } = await sb.from("settlement_payments").select("month, md_id, paid_at");
 
   return (
@@ -30,10 +31,10 @@ export default async function AdminSettlementsPage() {
         <div>
           <h1 className="text-2xl font-black tracking-tight">💰 MD 정산</h1>
           <p className="text-[13px] text-muted-foreground mt-1">
-            방문일 기준 월 · 확정 금액의 5%(달별로 다를 수 있음, 9월 4%) · 익월 10일까지. 외국인 확정은 기본 포함, 한국 확정은 건별로 켜서 넣어요.
+            방문일 기준 월 · 확정 금액의 5%(달별로 다를 수 있음, 9월 4% · 담당자별 요율이 있으면 그 요율) · 익월 10일까지. 외국인 확정은 기본 포함, 한국 확정은 건별로 켜서 넣어요.
           </p>
         </div>
-        <SettlementsClient rows={rows} notices={(notices ?? []) as SettlementNotice[]} rates={rates} payments={(payments ?? []) as SettlementPayment[]} />
+        <SettlementsClient rows={rows} notices={(notices ?? []) as SettlementNotice[]} rates={rates} mdRates={mdRates} payments={(payments ?? []) as SettlementPayment[]} />
       </div>
     </div>
   );

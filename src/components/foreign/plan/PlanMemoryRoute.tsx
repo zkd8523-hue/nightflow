@@ -8,6 +8,7 @@ import { foreignClubPageHref } from "@/lib/clubs/slug";
 import { type Route, TOURS, PLAN_BASE, PHOTO_CREDIT, BOOK_HREF, img } from "@/lib/planMemory/content";
 import { PlanJsonLd } from "./PlanJsonLd";
 import { BookCta, HowBooking, Trust, SafetyLink, Hero, TourCards, ViatorNote, Crumb, SecondaryCta } from "./PlanMemoryParts";
+import { isRatingShown } from "@/lib/clubs/ratingDisplay";
 
 type ClubRow = { name_en: string | null; name: string; area: string; google_rating: number | null; google_review_count: number | null; featured_rank: number | null };
 
@@ -135,7 +136,7 @@ export async function PlanMemoryRoute({ route }: { route: Route }) {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {clubs.map((c) => {
                 const href = foreignClubPageHref("en", c.area, c.name_en) ?? bookHref;
-                const note = route.clubNames ? BUSAN_NOTE[(c.name_en ?? "").toLowerCase()] : c.google_rating ? `★${c.google_rating.toFixed(1)}${c.google_review_count ? ` (${c.google_review_count.toLocaleString("en-US")})` : ""}` : "";
+                const note = route.clubNames ? BUSAN_NOTE[(c.name_en ?? "").toLowerCase()] : isRatingShown(c.google_rating) ? `★${c.google_rating.toFixed(1)}${c.google_review_count ? ` (${c.google_review_count.toLocaleString("en-US")})` : ""}` : "";
                 return (
                   <Link key={c.name_en} data-nf-track="club_card" href={href} className="rounded-xl bg-card border border-border p-3 text-center hover:border-foreground/30">
                     <p className="font-bold text-[13.5px]">{c.name_en}</p>

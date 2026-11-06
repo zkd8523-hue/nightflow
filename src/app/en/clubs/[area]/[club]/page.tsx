@@ -22,6 +22,7 @@ import { ClubBookingSection } from "@/components/foreign/ClubBookingSection";
 import { BookPopup } from "@/components/foreign/BookPopup";
 import { CopyAddressButton } from "@/components/foreign/CopyAddressButton";
 import { getKrwRates } from "@/lib/utils/currency";
+import { isRatingShown } from "@/lib/clubs/ratingDisplay";
 
 // 클럽 개별 페이지 — 외국인 롱테일 SEO의 핵심.
 //
@@ -169,7 +170,7 @@ export async function generateMetadata({
     hours ? `Open ${hours}.` : null,
     // translateClubMeta가 이미 "Entry ₩20,000"으로 주는 경우가 있어 "Entry Entry"가 났었다
     fee ? (/^entry\b/i.test(fee) ? `${fee}.` : `Entry ${fee}.`) : null,
-    club.google_rating ? `Rated ${club.google_rating.toFixed(1)} on Google (${club.google_review_count ?? 0} reviews).` : null,
+    isRatingShown(club.google_rating) ? `Rated ${club.google_rating.toFixed(1)} on Google (${club.google_review_count ?? 0} reviews).` : null,
   ].filter(Boolean);
 
   // 롱테일 거미줄 — 이름 단독부터 이름+속성까지 폭넓게.
@@ -419,7 +420,7 @@ export default async function EnClubDetailPage({
           <p className="text-muted-foreground text-[14px]">
             Nightclub in {areaEn}{cityEn === "Busan" ? "" : ", Seoul"}
           </p>
-          {club.google_rating != null && club.google_rating >= 4 && (
+          {isRatingShown(club.google_rating) && (
             <a href={googleUrl} target="_blank" rel="noopener noreferrer" data-nf-track="outbound_google_rating"
               className="inline-flex items-center gap-1.5 text-[14px] text-brand-amber">
               <Star className="w-4 h-4 fill-current" />

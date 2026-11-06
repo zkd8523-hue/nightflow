@@ -7,6 +7,7 @@ import { fetchTablePricing, tableFrom, bookingFloor, formatWon, representativeIt
 import { clubSlug, canonicalAreaSlug } from "@/lib/clubs/slug";
 import { getKrwRates, krwTo, langToCurrency } from "@/lib/utils/currency";
 import type { SeoLang } from "@/lib/seo/clubBookingSeo";
+import { isRatingShown } from "@/lib/clubs/ratingDisplay";
 
 // /{lang}/vip-tables 의 "실제 메뉴 가격" 표(서버 컴포넌트).
 //
@@ -58,14 +59,12 @@ const AREA_LABEL: Record<SeoLang, Record<string, string>> = {
 };
 // 이 페이지는 "Seoul" 제목·title을 쓴다 — 부산·대구·광주를 섞으면 제목이 거짓이 된다(크리틱 1차).
 const SEOUL_AREAS = ["이태원", "홍대", "강남"];
-// 평점이 낮은데 표본까지 적으면 그대로 노출하는 게 손님·클럽 양쪽에 손해다.
-const HIDE_RATING_BELOW = 3.0;
 
 const T = {
   en: {
     h2: "What a table actually costs — real menu prices",
     intro: (n: number) =>
-      `NightFlow can book ${n} Seoul clubs right now. A table is booked against a minimum spend for the whole group — ₩500,000 in Itaewon and Hongdae, ₩1,400,000 in Gangnam — and you fill that with items from the club's own menu. Below is each club's cheapest menu item so you can see what your money buys. These are the clubs' own prices; NightFlow adds no fee.`,
+      `NightFlow can book ${n} Seoul clubs right now. A table is booked against a minimum spend for the whole group — ₩500,000 in Itaewon and Hongdae, ₩1,400,000 at most Gangnam clubs (₩1,000,000 at DM SEOUL, Fri & Sat) — and you fill that with items from the club's own menu. Below is each club's cheapest menu item so you can see what your money buys. These are the clubs' own prices; NightFlow adds no fee.`,
     minSpend: "Minimum spend per table",
     fromLabel: "From",
     andUp: " and up",
@@ -78,7 +77,7 @@ const T = {
   ja: {
     h2: "テーブルの実際の料金 — メニュー実価格",
     intro: (n: number) =>
-      `NightFlowが今すぐ予約できるソウルのクラブは${n}軒です。テーブルはグループ1卓あたりの最低金額（梨泰院・弘大は50万ウォン、江南は140万ウォン）で予約し、その金額をクラブのメニューから選んで埋めます。下は各クラブのメニュー最安品で、その金額で何が飲めるかが分かります。クラブ自身の価格で、NightFlowの手数料はありません。`,
+      `NightFlowが今すぐ予約できるソウルのクラブは${n}軒です。テーブルはグループ1卓あたりの最低金額（梨泰院・弘大は50万ウォン、江南は多くのクラブで140万ウォン、DM SEOULは金・土100万ウォン）で予約し、その金額をクラブのメニューから選んで埋めます。下は各クラブのメニュー最安品で、その金額で何が飲めるかが分かります。クラブ自身の価格で、NightFlowの手数料はありません。`,
     minSpend: "1卓あたり最低金額",
     fromLabel: "この店の開始金額",
     andUp: "〜",
@@ -91,7 +90,7 @@ const T = {
   zh: {
     h2: "卡座实际要花多少 — 酒单真实价格",
     intro: (n: number) =>
-      `NightFlow 现在可预订${n}家首尔夜店。卡座按每桌整组的最低消费预订（梨泰院·弘大 50万韩元，江南 140万韩元），这个金额由您从夜店酒单中选酒来凑满。下面是各夜店酒单上最便宜的项目，让您看清这笔钱能买到什么。这些是夜店自己的价格，NightFlow 不加收费用。`,
+      `NightFlow 现在可预订${n}家首尔夜店。卡座按每桌整组的最低消费预订（梨泰院·弘大 50万韩元，江南多数夜店 140万韩元，DM SEOUL 周五、周六 100万韩元），这个金额由您从夜店酒单中选酒来凑满。下面是各夜店酒单上最便宜的项目，让您看清这笔钱能买到什么。这些是夜店自己的价格，NightFlow 不加收费用。`,
     minSpend: "每桌最低消费",
     fromLabel: "该店起价",
     andUp: "起",
@@ -104,7 +103,7 @@ const T = {
   "zh-tw": {
     h2: "包廂實際要花多少 — 酒單真實價格",
     intro: (n: number) =>
-      `NightFlow 現在可訂包廂的首爾夜店有${n}家。包廂（舞池旁的開放式桌位，不是密閉房間）按每桌整組的低消預訂（梨泰院、弘大 50萬韓元，江南 140萬韓元），這個金額由您從夜店酒單中選酒湊滿。下面是各夜店酒單上最便宜的項目，讓您看清這筆錢能買到什麼。這些是夜店自己的價格，NightFlow 不加收費用。`,
+      `NightFlow 現在可訂包廂的首爾夜店有${n}家。包廂（舞池旁的開放式桌位，不是密閉房間）按每桌整組的低消預訂（梨泰院、弘大 50萬韓元，江南多數夜店 140萬韓元，DM SEOUL 週五、週六 100萬韓元），這個金額由您從夜店酒單中選酒湊滿。下面是各夜店酒單上最便宜的項目，讓您看清這筆錢能買到什麼。這些是夜店自己的價格，NightFlow 不加收費用。`,
     minSpend: "每桌低消",
     fromLabel: "該店起價",
     andUp: "起",
@@ -236,8 +235,7 @@ export async function RealTablePrices({ lang, rows, midAd = true }: { lang: SeoL
             </h3>
             <ul className="rounded-2xl border border-border bg-card divide-y divide-border">
               {list.map((r) => {
-                const showRating =
-                  r.rating != null && !(r.rating < HIDE_RATING_BELOW && (r.reviewCount ?? 0) >= 10);
+                const showRating = isRatingShown(r.rating);
                 const charge = [r.tableChargeWeekday, r.tableChargeWeekend].filter(Boolean) as number[];
                 return (
                   <li key={r.id} className="grid grid-cols-[1fr_auto] gap-x-3 items-center px-3 py-2.5">

@@ -4,6 +4,7 @@ import { EnHomeClient, type RecentBooking } from "./EnHomeClient";
 import { orderForeignHome } from "@/lib/clubs/foreignSort";
 import { fetchMenuClubIds } from "@/lib/clubs/bookable";
 import { localizeReviews } from "@/lib/clubs/reviewI18n";
+import { shownReviews } from "@/lib/clubs/ratingDisplay";
 
 export const revalidate = 30;
 
@@ -208,7 +209,7 @@ export default async function EnHomePage() {
         dresscode: c.dresscode,
         tags: c.tags,
         // 숨김 대상(연락처 홍보·날짜만) 제거 — reviewI18n
-        google_reviews: localizeReviews(c.google_reviews, "en"),
+        google_reviews: shownReviews(localizeReviews(c.google_reviews, "en")),
         featured_rank: c.featured_rank,
         area_pick: (c as { area_pick?: boolean | null }).area_pick ?? false,
         pick_reason_ko: (c as { pick_reason_ko?: string | null }).pick_reason_ko ?? null,

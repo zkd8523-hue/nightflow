@@ -24,7 +24,7 @@
 // itemsToReachFloor로 계산해 3개 이하일 때만 그 문장을 쓴다.
 
 import type { ClubPriceSummary } from "@/lib/clubs/tablePricing";
-import { tableFrom, formatWon, wonCompact, clubFloor, itemsToReachFloor } from "@/lib/clubs/tablePricing";
+import { tableFrom, formatWon, wonCompact, clubFloor, bookingFloor, itemsToReachFloor } from "@/lib/clubs/tablePricing";
 
 export type SeoLang = "en" | "ja" | "zh" | "zh-tw";
 
@@ -61,7 +61,7 @@ const COPY: Record<SeoLang, Copy> = {
     faqPriceQ: (n) => `How much is a table at ${n}?`,
     faqPriceA: (n, f, a, lowest, reachIn) =>
       lowest && lowest !== f
-        ? `The booking minimum at ${n} through NightFlow is ${f} per table (this is the ${a}-wide minimum). Bottles and sets on the menu start at ${lowest}` +
+        ? `The booking minimum at ${n} through NightFlow is ${f} per table${a ? ` (this is the ${a}-wide minimum)` : ""}. Bottles and sets on the menu start at ${lowest}` +
           (reachIn != null && reachIn <= 3 ? `, so most groups reach the minimum with two or three items.` : `; you combine several to reach the minimum.`) +
           ` You choose from the club's own menu, and we confirm the final total with you in writing before the night.`
         : `Table bookings at ${n} through NightFlow start at ${f}. You choose from the club's own menu, and we confirm the final total with you in writing before the night.`,
@@ -83,7 +83,7 @@ const COPY: Record<SeoLang, Copy> = {
     faqPriceQ: (n) => `${n}のテーブル料金はいくらですか？`,
     faqPriceA: (n, f, a, lowest, reachIn) =>
       lowest && lowest !== f
-        ? `NightFlow経由の${n}テーブル予約は1卓あたり最低${f}（${a}エリア共通の最低予約金額）です。メニューのボトル・セット自体は${lowest}〜で` +
+        ? `NightFlow経由の${n}テーブル予約は1卓あたり最低${f}${a ? `（${a}エリア共通の最低予約金額）` : ""}です。メニューのボトル・セット自体は${lowest}〜で` +
           (reachIn != null && reachIn <= 3 ? `、多くのグループは2〜3品で最低金額に達します。` : `、複数を組み合わせて最低金額に達します。`) +
           `クラブのメニューから選び、最終金額は来店前に書面で確定します。`
         : `NightFlow経由の${n}テーブル予約は${f}〜です。クラブのメニューから選び、最終金額は来店前に書面で確定します。`,
@@ -105,7 +105,7 @@ const COPY: Record<SeoLang, Copy> = {
     faqPriceQ: (n) => `${n}的卡座多少钱？`,
     faqPriceA: (n, f, a, lowest, reachIn) =>
       lowest && lowest !== f
-        ? `通过 NightFlow 预订${n}卡座，每桌最低消费${f}（${a}区域统一的最低消费）。酒单上的酒水和套餐从${lowest}起` +
+        ? `通过 NightFlow 预订${n}卡座，每桌最低消费${f}${a ? `（${a}区域统一的最低消费）` : ""}。酒单上的酒水和套餐从${lowest}起` +
           (reachIn != null && reachIn <= 3 ? `，多数人点2〜3项即可达到最低消费。` : `，组合几项即可达到最低消费。`) +
           `您从夜店酒单选酒，最终金额会在到店前以书面确认。`
         : `通过 NightFlow 预订${n}卡座${f}起。您从夜店酒单选酒，最终金额会在到店前以书面确认。`,
@@ -127,7 +127,7 @@ const COPY: Record<SeoLang, Copy> = {
     faqPriceQ: (n) => `${n}的包廂多少錢？`,
     faqPriceA: (n, f, a, lowest, reachIn) =>
       lowest && lowest !== f
-        ? `透過 NightFlow 在${n}訂包廂,每桌低消${f}(${a}區域統一的低消)。酒單上的酒水和套餐從${lowest}起` +
+        ? `透過 NightFlow 在${n}訂包廂,每桌低消${f}${a ? `(${a}區域統一的低消)` : ""}。酒單上的酒水和套餐從${lowest}起` +
           (reachIn != null && reachIn <= 3 ? `,多數人點2〜3項即可達到低消。` : `,組合幾項即可達到低消。`) +
           `您從夜店酒單選酒,最終金額會在到店前以書面確認。`
         : `透過 NightFlow 在${n}訂包廂${f}起。您從夜店酒單選酒,最終金額會在到店前以書面確認。`,
@@ -188,7 +188,7 @@ export function bookingFaqs(input: BookingSeoInput): { q: string; a: string }[] 
   const lowestBase = input.pricing?.lowestSet ?? input.pricing?.lowestItem ?? null;
   const lowest = lowestBase != null ? formatWon(lowestBase) : null;
   return [
-    { q: c.faqPriceQ(input.name), a: c.faqPriceA(input.name, formatWon(from), input.areaLabel, lowest, itemsToReachFloor(input.areaKo, input.pricing, input.clubId)) },
+    { q: c.faqPriceQ(input.name), a: c.faqPriceA(input.name, formatWon(from), clubFloor(input.clubId, input.areaKo) !== bookingFloor(input.areaKo) ? "" : input.areaLabel, lowest, itemsToReachFloor(input.areaKo, input.pricing, input.clubId)) },
     { q: c.faqHowQ(input.name), a: c.faqHowA(input.name) },
   ];
 }

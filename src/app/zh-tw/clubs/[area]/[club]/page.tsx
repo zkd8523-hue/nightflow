@@ -22,6 +22,7 @@ import { ClubBookingSection } from "@/components/foreign/ClubBookingSection";
 import { BookPopup } from "@/components/foreign/BookPopup";
 import { CopyAddressButton } from "@/components/foreign/CopyAddressButton";
 import { getKrwRates } from "@/lib/utils/currency";
+import { isRatingShown } from "@/lib/clubs/ratingDisplay";
 
 // 번체 중국어(대만·홍콩)판 클럽 개별 페이지 — /en/clubs/[area]/[club] 과 동일 구조 복제.
 // 클럽 고유명사는 라틴 표기 고정 — 기존 /zh-tw 지역 페이지도 "Club ACE", "Massive"처럼
@@ -160,7 +161,7 @@ export async function generateMetadata({
     bookable ? null : seo.descAlt,
     hours ? `營業時間：${hours}。` : null,
     fee ? `入場費：${fee}。` : null,
-    club.google_rating ? `Google 評分 ${club.google_rating.toFixed(1)}（${club.google_review_count ?? 0} 則評論）。` : null,
+    isRatingShown(club.google_rating) ? `Google 評分 ${club.google_rating.toFixed(1)}（${club.google_review_count ?? 0} 則評論）。` : null,
   ].filter(Boolean);
 
   const keywords = [
@@ -394,7 +395,7 @@ export default async function ZhTwClubDetailPage({
           <p className="text-muted-foreground text-[14px]">
             {areaZh}{area === "busan" ? "" : "（首爾）"}夜店
           </p>
-          {club.google_rating != null && club.google_rating >= 4 && (
+          {isRatingShown(club.google_rating) && (
             <a href={googleUrl} target="_blank" rel="noopener noreferrer" data-nf-track="outbound_google_rating"
               className="inline-flex items-center gap-1.5 text-[14px] text-brand-amber">
               <Star className="w-4 h-4 fill-current" />

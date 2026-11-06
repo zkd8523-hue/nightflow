@@ -27,6 +27,7 @@ import { CONTACT_INSTAGRAM } from "@/lib/foreign/contact";
 import { saveFormDraft, loadFormDraft, clearFormDraft, FOREIGN_BOOKING_DRAFT_KEY } from "@/lib/utils/formDraft";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import type { ClubMenuItem, ClubMenuCombo, ClubMenuVariant, SelectedMenuSnapshot } from "@/types/database";
+import { isRatingShown } from "@/lib/clubs/ratingDisplay";
 
 // 폼 Step 1의 "Where?" 카드에 붙는 지역 한 줄 설명 — 홈(EnHomeClient REGIONS)과 같은 문장.
 // 외국인은 지역 이름만으로는 못 고른다(2026-09-09). 이름 대신 "어떤 밤인지"로 고르게 한다.
@@ -547,11 +548,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     }
     const a = areaLabel(budgetFloor.area, lang);
     return t(
-      `${a} VIP는 ${won}부터 가능해요`,
-      `${a} VIP starts at ${won}`,
-      `${a}のVIPは${won}からです`,
-      `${a} VIP 最低 ${won}`,
-      `${a} VIP 最低 ${won}`
+      `${a} 테이블은 ${won}부터 가능해요`,
+      `${a} tables start at ${won}`,
+      `${a}のテーブルは${won}からです`,
+      `${a}卡座最低 ${won}`,
+      `${a}包廂最低 ${won}`
     );
   })();
 
@@ -2670,7 +2671,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <p className="text-[15px] font-black truncate">{displayClubName(c)}</p>
                       <p className="flex items-center gap-1 text-[12px] text-muted-foreground truncate">
-                        {c.google_rating != null && (c.google_review_count ?? 0) >= 5 && (
+                        {isRatingShown(c.google_rating) && (c.google_review_count ?? 0) >= 5 && (
                           <>
                             <Star className="w-3 h-3 text-brand-amber fill-current shrink-0" />
                             {c.google_rating.toFixed(1)} ({c.google_review_count})
@@ -3432,7 +3433,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                     <p className="text-[15px] font-black text-foreground truncate">{displayClubName(club)}</p>
                     <p className="text-[12px] text-muted-foreground">
                       {areaLabel(club.area, lang)}
-                      {club.google_rating != null && (club.google_review_count ?? 0) >= 5 ? ` · Google ${club.google_rating.toFixed(1)}` : ""}
+                      {isRatingShown(club.google_rating) && (club.google_review_count ?? 0) >= 5 ? ` · Google ${club.google_rating.toFixed(1)}` : ""}
                     </p>
                   </div>
                 </div>

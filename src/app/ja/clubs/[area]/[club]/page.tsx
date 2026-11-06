@@ -22,6 +22,7 @@ import { ClubBookingSection } from "@/components/foreign/ClubBookingSection";
 import { BookPopup } from "@/components/foreign/BookPopup";
 import { CopyAddressButton } from "@/components/foreign/CopyAddressButton";
 import { getKrwRates } from "@/lib/utils/currency";
+import { isRatingShown } from "@/lib/clubs/ratingDisplay";
 
 // 일본어판 클럽 개별 페이지 — /en/clubs/[area]/[club] 과 완전히 동일한 구조를 복제.
 // (이 사이트의 기존 관례: /ja, /zh, /zh-tw 지역 페이지도 공용 컴포넌트로 추상화하지 않고
@@ -166,7 +167,7 @@ export async function generateMetadata({
     bookable ? null : seo.descAlt,
     hours ? `営業時間：${hours}。` : null,
     fee ? `入場料：${fee}。` : null,
-    club.google_rating ? `Google評価${club.google_rating.toFixed(1)}（${club.google_review_count ?? 0}件のレビュー）。` : null,
+    isRatingShown(club.google_rating) ? `Google評価${club.google_rating.toFixed(1)}（${club.google_review_count ?? 0}件のレビュー）。` : null,
   ].filter(Boolean);
 
   const keywords = [
@@ -402,7 +403,7 @@ export default async function JaClubDetailPage({
           <p className="text-muted-foreground text-[14px]">
             {areaJa}{area === "busan" ? "" : "（ソウル）"}のナイトクラブ
           </p>
-          {club.google_rating != null && club.google_rating >= 4 && (
+          {isRatingShown(club.google_rating) && (
             <a href={googleUrl} target="_blank" rel="noopener noreferrer" data-nf-track="outbound_google_rating"
               className="inline-flex items-center gap-1.5 text-[14px] text-brand-amber">
               <Star className="w-4 h-4 fill-current" />

@@ -500,6 +500,15 @@ const FULL: Record<string, Partial<Record<Lang, string>>> = {
     zh: "禁止拖鞋、洞洞鞋（有跟凉鞋视情况可）",
     "zh-tw": "禁止拖鞋、布希鞋（有跟涼鞋視情況可）",
   },
+  // DM SEOUL(2026-11-06): 번역이 안 돼 이 두 칸이 통째로 숨겨져 있었다. 원문 뜻 그대로만 옮긴다(언제 무료인지는 원문에 없음).
+  "슬리퍼X 쪼리x": {
+    en: "No slippers or flip-flops", ja: "スリッパ・ビーチサンダル不可",
+    zh: "禁止拖鞋、人字拖", "zh-tw": "禁止拖鞋、夾腳拖",
+  },
+  "무료 입장 또는 10,000원~15,000원": {
+    en: "Free entry, or ₩10,000–15,000", ja: "入場無料、または ₩10,000〜15,000",
+    zh: "免费入场，或 ₩10,000–15,000", "zh-tw": "免費入場，或 ₩10,000–15,000",
+  },
 };
 
 export function translateClubMeta(s: string | null | undefined, lang: Lang): string {

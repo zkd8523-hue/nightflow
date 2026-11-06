@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { loadSettlementRows, feeOf, loadMonthRates, rateOf } from "@/lib/booking/settlements";
+import { loadSettlementRows, feeOf, loadMdRates, loadMonthRates, rateOf } from "@/lib/booking/settlements";
 import { sendSms } from "@/lib/notifications/alimtalk";
 import { settleLinkOf, withSettleLink } from "@/lib/booking/settleLink";
 
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     const rows = (await loadSettlementRows(sb)).filter((r) => r.month === month && r.mdId === mdId && r.included);
     if (rows.length === 0) return NextResponse.json({ error: "no_items" }, { status: 404 });
     const total = rows.reduce((s, r) => s + (r.amount ?? 0), 0);
-    const fee = feeOf(total, rateOf(await loadMonthRates(sb), month));
+    const fee = feeOf(total, rateOf(await loadMonthRates(sb), month, mdId, await loadMdRates(sb)));
 
     const title = `💰 ${Number(month.slice(5, 7))}월 정산 안내`;
     const { count } = await sb.from("push_tokens").select("*", { count: "exact", head: true }).eq("user_id", mdId);

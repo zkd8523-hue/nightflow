@@ -18,6 +18,7 @@ import { ForeignShell } from "@/components/foreign/ForeignShell";
 import { SeeBookableSheetButton, bookableListHref } from "@/components/foreign/SeeBookableCta";
 import { canonicalAreaSlug } from "@/lib/clubs/slug";
 import { AgodaStrip } from "@/components/affiliate/AgodaStrip";
+import { isRatingShown } from "@/lib/clubs/ratingDisplay";
 
 type Club = {
   id: string;
@@ -571,7 +572,7 @@ export function ClubsClient({
                       {clubTagline(club, lang)}
                     </p>
                   )}
-                  {club.google_rating != null && (
+                  {isRatingShown(club.google_rating) && (
                     <p className="text-[12px] text-brand-amber mt-0.5">
                       ⭐ {club.google_rating.toFixed(1)}
                       {club.google_review_count != null && (
