@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useEffect, useMemo } from "react";
+import { Fragment, useState, useEffect, useMemo, useRef } from "react";
 import type { ClubAnswer } from "@/lib/clubs/clubAnswer";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLang, makeT } from "@/lib/i18n";
@@ -315,6 +315,21 @@ export function ClubDetailContent({
   // 판정은 page.tsx(서버)에서 해서 넘긴다 — 안 넘어오면 예전 기준으로 폴백.
   const bookable = !isForeigner && (bookableProp ?? (hasMd && hasMenu));
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+
+  // ?book=1 로 들어오면 예약 폼을 바로 연다.
+  // 공연 홍보 팝업(EventPromoSheet)처럼 외부에서 "예약 문의"로 보내는 진입점이
+  // 클럽 상세 스티키바를 한 번 더 누르게 만들면 거기서 샌다.
+  // 예약 불가 클럽에서는 무시한다 — 폼은 주대가 있어야 1단계가 돈다.
+  const bookDateParam = searchParams?.get("date") ?? null;
+  const bookDate = bookDateParam && /^\d{4}-\d{2}-\d{2}$/.test(bookDateParam) ? bookDateParam : null;
+  const autoBookRef = useRef(false);
+  useEffect(() => {
+    if (autoBookRef.current) return;
+    if (searchParams?.get("book") !== "1") return;
+    if (!bookable) return;
+    autoBookRef.current = true;
+    setIsBookingOpen(true);
+  }, [searchParams, bookable]);
 
   return (
     <div className="container mx-auto max-w-lg px-4 pt-4 pb-40">
@@ -997,6 +1012,7 @@ export function ClubDetailContent({
           clubName={clubName}
           clubThumbnailUrl={thumbnailUrl}
           userId={user?.id ?? null}
+          initialDate={bookDate}
         />
       )}
     </div>

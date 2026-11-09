@@ -523,8 +523,10 @@ export function MenuPicker({
           </ul>
         )}
         {/* 다 보고도 못 고른 사람의 출구 — 탭·리스트보다 먼저 보이면 실제 메뉴 가격(차별점)을
-            가린다. 끝까지 본 다음에야 뜨게 목록 맨 아래로 옮김(2026-09-15). */}
-        {topSlot && <div className="mt-4">{topSlot}</div>}
+            가린다. 끝까지 본 다음에야 뜨게 목록 맨 아래로 옮김(2026-09-15).
+            첫 탭에서만 보인다(2026-11-09) — 탭마다 따라붙으면 같은 박스를 일고여덟 번
+            읽히는 꼴이라 노이즈가 된다. 한 번 보면 그런 길이 있다는 건 안다. */}
+        {topSlot && activeTab === categories[0] && <div className="mt-4">{topSlot}</div>}
         {/* 하단 고정바(카트 목록 최대 38vh + 합계 69px + 앱 네비 60px)에 마지막
             항목이 가리지 않도록 확보. 담은 게 있으면 더 크게 비운다. */}
         <div className={`lg:hidden ${sel.count > 0 ? "h-[52vh]" : "h-32"}`} aria-hidden />

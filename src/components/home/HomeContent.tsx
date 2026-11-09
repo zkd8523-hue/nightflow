@@ -35,7 +35,8 @@ import type { ClubBenefitItem } from "@/lib/home/clubBenefitData";
 import { CouponHomeStrip } from "@/components/home/CouponHomeStrip";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
-import { WeeklyPromoSheet } from "@/components/home/WeeklyPromoSheet";
+// 노출 중단 — 아래 renderHomeSheets 주석 참고 (되살릴 땐 이 import부터)
+// import { WeeklyPromoSheet } from "@/components/home/WeeklyPromoSheet";
 import { PartyOnboardingSheet } from "@/components/home/PartyOnboardingSheet";
 import { OfferCreditGuideSheet } from "@/components/md/OfferCreditGuideSheet";
 import { ShareOnboardingSheet } from "@/components/md/ShareOnboardingSheet";
@@ -680,8 +681,11 @@ export function HomeContent({
       {/* 개편 공지(깃발 종료 + 혜택 중심 전환) 노출 중단 — 전환기 안내가 끝났고,
           깃발을 쓴 적 없는 신규 유저에게는 없는 서비스의 종료 소식이라 혼란만 준다.
           컴포넌트는 남겨둠(재공지 필요 시 다시 마운트). */}
-      {/* DJ 이상형 월드컵 홍보 — 비로그인 포함 기기당 1회 (localStorage) */}
-      <WeeklyPromoSheet />
+      {/* 클러빙 뉴스(위클리) 홍보 팝업 — 노출 중단 (2026-11-09).
+          홈 첫 진입의 팝업 자리는 하나뿐인데, 임박한 공연 홍보(EventPromoSheet)가
+          그 자리를 쓴다. 둘 다 띄우면 같은 타이밍에 겹친다.
+          컴포넌트는 남겨둠 — 다시 띄울 땐 이 줄만 되살리면 된다.
+      <WeeklyPromoSheet /> */}
       {/* 최근 매치 깃발 모달 */}
       <Sheet open={showMatchedModal} onOpenChange={setShowMatchedModal}>
         <SheetContent

@@ -48,6 +48,7 @@ export function KoreanBookingForm({
   clubName,
   clubThumbnailUrl,
   userId,
+  initialDate = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,6 +57,13 @@ export function KoreanBookingForm({
   clubThumbnailUrl: string | null;
   /** 로그인 안 한 손님은 null — 연락처만으로 요청을 받는다(Migration 696, 2026-10-22) */
   userId: string | null;
+  /**
+   * 특정 날짜를 보고 들어온 손님의 날짜(YYYY-MM-DD).
+   * 공연 홍보 팝업처럼 날짜가 이미 정해진 진입점에서 넘어온다 —
+   * 거기서 또 달력을 고르게 하면 이미 아는 걸 다시 묻는 꼴이다.
+   * 손님이 바꾸고 싶으면 평소처럼 달력에서 바꾸면 된다.
+   */
+  initialDate?: string | null;
 }) {
   const router = useRouter();
   // 예약 완료 화면 앱 설치 유도 — 확정서 알림은 앱 푸시로 가는데, 앱이 없는 손님은
@@ -182,7 +190,9 @@ export function KoreanBookingForm({
     if (!open) return;
     const draft = loadFormDraft<Draft>(draftKey);
     if (draft) setResumePrompt(draft);
-  }, [open, draftKey]);
+    // 초안이 없을 때만 넣는다 — 있으면 "이어하기" 답을 기다렸다가 그쪽 날짜를 쓴다.
+    else if (initialDate) setEventDate(initialDate);
+  }, [open, draftKey, initialDate]);
 
   // 진행 중인 입력을 계속 저장 — 강제종료돼도 다음 방문 때 복원 후보가 된다.
   useEffect(() => {
@@ -357,11 +367,14 @@ export function KoreanBookingForm({
   // 한국 손님은 하한 없이 더 낮은 금액부터 고르고, 강남은 위쪽 폭을 넓힌다.
   // La Rosa(홍대)만 15/30/50만 — 사용자 요청(2026-09-30), 클럽 단위 예외.
   // 컬러압구(강남)만 125/200/300만 — 사용자 요청(2026-11-07), 클럽 단위 예외.
+  // 클럽 엔터(수원)만 50/120/300만 — 사용자 요청(2026-11-09). 주대가 2병 50만부터 시작한다.
   const mdBudgetOptions =
     clubId === "4004d7b6-b3d2-4ec4-8c42-32d82405ded0"
       ? [150_000, 300_000, 500_000]
       : clubId === "80ba0738-ffbb-4463-b97e-7e68e4c0da60"
       ? [1_250_000, 2_000_000, 3_000_000]
+      : clubId === "7248ece2-8b58-446c-929d-f51f2528a387"
+      ? [500_000, 1_200_000, 3_000_000]
       : clubArea === "강남"
         ? [500_000, 1_000_000, 3_000_000]
         : [300_000, 500_000, 1_000_000];
