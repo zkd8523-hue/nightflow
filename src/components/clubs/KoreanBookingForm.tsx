@@ -17,6 +17,7 @@ import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import { useAppDownloadCta } from "@/hooks/useAppDownloadCta";
 import { AppInstallQr } from "@/components/common/AppInstallQr";
 import type { ClubMenuItem, ClubMenuCombo, SelectedMenuSnapshot, KoreanBookingContactType } from "@/types/database";
+import { effectiveTcRule, minBookableTotal, tcIsAlways } from "@/lib/booking/mdMenu";
 
 // 한국 유저 클럽 예약 요청 폼 (컨시어지 모델, foreign_requests와 동일 구조).
 // 날짜·인원·주류 + 예약자명·연락처·요청사항 → korean_booking_requests INSERT → 운영자 수동 연결.
@@ -109,6 +110,8 @@ export function KoreanBookingForm({
   const [menuDraft, setMenuDraft] = useState<{ snapshot: SelectedMenuSnapshot; total: number } | null>(null);
   // 추천 세트 예산 버튼의 기준 지역 — 강남인지만 본다(한국 폼 전용 금액표, mdBudgetOptions).
   const [clubArea, setClubArea] = useState<string | null>(null);
+  // 병 수 조건 TC(Club Ace: 4병 미만 5만원) — 평일·주말 금액만으론 0원이라 따로 받는다.
+  const [tcRuleRaw, setTcRuleRaw] = useState<unknown>(null);
 
   const isWeekend = (() => {
     if (!eventDate) return false;
@@ -133,7 +136,7 @@ export function KoreanBookingForm({
         supabase.from("club_menu_combos").select("*").eq("club_id", clubId),
         supabase
           .from("clubs")
-          .select("table_charge_weekday, table_charge_weekend, open_dows, area")
+          .select("table_charge_weekday, table_charge_weekend, table_charge_rule, open_dows, area")
           .eq("id", clubId)
           .maybeSingle(),
       ]);
@@ -144,6 +147,7 @@ export function KoreanBookingForm({
         weekday: clubRes.data?.table_charge_weekday ?? null,
         weekend: clubRes.data?.table_charge_weekend ?? null,
       });
+      setTcRuleRaw(clubRes.data?.table_charge_rule ?? null);
       setOpenDows(clubRes.data?.open_dows ?? null);
       setClubArea(clubRes.data?.area ?? null);
       setMenuLoading(false);
@@ -341,7 +345,27 @@ export function KoreanBookingForm({
   // 술을 병 단위로 직접 고르는 단계에서 막히는 손님용. 예산만 고르면 items 없는 스냅샷(md_recommend)으로
   // 2단계(연락처)로 넘긴다. 저장은 selected_menu_total = 예산, 운영자 화면(KoreanBookingsClient)은
   // md_recommend를 보고 "MD 추천 요청 · 예산"으로 표시한다.
+  // 예산 하한·TC 안내(2026-11-10) — 예산만 고른 손님은 TC가 그 안에 포함되는 걸 몰랐고, 가장 싼 술 + TC보다 낮은 예산은
+  // 담당자가 어떤 구성도 못 고른다(11/14 Club Ace 35만 원 → 최소 40만 원). 날짜를 골라야 평일·주말 가격이 정해진다.
+  const tcRule = effectiveTcRule({ table_charge_rule: tcRuleRaw, table_charge_weekday: menuCharge.weekday, table_charge_weekend: menuCharge.weekend }, isWeekend);
+  // 클럽 단위 시작가 — 날짜를 고르기 전에도 막는다. Club Ace = 40만(가장 싼 1병 35만 + 4병 미만 TC 5만, 사용자 결정 2026-11-10).
+  const CLUB_MIN_BUDGET: Record<string, number> = { "35de296e-5fdc-435b-baf2-1c7c05538687": 400_000 };
+  const menuMinTotal = eventDate ? minBookableTotal(menuItems, tcRule, isWeekend) : null;
+  const minBudgetTotal = Math.max(CLUB_MIN_BUDGET[clubId] ?? 0, menuMinTotal ?? 0) || null;
+  const manWon = (n: number) => (n % 10_000 === 0 ? `${n / 10_000}만원` : `${n.toLocaleString("ko-KR")}원`);
+  const budgetNote = [
+    tcRule ? (tcIsAlways(tcRule) ? `테이블 차지 ${manWon(tcRule.amount)} 포함 금액이에요` : `${tcRule.below_bottles}병 미만은 테이블 차지 ${manWon(tcRule.amount)} 포함`) : null,
+    minBudgetTotal ? `최소 ₩${minBudgetTotal.toLocaleString("en-US")}부터` : null,
+  ].filter(Boolean).join(" · ");
+  // 직접 입력이 하한보다 낮으면 버튼을 잠그고 바로 아래에 최소 금액을 알려준다.
+  const customUnderMin = !!minBudgetTotal && Number(customBudgetMan) > 0 && Number(customBudgetMan) * 10_000 < minBudgetTotal;
+
   const handleMdRecommend = (budget: number) => {
+    if (minBudgetTotal && budget < minBudgetTotal) {
+      trackStep("booking_submit_blocked", { reason: "under_menu_min" });
+      toast.error(`이 날은 최소 ₩${minBudgetTotal.toLocaleString("en-US")}부터 가능해요${tcRule ? " (테이블 차지 포함)" : ""}`);
+      return;
+    }
     if (!eventDate) {
       trackStep("booking_submit_blocked", { reason: "no_date_budget" });
       setMenuOpen(false);
@@ -375,6 +399,8 @@ export function KoreanBookingForm({
       ? [1_250_000, 2_000_000, 3_000_000]
       : clubId === "7248ece2-8b58-446c-929d-f51f2528a387"
       ? [500_000, 1_200_000, 3_000_000]
+      : clubId === "35de296e-5fdc-435b-baf2-1c7c05538687"
+      ? [400_000, 1_000_000, 3_000_000] // Club Ace — 시작가 40만(사용자 결정 2026-11-10)
       : clubArea === "강남"
         ? [500_000, 1_000_000, 3_000_000]
         : [300_000, 500_000, 1_000_000];
@@ -385,7 +411,11 @@ export function KoreanBookingForm({
     <section className="rounded-xl border border-border bg-background px-3.5 py-3 space-y-2.5">
       <div>
         <p className="text-[13px] font-extrabold">{variant === "first" ? "예산을 골라주세요" : "술 고르기 어려우세요?"}</p>
-        <p className="text-[12px] text-muted-foreground leading-snug break-keep">예산만 고르면 클럽이 가장 맞는 세트를 제안해요.</p>
+        <p className="text-[12px] text-muted-foreground leading-snug break-keep">
+          선택하신 예산 안에서 가장 맞는 세트를 제안드려요
+          <br />
+          (당일에 변경 가능)
+        </p>
       </div>
       <div className="grid grid-cols-3 gap-2">
         {mdBudgetOptions.map((b) => (
@@ -393,7 +423,7 @@ export function KoreanBookingForm({
             key={b}
             type="button"
             onClick={() => handleMdRecommend(b)}
-            className="rounded-xl border border-border bg-card px-2 py-2.5 text-center hover:border-amber-500/60 active:scale-[0.98] transition-all"
+            className={`rounded-xl border border-border bg-card px-2 py-2.5 text-center hover:border-amber-500/60 active:scale-[0.98] transition-all ${minBudgetTotal && b < minBudgetTotal ? "opacity-40" : ""}`}
           >
             <span className="block text-[13px] font-black tabular-nums">₩{b.toLocaleString("en-US")}</span>
           </button>
@@ -406,7 +436,7 @@ export function KoreanBookingForm({
             value={customBudgetMan}
             onChange={(e) => setCustomBudgetMan(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
             inputMode="numeric"
-            placeholder="직접 입력"
+            placeholder={minBudgetTotal ? `${manWon(minBudgetTotal)} 이상` : "직접 입력"}
             aria-label="예산 직접 입력 (만 원)"
             className="w-full h-10 rounded-xl border border-border bg-card pl-3 pr-12 text-[13px] font-bold tabular-nums text-foreground placeholder:text-muted-foreground outline-none focus:border-amber-500/60"
           />
@@ -414,13 +444,18 @@ export function KoreanBookingForm({
         </div>
         <button
           type="button"
-          disabled={!Number(customBudgetMan)}
+          disabled={!Number(customBudgetMan) || customUnderMin}
           onClick={() => handleMdRecommend(Number(customBudgetMan) * 10_000)}
           className="h-10 px-3.5 rounded-xl bg-inverse text-inverse-foreground text-[13px] font-bold shrink-0 disabled:opacity-40"
         >
           이 예산으로
         </button>
       </div>
+      {customUnderMin ? (
+        <p className="text-[11.5px] text-red-400 leading-snug break-keep">최소 {manWon(minBudgetTotal!)}부터 입력할 수 있어요</p>
+      ) : (
+        budgetNote && <p className="text-[11.5px] text-muted-foreground leading-snug break-keep">{budgetNote}</p>
+      )}
     </section>
   );
 

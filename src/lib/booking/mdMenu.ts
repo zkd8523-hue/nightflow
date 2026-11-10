@@ -50,6 +50,34 @@ export function effectiveTcRule(
   return flat && flat > 0 ? { below_bottles: TC_ALWAYS, amount: flat } : null;
 }
 
+/** 손님 폼 메뉴 품목(club_menu_items + variants)에서 하한 계산에 필요한 필드만. */
+export type MinMenuItem = {
+  is_vvip?: boolean | null;
+  zone?: string | null;
+  condition_note?: string | null;
+  condition_note_en?: string | null;
+  variants?: { label_en: string; price: number; price_weekend?: number | null }[] | null;
+};
+
+/**
+ * 예산 하한(2026-11-10) — 담당자 메뉴판(loadPickerMenu와 같은 거르기)에서 가장 싼 1개 + 그때 붙는 TC.
+ * 이보다 낮은 예산이면 담당자가 어떤 구성도 못 고른다(합계가 예산을 넘으면 보낼 수 없다) —
+ * 11/14 Club Ace 35만 원 요청: 가장 싼 1병 35만 + 4병 미만 TC 5만 = 40만. 고를 품목이 없으면 null.
+ */
+export function minBookableTotal(items: MinMenuItem[], rule: TcRule, weekend: boolean): number | null {
+  let min: number | null = null;
+  for (const x of items) {
+    if (x.is_vvip || x.zone || x.condition_note || x.condition_note_en) continue;
+    for (const v of x.variants ?? []) {
+      const price = weekend ? (v.price_weekend ?? v.price) : v.price;
+      if (!price) continue;
+      const total = price + tcFor(rule, bottlesOfLabel(v.label_en) ?? 1);
+      if (min === null || total < min) min = total;
+    }
+  }
+  return min;
+}
+
 /** 담당자 메뉴판 — 활성 품목만, 조건부·층별·VVIP 전용은 제외(손님이 어떤 테이블인지 알 수 없다). 요일 가격 반영. */
 export async function loadPickerMenu(sb: SupabaseClient, clubId: string, weekend: boolean): Promise<PickerItem[]> {
   const { data } = await sb

@@ -27,6 +27,7 @@ import { CONTACT_INSTAGRAM } from "@/lib/foreign/contact";
 import { saveFormDraft, loadFormDraft, clearFormDraft, FOREIGN_BOOKING_DRAFT_KEY } from "@/lib/utils/formDraft";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import type { ClubMenuItem, ClubMenuCombo, ClubMenuVariant, SelectedMenuSnapshot } from "@/types/database";
+import { effectiveTcRule, minBookableTotal, tcIsAlways } from "@/lib/booking/mdMenu";
 import { isRatingShown } from "@/lib/clubs/ratingDisplay";
 
 // 폼 Step 1의 "Where?" 카드에 붙는 지역 한 줄 설명 — 홈(EnHomeClient REGIONS)과 같은 문장.
@@ -340,6 +341,8 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // 운영자가 MD에게 "얼마짜리 되냐"를 따로 물을 필요가 없어진다.
   const [menuItems, setMenuItems] = useState<ClubMenuItem[]>([]);
   const [menuCombos, setMenuCombos] = useState<ClubMenuCombo[]>([]);
+  // 병 수 조건 TC(Club Ace: 4병 미만 5만원) — 평일·주말 금액만으론 0원이라 따로 받는다(2026-11-10).
+  const [tcRuleRaw, setTcRuleRaw] = useState<unknown>(null);
   const [menuCharge, setMenuCharge] = useState<{ weekday: number | null; weekend: number | null }>(
     { weekday: null, weekend: null },
   );
@@ -477,7 +480,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         supabase.from("club_menu_combos").select("*").eq("club_id", selectedClubId),
         supabase
           .from("clubs")
-          .select("table_charge_weekday, table_charge_weekend")
+          .select("table_charge_weekday, table_charge_weekend, table_charge_rule")
           .eq("id", selectedClubId)
           .maybeSingle(),
       ]);
@@ -488,6 +491,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         weekday: clubRes.data?.table_charge_weekday ?? null,
         weekend: clubRes.data?.table_charge_weekend ?? null,
       });
+      setTcRuleRaw(clubRes.data?.table_charge_rule ?? null);
       setMenuLoading(false);
       setMenuLoadedFor(selectedClubId);
     })();
@@ -556,6 +560,20 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     );
   })();
 
+
+  // 예산 하한·TC 안내(2026-11-10) — 예산만 고른 손님은 TC가 그 안에 포함되는 걸 몰랐고, 가장 싼 술 + TC보다 낮은 예산은
+  // 담당자가 어떤 구성도 못 고른다. 지역 하한(minBudget)이 보통 더 높지만, 클럽 단위로 한 번 더 막는다.
+  const tcRuleNow = effectiveTcRule({ table_charge_rule: tcRuleRaw, table_charge_weekday: menuCharge.weekday, table_charge_weekend: menuCharge.weekend }, isWeekend);
+  const menuMinTotal = eventDate && selectedClubId && menuLoadedFor === selectedClubId ? minBookableTotal(menuItems, tcRuleNow, isWeekend) : null;
+  const tcNoteText = (() => {
+    if (!tcRuleNow) return null;
+    const amt = `₩${tcRuleNow.amount.toLocaleString("en-US")}`;
+    if (tcIsAlways(tcRuleNow)) {
+      return t(`테이블 차지 ${amt} 포함 금액이에요`, `Includes the ${amt} table charge`, `テーブルチャージ ${amt} 込みの金額です`, `已含 ${amt} 台费`, `已含 ${amt} 桌費`);
+    }
+    const n = tcRuleNow.below_bottles;
+    return t(`${n}병 미만은 테이블 차지 ${amt} 포함`, `Includes a ${amt} table charge under ${n} bottles`, `${n}本未満はテーブルチャージ ${amt} 込み`, `少于${n}瓶时含 ${amt} 台费`, `少於${n}瓶時含 ${amt} 桌費`);
+  })();
 
   const [guestName, setGuestName] = useState("");
   // 기본 선택 없음(2026-11-04) — 예전엔 WhatsApp이 미리 골라져 있어서, WhatsApp을 안 쓰는 일본 손님이
@@ -1575,6 +1593,11 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // 스냅샷(md_recommend)로 3장(연락처)으로 넘긴다. 검증(orderAmount ≥ minBudget)·저장(budget=total)은
   // 그대로 통과하고, 운영자 화면은 md_recommend를 보고 "MD 추천 요청 · 예산"으로 표시한다.
   const handleMdRecommend = (budget: number) => {
+    if (menuMinTotal && budget < menuMinTotal) {
+      blocked("under_menu_min");
+      const won = `₩${menuMinTotal.toLocaleString("en-US")}`;
+      return toast.error(t(`이 날은 최소 ${won}부터 가능해요`, `This night starts at ${won}`, `この日は最低 ${won} からです`, `当天最低 ${won} 起`, `當天最低 ${won} 起`));
+    }
     if (!eventDate) {
       blocked("no_date");
       openDatePicker();
@@ -1699,13 +1722,13 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     <section className={`rounded-xl border border-border ${compact ? "bg-background" : "bg-card"} px-3.5 py-3 space-y-2.5`}>
       <div>
         <p className="text-[13px] font-extrabold">{t("술 고르기 어려우세요?", "Not sure what to order?", "何を頼めばいいか分からない？", "不知道点什么？", "不知道要點什麼？")}</p>
-        <p className="text-[12px] text-muted-foreground leading-snug break-keep">
+        <p className="text-[12px] text-muted-foreground leading-snug break-keep whitespace-pre-line">
           {t(
-            "예산만 고르면 클럽이 가장 맞는 세트를 제안해요.",
-            "Pick a budget and the club suggests the best set for you.",
-            "予算だけ選べば、クラブが一番合うセットを提案します。",
-            "选个预算，夜店会为你推荐最合适的套餐。",
-            "選個預算，夜店會為你推薦最合適的套餐。"
+            "선택하신 예산 안에서 가장 맞는 세트를 제안드려요\n(당일에 변경 가능)",
+            "We'll suggest the best set within your budget\n(you can change it on the night)",
+            "選んだ予算の中で一番合うセットを提案します\n（当日変更できます）",
+            "在你选的预算内推荐最合适的套餐\n（当晚可以更换）",
+            "在你選的預算內推薦最合適的套餐\n（當晚可以更換）"
           )}
         </p>
       </div>
@@ -1773,6 +1796,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
           </button>
         )}
       </div>
+      {tcNoteText && <p className="text-[11.5px] text-muted-foreground leading-snug break-keep">{tcNoteText}</p>}
     </section>
     );
   };
@@ -1868,6 +1892,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                   "夜店會以一個總價為你準備酒水、調飲和包廂。"
                 )}
           </p>
+          {tcNoteText && <p className="text-[12px] text-muted-foreground leading-snug break-keep">{tcNoteText}</p>}
         </div>
         <div className="space-y-2">
           {mdBudgetOptions.map((b, i) => {
