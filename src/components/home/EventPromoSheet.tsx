@@ -30,7 +30,10 @@ type Promo = {
   headline: string;
   sub: string;
   ctaLabel: string;
-  /** 누르면 갈 곳. ?book=1 이면 클럽 상세에서 예약 폼이 바로 열린다. */
+  /**
+   * 누르면 갈 곳. ?book=1 이면 클럽 상세에서 예약 폼이 바로 열린다.
+   * ?date= 만 주면 폼은 닫힌 채로 두고, 손님이 예약 버튼을 누를 때 날짜만 채운다.
+   */
   href: string;
   /** 이 시각(KST)이 지나면 영영 안 뜬다 */
   endAt: string;
@@ -43,7 +46,10 @@ const PROMO: Promo = {
   headline: "한요한이 수원에 온다",
   sub: "11/14(토) 클럽 엔터 · 테이블 예약 문의 받습니다",
   ctaLabel: "예약 문의하기",
-  href: "/clubs/7248ece2-8b58-446c-929d-f51f2528a387?book=1&date=2026-11-14",
+  // 예약 폼 직행(?book=1)은 뺐다 (2026-11-10). 첫날 클릭 6명이 모두 폼까지 갔지만
+  // 5명이 아무것도 안 고르고 나갔다 — 공연이 궁금해서 누른 사람에게 폼부터 들이밀면 샌다.
+  // 클럽 상세에서 정보를 보고 스스로 예약 버튼을 누르게 하고, 날짜만 미리 채워 둔다.
+  href: "/clubs/7248ece2-8b58-446c-929d-f51f2528a387?date=2026-11-14",
   // 공연 당일 영업이 끝나는 11/15 새벽 6시(KST = UTC+9)까지
   endAt: "2026-11-14T21:00:00Z",
 };
@@ -95,9 +101,17 @@ export function EventPromoSheet() {
     } catch {}
   };
 
-  const handleOpenChange = (v: boolean) => {
+  /**
+   * 닫기. via 로 "다음에 볼게요" 버튼(later)과 ×·바깥 탭·뒤로가기(dismiss)를 나눈다.
+   * 이게 없으면 "보고 닫음"과 "그냥 페이지를 떠남"이 구분되지 않는다.
+   * CTA 는 handleGo 에서 open 을 직접 내려서 여기를 거치지 않는다 — 닫기로 안 잡힌다.
+   */
+  const handleOpenChange = (v: boolean, via: "later" | "dismiss" = "dismiss") => {
     setOpen(v);
-    if (!v) markSeen();   // CTA·닫기·× 어느 경로든 본 것으로 기록한다
+    if (!v) {
+      trackEvent("event_promo_dismiss", { slug: PROMO.slug, path: pathname, via });
+      markSeen();   // CTA·닫기·× 어느 경로든 본 것으로 기록한다
+    }
   };
 
   const handleGo = () => {
@@ -108,7 +122,7 @@ export function EventPromoSheet() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => handleOpenChange(v)}>
       <DialogContent className="max-w-[330px] rounded-3xl bg-card border-border p-0 overflow-hidden gap-0">
         <DialogTitle className="sr-only">{PROMO.headline}</DialogTitle>
         <DialogDescription className="sr-only">{PROMO.alt}</DialogDescription>
@@ -135,7 +149,7 @@ export function EventPromoSheet() {
           </button>
           <button
             type="button"
-            onClick={() => handleOpenChange(false)}
+            onClick={() => handleOpenChange(false, "later")}
             className="mt-1.5 w-full py-2 text-[13px] font-semibold text-muted-foreground"
           >
             다음에 볼게요
