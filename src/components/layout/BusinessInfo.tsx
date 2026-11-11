@@ -12,6 +12,10 @@ import { type Lang, makeT } from "@/lib/i18n";
  * collapsible: 푸터처럼 항상 붙어다니는 자리에서 세로 길이를 줄이기 위한 접기 옵션.
  *   기본값 false — 결제/크레딧 충전 페이지는 PG 심사가 상시 노출을 보므로 펼친 채 유지할 것.
  *   접어도 DOM에는 항상 렌더되므로(hidden 토글) 크롤러·심사 스크래핑에는 그대로 잡힌다.
+ *
+ * 전화번호는 data-nosnippet(2026-11-11): 모든 페이지 푸터에 들어가서, 구글이 "홍대 레드 번호" 같은 검색에
+ * 클럽 페이지의 유일한 번호인 이 번호를 발췌해 보여줬고 사람들이 클럽 번호인 줄 알고 운영자에게 전화했다.
+ * 화면 표시는 그대로(법적 표시 의무), 검색결과 발췌에서만 제외.
  */
 export function BusinessInfo({
   className = "",
@@ -47,7 +51,7 @@ export function BusinessInfo({
         <p>{t("통신판매업신고번호", "E-commerce reg. no.", "通信販売業申告番号", "电子商务备案号")}: {mailOrderSalesNumber}</p>
       )}
       <p>
-        {t("주소", "Address", "住所", "地址")}: {address} · {t("전화", "Tel", "電話", "电话")}: {tel} · {t("이메일", "Email", "メール", "邮箱")}: {email}
+        {t("주소", "Address", "住所", "地址")}: {address} · {t("전화", "Tel", "電話", "电话")}: <span data-nosnippet>{tel}</span> · {t("이메일", "Email", "メール", "邮箱")}: {email}
       </p>
     </div>
   );
