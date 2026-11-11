@@ -600,9 +600,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // 2026-10-02: 1단계 "일정 미정" 토글을 없애고 3단계 보내기 바로 위 필수 체크("여행 확정")로 옮겼다
   // (운영자 결정). 9/2~ 토글을 켠 사람은 6명뿐이었고, 1단계는 가장 많이 빠지는 곳이라 필수 항목을
   // 늘리지 않는다. 체크 없이 보내면 그 자리에서 "D-3 이메일 링크"(foreign_trip_reminders)를 안내한다.
-  const [tripConfirmed, setTripConfirmed] = useState(false);
-  const [tripHelpOpen, setTripHelpOpen] = useState(false);
-  const [remindEmail, setRemindEmail] = useState("");
   // 클럽을 고르는 방식 — 추천(기본) / 아는 클럽 직접 선택.
   const [clubMode, setClubMode] = useState<"recommend" | "known">("recommend");
   // 음악 취향(선택). 추천 쇼트리스트를 "부드럽게" 거른다 — 결과가 2곳 미만이면 무시.
@@ -1048,13 +1045,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     }
     // 클럽을 맡긴 손님(clubPick)은 지역이 "서울 어디든"이어도 된다 — 운영자가 고른다.
     const pickForMe = clubPick && selectedClubIds.length === 0 && !!picked?.snapshot.md_recommend?.club_pick;
-    if (!tripConfirmed) {
-      blocked("trip_not_confirmed");
-      // 이미 적은 이메일(연락처가 이메일이면 그것, 아니면 예비 이메일)을 미리 채운다.
-      if (!remindEmail.trim()) setRemindEmail(contactType === "email" ? contactValue.trim() : backupEmail.trim());
-      setTripHelpOpen(true);
-      return toast.error(t("여행 일정이 확정됐는지 체크해주세요", "Please confirm your trip date", "旅行日程が確定しているかチェックしてください", "请确认你的行程已定", "請確認你的行程已定"));
-    }
     if (!area && selectedClubIds.length === 0 && !pickForMe) {
       blocked("no_area_or_club");
       return toast.error(t("지역이나 클럽을 골라주세요", "Pick an area or a club", "エリアかクラブを選択", "请选择区域或夜店"));
@@ -1535,13 +1525,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   };
 
   // Step 2½ "When?" Continue — 날짜 검증 + 소프트 리마인더 분기(예전 handleStep1Continue의 날짜 부분).
-  const [savingReminder, setSavingReminder] = useState(false);
-  const reminderDate = (() => {
-    if (!eventDate) return null;
-    const d = new Date(eventDate + "T12:00:00");
-    d.setDate(d.getDate() - 3);
-    return d;
-  })();
   const handleDateContinue = async () => {
     if (!eventDate) {
       blocked("no_date");
@@ -1558,36 +1541,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     }
     openBudget(selectedClub.id);
   };
-  // 일정 미정 → 요청 대신 이메일+잠정 날짜만 저장(D-3 링크 메일, Migration 664). 3단계 여행 확정 체크에서.
-  const saveReminder = async () => {
-    const email = remindEmail.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
-      return toast.error(t("이메일 형식을 확인해주세요", "Check your email address", "メール形式を確認してください", "请检查邮箱格式", "請檢查信箱格式"));
-    }
-    setSavingReminder(true);
-    try {
-      const supabase = createClient();
-      const utm = getCurrentUtm();
-      const { error } = await supabase.from("foreign_trip_reminders").insert({
-        email, lang: preferredLang, area: area || null, tentative_date: eventDate, group_size: groupSize,
-        landing_path: utm.landing_path, utm_source: utm.utm_source, utm_medium: utm.utm_medium, utm_campaign: utm.utm_campaign,
-      });
-      if (error) throw error;
-      trackEvent("foreign_trip_gate_planning", { lang: preferredLang, saved_email: true });
-      setFormStep(5);
-    } catch (e) {
-      const msg = (e as { message?: string })?.message || "";
-      if (msg.includes("duplicate_trip_reminder_within_24h")) {
-        toast.success(t("이미 저장돼 있어요", "Already saved — we'll email you", "すでに保存済みです", "已保存，会发邮件提醒你", "已儲存，會寄信提醒你"));
-        setFormStep(5);
-      } else {
-        toast.error(t("저장 중 오류가 발생했어요", "Couldn't save — try again", "保存に失敗しました", "保存失败，请重试", "儲存失敗，請重試") + (msg ? ` (${msg})` : ""));
-      }
-    } finally {
-      setSavingReminder(false);
-    }
-  };
-
   // "MD 추천 받기" 우회(2026-09-15). 검색 유입 7일 실측: 폼 도달 12 → 날짜 10 → 메뉴 담기 3 → 제출 0.
   // 외국인이 50만~100만 원어치 술을 병 단위로 직접 고르는 단계가 벽이었다. 예산만 고르면 items 없는
   // 스냅샷(md_recommend)로 3장(연락처)으로 넘긴다. 검증(orderAmount ≥ minBudget)·저장(budget=total)은
@@ -3277,64 +3230,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         />
       </section>
 
-      {/* 여행 확정 체크(필수) — 보내기 바로 위. 3단계까지 온 손님에게는 부담이 적고, "가겠다"는 약속이라
-          MD가 일정 안 맞는 요청에 시간을 덜 쓴다. 체크 없이 누르면 아래 안내(D-3 이메일 링크)가 열린다. */}
-      <section className="space-y-2">
-        <label className={`flex items-start gap-3 rounded-xl border px-3.5 py-3 cursor-pointer transition-colors ${tripConfirmed ? "border-amber-500 bg-amber-500/[0.06]" : tripHelpOpen ? "border-red-500/60 bg-card" : "border-border bg-card"}`}>
-          <input
-            type="checkbox"
-            checked={tripConfirmed}
-            onChange={(e) => {
-              setTripConfirmed(e.target.checked);
-              if (e.target.checked) { setTripHelpOpen(false); trackFieldOnce("trip_confirmed"); }
-            }}
-            className="mt-0.5 w-5 h-5 shrink-0 accent-amber-500"
-          />
-          <span className="text-[14px] font-bold text-foreground leading-snug break-keep">
-            {eventDate
-              ? t(`${formatEventDate(eventDate, lang)} 여행 일정이 확정됐어요`, `My trip is confirmed for ${formatEventDate(eventDate, lang)}`, `${formatEventDate(eventDate, lang)} の旅行日程は確定しています`, `我 ${formatEventDate(eventDate, lang)} 的行程已确定`, `我 ${formatEventDate(eventDate, lang)} 的行程已確定`)
-              : t("여행 일정이 확정됐어요", "My trip date is confirmed", "旅行日程は確定しています", "我的行程已确定", "我的行程已確定")}
-            <span className="ml-1 text-[12px] font-semibold text-muted-foreground">{t("(필수)", "(required)", "（必須）", "（必选）", "（必選）")}</span>
-          </span>
-        </label>
-        {tripHelpOpen && !tripConfirmed && (
-          <div className="rounded-xl border border-border bg-offer-well px-3.5 py-3 space-y-2.5">
-            <div className="space-y-1">
-              <p className="text-[13px] font-extrabold">{t("아직 미정이세요?", "Not confirmed yet?", "まだ未定ですか？", "还没定？", "還沒定？")}</p>
-              <p className="text-[12px] text-muted-foreground leading-snug break-keep">
-                {reminderDate
-                  ? t(
-                      `${formatEventDate(ymdLocal(reminderDate), lang)}에 이메일로 링크를 보내드려요. 그 전까지 클럽에는 아무것도 전달되지 않아요.`,
-                      `We'll email you a link on ${formatEventDate(ymdLocal(reminderDate), lang)}. Nothing goes to the club until then.`,
-                      `${formatEventDate(ymdLocal(reminderDate), lang)} にリンクをメールします。それまでクラブには何も送られません。`,
-                      `我们会在 ${formatEventDate(ymdLocal(reminderDate), lang)} 发邮件给你链接，在此之前不会通知夜店。`,
-                      `我們會在 ${formatEventDate(ymdLocal(reminderDate), lang)} 寄信給你連結，在此之前不會通知夜店。`
-                    )
-                  : t("날짜 3일 전에 이메일로 링크를 보내드려요.", "We'll email you a link 3 days before your date.", "日付の3日前にリンクをメールします。", "我们会在日期前 3 天发邮件提醒你。", "我們會在日期前 3 天寄信提醒你。")}
-              </p>
-            </div>
-            <input
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              value={remindEmail}
-              onChange={(e) => setRemindEmail(e.target.value)}
-              placeholder="you@email.com"
-              className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
-            />
-            <button
-              type="button"
-              onClick={saveReminder}
-              disabled={savingReminder}
-              className="w-full h-12 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] disabled:opacity-50"
-            >
-              {savingReminder
-                ? t("저장 중…", "Saving…", "保存中…", "保存中…", "儲存中…")
-                : t("이메일로 링크 받기", "Email me the link", "リンクをメールで受け取る", "用邮件接收链接", "用信箱接收連結")}
-            </button>
-          </div>
-        )}
-      </section>
 
       {/* 붐비는 날 가격 안내 — 요청 보내기 직전(2026-11-01). 조재윤 건(9월 확정 → 할로윈 비딩으로 인상)은
           예약할 때 아무 말도 못 들은 게 문제였다. 확인서는 이미 끝난 뒤라, 기대는 여기서 맞춘다. */}
@@ -3594,36 +3489,6 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
         );
       })()}
 
-      {/* ── Step 5 · 리마인더 저장 완료 ─────────────────────────────────── */}
-      {formStep === 5 && (
-        <div className="space-y-6 pb-12 text-center">
-          <div className="text-[44px] pt-4">📬</div>
-          <div className="space-y-2">
-            <h2 className="text-[20px] font-black text-foreground tracking-tight break-keep">
-              {reminderDate
-                ? t(`${formatEventDate(ymdLocal(reminderDate), lang)}에 이메일 드릴게요`, `We'll email you on ${formatEventDate(ymdLocal(reminderDate), lang)}`, `${formatEventDate(ymdLocal(reminderDate), lang)} にメールします`, `我们会在 ${formatEventDate(ymdLocal(reminderDate), lang)} 发邮件给你`, `我們會在 ${formatEventDate(ymdLocal(reminderDate), lang)} 寄信給你`)
-                : t("저장됐어요", "Saved", "保存しました", "已保存", "已儲存")}
-            </h2>
-            <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">
-              {t(
-                "요청을 마치기 전까지 클럽에는 아무것도 전달되지 않아요. 일정이 확정되면 링크로 돌아와 몇 분 안에 끝낼 수 있어요.",
-                "Nothing goes to the club until you finish the request. When your trip is set, come back through the link and finish in a couple of minutes.",
-                "リクエストを完了するまでクラブには何も送られません。予定が決まったらリンクから戻って数分で完了できます。",
-                "在你完成请求之前，不会向夜店发送任何内容。行程定了以后通过链接回来，几分钟就能完成。",
-                "在你完成請求之前，不會向夜店傳送任何內容。行程定了以後透過連結回來，幾分鐘就能完成。"
-              )}
-            </p>
-          </div>
-          <div className="space-y-2.5">
-            <Link href={`/${lang === "ko" ? "en" : lang}/clubs`} className="block w-full h-14 rounded-full bg-inverse text-inverse-foreground font-black text-[15px] leading-[56px] hover:opacity-90 transition-opacity">
-              {t("그동안 클럽 둘러보기", "Browse clubs meanwhile", "その間にクラブを見る", "先看看夜店", "先看看夜店")}
-            </Link>
-            <button type="button" onClick={() => router.replace(`/${lang === "ko" ? "en" : lang}`)} className="w-full h-12 rounded-full bg-card border border-border text-foreground font-bold text-[14px]">
-              {t("홈으로", "Back to home", "ホームへ", "返回首页", "返回首頁")}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 전송 전 최종 확인 — 연락처 오타 자가 검수(로그인 없앤 뒤 유일한 회신선) */}
       <Sheet open={showConfirm} onOpenChange={(o) => { if (!loading) setShowConfirm(o); }}>
