@@ -34,6 +34,30 @@ export const CLUB_MIN_SPEND_OVERRIDE: Record<string, number> = {
   "6a19815e-c22b-4bc5-8bb5-dd84b872a7b4": 2_500_000, // +82 (2026-10-29)
 };
 
+// 시즌 하한(2026-11-14, 사용자 추정치) — 크리스마스 이브·당일은 클럽이 테이블 최저금액을 올린다.
+// 이 날짜를 고르면 예약 폼 최소 금액이 max(평소 하한, 시즌 하한)이 되고, 크리스마스 페이지 가격표도 이 값을 쓴다.
+// 페이지 문구(seasonGuides.ts)의 70만/100만/200만과 같아야 한다 — 바꿀 땐 둘 다.
+export const CHRISTMAS_2026_FLOORS: Record<string, number> = {
+  "강남": 2_000_000,
+  "이태원": 1_000_000,
+  "홍대": 700_000,
+};
+const SEASONAL_FLOORS: { dates: string[]; floors: Record<string, number> }[] = [
+  { dates: ["2026-12-24", "2026-12-25"], floors: CHRISTMAS_2026_FLOORS },
+];
+
+/** 시즌 가격이 붙는 날짜인지 — 예산 화면 안내("크리스마스라 가격이 올라요")용. */
+export function isSeasonalDate(date: string | null | undefined): boolean {
+  return !!date && SEASONAL_FLOORS.some((x) => x.dates.includes(date));
+}
+
+/** 그 날짜·지역의 시즌 하한. 시즌이 아니면 null. date는 "YYYY-MM-DD". */
+export function seasonalFloor(area: string | null | undefined, date: string | null | undefined): number | null {
+  if (!area || !date) return null;
+  const s = SEASONAL_FLOORS.find((x) => x.dates.includes(date));
+  return s?.floors[area] ?? null;
+}
+
 /** 그 클럽의 1탁 최저소비 — 클럽 예외가 있으면 그것, 없으면 지역 하한. */
 export function clubFloor(clubId: string | null | undefined, area: string | null | undefined): number {
   return (clubId && CLUB_MIN_SPEND_OVERRIDE[clubId]) || bookingFloor(area);

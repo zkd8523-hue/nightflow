@@ -14,6 +14,7 @@
 //   - 대만·홍콩 표현(project_tw_community_vocab): 包廂·低消·公關·被卡.
 
 import type { SeasonGuideConfig } from "@/components/foreign/SeasonGuide";
+import { CHRISTMAS_2026_FLOORS } from "@/lib/clubs/tablePricing";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 크리스마스 2026 — 12/24(목) 이브, 12/25(금) 공휴일 → 목~일 긴 주말
@@ -23,26 +24,47 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
   about: "Christmas 2026 in Seoul",
   temporalCoverage: "2026-12-24/2026-12-27",
   areaOrder: ["강남", "홍대", "이태원"],
+  // 이브부터 오른 가격(사용자 추정치 2026-11-14) — 예약 폼과 같은 값(tablePricing.CHRISTMAS_2026_FLOORS).
+  seasonFloors: CHRISTMAS_2026_FLOORS,
+  // 첫 화면 추천 3곳 = 운영자 지역별 추천(area_pick): 강남 Club Ace, 홍대 CLUB BERMUDA, 이태원 Day&night.
+  // 세 곳 모두 목요일(12/24)에 연다. 1인당 금액은 6명 기준(실제 예약 4~10명의 가운데).
+  picks: {
+    clubIds: [
+      "35de296e-5fdc-435b-baf2-1c7c05538687", // Club Ace
+      "d912c171-7b9c-40a4-8c89-dc05caf35ebd", // CLUB BERMUDA
+      "103400ee-b647-428f-ae76-07131a720dc6", // Day&night
+    ],
+    dates: ["2026-12-24", "2026-12-25"],
+    groupSize: 6,
+  },
   copy: {
     en: {
       title: "Seoul Christmas Eve 2026 Clubs — Table Prices & Booking (Dec 24–25)",
       description:
-        "Christmas Eve 2026 is a Thursday and Christmas Day (Fri) is a public holiday in Korea — a four-night weekend. Which Seoul clubs take table bookings, real prices from ₩500,000, and when to book.",
+        "Christmas Eve 2026 is a Thursday and Christmas Day (Fri) is a public holiday in Korea — a four-night weekend. Which Seoul clubs take table bookings, expected table prices from Christmas Eve (from ₩700,000), and when to book.",
       ogTitle: "Seoul Christmas 2026",
       ogSub: "Dec 24 (Thu) – 27 (Sun) · club tables, real prices",
       keywords: [
         "Seoul Christmas 2026", "Christmas Eve Seoul club", "Gangnam club Christmas", "Hongdae Christmas party",
         "Itaewon Christmas", "Seoul Christmas party table", "Korea Christmas nightlife", "Christmas in Seoul 2026",
       ],
-      eyebrow: "DEC 24–27, 2026 · THU–SUN",
-      h1: "Seoul Christmas 2026 — Clubs, Tables & Prices",
+      eyebrow: "DEC 24–25, 2026 · THU–FRI",
+      h1: "Your Table for Christmas Eve in Seoul",
+      hero: {
+        sub: "Three clubs we book for Christmas Eve and Christmas night. Bottles, mixers and your table in one price, split across the group.",
+        each: "≈ {won} each for a group of {n}",
+        fromLabel: "Christmas tables from",
+        bookOn: ["Dec 24 · Eve", "Dec 25 · Christmas"],
+        host: "A NightFlow host checks your table with the club in Korean and messages you the final price before the night. Prices can change by club and night. No deposit — you pay the club on the night.",
+        other: "Another club or date →",
+      },
       intro:
         "In Korea, Christmas Eve is a going-out night, not a family night — the clubs in Gangnam, Hongdae and Itaewon are some of the busiest of the year. In 2026 Christmas Eve is a Thursday and Christmas Day (Friday) is a public holiday, so the busy stretch runs Thursday to Sunday. If you're coming as a group, a booked table is what gets everyone in together and gives you somewhere to sit. Here's how the nights run, what a table costs, and which clubs we can book.",
       areasH2: "Where to go over Christmas",
       areas: [
-        { name: "Gangnam", tag: "Big rooms · strictest door", body: "Large EDM clubs and the strictest door policy in Seoul. On Christmas Eve the entrance is where groups get split up or turned away — a table avoids that. Tables from ₩1,400,000.", href: "/en/clubs/gangnam" },
-        { name: "Hongdae", tag: "Biggest crowd · hip-hop", body: "The most clubs in one area and the youngest crowd. Free-entry clubs fill early on Christmas Eve. Tables from ₩500,000, some clubs lower.", href: "/en/clubs/hongdae" },
-        { name: "Itaewon", tag: "International crowd", body: "Seoul's most international nightlife — easiest place to go out in English. Tables from ₩500,000.", href: "/en/clubs/itaewon" },
+        { name: "Gangnam", tag: "Big rooms · strictest door", body: "Large EDM clubs and the strictest door policy in Seoul. On Christmas Eve the entrance is where groups get split up or turned away — a table avoids that. Christmas tables expected from ₩2,000,000.", href: "/en/clubs/gangnam" },
+        { name: "Hongdae", tag: "Biggest crowd · hip-hop", body: "The most clubs in one area and the youngest crowd. Free-entry clubs fill early on Christmas Eve. Christmas tables expected from ₩700,000.", href: "/en/clubs/hongdae" },
+        { name: "Itaewon", tag: "International crowd", body: "Seoul's most international nightlife — easiest place to go out in English. Christmas tables expected from ₩1,000,000.", href: "/en/clubs/itaewon" },
       ],
       stepsH2: "How Christmas weekend runs",
       steps: [
@@ -53,13 +75,13 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
       ],
       pricesH2: "Christmas table prices — real menus",
       pricesNote:
-        "These are the clubs' printed menus. The minimum spend per table normally stays the same over Christmas, but clubs with a table charge may use the weekend rate, and a club can set a special holiday minimum. If it does, we tell you the final number in writing before you commit.",
+        "These are the clubs' printed menus. From Christmas Eve, clubs raise the table minimum for the holiday — expect tables to start around ₩700,000 in Hongdae, ₩1,000,000 in Itaewon and ₩2,000,000 in Gangnam. Prices can change by club and by night. We tell you the final number in writing before you commit.",
       faqH2: "Christmas in Seoul — questions people ask",
       faqs: [
         { q: "Is Christmas a public holiday in Korea?", a: "Yes. December 25 is a public holiday in South Korea. In 2026 it falls on a Friday, so Christmas Eve (Thursday) through Sunday is one long weekend for going out." },
         { q: "Is Christmas a big night for clubs in Seoul?", a: "Yes. In Korea Christmas Eve is a night out with friends or a date, so clubs in Gangnam, Hongdae and Itaewon are among their busiest of the year. In 2026 Christmas Eve is a Thursday and Christmas Day is a Friday public holiday, so expect busy nights from Thursday through Sunday." },
         { q: "Do I need to book a table for Christmas Eve?", a: "You can walk in, but on Christmas Eve popular clubs fill early and the door can stop admitting or split up large groups. A booked table means the group goes in together — as long as everyone meets the age, passport and dress rules — with seating and bottles for the night." },
-        { q: "How much is a club table on Christmas in Seoul?", a: "The minimum spend is ₩1,400,000 per table in Gangnam and ₩500,000 in Hongdae and Itaewon (a few Hongdae clubs are lower), filled from the club's own menu. A table is shared, so for a group of 8 in Gangnam that's about ₩175,000 each. No deposit, no broker fee — you pay the club on the night." },
+        { q: "How much is a club table on Christmas in Seoul?", a: "From Christmas Eve, expect tables to start around ₩700,000 in Hongdae, ₩1,000,000 in Itaewon and ₩2,000,000 in Gangnam, filled from the club's own menu. Prices can change by club and by night, so the final number is confirmed in writing before you commit. A table is shared, so for a group of 8 in Gangnam that's about ₩250,000 each. No deposit, no broker fee — you pay the club on the night." },
         { q: "When should I book?", a: "Two to three weeks ahead for Christmas Eve, earlier for groups of 8 or more. Clubs post their Christmas line-ups on Instagram closer to the date." },
         { q: "Can foreigners get in? What do I need?", a: "Yes. Clubs are 19+ (in 2026: born 2007 or earlier) and foreigners must show a physical passport at the door. Gangnam has the strictest dress code — no shorts, tank tops or slides." },
       ],
@@ -87,22 +109,30 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
     ja: {
       title: "ソウル クリスマス 2026 クラブ — 12/24(木)・25(金) テーブル予約と料金",
       description:
-        "2026年のクリスマスイブは木曜日、クリスマス当日(金)は韓国の祝日。木〜日の4連夜です。テーブル予約できるソウルのクラブ、50万ウォン〜の実際の料金、予約のタイミング。",
+        "2026年のクリスマスイブは木曜日、クリスマス当日(金)は韓国の祝日。木〜日の4連夜です。テーブル予約できるソウルのクラブ、イブからのテーブル料金の目安（70万ウォン〜）、予約のタイミング。",
       ogTitle: "ソウル クリスマス 2026",
       ogSub: "12/24(木)〜27(日) · クラブのテーブルと実際の料金",
       keywords: [
         "ソウル クリスマス 2026", "クリスマスイブ ソウル クラブ", "江南 クラブ クリスマス", "弘大 クリスマス",
         "梨泰院 クリスマス", "韓国 クリスマス ナイトライフ", "ソウル クラブ テーブル予約",
       ],
-      eyebrow: "2026年12月24日〜27日 · 木〜日",
-      h1: "ソウル クリスマス 2026 — クラブ・テーブル・料金",
+      eyebrow: "2026年12月24日(木)・25日(金)",
+      h1: "ソウルのクリスマスイブは、テーブルで。",
+      hero: {
+        sub: "イブとクリスマス当日に予約できる3つのクラブ。ボトル・ミキサー・テーブル込みの1つの料金を、グループで割り勘。",
+        each: "{n}人なら1人約{won}",
+        fromLabel: "クリスマスのテーブル料金",
+        bookOn: ["12/24 イブ", "12/25 クリスマス"],
+        host: "NightFlowの担当者がクラブに韓国語で確認し、当日前に最終金額をメッセージでお送りします。料金はクラブや日によって変わることがあります。デポジット不要、お支払いは当日クラブで。",
+        other: "他のクラブ・日程 →",
+      },
       intro:
         "韓国のクリスマスイブは家族ではなく友人や恋人と出かける夜。江南・弘大・梨泰院のクラブは一年で最も混む夜のひとつです。2026年はイブが木曜日、クリスマス当日(金)が祝日なので、木曜から日曜まで混雑が続きます。グループで行くなら、全員一緒に入れて座る場所も確保できるのがテーブル予約です。",
       areasH2: "クリスマスはどこに行く？",
       areas: [
-        { name: "江南", tag: "大型クラブ · 入口が最も厳しい", body: "大型EDMクラブと市内で最も厳しい入口審査。イブは入口でグループが分かれたり断られたりしやすい夜。テーブルならその心配がありません。1卓140万ウォン〜。", href: "/ja/clubs/gangnam" },
-        { name: "弘大", tag: "人出が最大 · ヒップホップ", body: "クラブの数が最も多く、客層も若いエリア。無料入場の店はイブは早くに満員。1卓50万ウォン〜、さらに安い店も。", href: "/ja/clubs/hongdae" },
-        { name: "梨泰院", tag: "外国人が多い", body: "ソウルで最も国際的なエリア。英語でも遊びやすい。1卓50万ウォン〜。", href: "/ja/clubs/itaewon" },
+        { name: "江南", tag: "大型クラブ · 入口が最も厳しい", body: "大型EDMクラブと市内で最も厳しい入口審査。イブは入口でグループが分かれたり断られたりしやすい夜。テーブルならその心配がありません。クリスマスは1卓200万ウォン〜の見込み。", href: "/ja/clubs/gangnam" },
+        { name: "弘大", tag: "人出が最大 · ヒップホップ", body: "クラブの数が最も多く、客層も若いエリア。無料入場の店はイブは早くに満員。クリスマスは1卓70万ウォン〜の見込み。", href: "/ja/clubs/hongdae" },
+        { name: "梨泰院", tag: "外国人が多い", body: "ソウルで最も国際的なエリア。英語でも遊びやすい。クリスマスは1卓100万ウォン〜の見込み。", href: "/ja/clubs/itaewon" },
       ],
       stepsH2: "クリスマスの4日間",
       steps: [
@@ -113,13 +143,13 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
       ],
       pricesH2: "クリスマスのテーブル料金 — 実際のメニュー",
       pricesNote:
-        "クラブの実際のメニューです。1卓あたりの最低予約金額はクリスマスも通常は同じですが、テーブルチャージがある店は週末料金になる場合があり、店が祝日限定の最低金額を設定する場合もあります。その場合は確定前に最終金額を書面（メッセージ）でお知らせします。",
+        "クラブの実際のメニューです。イブからはクラブが祝日向けに最低金額を上げます。目安は弘大70万ウォン〜、梨泰院100万ウォン〜、江南200万ウォン〜。料金はクラブや日によって変わることがあります。確定前に最終金額を書面（メッセージ）でお知らせします。",
       faqH2: "ソウルのクリスマス — よくある質問",
       faqs: [
         { q: "韓国ではクリスマスは祝日ですか？", a: "はい。12月25日は韓国の祝日です。2026年は金曜日なので、イブ(木)から日曜までが遊びに出かける長い週末になります。" },
         { q: "ソウルのクリスマスはクラブが混みますか？", a: "はい。韓国ではクリスマスイブは友人や恋人と出かける夜なので、江南・弘大・梨泰院のクラブは一年で最も混む夜のひとつです。2026年はイブが木曜、25日(金)が祝日のため、木曜から日曜まで混雑します。" },
         { q: "イブはテーブル予約が必要ですか？", a: "当日入場もできますが、イブは人気店が早くに満員になり、入口で入場が止まったり大人数のグループが分けられたりします。テーブル予約ならグループ全員で一緒に入れて（年齢・パスポート・服装の条件を満たしていれば）、席とボトルも確保できます。" },
-        { q: "クリスマスのテーブル料金はいくら？", a: "1卓あたり江南140万ウォン、弘大・梨泰院50万ウォン（弘大の一部はさらに安い）から、クラブ自身のメニューで組みます。テーブルはグループで割るので、江南で8人なら1人あたり約17.5万ウォン。デポジット・仲介手数料なし、当日クラブでお支払い。" },
+        { q: "クリスマスのテーブル料金はいくら？", a: "イブからは1卓あたり弘大70万ウォン〜、梨泰院100万ウォン〜、江南200万ウォン〜が目安で、クラブ自身のメニューで組みます。料金はクラブや日によって変わることがあるため、最終金額は確定前に書面でお知らせします。テーブルはグループで割るので、江南で8人なら1人あたり約25万ウォン。デポジット・仲介手数料なし、当日クラブでお支払い。" },
         { q: "いつまでに予約すべき？", a: "イブは2〜3週間前、8人以上のグループはもっと早めに。各クラブのクリスマスのラインナップは日が近づくとインスタで発表されます。" },
         { q: "外国人も入れますか？必要なものは？", a: "入れます。クラブは19歳以上（2026年は2007年以前生まれ）で、外国人はパスポート原本が必要です。江南は服装が最も厳しく、短パン・タンクトップ・サンダルは不可。" },
       ],
@@ -147,22 +177,30 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
     zh: {
       title: "首尔圣诞节 2026 夜店 — 12/24(周四)・25(周五) 卡座预订与价格",
       description:
-        "2026 年平安夜是周四，圣诞节当天(周五)是韩国公休日，连续四晚。哪些首尔夜店能订卡座、50 万韩元起的真实价格、什么时候订。",
+        "2026 年平安夜是周四，圣诞节当天(周五)是韩国公休日，连续四晚。哪些首尔夜店能订卡座、平安夜起的卡座预估价格(70 万韩元起)、什么时候订。",
       ogTitle: "首尔圣诞节 2026",
       ogSub: "12/24(周四)–27(周日) · 夜店卡座与真实价格",
       keywords: [
         "首尔 圣诞节 2026", "首尔 平安夜 夜店", "江南 夜店 圣诞", "弘大 圣诞节", "梨泰院 圣诞",
         "韩国 圣诞 夜生活", "首尔 夜店 订卡座",
       ],
-      eyebrow: "2026 年 12 月 24–27 日 · 周四至周日",
-      h1: "首尔圣诞节 2026 — 夜店、卡座与价格",
+      eyebrow: "2026 · 12/24(周四)–25(周五)",
+      h1: "首尔平安夜，订一张卡座。",
+      hero: {
+        sub: "平安夜和圣诞夜我们能订的三家夜店。酒水、配饮和卡座一个总价，大家分摊。",
+        each: "{n}人分摊每人约{won}",
+        fromLabel: "圣诞每桌起价",
+        bookOn: ["12/24 平安夜", "12/25 圣诞节"],
+        host: "NightFlow 专人用韩语向夜店确认，并在当天前把最终金额发给你。价格可能因夜店和日期而变动。无订金，当晚在夜店付款。",
+        other: "其他夜店或日期 →",
+      },
       intro:
         "在韩国，平安夜不是家庭夜，而是和朋友、情侣出去玩的夜晚 — 江南、弘大、梨泰院的夜店是一年里最满的几晚之一。2026 年平安夜是周四，圣诞节(周五)是公休日，所以周四到周日都很热闹。一群人去的话，订卡座才能保证全员一起进场、有地方坐。",
       areasH2: "圣诞节去哪里",
       areas: [
-        { name: "江南", tag: "大型夜店 · 门口最严", body: "大型 EDM 夜店，首尔门口审核最严。平安夜最容易在门口被拆散或拒绝，订卡座就没有这个问题。每桌 140 万韩元起。", href: "/zh/clubs/gangnam" },
-        { name: "弘大", tag: "人最多 · 嘻哈", body: "夜店最多、客群最年轻的区域。免费入场的店平安夜很早就满。每桌 50 万韩元起，部分更低。", href: "/zh/clubs/hongdae" },
-        { name: "梨泰院", tag: "外国人多", body: "首尔最国际化的夜生活区，用英文也好玩。每桌 50 万韩元起。", href: "/zh/clubs/itaewon" },
+        { name: "江南", tag: "大型夜店 · 门口最严", body: "大型 EDM 夜店，首尔门口审核最严。平安夜最容易在门口被拆散或拒绝，订卡座就没有这个问题。圣诞期间每桌预计 200 万韩元起。", href: "/zh/clubs/gangnam" },
+        { name: "弘大", tag: "人最多 · 嘻哈", body: "夜店最多、客群最年轻的区域。免费入场的店平安夜很早就满。圣诞期间每桌预计 70 万韩元起。", href: "/zh/clubs/hongdae" },
+        { name: "梨泰院", tag: "外国人多", body: "首尔最国际化的夜生活区，用英文也好玩。圣诞期间每桌预计 100 万韩元起。", href: "/zh/clubs/itaewon" },
       ],
       stepsH2: "圣诞四天怎么过",
       steps: [
@@ -173,13 +211,13 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
       ],
       pricesH2: "圣诞卡座价格 — 真实酒单",
       pricesNote:
-        "以下是夜店的真实酒单。每桌最低消费圣诞期间通常不变，但有台费的店可能按周末价，夜店也可能设节日特别低消。如果有，确认前我们会把最终金额书面告诉你。",
+        "以下是夜店的真实酒单。从平安夜起，夜店会提高节日最低消费，预计弘大 70 万、梨泰院 100 万、江南 200 万韩元起。价格可能因夜店和日期而变动，确认前我们会把最终金额书面告诉你。",
       faqH2: "首尔圣诞 — 常见问题",
       faqs: [
         { q: "圣诞节在韩国放假吗？", a: "放。12 月 25 日是韩国公休日。2026 年是周五，所以平安夜(周四)到周日是一个出去玩的长周末。" },
         { q: "首尔圣诞节夜店人多吗？", a: "很多。韩国的平安夜是和朋友或情侣出去的夜晚，江南、弘大、梨泰院的夜店是一年里最满的几晚之一。2026 年平安夜是周四、25 日(周五)公休，周四到周日都会很满。" },
         { q: "平安夜一定要订卡座吗？", a: "可以直接去排队，但平安夜热门夜店很早就满，门口可能停止入场或把人多的团拆开。订卡座就能全员一起进场(年龄、护照、着装符合规定即可)，还有座位和酒。" },
-        { q: "圣诞节卡座多少钱？", a: "每桌最低消费江南 140 万韩元、弘大和梨泰院 50 万韩元(弘大部分更低)，用夜店自己的酒单凑满。卡座大家分摊，江南 8 个人每人约 17.5 万韩元。无订金、无中介费，当晚在夜店付款。" },
+        { q: "圣诞节卡座多少钱？", a: "从平安夜起，每桌预计弘大 70 万、梨泰院 100 万、江南 200 万韩元起，用夜店自己的酒单凑满。价格可能因夜店和日期而变动，最终金额确认前书面告诉你。卡座大家分摊，江南 8 个人每人约 25 万韩元。无订金、无中介费，当晚在夜店付款。" },
         { q: "什么时候订？", a: "平安夜提前 2–3 周，8 人以上的团更早。各夜店的圣诞阵容会在临近时发在 Instagram。" },
         { q: "外国人能进吗？要带什么？", a: "能。夜店 19 岁以上(2026 年为 2007 年及以前出生)，外国人要带护照原件。江南着装最严，不能穿短裤、背心、拖鞋。" },
       ],
@@ -207,22 +245,30 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
     "zh-tw": {
       title: "首爾聖誕節 2026 夜店 — 12/24(週四)・25(週五) 包廂預訂與價格",
       description:
-        "2026 年平安夜是週四，聖誕節當天(週五)是韓國國定假日，連續四晚。哪些首爾夜店能訂包廂、50 萬韓元起的真實低消、什麼時候訂。",
+        "2026 年平安夜是週四，聖誕節當天(週五)是韓國國定假日，連續四晚。哪些首爾夜店能訂包廂、平安夜起的包廂預估低消(70 萬韓元起)、什麼時候訂。",
       ogTitle: "首爾聖誕節 2026",
       ogSub: "12/24(週四)–27(週日) · 夜店包廂與真實價格",
       keywords: [
         "首爾 聖誕節 2026", "首爾 平安夜 夜店", "江南 夜店 聖誕", "弘大 聖誕節", "梨泰院 聖誕",
         "韓國 聖誕 夜生活", "首爾 夜店 訂包廂", "首爾 夜店 低消",
       ],
-      eyebrow: "2026 年 12 月 24–27 日 · 週四至週日",
-      h1: "首爾聖誕節 2026 — 夜店、包廂與價格",
+      eyebrow: "2026 · 12/24(週四)–25(週五)",
+      h1: "首爾平安夜，訂一張包廂。",
+      hero: {
+        sub: "平安夜和聖誕夜我們能訂的三家夜店。酒水、調飲和包廂一個總價，大家分攤。",
+        each: "{n}人分攤每人約{won}",
+        fromLabel: "聖誕每桌低消",
+        bookOn: ["12/24 平安夜", "12/25 聖誕節"],
+        host: "NightFlow 專人用韓文跟夜店確認，並在當天前把最終金額傳給你。價格可能因夜店和日期而變動。免訂金，當晚在夜店付款。",
+        other: "其他夜店或日期 →",
+      },
       intro:
         "在韓國，平安夜不是家庭夜，而是跟朋友、另一半出去玩的晚上 — 江南、弘大、梨泰院的夜店是一年裡最滿的幾晚之一。2026 年平安夜是週四，聖誕節(週五)是國定假日，所以週四到週日都很熱鬧。一群人去的話，訂包廂最能確保大家一起進場、不用擔心在門口被卡(年齡、護照、服裝符合規定即可)，也有位子坐。",
       areasH2: "聖誕節去哪裡",
       areas: [
-        { name: "江南", tag: "大型夜店 · 門口最嚴", body: "大型 EDM 夜店，首爾門口審核最嚴。平安夜最容易在門口被卡或整團被拆開，有包廂就不用擔心。每桌低消 140 萬韓元起。", href: "/zh-tw/clubs/gangnam" },
-        { name: "弘大", tag: "人最多 · 嘻哈", body: "夜店最多、客群最年輕的區域。免費入場的店平安夜很早就滿。每桌低消 50 萬韓元起，部分更低。", href: "/zh-tw/clubs/hongdae" },
-        { name: "梨泰院", tag: "外國人多", body: "首爾最國際化的夜生活區，講英文也好玩。每桌低消 50 萬韓元起。", href: "/zh-tw/clubs/itaewon" },
+        { name: "江南", tag: "大型夜店 · 門口最嚴", body: "大型 EDM 夜店，首爾門口審核最嚴。平安夜最容易在門口被卡或整團被拆開，有包廂就不用擔心。聖誕期間每桌低消預計 200 萬韓元起。", href: "/zh-tw/clubs/gangnam" },
+        { name: "弘大", tag: "人最多 · 嘻哈", body: "夜店最多、客群最年輕的區域。免費入場的店平安夜很早就滿。聖誕期間每桌低消預計 70 萬韓元起。", href: "/zh-tw/clubs/hongdae" },
+        { name: "梨泰院", tag: "外國人多", body: "首爾最國際化的夜生活區，講英文也好玩。聖誕期間每桌低消預計 100 萬韓元起。", href: "/zh-tw/clubs/itaewon" },
       ],
       stepsH2: "聖誕四天怎麼玩",
       steps: [
@@ -233,13 +279,13 @@ export const CHRISTMAS_2026: SeasonGuideConfig = {
       ],
       pricesH2: "聖誕包廂價格 — 真實酒單",
       pricesNote:
-        "以下是夜店的真實酒單。每桌低消聖誕期間通常不變，但有包廂費的店可能算週末價，夜店也可能設節日特別低消。這裡的「包廂」指夜店內的桌位(開放式)，不是獨立房間。如果有，確認前我們會把最終金額書面告訴你。",
+        "以下是夜店的真實酒單。從平安夜起，夜店會調高節日低消，預計弘大 70 萬、梨泰院 100 萬、江南 200 萬韓元起，價格可能因夜店和日期而變動。這裡的「包廂」指夜店內的桌位(開放式)，不是獨立房間。確認前我們會把最終金額書面告訴你。",
       faqH2: "首爾聖誕 — 常見問題",
       faqs: [
         { q: "聖誕節在韓國放假嗎？", a: "有。12 月 25 日是韓國國定假日。2026 年是週五，所以平安夜(週四)到週日是出去玩的長週末。" },
         { q: "首爾聖誕節夜店人多嗎？", a: "很多。韓國的平安夜是跟朋友或另一半出去的晚上，江南、弘大、梨泰院的夜店是一年裡最滿的幾晚之一。2026 年平安夜是週四、25 日(週五)放假，週四到週日都會很滿。" },
         { q: "平安夜一定要訂包廂嗎？", a: "可以直接去排，但平安夜熱門夜店很早就滿，門口可能停止入場，人多的團也容易被卡或被拆開。訂包廂就能整團一起進場(年齡、護照、服裝符合規定即可)，還有位子和酒。" },
-        { q: "聖誕節包廂多少錢？", a: "每桌低消江南 140 萬韓元、弘大和梨泰院 50 萬韓元(弘大部分更低)，從夜店自己的酒單湊滿。包廂大家分攤，江南 8 個人每人約 17.5 萬韓元。免訂金、無中介費，當晚在夜店付款。" },
+        { q: "聖誕節包廂多少錢？", a: "從平安夜起，每桌低消預計弘大 70 萬、梨泰院 100 萬、江南 200 萬韓元起，從夜店自己的酒單湊滿。價格可能因夜店和日期而變動，最終金額確認前書面告訴你。包廂大家分攤，江南 8 個人每人約 25 萬韓元。免訂金、無中介費，當晚在夜店付款。" },
         { q: "什麼時候訂？", a: "平安夜提前 2–3 週，8 人以上的團更早。各夜店的聖誕陣容會在接近時發在 Instagram。" },
         { q: "外國人能進嗎？要帶什麼？", a: "可以。夜店 19 歲以上(2026 年為 2007 年(含)以前出生)，外國人要帶護照正本。江南服裝最嚴，不能穿短褲、背心、拖鞋。" },
       ],
@@ -287,6 +333,8 @@ export const NYE_2026: SeasonGuideConfig = {
         "Itaewon New Year's Eve", "Seoul countdown party 2027", "New Year's Eve Korea club", "Seoul NYE table booking",
       ],
       eyebrow: "DEC 31, 2026 · THURSDAY",
+      forWho:
+        "Booking a table for 4–10 people? Skip the midnight queue and keep the whole group together. From ₩500,000 per table in Hongdae and Itaewon, ₩1,400,000 in Gangnam — split across the group. Dec 31 tables go first, so book early.",
       h1: "Seoul New Year's Eve 2026 — Countdown Clubs, Tables & Prices",
       intro:
         "New Year's Eve falls on a Thursday this year, and January 1 (Friday) is a public holiday — so the night runs late and the weekend follows straight after. Seoul's clubs count down at midnight and keep going until morning. If you want to be inside, together, when the clock hits 00:00, the safest way is a booked table: no queue at 23:30 and a place for the whole group. Here's how the night runs, what it costs, and which clubs we can book.",
@@ -346,6 +394,8 @@ export const NYE_2026: SeasonGuideConfig = {
         "梨泰院 年越し", "韓国 年越し クラブ", "ソウル 年越し テーブル予約",
       ],
       eyebrow: "2026年12月31日 · 木曜日",
+      forWho:
+        "4〜10人でテーブルを予約するなら — 0時前の行列に並ばず、グループ全員の席を確保できます。1卓あたり弘大・梨泰院は₩500,000〜、江南は₩1,400,000〜（人数で割り勘）。12/31のテーブルから先に埋まるので、お早めに。",
       h1: "ソウル 年越しカウントダウン 2026→2027 — クラブ・テーブル・料金",
       intro:
         "今年の大晦日は木曜日、1月1日(金)は祝日なので、夜は遅くまで続きそのまま週末に入ります。ソウルのクラブは0時にカウントダウンして朝まで営業。0時の瞬間にグループ全員で店内にいたいなら、23時半の行列に並ばずに入れるテーブル予約が一番確実です。",
@@ -405,6 +455,8 @@ export const NYE_2026: SeasonGuideConfig = {
         "韩国 跨年 夜店", "首尔 倒数 卡座",
       ],
       eyebrow: "2026 年 12 月 31 日 · 周四",
+      forWho:
+        "4到10人想订卡座跨年？零点前不用排队，全员都有位子。每桌弘大·梨泰院₩500,000起，江南₩1,400,000起，按人数分摊。12/31的卡座最先订满，请尽早预订。",
       h1: "首尔跨年 2026 — 倒数夜店、卡座与价格",
       intro:
         "今年跨年夜是周四，1 月 1 日(周五)公休，所以这一晚会玩到很晚，接着就是周末。首尔的夜店 0 点倒数，一直开到早上。想在 0 点那一刻全员都在店里，最稳的是订卡座 — 不用在 23:30 排队，整团都有位子。",
@@ -464,6 +516,8 @@ export const NYE_2026: SeasonGuideConfig = {
         "韓國 跨年 夜店", "首爾 倒數 包廂", "首爾 夜店 低消",
       ],
       eyebrow: "2026 年 12 月 31 日 · 週四",
+      forWho:
+        "4到10人想訂包廂跨年？零點前不用排隊，全員都有位子。每桌弘大·梨泰院₩500,000起，江南₩1,400,000起，按人數分攤。12/31的包廂最先訂滿，請盡早預訂。",
       h1: "首爾跨年 2026 — 倒數夜店、包廂與價格",
       intro:
         "今年跨年夜是週四，1 月 1 日(週五)放假，所以這晚會玩到很晚，接著就是週末。首爾的夜店 0 點倒數，一路開到早上。想在 0 點那一刻整團都在店裡，最穩的是訂包廂 — 不用在 23:30 排隊，整團都有位子。",

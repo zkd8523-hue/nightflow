@@ -29,6 +29,7 @@ import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import type { ClubMenuItem, ClubMenuCombo, ClubMenuVariant, SelectedMenuSnapshot } from "@/types/database";
 import { effectiveTcRule, minBookableTotal, tcIsAlways } from "@/lib/booking/mdMenu";
 import { isRatingShown } from "@/lib/clubs/ratingDisplay";
+import { seasonalFloor, isSeasonalDate } from "@/lib/clubs/tablePricing";
 
 // 폼 Step 1의 "Where?" 카드에 붙는 지역 한 줄 설명 — 홈(EnHomeClient REGIONS)과 같은 문장.
 // 외국인은 지역 이름만으로는 못 고른다(2026-09-09). 이름 대신 "어떤 밤인지"로 고르게 한다.
@@ -517,7 +518,7 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
     const id = selectedClubIds.find((cid) => cid in CLUB_BUDGET_TIERS_OVERRIDE);
     return id ? CLUB_BUDGET_TIERS_OVERRIDE[id] : null;
   })();
-  const budgetFloor = (() => {
+  const baseBudgetFloor = (() => {
     if (clubTiersOverride) return { amount: clubTiersOverride[0], area: null as string | null };
 
     const areas: string[] = [];
@@ -534,6 +535,13 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
       if (v > topAmount) { top = a; topAmount = v; }
     });
     return { amount: topAmount, area: top };
+  })();
+  // 시즌 하한(크리스마스 이브·당일, tablePricing.seasonalFloor) — 그날을 고르면 평소 하한보다 높은 값을 쓴다.
+  // 클럽 예외(DM 100만·라로사 15만)보다도 우선한다: 그날은 클럽이 최저금액을 올린다(2026-11-14 사용자).
+  const budgetFloor = (() => {
+    const a = baseBudgetFloor.area ?? clubs.find((c) => selectedClubIds.includes(c.id))?.area ?? (area || null);
+    const sf = seasonalFloor(a, eventDate);
+    return sf && sf > baseBudgetFloor.amount ? { amount: sf, area: a } : baseBudgetFloor;
   })();
   const minBudget = budgetFloor.amount;
   // 버튼에 쓸 3단 값 — 하한을 만든 지역 기준.
@@ -1578,8 +1586,15 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
   // 강남 금액은 원화 먼저(approxLocal 참고) — 예산 시트와 3단계 요약 카드가 같이 쓴다.
   const wonFirst = !!explicitTierArea;
   const mdBudgetOptions = useMemo(() => {
-    if (clubTiersOverride) return clubTiersOverride;
-    if (explicitTierArea) return AREA_BUDGET_TIERS[explicitTierArea];
+    // 시즌 하한이 버튼 첫 값보다 높으면(크리스마스) 첫 버튼을 하한으로 올리고, 그보다 낮은 버튼은 빼고 1.5배씩 채운다.
+    const raise = (tiers: number[]) => {
+      if (!tiers.length || tiers[0] >= minBudget) return tiers;
+      const out = [minBudget, ...tiers.filter((x) => x > minBudget)];
+      while (out.length < 3) out.push(Math.round((out[out.length - 1] * 1.5) / 50_000) * 50_000);
+      return out.slice(0, 3);
+    };
+    if (clubTiersOverride) return raise(clubTiersOverride);
+    if (explicitTierArea) return raise(AREA_BUDGET_TIERS[explicitTierArea]);
     const base = minBudget > 0 ? minBudget : 500_000;
     return [base, Math.round((base * 1.5) / 50_000) * 50_000, base * 2];
   }, [minBudget, clubTiersOverride, explicitTierArea]);
@@ -1845,6 +1860,18 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
                   "夜店會以一個總價為你準備酒水、調飲和包廂。"
                 )}
           </p>
+          {/* 크리스마스 이브·당일을 고르면 버튼 금액이 시즌 하한으로 올라간다 — 왜 비싼지 여기서 말한다(2026-11-14 사용자). */}
+          {isSeasonalDate(eventDate) && (
+            <p className="rounded-xl border border-amber-500/40 bg-amber-500/[0.08] px-3 py-2.5 text-[13px] font-bold text-foreground leading-snug break-keep">
+              {t(
+                "🎄 크리스마스 가격 (12/24~25)",
+                "🎄 Christmas pricing (Dec 24–25)",
+                "🎄 クリスマス料金（12/24〜25）",
+                "🎄 圣诞价格（12/24–25）",
+                "🎄 聖誕價格（12/24–25）"
+              )}
+            </p>
+          )}
           {tcNoteText && <p className="text-[12px] text-muted-foreground leading-snug break-keep">{tcNoteText}</p>}
         </div>
         <div className="space-y-2">
@@ -2615,7 +2642,10 @@ export const ForeignRequestForm = forwardRef<ForeignRequestFormHandle, {
             {shortlist.map((c, i) => {
               const tl = clubTagline(c, lang) || (AREA_TAGLINE[c.area] ? t(...AREA_TAGLINE[c.area]) : "");
               const on = stagedClubId === c.id;
-              const f = menuFloorByClub[c.id];
+              const f0 = menuFloorByClub[c.id];
+              // 크리스마스 이브·당일이면 카드 시작가도 시즌 하한까지 올린다(폼 최소 금액과 같은 값).
+              const sfc = seasonalFloor(c.area, eventDate);
+              const f = f0 && sfc && sfc > f0.amount ? { ...f0, amount: sfc } : f0;
               // 강남 카드는 1인당 금액을 뺀다 — 고액 테이블에서 나눠 내는 계산은 손님이 찾는 정보가 아니다(2026-10-24).
               const pp = f && !AREA_EXPLICIT_TIER_AREAS.has(c.area) ? perPersonLabel(f.amount) : null;
               const pickGenre = SHORTLIST_TOP_PICKS[c.name];

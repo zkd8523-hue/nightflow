@@ -65,6 +65,9 @@ const seenKey = (slug: string) => `nightflow_event_promo_${slug}`;
 const EXCLUDE = [
   "/en", "/ja", "/zh", "/zh-tw",
   "/md", "/admin", "/booking",
+  // 외국인 예약 폼(/flags/new?lang=en)도 경로가 /flags라 위 /en 제외에 안 걸렸다 — 11/9~14 폼 방문자 30여 명에게
+  // 한국어 공연 팝업이 떴다(2026-11-14 발견). 예약 흐름 한가운데라 막는다.
+  "/flags",
   "/login", "/signup", "/auth",
 ];
 

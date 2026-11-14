@@ -195,7 +195,8 @@ function groupByArea(rows: PriceRow[]) {
 }
 
 /** midAd=false: 같은 페이지에 이미 날짜 지정 숙소 줄이 있을 때(할로윈·연말) 중복을 피한다 */
-export async function RealTablePrices({ lang, rows, midAd = true }: { lang: SeoLang; rows: PriceRow[]; midAd?: boolean }) {
+/** floorByArea: 시즌 페이지(크리스마스)처럼 지역 하한이 평소와 다를 때. 있으면 평소 하한 소개 문단(intro)은 뺀다 — 숫자가 충돌한다. */
+export async function RealTablePrices({ lang, rows, midAd = true, floorByArea }: { lang: SeoLang; rows: PriceRow[]; midAd?: boolean; floorByArea?: Record<string, number> }) {
   const t = T[lang];
   if (rows.length === 0) return null;
   const rates = (await getKrwRates()).rates;
@@ -206,7 +207,7 @@ export async function RealTablePrices({ lang, rows, midAd = true }: { lang: SeoL
   return (
     <section id="table-prices" className="space-y-4 scroll-mt-20">
       <h2 className="text-[20px] font-black">{t.h2}</h2>
-      <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">{t.intro(rows.length)}</p>
+      {!floorByArea && <p className="text-[13px] text-muted-foreground leading-relaxed break-keep">{t.intro(rows.length)}</p>}
 
       {/* 지역 앵커 — 강남이 검색량 1위인데 스크롤 끝에 있으면 안 된다 */}
       <nav className="flex flex-wrap gap-2 text-[12px]">
@@ -220,7 +221,7 @@ export async function RealTablePrices({ lang, rows, midAd = true }: { lang: SeoL
       </nav>
 
       {[...byArea.entries()].map(([area, list], gi) => {
-        const floor = bookingFloor(area);
+        const floor = Math.max(bookingFloor(area), floorByArea?.[area] ?? 0);
         const fx = local(floor);
         return (
           <Fragment key={area}>
