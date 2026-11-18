@@ -348,8 +348,8 @@ export function KoreanBookingForm({
   // 예산 하한·TC 안내(2026-11-10) — 예산만 고른 손님은 TC가 그 안에 포함되는 걸 몰랐고, 가장 싼 술 + TC보다 낮은 예산은
   // 담당자가 어떤 구성도 못 고른다(11/14 Club Ace 35만 원 → 최소 40만 원). 날짜를 골라야 평일·주말 가격이 정해진다.
   const tcRule = effectiveTcRule({ table_charge_rule: tcRuleRaw, table_charge_weekday: menuCharge.weekday, table_charge_weekend: menuCharge.weekend }, isWeekend);
-  // 클럽 단위 시작가 — 날짜를 고르기 전에도 막는다. Club Ace = 40만(가장 싼 1병 35만 + 4병 미만 TC 5만, 사용자 결정 2026-11-10).
-  const CLUB_MIN_BUDGET: Record<string, number> = { "35de296e-5fdc-435b-baf2-1c7c05538687": 400_000 };
+  // 클럽 단위 시작가 — 날짜를 고르기 전에도 막는다. BELPOS = 25만(2026-11-18). Club Ace = 40만(가장 싼 1병 35만 + 4병 미만 TC 5만, 사용자 결정 2026-11-10).
+  const CLUB_MIN_BUDGET: Record<string, number> = { "35de296e-5fdc-435b-baf2-1c7c05538687": 400_000, "c40209fe-e131-4594-b9bc-98a833da5f89": 250_000 };
   const menuMinTotal = eventDate ? minBookableTotal(menuItems, tcRule, isWeekend) : null;
   const minBudgetTotal = Math.max(CLUB_MIN_BUDGET[clubId] ?? 0, menuMinTotal ?? 0) || null;
   const manWon = (n: number) => (n % 10_000 === 0 ? `${n / 10_000}만원` : `${n.toLocaleString("ko-KR")}원`);
@@ -401,6 +401,8 @@ export function KoreanBookingForm({
       ? [500_000, 1_200_000, 3_000_000]
       : clubId === "35de296e-5fdc-435b-baf2-1c7c05538687"
       ? [400_000, 1_000_000, 3_000_000] // Club Ace — 시작가 40만(사용자 결정 2026-11-10)
+      : clubId === "c40209fe-e131-4594-b9bc-98a833da5f89"
+      ? [250_000, 500_000, 1_000_000] // BELPOS — 시작가 25만(사용자 결정 2026-11-18)
       : clubArea === "강남"
         ? [500_000, 1_000_000, 3_000_000]
         : [300_000, 500_000, 1_000_000];
