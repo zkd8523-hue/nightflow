@@ -427,9 +427,8 @@ export async function shareClub({ clubId, clubName }: ShareClubParams): Promise<
   // title(clubName)과 카드(og:title/description)가 이미 클럽명·지역·정보를
   // 보여주므로 본문은 짧은 한 줄만 남긴다(shareLineup/shareEvent와 동일 이유).
   const text = `🌃 나플에서 위치·영업시간·가격표 확인하기 👉`;
-  const shareText = `${text}\n\n${url}`;
 
-  const native = await shareViaNative({ title: clubName, text: shareText, url });
+  const native = await shareViaNative({ title: clubName, text, url });
   if (native.handled) {
     trackEvent('club_shared', { club_id: clubId, method: 'native' });
     return !native.cancelled;
@@ -437,7 +436,7 @@ export async function shareClub({ clubId, clubName }: ShareClubParams): Promise<
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: clubName, text: shareText, url });
+      await navigator.share({ title: clubName, text, url });
       trackEvent('club_shared', { club_id: clubId, method: 'web_share_api' });
       return true;
     } catch (err: unknown) {
@@ -445,14 +444,26 @@ export async function shareClub({ clubId, clubName }: ShareClubParams): Promise<
         return false;
       }
       logger.error("Club share failed:", err);
-      await copyToClipboard(text, url);
+      await copyClubLinkOnly(url);
       trackEvent('club_shared', { club_id: clubId, method: 'clipboard' });
       return false;
     }
   } else {
-    await copyToClipboard(text, url);
+    await copyClubLinkOnly(url);
     trackEvent('club_shared', { club_id: clubId, method: 'clipboard' });
     return false;
+  }
+}
+
+/** 클럽 링크만 클립보드에 복사 (문구 없이 URL만) */
+async function copyClubLinkOnly(url: string): Promise<void> {
+  if (await safeClipboardWrite(url)) {
+    toast.success("링크가 복사되었습니다!", { duration: 2000 });
+    return;
+  }
+  toast.error("자동 복사에 실패했어요. 아래에서 직접 복사해주세요.");
+  if (typeof window !== "undefined" && window.prompt) {
+    window.prompt("이 링크를 복사하세요:", url);
   }
 }
 
