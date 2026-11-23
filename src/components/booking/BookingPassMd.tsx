@@ -31,6 +31,8 @@ type Props = {
   /** 도착 예정 시각(자유 표기 "23:00") */
   arrivalTime?: string | null;
   hostName: string | null;
+  /** 담당 MD 휴대폰(users.phone) — 도착 문자가 실제로 가는 번호 */
+  hostPhone?: string | null;
   arrivedPings: string[];
   /** 담당 MD 본인이 로그인해 연 경우에만 — 파트너 페이지 예약관리로 돌아가는 링크 */
   backHref?: string | null;
@@ -47,6 +49,13 @@ function fmtDateKo(iso: string): string {
   const d = new Date(iso + "T00:00:00");
   const dow = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${dow})`;
+}
+
+function fmtPhone(raw?: string | null): string | null {
+  const d = (raw ?? "").replace(/\D/g, "");
+  if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+  return d || null;
 }
 
 export function BookingPassMd(p: Props) {
@@ -296,8 +305,7 @@ export function BookingPassMd(p: Props) {
               <div className="mt-4 rounded-xl border border-sky-400/40 bg-sky-400/[0.08] px-4 py-3">
                 <div className="text-[13.5px] font-black text-foreground">📲 손님 도착 알림</div>
                 <ol className="mt-1.5 space-y-0.5 text-[12.5px] text-foreground/80 leading-relaxed list-decimal pl-4">
-                  <li>손님이 도착 10분 전과 도착했을 때 버튼을 누르면 이 번호로 문자가 와요.</li>
-                  <li>문자를 받으면 입구로 마중 나가주세요.</li>
+                  <li>손님이 도착 10분 전과 도착했을 때 버튼을 누르면 {fmtPhone(p.hostPhone) ?? "담당자 번호"}로 문자가 와요.</li>
                   <li>입장시킨 뒤 아래 &quot;입장 완료&quot;를 눌러주세요.</li>
                 </ol>
               </div>

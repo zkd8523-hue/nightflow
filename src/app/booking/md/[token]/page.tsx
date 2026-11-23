@@ -55,7 +55,7 @@ export default async function BookingMdPage({
     : { data: null };
 
   const { data: md } = req.assigned_md_id
-    ? await sb.from("users").select("display_name").eq("id", req.assigned_md_id).maybeSingle()
+    ? await sb.from("users").select("display_name, phone").eq("id", req.assigned_md_id).maybeSingle()
     : { data: null };
 
   // 담당 MD 본인이 로그인 상태(앱)로 열었을 때만 예약관리로 돌아가는 링크를 단다.
@@ -89,6 +89,7 @@ export default async function BookingMdPage({
       bumpAmount={conf.bump_amount ?? null}
       canBump={conf.request_type !== "korean"}
       hostName={md?.display_name ?? null}
+      hostPhone={md?.phone ?? null}
       arrivedPings={(pings ?? []).map((p) => p.kind)}
       backHref={backHref}
     />
