@@ -17,7 +17,7 @@ import {
 import { clubMatchesQuery } from "@/lib/search/clubMatch";
 import { useSearchMissLogger } from "@/lib/search/logMiss";
 import { benefitLabel } from "@/lib/utils/hotdeal";
-import { pinnedRank } from "@/lib/clubs/pinnedClubs";
+import { pinnedRank, isNewPinned } from "@/lib/clubs/pinnedClubs";
 import { distanceKm } from "@/lib/chat/areas";
 import { getCurrentCoords } from "@/lib/geo/currentCoords";
 import { KoStaySlot } from "@/components/affiliate/KoStaySlot";
@@ -546,6 +546,12 @@ function ClubCard({
         <div className="absolute top-2 right-2 z-10">
           <FavoriteButton clubId={club.id} />
         </div>
+        {/* NEW 배지 — 기간 한정 상위노출 클럽(pinnedClubs.ts) 표시 */}
+        {isNewPinned(club.id) && (
+          <span className="absolute top-2 left-2 z-10 inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black leading-none">
+            NEW
+          </span>
+        )}
         {/* 상단 혜택 배지 — 홈(ClubBenefitSection)과 동일 디자인 (폰트·정렬 통일) */}
         {bannerText && (
           <div className="absolute top-0 inset-x-0 bg-amber-500 px-2.5 pt-1.5 pb-1">
